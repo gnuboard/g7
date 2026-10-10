@@ -1,12 +1,12 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-10-10T09:24:21+00:00",
+    "generated_at": "2026-10-10T11:03:39+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "core",
     "composer_json_sha256": "17ca60498a728100b5f97e7724676b67dc27bdc2c736f27d6db992758da77e6a",
-    "composer_lock_sha256": "32628d7735aad3c05c8fe219bc65ba8be1423d74c7765f0b674cd77a901c87a8",
-    "zip_sha256": "2017d2ee5e7c89c013e6f357aca35a853600927aa876e51e62301cf206dc91ea",
-    "zip_size": 17084479,
+    "composer_lock_sha256": "4a6f4ae9981949dccba8dee40cde37a585f178a75b1051ff4e3a67dd9fdf9eb3",
+    "zip_sha256": "09fad4df3bcbfa42f071ca43505adfe3e77e1a26d94820ae22d7a37f59b1b37e",
+    "zip_size": 17071733,
     "package_count": 106,
     "php_requirement": "^8.2",
     "g7_version": "7.1.0",
@@ -198,7 +198,7 @@
         },
         {
             "name": "maxmind-db/reader",
-            "version": "v1.14.0",
+            "version": "v1.13.1",
             "type": "library"
         },
         {
