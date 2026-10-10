@@ -21,3 +21,9 @@
 | [../AGENTS.md](../AGENTS.md) | 에이전트·확장개발자 진입점 |
 | [../README.md](../README.md) | 사람(도입검토자·운영자) 진입점 |
 <!-- @generated:doc-toc END -->
+
+### 기능 문서
+
+| 문서 | 내용 |
+|---|---|
+| [sample-data.md](sample-data.md) | 설치 데이터, `--sample` 이 만드는 것과 지우는 것, 확인 질문·`--force`, 건수 조절 |

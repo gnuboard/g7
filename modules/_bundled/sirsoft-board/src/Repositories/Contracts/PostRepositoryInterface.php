@@ -340,25 +340,29 @@ interface PostRepositoryInterface
     public function forceDeleteByBoardId(int $boardId): int;
 
     /**
-     * ID 목록의 게시글을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     * 지정한 게시글과 그 답변 글(자손 전체)을 하위 데이터와 함께 영구 삭제합니다 (소프트 삭제된 글 포함).
      *
      * 이커머스 샘플 시더의 재시드 정리(`sirsoft-ecommerce.inquiry.purge_sample_posts` 훅)에서
-     * 사용합니다. 운영 경로의 삭제는 PostService 를 거칩니다.
+     * 사용합니다. 넘겨받은 ID 의 글과 그 글에 달린 답변만 지우고, 같은 게시판의 다른 글(운영자 답변·
+     * 실제 문의)은 건드리지 않습니다. 댓글·첨부 행·반응·스크랩도 함께 지웁니다.
+     * 운영 경로의 삭제는 PostService 를 거칩니다.
      *
-     * @param  array<int, int>  $ids  게시글 ID 목록
-     * @return int 삭제된 게시글 수
+     * @param  int  $boardId  게시판 ID (다른 게시판의 같은 ID 는 지우지 않는다)
+     * @param  array<int, int>  $ids  삭제할 원글 ID 목록
+     * @return int 삭제된 게시글 수 (답변 포함)
      */
-    public function forceDeleteByIds(array $ids): int;
+    public function forceDeleteWithRepliesByIds(int $boardId, array $ids): int;
 
     /**
-     * 게시판의 답변 글(parent_id 가 있는 글)을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     * 지정한 게시글(그 게시판 안의 것만)과 자손 답글 전체의 ID 를 모읍니다 (소프트 삭제된 글 포함).
      *
-     * 이커머스 샘플 시더의 재시드 정리에서 문의 게시판의 답변 글을 비울 때 사용합니다.
+     * 영구 삭제 전에 첨부 파일을 먼저 정리할 대상을 고를 때 씁니다.
      *
      * @param  int  $boardId  게시판 ID
-     * @return int 삭제된 게시글 수
+     * @param  array<int, int>  $ids  원글 ID 목록
+     * @return array<int, int> 원글 + 자손 답글 ID
      */
-    public function forceDeleteRepliesByBoardId(int $boardId): int;
+    public function collectWithRepliesIds(int $boardId, array $ids): array;
 
     /**
      * ID로 게시글을 조회합니다 (게시판 슬러그 불필요, board 관계 포함).

@@ -7,10 +7,13 @@ use App\Extension\ModuleManager;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\Concerns\PurgesProductInquiries;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\Concerns\PurgesSampleOrders;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductImageCollection;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
@@ -18,7 +21,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Category;
-use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
@@ -39,6 +41,8 @@ use Modules\Sirsoft\Ecommerce\Services\SequenceService;
 class ProductSeeder extends Seeder
 {
     use HasSeederCounts;
+    use PurgesProductInquiries;
+    use PurgesSampleOrders;
 
     /**
      * 생성할 기본 상품 수
@@ -444,7 +448,7 @@ class ProductSeeder extends Seeder
             'has_options' => false,
             'option_groups' => null,
             'category_slug' => 'women-dresses',
-            'brand_slug' => '8seconds',
+            'brand_slug' => 'eight-seconds',
         ],
         // 숨김 상품
         [
@@ -486,6 +490,8 @@ class ProductSeeder extends Seeder
 
     /**
      * 시더 실행
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -505,6 +511,8 @@ class ProductSeeder extends Seeder
 
     /**
      * 기존 상품 삭제
+     *
+     * @return void 반환값 없음
      */
     private function deleteExistingProducts(): void
     {
@@ -514,14 +522,17 @@ class ProductSeeder extends Seeder
             // 스토리지에서 상품 이미지 파일 삭제
             $this->deleteProductImagesFromStorage();
 
-            // 주문 관련 데이터 먼저 삭제 (외래 키 제약 조건)
-            // order_options의 product_id, product_option_id가 restrictOnDelete이므로
-            // Order 삭제 → order_options/order_addresses/order_payments/order_shippings/order_tax_invoices cascade 삭제
-            // Order는 SoftDeletes 사용하므로 forceDelete 필요
-            $orderCount = Order::withTrashed()->count();
-            if ($orderCount > 0) {
-                Order::withTrashed()->forceDelete();
-                $this->command->warn("  - 기존 주문 데이터 {$orderCount}건을 삭제했습니다.");
+            // 주문 관련 데이터 먼저 삭제 (외래 키 제약 조건 — order_options 의 product_id 가 restrictOnDelete).
+            // 주문 하위 문서(클레임·환불·취소·첨부 파일)까지 OrderSeeder 와 같은 순서로 지운다.
+            $purged = $this->purgeSampleOrderGraph();
+            if ($purged['orders'] > 0) {
+                $this->command->warn("  - 기존 주문 {$purged['orders']}건과 하위 문서를 삭제했습니다.");
+            }
+
+            // 상품 문의는 상품 삭제 cascade 로 피벗만 사라지고 게시판 글이 고아로 남는다 — 먼저 스레드째 정리한다.
+            $inquiries = $this->purgeProductInquiryThreads();
+            if ($inquiries > 0) {
+                $this->command->warn("  - 기존 상품 문의 {$inquiries}건과 그 게시판 문의 글·답변을 삭제했습니다.");
             }
 
             // 관련 데이터 삭제
@@ -538,6 +549,8 @@ class ProductSeeder extends Seeder
 
     /**
      * 스토리지에서 상품 이미지 파일 삭제
+     *
+     * @return void 반환값 없음
      */
     private function deleteProductImagesFromStorage(): void
     {
@@ -551,6 +564,8 @@ class ProductSeeder extends Seeder
 
     /**
      * 상품 생성
+     *
+     * @return void 반환값 없음
      */
     private function createProducts(): void
     {
@@ -571,8 +586,10 @@ class ProductSeeder extends Seeder
             $this->command->warn('브랜드가 없습니다. BrandSeeder를 먼저 실행하는 것을 권장합니다.');
         }
 
-        // 배송정책 조회 (활성 상태인 것만)
-        $shippingPolicies = ShippingPolicy::where('is_active', true)->get();
+        // 배송정책 조회 (활성 + 국내(KR) 설정이 있는 것만 — 해외 전용 정책을 국내 샘플 상품에 붙이지 않는다)
+        $shippingPolicies = ShippingPolicy::where('is_active', true)
+            ->whereHas('countrySettings', fn ($q) => $q->where('country_code', 'KR')->where('is_active', true))
+            ->get();
         $defaultShippingPolicy = $shippingPolicies->firstWhere('is_default', true) ?? $shippingPolicies->first();
 
         if ($shippingPolicies->isEmpty()) {
@@ -587,8 +604,10 @@ class ProductSeeder extends Seeder
             $this->command->warn('공통정보가 없습니다. ProductCommonInfoSeeder를 먼저 실행하는 것을 권장합니다.');
         }
 
-        // 상품정보제공고시 템플릿 조회
-        $noticeTemplates = ProductNoticeTemplate::where('is_active', true)->get();
+        // 상품정보제공고시 템플릿 조회 (법정 품목만 — 테스트용 템플릿(test-N)은 배정하지 않는다)
+        $noticeTemplates = ProductNoticeTemplate::where('is_active', true)
+            ->where('category', 'not like', 'test-%')
+            ->get();
 
         if ($noticeTemplates->isEmpty()) {
             $this->command->warn('상품정보제공고시 템플릿이 없습니다. ProductNoticeTemplateSeeder를 먼저 실행하는 것을 권장합니다.');
@@ -649,10 +668,9 @@ class ProductSeeder extends Seeder
             $listPrice = max($listPrice, 1000);
             $sellingPrice = max($sellingPrice, 1000);
 
-            // 랜덤 카테고리 선택 (leaf 카테고리 우선)
-            $category = $leafCategories->isNotEmpty()
-                ? $leafCategories->random()
-                : $categories->random();
+            // 카테고리: 템플릿의 category_slug 우선 (상품과 카테고리가 맞도록), 없으면 leaf 카테고리 랜덤
+            $category = $categories->firstWhere('slug', $template['category_slug'] ?? null)
+                ?? ($leafCategories->isNotEmpty() ? $leafCategories->random() : $categories->random());
 
             // 브랜드 ID 가져오기
             $brandId = null;
@@ -690,10 +708,10 @@ class ProductSeeder extends Seeder
 
             // 상품 생성
             $product = Product::create([
-                'name' => [
+                'name' => $this->onlySupportedLocales([
                     'ko' => $template['name']['ko'].' #'.$i,
                     'en' => $template['name']['en'].' #'.$i,
-                ],
+                ]),
                 'product_code' => $productCode,
                 'sku' => $sku,
                 'brand_id' => $brandId,
@@ -708,7 +726,9 @@ class ProductSeeder extends Seeder
                 'display_status' => $this->getRandomDisplayStatus($i),
                 'tax_status' => ProductTaxStatus::from($template['tax_status']),
                 'tax_rate' => $template['tax_status'] === 'taxable' ? 10.00 : 0.00,
-                'description' => $template['description'],
+                'description' => $this->onlySupportedLocales($template['description']),
+                // 템플릿 설명은 HTML 이다 — 모드를 맞춰야 편집기·썸네일 추출이 HTML 로 다룬다
+                'description_mode' => 'html',
                 'has_options' => true, // 모든 상품에 옵션 필수
                 'option_groups' => $optionGroups,
                 // SEO 메타 (A26): 다국어 JSON + 동기화 플래그.
@@ -719,8 +739,8 @@ class ProductSeeder extends Seeder
             // 카테고리 연결
             $this->attachCategory($product, $category->slug);
 
-            // 옵션 생성 (모든 상품에 필수)
-            $this->createOptions($product, $optionGroups, $sku);
+            // 옵션 생성 (모든 상품에 필수) — 무게(g)·부피(cm³)는 무게·부피 배송정책 시연에 쓰인다
+            $this->createOptions($product, $optionGroups, $sku, rand(1, 30) * 100, rand(1, 40) * 500);
 
             // 추가옵션 그룹·선택지 생성 (40% 확률) — 추가옵션 시스템 데모 데이터
             if (rand(1, 100) <= 40) {
@@ -750,6 +770,23 @@ class ProductSeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine();
+    }
+
+    /**
+     * 사이트 지원 언어에 없는 키를 뺀 다국어 값을 돌려줍니다.
+     *
+     * 지원하지 않는 언어 키가 남으면 다국어 입력 칸에 없는 언어가 저장돼 수정 화면에서 지울 방법이 없다.
+     * 지원 언어가 하나도 겹치지 않으면 원본을 그대로 쓴다(빈 값으로 만들지 않는다).
+     *
+     * @param  array<string, string>  $values  언어별 값
+     * @return array<string, string> 지원 언어 값
+     */
+    private function onlySupportedLocales(array $values): array
+    {
+        $supported = (array) config('app.supported_locales', ['ko', 'en']);
+        $filtered = array_intersect_key($values, array_flip($supported));
+
+        return $filtered === [] ? $values : $filtered;
     }
 
     /**
@@ -807,6 +844,7 @@ class ProductSeeder extends Seeder
      * 어긋나고 기본통화 해석 차이로 잘못된 값이 생깁니다.
      *
      * @param  Product  $product  상품 모델
+     * @return void 반환값 없음
      */
     private function createAdditionalOptions(Product $product): void
     {
@@ -981,6 +1019,7 @@ class ProductSeeder extends Seeder
      *
      * @param  Product  $product  상품 모델
      * @param  string  $categorySlug  카테고리 슬러그
+     * @return void 반환값 없음
      */
     private function attachCategory(Product $product, string $categorySlug): void
     {
@@ -1005,8 +1044,11 @@ class ProductSeeder extends Seeder
      * @param  Product  $product  상품 모델
      * @param  array  $optionGroups  옵션 그룹 배열 (다국어 형식)
      * @param  string  $productSku  상품 SKU (옵션 SKU 생성 기준)
+     * @param  int  $weightGram  옵션 무게 (g)
+     * @param  int  $volumeCubicCm  옵션 부피 (cm³)
+     * @return void 반환값 없음
      */
-    private function createOptions(Product $product, array $optionGroups, string $productSku): void
+    private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000): void
     {
         // 옵션 조합 생성
         $combinations = $this->generateOptionCombinations($optionGroups);
@@ -1036,6 +1078,8 @@ class ProductSeeder extends Seeder
                 'currency_code' => $this->defaultCurrency(),
                 'stock_quantity' => $stockQuantity,
                 'safe_stock_quantity' => 3,
+                'weight' => $weightGram,
+                'volume' => $volumeCubicCm,
                 'is_default' => $sortOrder === 0,
                 'is_active' => true,
                 'sort_order' => $sortOrder++,
@@ -1241,7 +1285,9 @@ class ProductSeeder extends Seeder
                 $key = "{$item['product_index']}_{$item['image_index']}";
                 $response = $responses[$key] ?? null;
 
-                if ($response && $response->successful()) {
+                // Http::pool 은 연결 실패·시간 초과를 응답이 아니라 ConnectionException 객체로 돌려준다 —
+                // 응답일 때만 성공 여부를 묻고, 실패한 이미지는 건너뛴다(기존 상품을 지운 뒤라 중단하면 빈 쇼핑몰이 된다).
+                if ($response instanceof Response && $response->successful()) {
                     $imagePool[$item['product_index']][$item['image_index']] = [
                         'content' => $response->body(),
                         'width' => 800,
@@ -1270,6 +1316,7 @@ class ProductSeeder extends Seeder
      * @param  array  $imagePool  이미지 풀
      * @param  int  $poolSize  이미지 풀 크기
      * @param  bool  $useBulkMode  벌크 모드 여부 (true: GD 필터 제거 + hash 메모리 생성)
+     * @return void 반환값 없음
      */
     private function createProductImages(Product $product, int $index, array $imagePool, int $poolSize, bool $useBulkMode = false): void
     {
@@ -1397,6 +1444,7 @@ class ProductSeeder extends Seeder
      *
      * @param  Product  $product  상품 모델
      * @param  ProductNoticeTemplate  $template  상품정보제공고시 템플릿
+     * @return void 반환값 없음
      */
     private function createProductNotice(Product $product, ProductNoticeTemplate $template): void
     {
@@ -1420,6 +1468,7 @@ class ProductSeeder extends Seeder
      *
      * @param  Product  $product  상품 모델
      * @param  Collection  $labels  사용 가능한 라벨 컬렉션
+     * @return void 반환값 없음
      */
     private function assignLabels(Product $product, $labels): void
     {

@@ -159,6 +159,12 @@ _별도의 관리자 설정 항목이 없습니다._
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
+### 기능 문서
+
+| 문서 | 내용 |
+|---|---|
+| [docs/sample-data.md](docs/sample-data.md) | `--sample` 샘플 데이터 구성·데이터 규칙·재실행 시 정리 범위 |
+
 ## 트러블슈팅
 
 <!-- @intent START -->

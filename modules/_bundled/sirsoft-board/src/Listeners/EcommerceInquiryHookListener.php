@@ -12,6 +12,7 @@ use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\PostService;
 
 /**
@@ -35,11 +36,13 @@ class EcommerceInquiryHookListener implements HookListenerInterface
      * @param  PostService  $postService  게시글 서비스
      * @param  PostRepositoryInterface  $postRepository  게시글 저장소
      * @param  BoardRepositoryInterface  $boardRepository  게시판 저장소
+     * @param  AttachmentService  $attachmentService  첨부 서비스 (샘플 정리 때 첨부 파일 삭제)
      */
     public function __construct(
         protected PostService $postService,
         protected PostRepositoryInterface $postRepository,
         protected BoardRepositoryInterface $boardRepository,
+        protected AttachmentService $attachmentService,
     ) {}
 
     /**
@@ -559,6 +562,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
      * 대신 글을 만들어 `inquiry.create` 와 같은 모양(post_id·inquirable_type)으로 돌려줍니다.
      * 운영 경로(`createAndReturn`)와 달리 서비스 훅·알림·활동 기록을 거치지 않고 저장소로
      * 바로 만듭니다 — 샘플은 작성 시각을 과거로 흩뿌려야 하고, 시딩이 알림을 보내면 안 됩니다.
+     * 그 훅 리스너가 맡던 건수(게시판 글 수, 질문의 답변 수)는 여기서 다시 셉니다.
      *
      * $question 키: title, content, user_id, author_name, password(평문 — 여기서 해시),
      * is_secret, created_at. $reply 키: content, user_id, created_at (없으면 답변 없음).
@@ -605,7 +609,13 @@ class EcommerceInquiryHookListener implements HookListenerInterface
                 'depth' => 1,
                 'created_at' => $reply['created_at'] ?? now(),
             ]);
+
+            $this->postRepository->recalculateRepliesCount($post->id);
         }
+
+        // 서비스 훅(post.after_create)을 거치지 않으므로 그 훅 리스너가 맡는 게시판 글 수도 여기서 다시 센다 —
+        // 빠뜨리면 상품 문의 게시판 목록·관리자 게시판 목록의 글 수가 0 으로 남는다
+        $this->boardRepository->recalculatePostsCount($board->id);
 
         return [
             'post_id' => $post->id,
@@ -616,9 +626,11 @@ class EcommerceInquiryHookListener implements HookListenerInterface
     /**
      * 재시드 전 기존 샘플 문의 글을 영구 삭제합니다 (`sirsoft-ecommerce.inquiry.purge_sample_posts` 필터 훅).
      *
-     * 이커머스는 자기 피벗에 기록된 `inquirable_type => [inquirable_id, ...]` 묶음을 넘기고,
+     * 이커머스는 정리할 샘플 문의의 `inquirable_type => [inquirable_id, ...]` 묶음을 넘기고,
      * 게시판은 자기 글 타입(Post) 묶음만 지웁니다 — 다른 타입은 게시판의 것이 아니므로 건드리지
-     * 않습니다. 문의 게시판의 답변 글(parent_id 가 있는 글)도 함께 지웁니다.
+     * 않습니다. 넘겨받은 글에 달린 답변(parent_id 로 이어진 글)과 그 글들의 댓글·첨부(파일 포함)·반응·스크랩도
+     * 함께 지우고, 게시판의 글·댓글 수를 다시 셉니다. 같은 게시판의 다른 글(운영자가 실제 문의에 단
+     * 답변 포함)은 지우지 않습니다(SB-1).
      *
      * @param  mixed  $carry  이전 필터 결과 (초기값: 0)
      * @param  string  $slug  문의 게시판 슬러그
@@ -638,9 +650,25 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             fn (int $id) => $id > 0
         ));
 
-        $deleted = $ids === [] ? 0 : $this->postRepository->forceDeleteByIds($ids);
+        if ($ids === []) {
+            return 0;
+        }
 
-        return $deleted + $this->postRepository->forceDeleteRepliesByBoardId($board->id);
+        // 운영자가 샘플 문의 답변에 첨부를 달았을 수 있다 — 행만 지우면 파일이 저장소에 고아로 남으므로
+        // 첨부 서비스로 파일과 행을 먼저 정리한다
+        $postIds = $this->postRepository->collectWithRepliesIds($board->id, $ids);
+        if ($postIds === []) {
+            return 0;
+        }
+        $this->attachmentService->purgeByPostIds($postIds);
+
+        $deleted = $this->postRepository->forceDeleteWithRepliesByIds($board->id, $ids);
+
+        // 원시 삭제라 모델 이벤트의 건수 동기화를 거치지 않는다 — 게시판 캐시 컬럼을 다시 센다
+        $this->boardRepository->recalculatePostsCount($board->id);
+        $this->boardRepository->recalculateCommentsCount($board->id);
+
+        return $deleted;
     }
 
     // ─── 내부 유틸리티 ────────────────────────────────────────

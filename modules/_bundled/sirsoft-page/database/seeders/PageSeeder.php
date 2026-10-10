@@ -77,6 +77,9 @@ class PageSeeder extends Seeder implements TranslatableSeederInterface
     {
         $this->command->info('페이지 데이터 생성 중...');
 
+        // 이번 실행에서 새로 만든 페이지만 활동 로그 샘플 대상이 되도록 기록을 새로 시작한다
+        PageSampleRunRegistry::reset();
+
         // 최고 관리자 ID 조회
         $superAdminId = User::where('is_super', true)->value('id');
 
@@ -101,6 +104,8 @@ class PageSeeder extends Seeder implements TranslatableSeederInterface
                 'created_by' => $superAdminId,
                 'updated_by' => $superAdminId,
             ]);
+
+            PageSampleRunRegistry::addPage((int) $page->id);
 
             // 버전 1 스냅샷 저장
             PageVersion::create([
