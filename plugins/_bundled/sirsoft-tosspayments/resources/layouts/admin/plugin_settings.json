@@ -83,7 +83,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "pay-tosspayments-tone-warning"
                                 },
                                 "text": "$t:sirsoft-tosspayments.plugin_read_only"
                             }

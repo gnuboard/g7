@@ -14,7 +14,7 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-tosspayments.plugin_read_only</span>
+        <span class="pay-tosspayments-tone-warning">$t:sirsoft-tosspayments.plugin_read_only</span>
       </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
