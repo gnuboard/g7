@@ -15,7 +15,7 @@
           <div data-ref="date_format_option_standard" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
               <!-- 날짜를 「2026-08-04」처럼 그대로 적는 방식. 카드 아무 데나 눌러도 골라지도록 라디오가 아니라 카드에 이벤트를 달았고(라디오 자체는 클릭을 받지 않는다), 폼의 나머지 값을 잃지 않으려 두 층을 각각 펼쳐 담는다 -->
-              <set-state target="local" :hasChanges="true" form.display.date_display_format="standard"/>
+              <set-state if="{{!_computed.isReadOnly}}" target="local" :hasChanges="true" form.display.date_display_format="standard"/>
             </on>
             <input type="radio" name="display.date_display_format" value="standard" aria-label="$t:sirsoft-board.admin.settings.options.date_display_format.standard" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}">
               <on type="change">
@@ -32,7 +32,7 @@
           <div data-ref="date_format_option_relative" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
               <!-- 날짜를 「3일 전」처럼 지금과의 사이로 적는 방식 — 위 카드와 같은 짜임이고 담기는 값만 다르다 -->
-              <set-state target="local" :hasChanges="true" form.display.date_display_format="relative"/>
+              <set-state if="{{!_computed.isReadOnly}}" target="local" :hasChanges="true" form.display.date_display_format="relative"/>
             </on>
             <input type="radio" name="display.date_display_format" value="relative" aria-label="$t:sirsoft-board.admin.settings.options.date_display_format.relative" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}">
               <on type="change">

@@ -333,7 +333,7 @@
                                         "triggerLabel": "",
                                         "triggerIconName": "ellipsis-vertical",
                                         "position": "right",
-                                        "items": "{{post?.data?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.actions.edit', iconName: 'edit', disabled: !((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}, ...((post?.data?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: post?.data?.abilities?.can_manage !== true}] : []), ...((post?.data?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}]}}"
+                                        "items": "{{post?.data?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.actions.edit', iconName: 'edit', disabled: !(post?.data?.abilities?.can_write === true && (post?.data?.is_author || post?.data?.abilities?.can_manage === true))}, ...((post?.data?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: post?.data?.abilities?.can_manage !== true}] : []), ...((post?.data?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}]}}"
                                     }
                                 }
                             ]
@@ -631,11 +631,12 @@
                                     "name": "Div",
                                     "actions": [
                                         {
-                                            "comment": "첨부 내려받기 — 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
+                                            "comment": "첨부 내려받기 — 관리자 화면이라 관리자 다운로드 라우트(admin.attachments.download)로 받고, 그 권한이 없으면 실행하지 않는다(사용자 라우트를 쓰면 화면 권한과 다른 사용자 권한으로 판정됐다). 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
                                             "type": "click",
                                             "handler": "sirsoft-board.downloadAttachment",
+                                            "if": "{{post?.data?.abilities?.can_download === true}}",
                                             "params": {
-                                                "url": "{{attachment?.download_url}}",
+                                                "url": "{{'/api/modules/sirsoft-board/admin/board/' + route?.slug + '/attachments/download/' + attachment?.hash}}",
                                                 "filename": "{{attachment?.original_filename}}"
                                             },
                                             "onError": {

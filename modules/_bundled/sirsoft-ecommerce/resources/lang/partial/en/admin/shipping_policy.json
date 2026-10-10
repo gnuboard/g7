@@ -289,6 +289,7 @@
     "claim_address_recipient_name": "Recipient name",
     "claim_address_recipient_name_placeholder": "e.g. Returns desk",
     "claim_addresses_loading_notice": "Loading pickup addresses. If this notice does not go away, loading failed — reload the page. Pickup addresses cannot be edited until then.",
+    "claim_addresses_requires_update": "Return addresses are saved separately after the policy is created and require the shipping policy update permission. An administrator with that permission sets them on the policy's edit screen.",
     "claim_address_phone": "Phone",
     "claim_address_phone_placeholder": "e.g. +82-2-1234-5678",
     "claim_address_zipcode": "Postal code",

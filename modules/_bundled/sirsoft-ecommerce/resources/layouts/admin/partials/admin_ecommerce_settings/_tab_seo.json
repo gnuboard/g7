@@ -75,7 +75,8 @@
                                         "type": "text",
                                         "name": "seo.meta_category_title",
                                         "placeholder": "{commerce_name} - {category_name}",
-                                        "className": "{{_local.errors?.['seo.meta_category_title'] ? 'input input-error' : 'input'}}"
+                                        "className": "{{_local.errors?.['seo.meta_category_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -120,7 +121,8 @@
                                         "name": "seo.meta_category_description",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.category_description_placeholder",
                                         "rows": 3,
-                                        "className": "{{_local.errors?.['seo.meta_category_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"
+                                        "className": "{{_local.errors?.['seo.meta_category_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -192,7 +194,8 @@
                                         "type": "text",
                                         "name": "seo.meta_search_title",
                                         "placeholder": "{commerce_name} - {keyword_name}",
-                                        "className": "{{_local.errors?.['seo.meta_search_title'] ? 'input input-error' : 'input'}}"
+                                        "className": "{{_local.errors?.['seo.meta_search_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -237,7 +240,8 @@
                                         "name": "seo.meta_search_description",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.search_description_placeholder",
                                         "rows": 3,
-                                        "className": "{{_local.errors?.['seo.meta_search_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"
+                                        "className": "{{_local.errors?.['seo.meta_search_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -301,7 +305,8 @@
                                         "type": "text",
                                         "name": "seo.meta_product_title",
                                         "placeholder": "{commerce_name} - {product_name}",
-                                        "className": "{{_local.errors?.['seo.meta_product_title'] ? 'input input-error' : 'input'}}"
+                                        "className": "{{_local.errors?.['seo.meta_product_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -346,7 +351,8 @@
                                         "name": "seo.meta_product_description",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.product_description_placeholder",
                                         "rows": 3,
-                                        "className": "{{_local.errors?.['seo.meta_product_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"
+                                        "className": "{{_local.errors?.['seo.meta_product_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -418,7 +424,8 @@
                                         "type": "text",
                                         "name": "seo.meta_shop_index_title",
                                         "placeholder": "{commerce_name}",
-                                        "className": "{{_local.errors?.['seo.meta_shop_index_title'] ? 'input input-error' : 'input'}}"
+                                        "className": "{{_local.errors?.['seo.meta_shop_index_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -463,7 +470,8 @@
                                         "name": "seo.meta_shop_index_description",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.shop_index_description_placeholder",
                                         "rows": 3,
-                                        "className": "{{_local.errors?.['seo.meta_shop_index_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"
+                                        "className": "{{_local.errors?.['seo.meta_shop_index_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -553,7 +561,8 @@
                                                                 "type": "checkbox",
                                                                 "name": "seo.seo_category",
                                                                 "className": "checkbox",
-                                                                "checked": true
+                                                                "checked": true,
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
                                                         {
@@ -580,7 +589,8 @@
                                                                 "type": "checkbox",
                                                                 "name": "seo.seo_search_result",
                                                                 "className": "checkbox",
-                                                                "checked": true
+                                                                "checked": true,
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
                                                         {
@@ -607,7 +617,8 @@
                                                                 "type": "checkbox",
                                                                 "name": "seo.seo_product_detail",
                                                                 "className": "checkbox",
-                                                                "checked": true
+                                                                "checked": true,
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
                                                         {
@@ -634,7 +645,8 @@
                                                                 "type": "checkbox",
                                                                 "name": "seo.seo_shop_index",
                                                                 "className": "checkbox",
-                                                                "checked": true
+                                                                "checked": true,
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
                                                         {
@@ -720,6 +732,8 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "캐시 비우기는 설정 수정 권한의 일이다(서버 settings.update) — 읽기 전용이면 확인 창을 열지 않게 잠근다.",
+                                                    "id": "seo_clear_cache_button",
                                                     "type": "basic",
                                                     "name": "Button",
                                                     "actions": [
@@ -731,7 +745,8 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "btn btn-danger"
+                                                        "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache"
                                                 }

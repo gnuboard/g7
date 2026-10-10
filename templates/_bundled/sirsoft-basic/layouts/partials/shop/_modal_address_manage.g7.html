@@ -74,7 +74,8 @@
           </div>
           <!-- 수정/삭제 버튼 -->
           <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <button type="button" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            <!-- 수정·삭제는 마이페이지 배송지 목록과 같은 서버 판정(abilities)으로 보인다 — 화면이 기본 배송지 여부를 다시 해석하지 않는다. -->
+            <button data-ref="address_modal_edit_button_{{addrIdx}}" data-if="{{addr.abilities?.can_update === true}}" type="button" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               <on type="click">
                 <!-- 카드 전체가 「고르기」라 수정 버튼은 그 클릭을 막아야 한다(`stopPropagation`) — 안 그러면 고치려다 골라진다 -->
                 <set-state :stopPropagation="true" target="local" addressModalMode="form" :addressErrors="null">
@@ -99,7 +100,7 @@
               </on>
               $t:common.edit
             </button>
-            <button data-if="{{!addr.is_default}}" type="button" class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
+            <button data-ref="address_modal_delete_button_{{addrIdx}}" data-if="{{addr.abilities?.can_delete === true}}" type="button" class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
               <on type="click">
                 <!-- 기본 배송지에는 이 버튼이 없다(지우면 대체할 기본값이 없어진다). 수정과 같은 이유로 카드 클릭을 막는다. 확인 창은 액션 속성 confirm 이라 취소하면 요청이 나가지 않고, 회원 배송지 API 라 토큰을 싣는다 -->
                 <api-call :stopPropagation="true" confirm="$t:shop.checkout.address_delete_confirm" :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}" method="DELETE">

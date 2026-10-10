@@ -285,6 +285,7 @@
     "claim_address_recipient_name": "수취인명",
     "claim_address_recipient_name_placeholder": "예: 반품 담당자",
     "claim_addresses_loading_notice": "회수지 정보를 불러오는 중입니다. 이 안내가 사라지지 않으면 불러오기에 실패한 것이므로 화면을 새로고침해 주세요 — 그 전에는 회수지를 수정할 수 없습니다.",
+    "claim_addresses_requires_update": "회수지는 정책을 만든 뒤 따로 저장되며 배송정책 수정 권한이 필요합니다. 권한이 있는 관리자가 등록된 정책의 수정 화면에서 설정합니다.",
     "claim_address_phone": "연락처",
     "claim_address_phone_placeholder": "예: 02-1234-5678",
     "claim_address_zipcode": "우편번호",

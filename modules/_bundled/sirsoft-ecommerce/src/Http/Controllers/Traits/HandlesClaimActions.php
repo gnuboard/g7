@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Traits;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -27,6 +28,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
@@ -52,6 +54,9 @@ trait HandlesClaimActions
      * @return array{user_id: ?int, guest_order: ?Order} 열람자
      */
     abstract protected function viewer(): array;
+
+    /** 즉시 취소 분기에 필요한 권한 — 종전 [주문 취소] 경로(`user/orders/{id}/cancel`)와 같은 식별자 */
+    private const PERMISSION_INSTANT_CANCEL = 'sirsoft-ecommerce.user-orders.cancel';
 
     /**
      * 클레임 서비스를 반환합니다.
@@ -99,6 +104,12 @@ trait HandlesClaimActions
                     $payload['reasons'],
                 ),
                 'settings' => $payload['settings'],
+                // 신청 버튼을 잠그는 키 — 즉시 취소 분기(`refund_branch = auto`)는 주문 취소 권한, 심사 분기·반품·교환은
+                // 신청 권한이다. 서버가 같은 기준으로 403 을 낸다(`respondStoreRefund()`). 비회원은 guest 역할로 판정한다.
+                'abilities' => [
+                    'can_cancel' => PermissionHelper::check(self::PERMISSION_INSTANT_CANCEL),
+                    'can_request' => PermissionHelper::check('sirsoft-ecommerce.user-claims.request'),
+                ],
                 // 접수 뒤 자동으로 끝나는지(P16·P17) — 분기와 다른 축이라 따로 싣는다.
                 'refund_auto_approved' => $payload['refund_auto_approved'],
                 // 등록 계좌 프리필은 **가린 모양**으로 싣는다 — 이 응답은 회원 본인뿐 아니라 비회원 조회
@@ -201,7 +212,16 @@ trait HandlesClaimActions
     protected function respondStoreRefund(StoreRefundRequestRequest $request): JsonResponse
     {
         try {
-            $result = $this->claims()->requestRefund($request->getOrder(), $request->toServicePayload(), $request->imageIds());
+            $payload = $request->toServicePayload();
+
+            // 즉시 취소 분기는 종전 [주문 취소]와 같은 일이다 — 라우트의 신청 권한에 더해 주문 취소 권한도 본다.
+            // 이 검사가 없으면 주문 취소 권한을 거둔 회원·비회원이 신청 화면으로 배송 전 주문을 그대로 취소한다.
+            if ($this->claims()->refundBranchFor($request->getOrder(), $payload['items']) === OrderRefundRequestService::BRANCH_AUTO
+                && ! PermissionHelper::check(self::PERMISSION_INSTANT_CANCEL)) {
+                return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.claims.instant_cancel_forbidden', 403);
+            }
+
+            $result = $this->claims()->requestRefund($request->getOrder(), $payload, $request->imageIds());
 
             if ($result['refund'] === null) {
                 $cancel = $result['cancel']->fresh(['cancelOptions.orderOption', 'refund', 'order']);

@@ -510,6 +510,7 @@ _목록 응답: `data` 배열의 각 항목은 [ClaimResource](#claim-resource)(
 - **라우트명**: `api.modules.sirsoft-ecommerce.user.claims.show`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@show`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.read`
+- **권한 메모(1.3.0)**: `claim.is_withdrawable`·`claim.is_editable` 은 각 권한(`user-claims.withdraw`·`user-claims.request`)을 함께 반영하고, `claim.can_pay` 는 `user-claims.pay` 다.
 
 **요청 파라미터**
 

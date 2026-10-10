@@ -53,7 +53,8 @@ afterEach(() => {
 async function mount(local: Record<string, unknown>) {
   utils = createLayoutTest({ version: '1.0.0', layout_name: 'escrow_register', components: [registerButton] } as any, {
     initialState: { _local: local },
-    initialData: { payment: { transaction_id: 'TID-1' }, route: { orderNumber: 'ORD-1' } },
+    // 등록 버튼은 호스트 주문 응답의 주문 수정 권한(abilities.can_update)으로도 잠긴다(7.1.0 G04) — 권한이 있는 관리자 맥락으로 띄운다
+    initialData: { payment: { transaction_id: 'TID-1' }, route: { orderNumber: 'ORD-1' }, order: { data: { abilities: { can_update: true } } } },
     routeParams: { orderNumber: 'ORD-1' },
   });
   const { container } = await utils.render();

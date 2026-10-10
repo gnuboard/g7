@@ -15,7 +15,9 @@
     <field name="selectedItems" :value="[]"/>
     <field name="selectAll" :value="false"/>
   </init-local>
-  <permissions/>
+  <permissions>
+    <permission>sirsoft-ecommerce.mileage.read</permission>
+  </permissions>
   <slot name="content">
     <div data-ref="deposit_content" class="admin-page-content">
       <div data-ref="page_header" class="flex-start justify-between mb-6">

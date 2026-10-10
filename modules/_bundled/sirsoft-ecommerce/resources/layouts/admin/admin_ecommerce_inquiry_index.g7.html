@@ -289,8 +289,8 @@
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="reply" label="$t:sirsoft-ecommerce.admin.inquiries.actions.reply" iconName="comment"/>
-          <item id="delete" label="$t:sirsoft-ecommerce.admin.inquiries.actions.delete" iconName="trash"/>
+          <item id="reply" label="$t:sirsoft-ecommerce.admin.inquiries.actions.reply" iconName="comment" disabledField="abilities.can_reply"/>
+          <item id="delete" label="$t:sirsoft-ecommerce.admin.inquiries.actions.delete" iconName="trash" disabledField="abilities.can_delete"/>
           <item id="go_to_member" label="$t:sirsoft-ecommerce.admin.inquiries.actions.view_member" iconName="user"/>
         </prop>
         <on type="change" event="onSelectionChange">
@@ -400,7 +400,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" data-testid="admin-inquiries-reply-submit" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.replying_inquiries || !(_global.replyContent_inquiries || '').trim()}}">
+        <button type="button" data-testid="admin-inquiries-reply-submit" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.replying_inquiries || !(_global.replyContent_inquiries || '').trim() || inquiries?.data?.abilities?.can_reply !== true}}">
           <on type="click">
             <!-- 등록 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 답변이 두 번 달린다 -->
             <set-state target="global" :replying_inquiries="true"/>

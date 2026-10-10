@@ -162,11 +162,11 @@
         <!-- 다크모드 전환 -->
         <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
         <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
-        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" dropdownAlign="right">
+        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
           <on event="onClose">
             <!-- 드로어 알림 드롭다운을 닫을 때 그 사이 노출된 알림들을 일괄 읽음 처리한다 — 항목을 누르지 않고 훑어본 것도 읽은 것으로 본다. 배지만 다시 받고 목록은 그대로 둔다. -->
             <sequence>
-              <api-call :auth_required="true" target="/api/user/notifications/read-batch" method="POST">
+              <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-batch" method="POST">
                 <success>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
                 </success>
@@ -181,7 +181,7 @@
             <!-- 모바일 알림 클릭 — 이동과 읽음 처리를 병렬로 낸다(데스크톱 헤더는 읽음을 끝낸 뒤 이동하는 순차). url 이 없는 알림은 알림함으로 보낸다. -->
             <parallel>
               <navigate path="{{$args[0].url ?? '/mypage/notifications'}}"/>
-              <api-call :auth_required="true" target="/api/user/notifications/{{$args[0].id}}/read" method="PATCH">
+              <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}/read" method="PATCH">
                 <success>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
                 </success>
@@ -194,7 +194,7 @@
           <on event="onMarkAllRead">
             <!-- 모바일 전체 읽음 — 목록이 미읽음 필터로 걸려 있으면 비워져야 하므로 배지만이 아니라 목록도 페이지 상태를 되돌린 뒤 다시 받는다. -->
             <sequence>
-              <api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST">
+              <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-all" method="POST">
                 <success>
                   <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
                   <refetch-data-source dataSourceId="notifications"/>
@@ -216,7 +216,7 @@
           </on>
           <on event="onDelete">
             <!-- 알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다. -->
-            <api-call :auth_required="true" target="/api/user/notifications/{{$args[0].id}}" method="DELETE">
+            <api-call if="{{notifications?.data?.abilities?.can_delete === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}" method="DELETE">
               <success>
                 <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null"/>
                 <refetch-data-source dataSourceId="notifications"/>
@@ -228,7 +228,8 @@
             </api-call>
           </on>
           <on event="onDeleteAll">
-            <open-modal target="notification_delete_all_confirm_modal"/>
+            <!-- 「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부) -->
+            <open-modal if="{{notifications?.data?.abilities?.can_delete === true}}" target="notification_delete_all_confirm_modal"/>
           </on>
           <on event="onLoadMore">
             <!-- 더 보기 — 다음 페이지를 받아 기존 목록 뒤에 이어 붙인다(refetch 로 받으면 앞 페이지가 날아간다). 실패해도 로딩 표시는 반드시 내린다. -->
@@ -581,12 +582,12 @@
       </div>
     </div>
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
-    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}">
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
         <sequence>
-          <api-call :auth_required="true" target="/api/user/notifications/read-batch" method="POST">
+          <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-batch" method="POST">
             <success>
               <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
               <refetch-data-source dataSourceId="notifications"/>
@@ -603,7 +604,7 @@
       <on event="onNotificationClick">
         <!-- 데스크톱 알림 클릭 — 읽음 처리를 먼저 내고 url 이 있을 때만 이동한다. url 없는 알림은 그 자리에 머문다(모바일은 알림함으로 보내는 병렬 흐름). -->
         <sequence>
-          <api-call :auth_required="true" target="/api/user/notifications/{{$args[0].id}}/read" method="PATCH">
+          <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}/read" method="PATCH">
             <success>
               <refetch-data-source dataSourceId="notification_unread_count"/>
             </success>
@@ -617,7 +618,7 @@
       <on event="onNotificationMarkAllRead">
         <!-- 데스크톱 전체 읽음 — 미읽음 필터가 걸려 있으면 목록이 비워져야 하므로 페이지 상태를 되돌린 뒤 목록·배지를 다시 받는다. -->
         <sequence>
-          <api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST">
+          <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-all" method="POST">
             <success>
               <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
               <refetch-data-source dataSourceId="notifications"/>
@@ -639,7 +640,7 @@
       </on>
       <on event="onNotificationDelete">
         <!-- 데스크톱 알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다. -->
-        <api-call :auth_required="true" target="/api/user/notifications/{{$args[0].id}}" method="DELETE">
+        <api-call if="{{notifications?.data?.abilities?.can_delete === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}" method="DELETE">
           <success>
             <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null"/>
             <refetch-data-source dataSourceId="notifications"/>
@@ -651,7 +652,8 @@
         </api-call>
       </on>
       <on event="onNotificationDeleteAll">
-        <open-modal target="notification_delete_all_confirm_modal"/>
+        <!-- 「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부) -->
+        <open-modal if="{{notifications?.data?.abilities?.can_delete === true}}" target="notification_delete_all_confirm_modal"/>
       </on>
       <on event="onNotificationLoadMore">
         <!-- 데스크톱 더 보기 — 다음 페이지를 이어 붙인다. 모바일과 달리 현재 미읽음 필터를 질의에 함께 실어 필터가 걸린 목록에서도 같은 조건으로 이어진다. -->

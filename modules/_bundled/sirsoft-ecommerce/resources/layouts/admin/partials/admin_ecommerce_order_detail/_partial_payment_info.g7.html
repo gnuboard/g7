@@ -19,7 +19,8 @@
           </div>
           <!-- 무통장 입금확인 버튼 — 무통장(dbank) + 결제정보 자체가 미입금(payment_status=ready/waiting_deposit)인 결제건만 노출. order_status 가 아닌 payment 단위 상태로 판정해야 함(버튼이 payments 반복 내 결제카드 단위로 그려지고, order_status 가 다른 경로로 먼저 결제완료로 전이돼도 미입금 결제는 입금확인이 필요하므로). -->
           <div data-if="{{payment.payment_method === 'dbank' &amp;&amp; (payment.payment_status === 'ready' || payment.payment_status === 'waiting_deposit')}}" class="mb-4">
-            <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
+            <!-- 결제완료로 바꾸는 쓰기라 주문 수정 권한(can_update)으로 잠근다 — 서버도 같은 권한으로 403 을 낸다. -->
+            <button data-ref="payment_confirm_deposit_button_{{payIdx}}" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.openConfirmDepositModal"/>
               </on>
@@ -214,7 +215,7 @@
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.view_receipt
             </a>
             <!-- 입금완료 + 미발급 + 재발급 실패 이력 없음 → 신규 발급. 실패 이력이 있으면 복구 경로는 수동 재발급이므로 두 버튼을 함께 띄우지 않는다. -->
-            <button data-ref="payment_cash_receipt_issue_button_{{payIdx}}" data-if="{{payment?.payment_status === 'paid' &amp;&amp; !order.data?.cash_receipt &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white">
+            <button data-ref="payment_cash_receipt_issue_button_{{payIdx}}" data-if="{{payment?.payment_status === 'paid' &amp;&amp; !order.data?.cash_receipt &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
               <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"/>
               <on type="click">
                 <sequence>
@@ -225,7 +226,7 @@
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue
             </button>
             <!-- 수동 재발급 — 관리자 전용. 취소 성공 + 재발급 실패 중간 상태 복구 (recoverFailedIssue) -->
-            <button data-ref="payment_cash_receipt_reissue_button_{{payIdx}}" data-if="{{!order.data?.cash_receipt &amp;&amp; (order.data?.cash_receipts ?? []).length > 0 &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white" disabled="{{_global.isCashReceiptBusy === true}}">
+            <button data-ref="payment_cash_receipt_reissue_button_{{payIdx}}" data-if="{{!order.data?.cash_receipt &amp;&amp; (order.data?.cash_receipts ?? []).length > 0 &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}">
               <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white"/>
               <on type="click">
                 <!-- 요청 중에는 잠근다 — 두 번 누르면 결제사 재발급이 두 번 나간다(S3-D22). -->
@@ -248,7 +249,7 @@
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue
             </button>
             <!-- 발급취소 — 관리자 전용 (유저 화면에는 이 버튼이 없다) -->
-            <button data-ref="payment_cash_receipt_cancel_button_{{payIdx}}" data-if="{{!!order.data?.cash_receipt}}" disabled="{{_global.isCashReceiptBusy === true}}" type="button" class="px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+            <button data-ref="payment_cash_receipt_cancel_button_{{payIdx}}" data-if="{{!!order.data?.cash_receipt}}" disabled="{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}" type="button" class="px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"/>
               <on type="click">
                 <!-- 결제사 취소는 되돌릴 수 없다 — 확인을 받고, 요청 중에는 잠근다(S3-D22). 확인을 취소하면 순차 동작 전체가 서지 않는다. -->

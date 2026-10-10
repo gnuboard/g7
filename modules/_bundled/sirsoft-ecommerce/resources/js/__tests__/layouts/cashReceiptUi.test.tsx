@@ -788,8 +788,11 @@ describe('W-3 관리자 발급 모달', () => {
         const submit = byId(issueModal, 'modal_cash_receipt_submit');
         const expr = String(submit.props.disabled).slice(2, -2);
 
-        expect(engine.evaluateExpression(expr, { _global: { adminCashReceiptForm: { identifier: '' } } })).toBe(true);
-        expect(engine.evaluateExpression(expr, { _global: { adminCashReceiptForm: { identifier: '01012345678' } } })).toBe(false);
+        // 7.1.0 G05 — 발급은 주문 수정 권한(order.data.abilities.can_update)도 본다. 권한이 있는 문맥에서 번호 유무만 가른다.
+        const order = { data: { abilities: { can_update: true } } };
+        expect(engine.evaluateExpression(expr, { order, _global: { adminCashReceiptForm: { identifier: '' } } })).toBe(true);
+        expect(engine.evaluateExpression(expr, { order, _global: { adminCashReceiptForm: { identifier: '01012345678' } } })).toBe(false);
+        expect(engine.evaluateExpression(expr, { order: { data: { abilities: { can_update: false } } }, _global: { adminCashReceiptForm: { identifier: '01012345678' } } })).toBe(true);
     });
 
     /**

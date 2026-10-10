@@ -18,7 +18,9 @@
         "perPage": 10,
         "expandedRows": []
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.orders.read"
+    ],
     "slots": {
         "content": [
             {

@@ -30,9 +30,9 @@ use Modules\Sirsoft\Page\Http\Controllers\User\PublicPageController;
 |
 */
 Route::prefix('admin/pages')->middleware(['auth:sanctum', 'throttle:600,1'])->name('admin.pages.')->group(function () {
-    // 슬러그 중복 확인 (/{page} 보다 먼저 등록)
+    // 슬러그 중복 확인 (/{page} 보다 먼저 등록) — 등록 화면과 수정 화면 모두 쓰므로 등록·수정 어느 권한으로도(OR)
     Route::post('/check-slug', [PageController::class, 'checkSlug'])
-        ->middleware('permission:admin,sirsoft-page.pages.create')
+        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
         ->name('check-slug');
 
     // 일괄 발행/미발행 (/{page} 보다 먼저 등록)
@@ -101,9 +101,10 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
         ->middleware('permission:admin,sirsoft-page.pages.read')
         ->name('settings');
 
-    // 첨부파일 업로드
+    // 첨부파일 업로드 — 등록 화면(임시 첨부)과 수정 화면(page_id) 모두 쓰므로 등록·수정 어느 권한으로도(OR).
+    // page_id 를 붙이면 서비스가 그 페이지의 수정 권한·스코프를 다시 본다
     Route::post('/', [PageAttachmentController::class, 'upload'])
-        ->middleware('permission:admin,sirsoft-page.pages.create')
+        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
         ->name('upload');
 
     // 첨부파일 순서 변경
@@ -111,9 +112,10 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
         ->middleware('permission:admin,sirsoft-page.pages.update')
         ->name('reorder');
 
-    // 첨부파일 삭제
+    // 첨부파일 삭제 — 등록 화면의 임시 첨부(올린 사람만)와 수정 화면의 연결 첨부(수정 권한 + 부모 페이지 스코프)를
+    // 서비스가 갈라 판정하므로 라우트는 등록·수정 어느 권한으로도(OR)
     Route::delete('/{id}', [PageAttachmentController::class, 'destroy'])
-        ->middleware('permission:admin,sirsoft-page.pages.update')
+        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
         ->name('destroy');
 });
 

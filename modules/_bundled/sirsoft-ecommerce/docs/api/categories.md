@@ -302,7 +302,8 @@ HTTP/1.1 201
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.categories.images.upload-temp -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.categories.images.upload-temp`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController@uploadImage`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.categories.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.categories.create|sirsoft-ecommerce.categories.update`
+- **권한 메모(1.3.0)**: 임시 업로드는 등록 화면도 쓰므로 `categories.create` 또는 `categories.update`(OR) 로 판정한다.
 
 **요청 파라미터**
 

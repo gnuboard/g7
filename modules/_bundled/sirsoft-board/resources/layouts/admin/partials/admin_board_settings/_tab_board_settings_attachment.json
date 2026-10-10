@@ -78,7 +78,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -154,7 +155,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_size')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_size')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -251,7 +253,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_count')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_count')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -348,7 +351,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {

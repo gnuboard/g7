@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
@@ -204,6 +205,9 @@ class CheckoutController extends PublicBaseController
                 $result['unavailable_items'] ?? []
             );
 
+            // [결제하기] 를 잠그는 키 — 주문 생성(`POST user/orders`)의 라우트 권한과 같다(비회원은 guest 역할로 판정).
+            $responseData['abilities'] = ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')];
+
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.fetched', $responseData);
         } catch (Exception $e) {
             Log::error('Checkout show error', [
@@ -277,6 +281,9 @@ class CheckoutController extends PublicBaseController
                 $tempOrder->calculation_result,
                 $userId
             );
+
+            // 화면이 주문서 데이터를 이 응답으로 통째로 바꾸므로 조회(show)와 같은 [결제하기] 권한 키를 싣는다
+            $responseData['abilities'] = ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')];
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.updated', $responseData);
         } catch (TempOrderNotFoundException $e) {

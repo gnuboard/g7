@@ -48,7 +48,7 @@
 
 - **라우트명**: `api.plugins.sirsoft-pay_nicepayments.vbank.refund`
 - **컨트롤러**: `Plugins\Sirsoft\PayNicepayments\Controllers\AdminVbankRefundController@refund`
-- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.orders.update`
+- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.claims.execute-refund`
 
 입금이 완료된 가상계좌는 일반 환불 훅으로 처리할 수 없다 — 나이스페이먼츠가 환불받을 계좌 정보(계좌번호·은행코드·예금주)를 요구하기 때문이다. 이 경로가 해당 정보를 수집해 취소 API 를 호출하고 주문 취소·결제 상태 반영까지 수행한다.
 
@@ -95,3 +95,6 @@ Content-Type: application/json
 | 404 | 주문번호에 해당하는 주문 없음 |
 | 409 | 동일 건 환불이 이미 처리 중 |
 | 502 | PG 취소 API 실패 또는 취소 후 주문 반영 실패 (서버 로그에 원문 기록) |
+
+**설명** 7.1.0 부터 PG 취소와 주문 취소까지 하므로 「환불 실행」 권한(`sirsoft-ecommerce.claims.execute-refund`)이 필요합니다.
+

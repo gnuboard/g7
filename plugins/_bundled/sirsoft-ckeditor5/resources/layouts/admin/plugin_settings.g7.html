@@ -4,12 +4,17 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
   <meta title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description"/>
   <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
   <data-source id="settings" label_key="$t:sirsoft-ckeditor5.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-ckeditor5.plugin_read_only</span>
+      </div>
       <div data-ref="notice_banner" class="alert-info">
         <div class="flex-center gap-3">
           <icon name="circle-info" size="lg" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
@@ -38,7 +43,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.toolbar.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <select name="toolbar" class="focus:border-transparent">
+              <select name="toolbar" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}">
                 <option value="minimal">$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal</option>
                 <option value="standard">$t:sirsoft-ckeditor5.settings.fields.toolbar.standard</option>
                 <option value="full">$t:sirsoft-ckeditor5.settings.fields.toolbar.full</option>
@@ -51,7 +56,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.editor_height.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="number" name="editorHeight" class="focus:border-transparent"/>
+              <input type="number" name="editorHeight" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
@@ -67,7 +72,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_upload.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <toggle data-type="composite" name="imageUpload"/>
+              <toggle data-type="composite" name="imageUpload" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_image_max_size" class="grid-3col-responsive">
@@ -76,7 +81,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_max_size.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="number" name="imageMaxSizeMb" class="focus:border-transparent"/>
+              <input type="number" name="imageMaxSizeMb" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_public_asset_disk" class="grid-3col-responsive">
@@ -85,7 +90,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <select name="public_asset_disk" class="w-full" options="{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"/>
+              <select name="public_asset_disk" class="w-full" options="{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}" disabled="{{_computed.isPluginReadOnly}}"/>
               <!-- 쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다 -->
               <p data-if="{{!!_local.form?.public_asset_disk_unavailable}}" role="status" class="text-warning-soft mt-2">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}</p>
             </div>
@@ -103,7 +108,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.toggle_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <toggle data-type="composite" name="unusedImageCleanup"/>
+              <toggle data-type="composite" name="unusedImageCleanup" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_unused_image_retention_days" class="grid-3col-responsive">
@@ -112,7 +117,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.retention_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="number" name="unusedImageRetentionDays" :min="1" class="focus:border-transparent"/>
+              <input type="number" name="unusedImageRetentionDays" :min="1" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
           <div data-ref="cleanup_manual_hint" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 space-y-3">
@@ -153,7 +158,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
           <extension-point name="html_editor" data-ref="preview_editor" content="" placeholder="$t:sirsoft-ckeditor5.settings.preview_placeholder" :multilingual="true" :trackChanges="false">
             <prop name="name">"preview_content"</prop>
             <default>
-              <html-editor data-type="composite" name="preview_content" content="{{extensionPointProps.content ?? ''}}" multilingual="{{extensionPointProps.multilingual ?? false}}" placeholder="{{extensionPointProps.placeholder ?? ''}}" :isHtml="true" :rows="15" :showHtmlModeToggle="false"/>
+              <html-editor data-type="composite" name="preview_content" content="{{extensionPointProps.content ?? ''}}" multilingual="{{extensionPointProps.multilingual ?? false}}" placeholder="{{extensionPointProps.placeholder ?? ''}}" :isHtml="true" :rows="15" :showHtmlModeToggle="false" disabled="{{_computed.isPluginReadOnly}}"/>
             </default>
           </extension-point>
         </div>
@@ -165,7 +170,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 미리보기 편집기(preview_editor)는 props.name 이 preview_content 라 폼 자동바인딩으로 _local.form 에 쌓인다. 저장 대상이 아니므로 body 에서 제외한다 — 그대로 두면 운영자가 미리보기에 입력한 내용이 플러그인 설정으로 저장된다. 표현식 평가기는 구조분해 rest(const { a, ...rest } = obj)와 콜백 안의 멤버 대입(out[k] = v)을 지원하지 않는다 — 쓰면 식이 평가되지 않고 원문 문자열이 그대로 body 로 전송된다(오류 없이 200 이 떨어져 드러나지 않는다). Object.entries/filter/fromEntries 조합만 사용할 것(브라우저 실측으로 확인). 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 성공하면 전역 플러그인 설정까지 갱신하고 미리보기 에디터를 다시 마운트한다 — 툴바 구성은 에디터 생성 시점에 굳어 새로 만들지 않으면 바뀐 설정이 미리보기에 반영되지 않는다. -->
             <sequence>

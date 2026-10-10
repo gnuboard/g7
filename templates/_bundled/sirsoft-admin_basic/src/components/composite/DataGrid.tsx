@@ -1201,6 +1201,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
         }
         return {
           ...action,
+          // 해석을 마쳤으므로 지운다 — ActionMenu 는 남아 있는 disabledField 를 「해석 안 됨」으로 보고 잠근다
+          disabledField: undefined,
           disabled: isDisabled,
           onClick: () => handleRowAction(action.id, row),
         };

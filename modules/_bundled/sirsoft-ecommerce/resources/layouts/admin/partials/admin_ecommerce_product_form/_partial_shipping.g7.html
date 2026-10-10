@@ -22,7 +22,7 @@
         </a>
       </div>
       <div data-ref="use_default_shipping_toggle" class="flex-center gap-3">
-        <toggle data-type="composite" name="use_default_shipping" checked="{{_local.ui.useDefaultShippingPolicy ?? true}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+        <toggle data-type="composite" name="use_default_shipping" checked="{{_local.ui.useDefaultShippingPolicy ?? true}}" disabled="{{_computed.isReadOnly}}">
           <on type="change">
             <!-- 기본 정책 쓰기 전환 — 켜면 기본 정책 id 를 폼에 다시 심어야 하므로 화면 상태만 바꾸지 않고 핸들러에 맡긴다 -->
             <action handler="sirsoft-ecommerce.toggleDefaultShippingPolicy" checked="{{$event.target.checked}}"/>
@@ -32,7 +32,7 @@
       </div>
       <div data-ref="shipping_policy_buttons_pc" class="{{_local.errors?.shipping_policy_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}">
         <responsive on="portable" data-if="{{false}}"/>
-        <button data-each="policy, policyIdx in {{_computed.shippingPolicyOptions ?? []}}" type="button" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium flex-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.ui.useDefaultShippingPolicy ?? true) || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+        <button data-each="policy, policyIdx in {{_computed.shippingPolicyOptions ?? []}}" type="button" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium flex-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.ui.useDefaultShippingPolicy ?? true) || _computed.isReadOnly}}">
           <on type="click">
             <!-- 넓은 화면용 정책 고르기 -->
             <set-state target="local" form.shipping_policy_id="{{policy.id}}"/>
@@ -43,7 +43,7 @@
       </div>
       <div data-ref="shipping_policy_buttons_mobile" class="{{_local.errors?.shipping_policy_id ? 'grid grid-cols-2 gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'grid grid-cols-2 gap-2'}}">
         <responsive on="desktop" data-if="{{false}}"/>
-        <button data-each="policy, policyIdx in {{_computed.shippingPolicyOptions ?? []}}" type="button" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}} px-3 py-2.5 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.ui.useDefaultShippingPolicy ?? true) || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+        <button data-each="policy, policyIdx in {{_computed.shippingPolicyOptions ?? []}}" type="button" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}} px-3 py-2.5 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.ui.useDefaultShippingPolicy ?? true) || _computed.isReadOnly}}">
           <on type="click">
             <!-- 좁은 화면용 정책 고르기 — 위 목록과 같은 값을 다른 배치로 세운 것이다 -->
             <set-state target="local" form.shipping_policy_id="{{policy.id}}"/>

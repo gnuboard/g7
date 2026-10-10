@@ -98,10 +98,10 @@ class PluginController extends AdminBaseController
                     'per_page' => $result['per_page'],
                 ],
                 'meta' => $collection->with($request)['meta'],
-                'abilities' => [
-                    'can_install' => PermissionHelper::check('core.plugins.install', $request->user()),
-                    'can_activate' => PermissionHelper::check('core.plugins.activate', $request->user()),
-                    'can_uninstall' => PermissionHelper::check('core.plugins.uninstall', $request->user()),
+                'abilities' => $collection->resolveCollectionAbilities($request) + [
+                    // 카드 「언어팩 관리」는 다른 화면(언어팩)으로 가는 이동이라 그 화면의 조회 권한을 따로 싣는다 —
+                    // 목록 리소스의 abilityMap 에 섞으면 능력 플래그가 서로 다른 리소스를 가리키게 된다.
+                    'can_view_language_packs' => PermissionHelper::check('core.language_packs.read', $request->user()),
                 ],
             ]);
         } catch (\Exception $e) {
@@ -196,6 +196,18 @@ class PluginController extends AdminBaseController
             $vendorMode = VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
+
+            // 동반 설치 항목마다 그 종류의 설치·활성화 권한을 먼저 확인한다 (설치 창 can_select 와 같은 판정)
+            $denied = $this->findUnauthorizedCascadeSelection(
+                $validated['dependencies'] ?? [],
+                $validated['language_packs'] ?? []
+            );
+            if ($denied !== null) {
+                return $this->forbidden('extensions.errors.cascade_permission_denied', [
+                    'type' => __('extensions.cascade_types.'.$denied['type']),
+                    'identifier' => $denied['identifier'],
+                ]);
+            }
 
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             $this->installSelectedDependencies($validated['dependencies'] ?? []);

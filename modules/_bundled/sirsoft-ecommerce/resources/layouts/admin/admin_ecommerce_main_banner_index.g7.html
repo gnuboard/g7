@@ -13,7 +13,9 @@
       <field name="banner_2" :value="false"/>
     </field>
   </init-local>
-  <permissions/>
+  <permissions>
+    <permission>sirsoft-ecommerce.settings.read</permission>
+  </permissions>
   <slot name="content">
     <div data-ref="main_banner_content" class="admin-page-content">
       <responsive on="portable" class="admin-page-content-compact"/>

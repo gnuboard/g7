@@ -127,7 +127,9 @@
       "title": "환불 우선순위",
       "pg_first": "PG 우선 환불",
       "points_first": "마일리지 우선 환불"
-    }
+    },
+    "no_request_permission": "신청 권한이 없어 취소·반품·교환을 신청할 수 없습니다. 판매자에게 문의해 주세요.",
+    "no_cancel_permission": "주문 취소 권한이 없어, 바로 취소되는 상품(결제완료 이전)은 신청할 수 없습니다. 판매자에게 문의해 주세요."
   },
   "change_product": {
     "title": "교환상품 변경",

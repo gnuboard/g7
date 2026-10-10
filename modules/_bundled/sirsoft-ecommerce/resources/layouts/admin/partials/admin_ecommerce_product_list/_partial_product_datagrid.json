@@ -199,7 +199,7 @@
                         "id": "copy",
                         "label": "$t:sirsoft-ecommerce.admin.product.action.copy",
                         "iconName": "fa-regular fa-copy",
-                        "disabledField": "abilities.can_update"
+                        "disabled": "{{products?.data?.abilities?.can_create !== true}}"
                     },
                     {
                         "id": "divider",

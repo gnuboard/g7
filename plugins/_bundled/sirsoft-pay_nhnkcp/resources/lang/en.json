@@ -181,7 +181,8 @@
             "category_pc": "PC",
             "category_mobile": "Mobile",
             "auto_fixed": "Auto-fixed",
-            "action_required": "↓ Action required"
+            "action_required": "↓ Action required",
+            "forbidden": "You do not have permission to view the system check. It requires the e-commerce settings view or plugin settings update permission."
         }
     },
     "easy_pay": {
@@ -196,5 +197,6 @@
             "applepay_ios_only": "Apple Pay is available only for mobile payments on iOS devices.",
             "method_missing": "The payment method is missing, so the payment cannot continue. Please reopen the order form."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

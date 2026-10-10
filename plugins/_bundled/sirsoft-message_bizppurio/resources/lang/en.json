@@ -307,5 +307,7 @@
             "P2": "Personal info",
             "P3": "One-click pay"
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only.",
+    "messaging_read_only": "You do not have permission to manage AlimTalk templates, so register, inspection request, and delete buttons are locked."
 }

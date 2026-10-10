@@ -71,7 +71,10 @@
               "enabled": false,
               "is_system": false
             }
-          ]
+          ],
+          "abilities": {
+            "can_update": true
+          }
         }
       }
     }

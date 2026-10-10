@@ -22,6 +22,14 @@
                 "_merge": "deep",
                 "form": "settings"
             },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
             "comment": "현재 설정값. 폼에 깊은 병합으로 실어 화면에서 만진 값과 서버 값이 항목 단위로 합쳐지게 한다"
         },
         {
@@ -207,7 +215,8 @@
         }
     ],
     "computed": {
-        "isNotificationReadOnly": "{{gdprNotificationDefinitions?.data?.abilities?.can_update !== true}}"
+        "isNotificationReadOnly": "{{gdprNotificationDefinitions?.data?.abilities?.can_update !== true}}",
+        "isPluginReadOnly": "{{gdprSettings?.data?.abilities?.can_update !== true}}"
     },
     "permissions": [
         "core.plugins.update"
@@ -280,6 +289,34 @@
                                                     "backPath": "/admin/plugins",
                                                     "backLabel": "$t:admin.plugins.back_to_list"
                                                 }
+                                            },
+                                            {
+                                                "id": "plugin_read_only_banner",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{_computed.isPluginReadOnly && !!gdprSettings?.data}}",
+                                                "props": {
+                                                    "role": "status",
+                                                    "className": "alert-warning mt-6"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "lock",
+                                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-warning-soft"
+                                                        },
+                                                        "text": "$t:sirsoft-gdpr.plugin_read_only"
+                                                    }
+                                                ]
                                             }
                                         ]
                                     },
@@ -492,7 +529,8 @@
                                                                     "type": "text",
                                                                     "name": "legal_entity_name",
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.legal_entity_name.placeholder",
-                                                                    "className": "{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
+                                                                    "className": "{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -556,7 +594,8 @@
                                                                     "type": "text",
                                                                     "name": "data_storage_location",
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.data_storage_location.placeholder",
-                                                                    "className": "{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
+                                                                    "className": "{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -621,7 +660,8 @@
                                                                     "type": "text",
                                                                     "name": "privacy_policy_url",
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.privacy_policy_url.placeholder",
-                                                                    "className": "{{_local.errors?.['privacy_policy_url'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
+                                                                    "className": "{{_local.errors?.['privacy_policy_url'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -753,7 +793,8 @@
                                                                 "type": "composite",
                                                                 "name": "Toggle",
                                                                 "props": {
-                                                                    "name": "banner_enabled"
+                                                                    "name": "banner_enabled",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -806,6 +847,7 @@
                                                                 "props": {
                                                                     "name": "banner_position",
                                                                     "className": "w-full",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}",
                                                                     "options": [
                                                                         {
                                                                             "value": "bottom_bar",
@@ -1065,7 +1107,8 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 border border-gray-900 dark:border-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                                                                            "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 border border-gray-900 dark:border-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors",
+                                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                         },
                                                                                         "children": [
                                                                                             {
@@ -2024,6 +2067,7 @@
                                                                             {
                                                                                 "type": "change",
                                                                                 "handler": "setState",
+                                                                                "if": "{{!_computed.isPluginReadOnly}}",
                                                                                 "params": {
                                                                                     "target": "local",
                                                                                     "form.blocked_domains": "{{({...(_local.form?.blocked_domains ?? {}), [category.key]: ($event?.target?.value ?? [])})}}",
@@ -2036,7 +2080,8 @@
                                                                             "options": "{{((gdprSettings?.data?.default_blocked_domains_preview?.[category.key]) ?? []).map(d => ({ value: d, label: d }))}}",
                                                                             "creatable": true,
                                                                             "placeholder": "$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_input_placeholder",
-                                                                            "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_no_options"
+                                                                            "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_no_options",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     },
                                                                     {
@@ -2373,6 +2418,7 @@
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.necessary_storage_allowlist": "{{({...(_local.form?.necessary_storage_allowlist ?? {}), localStorage: ($event?.target?.value ?? [])})}}",
@@ -2385,7 +2431,8 @@
                                                                     "options": "{{((gdprSettings?.data?.default_necessary_allowlist_preview?.localStorage) ?? []).map(k => ({ value: k, label: k }))}}",
                                                                     "creatable": true,
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder",
-                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options"
+                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -2590,6 +2637,7 @@
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.necessary_storage_allowlist": "{{({...(_local.form?.necessary_storage_allowlist ?? {}), sessionStorage: ($event?.target?.value ?? [])})}}",
@@ -2602,7 +2650,8 @@
                                                                     "options": "{{((gdprSettings?.data?.default_necessary_allowlist_preview?.sessionStorage) ?? []).map(k => ({ value: k, label: k }))}}",
                                                                     "creatable": true,
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder",
-                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options"
+                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -2807,6 +2856,7 @@
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.necessary_storage_allowlist": "{{({...(_local.form?.necessary_storage_allowlist ?? {}), cookie: ($event?.target?.value ?? [])})}}",
@@ -2819,7 +2869,8 @@
                                                                     "options": "{{((gdprSettings?.data?.default_necessary_allowlist_preview?.cookie) ?? []).map(k => ({ value: k, label: k }))}}",
                                                                     "creatable": true,
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder",
-                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options"
+                                                                    "noOptionsMessage": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -2905,7 +2956,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "annual_notice.enabled"
+                                                            "name": "annual_notice.enabled",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -3168,6 +3220,7 @@
                                                                 "comment": "고른 채널 배열을 폼에 넣고 변경 표시를 세운다. 변경 표시가 서 있는 동안 시험 발송·지금 실행이 잠기므로\n                       (둘 다 저장된 설정으로 보낸다) 채널을 바꾸면 저장부터 하게 된다.",
                                                                 "type": "change",
                                                                 "handler": "setState",
+                                                                "if": "{{!_computed.isPluginReadOnly}}",
                                                                 "params": {
                                                                     "target": "local",
                                                                     "form.annual_notice.channels": "{{$event?.target?.value ?? []}}",
@@ -3178,7 +3231,7 @@
                                                         "props": {
                                                             "value": "{{_local.form?.annual_notice?.channels ?? []}}",
                                                             "creatable": false,
-                                                            "disabled": "{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}",
+                                                            "disabled": "{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}",
                                                             "options": [
                                                                 {
                                                                     "value": "mail",
@@ -3222,7 +3275,7 @@
                                                             "name": "annual_notice.batch_size",
                                                             "min": "{{gdprSettings?.data?.annual_notice_limits?.min}}",
                                                             "max": "{{gdprSettings?.data?.annual_notice_limits?.max}}",
-                                                            "disabled": "{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"
+                                                            "disabled": "{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}"
                                                         }
                                                     },
                                                     {
@@ -3255,7 +3308,7 @@
                                                             "name": "annual_notice.introduction",
                                                             "inputType": "textarea",
                                                             "maxLength": 2000,
-                                                            "disabled": "{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"
+                                                            "disabled": "{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}"
                                                         }
                                                     },
                                                     {
@@ -3340,7 +3393,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "className": "btn btn-primary",
-                                                            "disabled": "{{_local.hasChanges || _local.noticeSending}}"
+                                                            "disabled": "{{_computed.isPluginReadOnly || (_local.hasChanges || _local.noticeSending)}}"
                                                         },
                                                         "children": [
                                                             {
@@ -4009,7 +4062,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5 text-sm"
                                 },
                                 "children": [

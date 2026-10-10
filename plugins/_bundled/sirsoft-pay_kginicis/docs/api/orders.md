@@ -306,7 +306,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.recheck -->
 - **라우트명**: `api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.recheck`
 - **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtCvsOperationsController@recheck`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.read`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
 
 **요청 파라미터**
 
@@ -411,7 +411,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명**
+**설명** 7.1.0 부터 결제 기록에 재확인 시각·결과를 쓰므로 주문 수정 권한이 필요합니다.
 `AdminCbtCvsOperationsController@recheck` 가 `CbtCvsOperationsService::markRechecked` 를 호출해 CBT 편의점 결제의 로컬 상태 확인 시각만 메타에 기록한다(`cvs_last_recheck_at`, `cvs_last_recheck_result=local_status_checked`). CBT 편의점 입금은 한국 INIAPI 거래조회 대상이 아니므로 외부 PG 조회 없이 관리자가 "로컬 상태를 확인했다"는 감사 흔적을 남기는 용도이며, 결제 상태 자체는 변경하지 않는다. 처리 후 갱신된 운영 요약(summary)을 반환한다. `sirsoft-ecommerce.orders.read` 권한이 필요하고, CVS 결제가 아니면 `not_cvs` 422, 주문 미존재 시 404 로 응답한다.
 
 
@@ -621,7 +621,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-reconciliation.refund-retry -->
 - **라우트명**: `api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-reconciliation.refund-retry`
 - **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtReconciliationController@retryRefund`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.execute-refund`
 
 **요청 파라미터**
 
@@ -712,7 +712,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명**
+**설명** 7.1.0 부터 PG 환불을 다시 보내는 작업이라 「환불 실행」 권한(`sirsoft-ecommerce.claims.execute-refund`)이 필요합니다.
 `AdminCbtReconciliationController@retryRefund` 가 실패한 CBT 자동환불을 관리자 동작으로 재시도한다. 먼저 `claimRefundRetry` 로 레코드를 잠금 획득하는데, `can_retry`(상태가 `manual_refund_required` + TID 존재)가 아니면 획득에 실패해 `not_retryable` 422 를 반환한다. 획득 성공 시 저장된 CBT 자격증명(`is_test_mode`/`cbt_mid`)으로 `KgInicisApiService::refundCbtPayment` 를 호출하고, 성공하면 상태를 `auto_refunded` 로, 예외 발생 시 `manual_refund_required` 로 되돌리며 에러를 기록한다. `sirsoft-ecommerce.orders.update` 권한이 필요하고, 환불 API 실패 시 `retry_failed` 502 로 응답한다.
 
 
@@ -1251,7 +1251,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명**
+**설명** `vbank_bank_code` 는 주문 조회 권한(`sirsoft-ecommerce.orders.read`)이 있는 관리자에게만 값이 실리고, 그 밖에는 null 입니다(7.1.0).
 `UserReceiptController@show` 가 회원/비회원 공용 영수증 조회를 제공한다(선택적 인증). 로그인 사용자는 본인 소유 주문만, 비로그인 사용자는 `X-Guest-Order-Token` 헤더로 비회원 주문을 매칭하고, 토큰이 없거나 stale 하면 결제 직후 PG 콜백이 발급한 단기 영수증 쿠키(5분 유효)로 폴백한다. 소유권/토큰/쿠키 검증 실패는 모두 404 로 통일된다. CBT(일본결제) 결제면 KG 이니시스 매출전표가 없으므로 결제확인서용 필드 목록(`receipt_fields`)과 라벨을 직접 구성해 `receipt_type=cbt_confirmation` 으로 내려주고, 일반 결제는 KG 이니시스 영수증 URL(`receipt_type=inicis_receipt`)을 생성해 반환한다.
 
 

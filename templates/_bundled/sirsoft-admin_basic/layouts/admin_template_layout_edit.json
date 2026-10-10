@@ -725,7 +725,7 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.abilities?.can_update !== false}}",
+                                "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.abilities?.can_update === true}}",
                                 "actions": [
                                     {
                                         "type": "click",
@@ -767,7 +767,7 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "if": "{{_global.selectedNodeKind === 'extension' && current_extension?.data?.abilities?.can_update !== false}}",
+                                "if": "{{_global.selectedNodeKind === 'extension' && current_extension?.data?.abilities?.can_update === true}}",
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1001,7 +1001,7 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "if": "{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) !== false}}",
+                                "if": "{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) === true}}",
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1281,7 +1281,7 @@
                                     "pendingFolders": "{{_global.pendingFolders ?? []}}",
                                     "searchFileCount": "{{(_global.fileSearchQuery ?? '').length >= 2 ? (layout_search?.data?.length ?? 0) : 0}}",
                                     "searchMatchCount": "{{(layout_search?.data ?? []).reduce((sum, row) => sum + (row.match_count ?? 0), 0)}}",
-                                    "canManage": "{{current_layout?.data?.abilities?.can_update !== false}}",
+                                    "canManage": "{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) === true}}",
                                     "focusSearchNonce": "{{_global.fileSearchFocusNonce ?? 0}}",
                                     "isLoading": "{{!layout_files?.data}}"
                                 }
@@ -1791,7 +1791,7 @@
                                                     "knownKeys": "{{[...(layout_files?.data ?? []).map(f => 'layout:' + f.name), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => 'ext:' + e.id))]}}",
                                                     "retiredKey": "{{_global.retiredFileKey ?? ''}}",
                                                     "language": "html",
-                                                    "readOnly": "{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) === false}}",
+                                                    "readOnly": "{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) !== true}}",
                                                     "isLoading": "{{!!_global.isSaving}}",
                                                     "draftNamespace": "g7le.codeEditor.{{route.identifier}}",
                                                     "revealAt": "{{_global.editorRevealAt ?? null}}",

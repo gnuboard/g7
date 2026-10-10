@@ -35,10 +35,27 @@
                 }
             },
             "errorCondition": {
-                "if": "{{response?.data?.abilities?.can_update !== true}}",
+                "if": "{{response?.data?.abilities?.can_update === false}}",
                 "errorCode": 403
             },
             "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌린다 — 목록을 거치지 않고 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다"
+        },
+        {
+            "id": "product_abilities",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.product_abilities",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/products",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "per_page": 10
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "등록·복사는 등록 권한(can_create)의 일인데 상품 응답(수정 진입)에는 그 키가 없고 등록 진입에는 응답 자체가 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다. 이 화면은 조회 권한이 있어야 열리므로 목록 조회가 막히지 않는다. 폼 전체의 읽기 전용 계산값(`isReadOnly`)이 수정 진입은 상품의 can_update, 등록·복사 진입은 이 응답의 can_create 를 보고, 구획의 입력·버튼·업로더·에디터·옵션 추가/삭제·드래그 손잡이가 모두 그 값 하나를 따른다. 응답이 아직 없으면(로딩 중·실패) 잠긴 쪽으로 시작한다."
         },
         {
             "id": "copy_source",
@@ -330,6 +347,7 @@
     "computed": {
         "currencyColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}",
         "shippingPolicyOptions": "{{((shipping_policies?.data?.data ?? []).some(p => p.id === product?.data?.shipping_policy_id) || !product?.data?.shipping_policy) ? (shipping_policies?.data?.data ?? []) : [...(shipping_policies?.data?.data ?? []), product.data.shipping_policy]}}",
+        "isReadOnly": "{{route.itemCode ? product?.data?.abilities?.can_update !== true : product_abilities?.data?.abilities?.can_create !== true}}",
         "assignedPolicyInactive": "{{!!product?.data?.shipping_policy && product.data.shipping_policy.is_active === false}}"
     },
     "permissions": [
@@ -1019,7 +1037,7 @@
                                         "id": "footer_copy_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "if": "{{route.itemCode && product?.data?.abilities?.can_update === true}}",
+                                        "if": "{{route.itemCode && product_abilities?.data?.abilities?.can_create === true}}",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -1187,7 +1205,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "disabled": "{{_local.isSaving || (route.itemCode && product?.data?.abilities?.can_update !== true)}}",
+                                            "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
                                             "className": "flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
                                             "data-testid": "product-save"
                                         },

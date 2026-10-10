@@ -18,6 +18,15 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "koreaeximSettingsForbidden": true
+                    }
+                }
+            },
             "comment": "플러그인 설정값 — 화면을 열 때마다 다시 받아 폼(_local.form)의 초기값으로 깐다. 저장 뒤에도 다시 받는다"
         },
         {
@@ -139,12 +148,23 @@
                     }
                 }
             },
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "koreaeximNotificationsForbidden": true
+                    }
+                }
+            },
             "comment": "이 플러그인 소유 알림 정의 — 켠 채널 전부의 템플릿을 한 번에 그리려고 template_channel=all 로 받는다"
         }
     ],
     "computed": {
         "activeTab": "{{query.tab || _global.activeKoreaeximTab || 'settings'}}",
         "isReadOnly": "{{koreaeximStatus?.data?.abilities?.can_manage !== true}}",
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
+        "isSettingsReadOnly": "{{koreaeximStatus?.data?.abilities?.can_manage !== true || settings?.data?.abilities?.can_update !== true}}",
         "isNotificationReadOnly": "{{koreaeximNotificationDefinitions?.data?.abilities?.can_update !== true}}"
     },
     "permissions": [
@@ -255,14 +275,55 @@
                         }
                     },
                     {
+                        "comment": "읽기 전용 안내 — 빠진 권한마다 따로 알린다. 플러그인 설정 수정 권한이 없으면 설정 폼이, 환율 관리 권한이 없으면 설정 폼과 환율 갱신이 잠긴다. 응답이 오기 전·설정 403 일 때는 띄우지 않는다",
+                        "id": "plugin_read_only_banner",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_computed.isReadOnly}}",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:sirsoft-koreaexim.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "koreaexim_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isReadOnly && !!koreaeximStatus?.data}}",
                         "props": {
                             "role": "status",
                             "className": "alert-info mb-4"
                         },
                         "text": "$t:sirsoft-koreaexim.read_only"
+                    },
+                    {
+                        "id": "koreaexim_settings_forbidden",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.koreaeximSettingsForbidden === true}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mb-4"
+                        },
+                        "text": "$t:sirsoft-koreaexim.settings_forbidden"
                     },
                     {
                         "id": "koreaexim_tab_content",
@@ -390,7 +451,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}",
                                     "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "children": [

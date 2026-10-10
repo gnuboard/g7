@@ -179,7 +179,8 @@
       "category_pc": "PC",
       "category_mobile": "モバイル",
       "auto_fixed": "自動復旧済み",
-      "action_required": "↓ ユーザー対応が必要"
+      "action_required": "↓ ユーザー対応が必要",
+      "forbidden": "システム点検を閲覧する権限がありません。eコマース設定の閲覧またはプラグイン設定の更新権限が必要です。"
     }
   },
   "easy_pay": {
@@ -194,5 +195,6 @@
       "applepay_ios_only": "Apple Pay は iOS デバイスでのモバイル決済のみ可能です。",
       "method_missing": "決済手段の情報がないため決済を進められません。注文書をもう一度開いてください。"
     }
-  }
+  },
+  "plugin_read_only": "このプラグイン設定を変更する権限がないため、読み取り専用で表示されます。"
 }

@@ -41,7 +41,7 @@
             <span class="text-gray-500 dark:text-gray-400 text-sm">$t:sirsoft-pay_kginicis.user.vbank_bank</span>
             <span class="text-sm text-gray-900 dark:text-gray-100">{{order.data.payment?.vbank_name}}</span>
           </div>
-          <div data-if="{{_global.currentUser?.is_admin === true &amp;&amp; !!_local._kgReceipt?.vbank_bank_code}}" class="flex items-center justify-between">
+          <div data-if="{{!!_local._kgReceipt?.vbank_bank_code}}" class="flex items-center justify-between">
             <span class="text-gray-500 dark:text-gray-400 text-sm">$t:sirsoft-pay_kginicis.user.vbank_bank_code</span>
             <span class="text-sm text-gray-900 dark:text-gray-100">{{_local._kgReceipt?.vbank_bank_code}}</span>
           </div>

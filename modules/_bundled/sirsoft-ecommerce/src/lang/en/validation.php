@@ -2410,4 +2410,10 @@ return [
         'complete_defaults_create_refund_request' => 'completion default - file refund request',
         'complete_defaults_restore_stock' => 'completion default - restore stock',
     ],
+
+    // Identity policy tab validation messages
+    'identity_policy' => [
+        'target_not_owned' => 'Ecommerce identity policies can only target ecommerce points. Hook and custom scopes must start with "sirsoft-ecommerce.", and the route scope must start with "api.modules.sirsoft-ecommerce.".',
+        'nothing_to_update' => 'There is nothing to update.',
+    ],
 ];

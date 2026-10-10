@@ -58,6 +58,7 @@ return [
             'executable' => '실행 권한 OK (:mode)',
             'fixed' => '실행 권한 자동 복구됨: :before → 0755',
             'not_executable' => '실행 권한 없음 (:before) — 자동 복구 실패',
+            'not_executable_no_permission' => '실행 권한 없음 (:before) — 플러그인 설정 수정 권한이 없어 자동 복구를 하지 않았습니다',
             'not_executable_remediation' => "이 파일에 실행 권한을 부여하세요:\n  chmod 755 :path\n파일 소유자가 아니면 앞에 sudo 를 붙이세요.",
         ],
         'pub_key' => [

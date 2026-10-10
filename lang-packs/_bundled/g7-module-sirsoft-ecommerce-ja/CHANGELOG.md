@@ -84,6 +84,9 @@
 - 「문의 답변 완료」 알림의 수신자 관계 이름(`messages.notification_relations.author`, 「お問い合わせの投稿者」)을 일본어로 번역했습니다.
 - 고객이 교환·반품·취소·환불을 신청한 시점과 승인 뒤 추가결제를 마친 시점에 운영자에게 가는 알림, 그리고 신청 상품 중 일부만 처리됐을 때 고객에게 가는 알림의 일본어 제목·본문을 기본 알림 시드에 추가했습니다.
 - 클레임(취소·반품·교환) 권한 이름·설명의 일본어 번역을 권한 시드에 추가했습니다.
+- 7.1.0 권한 정비에 맞춘 안내 문구의 일본어 번역을 추가했습니다 — 권한이 없어 환불까지 한 번에 처리·접수와 함께 승인·바로 취소를 거절하는 문구(`messages.claims.auto_refund_forbidden`·`approve_on_receipt_forbidden`·`instant_cancel_forbidden`), 관리자 취소 창·대리 접수 창의 권한 없음 안내(`admin/order.detail.modal.cancel.auto_advance_refund_no_permission`·`admin/order.claim_request.approve_no_permission`), 배송정책 등록 화면의 회수지 권한 안내(`admin/shipping_policy.form.claim_addresses_requires_update`), 레이아웃 편집기 데이터 소스 이름 「配送ポリシー権限」「商品権限」「クーポン権限」(`editor.data_source.policy_abilities`·`product_abilities`·`coupon_abilities`), 새 권한 「注文削除」(`sirsoft-ecommerce.orders.delete`)의 이름·설명입니다.
+- 환경설정 「본인인증 정책」 탭의 권한 안내 문구(`admin/settings.identity.no_read_permission`·`read_only_notice`)의 일본어 번역을 추가했습니다.
+- 이커머스 환경설정 「본인인증 정책」 탭에서 이커머스 밖 대상을 거절할 때의 안내(`validation.identity_policy.target_not_owned` — 「イーコマースの本人認証ポリシーはイーコマースの地点のみを対象にできます。…」)와 고칠 칸이 없을 때의 안내(`validation.identity_policy.nothing_to_update` — 「変更する項目がありません。」)의 일본어 번역을 추가했습니다.
 
 #### 취소·환불
 - 주문의 결제수단으로는 쓸 수 없는 환불수단을 고른 경우의 거절 문구를 일본어로 추가했습니다 — 무통장·마일리지처럼 PG 거래가 없는 결제는 「PG사 환불」로 돌려줄 대상이 없으므로, 운영자가 그 수단을 저장하려 하면 사유를 일본어로 알려 줍니다.

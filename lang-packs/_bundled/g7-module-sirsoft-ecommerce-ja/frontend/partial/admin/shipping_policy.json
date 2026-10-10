@@ -275,6 +275,7 @@
     "claim_address_recipient_name": "受取人名",
     "claim_address_recipient_name_placeholder": "例：返品担当者",
     "claim_addresses_loading_notice": "回収先情報を読み込んでいます。この案内が消えない場合は読み込みに失敗しています。画面を再読み込みしてください — それまで回収先は編集できません。",
+    "claim_addresses_requires_update": "回収先はポリシーを作成したあと別途保存され、配送ポリシーの編集権限が必要です。権限のある管理者が登録済みポリシーの編集画面で設定します。",
     "claim_address_phone": "連絡先",
     "claim_address_phone_placeholder": "例：03-1234-5678",
     "claim_address_zipcode": "郵便番号",

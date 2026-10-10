@@ -60,7 +60,7 @@
           </on>
           $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel
         </button>
-        <button data-ref="modal_cash_receipt_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.adminCashReceiptForm?.identifier ?? '') || _global.isCashReceiptBusy === true}}">
+        <button data-ref="modal_cash_receipt_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.adminCashReceiptForm?.identifier ?? '') || _global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}">
           <on type="click">
             <!-- 요청 중에는 잠근다 — 두 번 누르면 결제사 발급이 두 번 나간다(S3-D22). -->
             <sequence>

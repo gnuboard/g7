@@ -40,6 +40,10 @@
 `TemplateApp.showRouteError` 가드가 처리하므로, 여기서 다시 이동시키면 이중 리다이렉트가 되고
 돌아올 위치도 어긋납니다.
 
+`admin_dashboard` 는 레이아웃 최상위에 `<permissions><permission>core.dashboard.read</permission></permissions>`
+를 둡니다. 기본 관리자 템플릿 대시보드와 같은 기준으로, 대시보드 조회 권한이 없는 관리자는 403 오류 화면을
+봅니다. 화면을 새로 만들 때도 그 화면이 읽는 데이터의 조회 권한을 이 자리에 적는 것이 기본입니다.
+
 레이아웃 JSON 만 고쳤다면 빌드 없이
 `php artisan template:update gnuboard7-hello_admin_template --force` 로 반영합니다.
 <!-- @intent END -->

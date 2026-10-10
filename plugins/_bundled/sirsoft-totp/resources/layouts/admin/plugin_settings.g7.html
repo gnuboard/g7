@@ -35,6 +35,7 @@
       </on-code>
     </error-handling>
   </data-source>
+  <computed name="isPluginReadOnly">{{totpSettings?.data?.abilities?.can_update !== true}}</computed>
   <init-local>
     <field name="secret" :value="null"/>
     <field name="otpauthUri" :value="null"/>
@@ -239,6 +240,10 @@
            PUT /api/admin/plugins/{id}/settings 는 처음부터 있었으나 이 칸이 없어 화면으로 고칠 수 없었다(2026-10-06 실측).
            저장은 이 카드 안의 버튼이 따로 한다 — 위 등록 카드들은 폼이 아니라 즉시 실행 버튼이라 공용 하단 버튼을 두지 않는다. -->
       <div data-ref="totp_settings_card" data-if="{{!!totpSettings?.data}}" class="card-stack-item">
+        <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!totpSettings?.data}}" role="status" class="alert-warning mt-6">
+          <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+          <span class="text-warning-soft">$t:sirsoft-totp.plugin_read_only</span>
+        </div>
         <h3 data-ref="totp_settings_title" class="card-title">$t:sirsoft-totp.admin.settings.title</h3>
         <div data-ref="totp_settings_desc" class="card-description">$t:sirsoft-totp.admin.settings.description</div>
         <div data-ref="totp_settings_errors" data-if="{{_local.settingsErrors}}" class="alert-danger mt-4" role="alert">
@@ -246,7 +251,7 @@
         </div>
         <div data-ref="totp_settings_issuer_field" class="mt-4">
           <label data-ref="totp_settings_issuer_label" for="totp_settings_issuer" class="form-label">$t:sirsoft-totp.admin.settings.issuer_label</label>
-          <input data-ref="totp_settings_issuer_input" id="totp_settings_issuer" type="text" name="totp_settings_issuer" value="{{_local.settingsForm?.issuer ?? ''}}" maxLength="64" placeholder="$t:sirsoft-totp.admin.settings.issuer_placeholder" class="input" disabled="{{_local.settingsSaving}}">
+          <input data-ref="totp_settings_issuer_input" id="totp_settings_issuer" type="text" name="totp_settings_issuer" value="{{_local.settingsForm?.issuer ?? ''}}" maxLength="64" placeholder="$t:sirsoft-totp.admin.settings.issuer_placeholder" class="input" disabled="{{_computed.isPluginReadOnly || (_local.settingsSaving)}}">
             <on event="onChange">
               <!-- 발급자 표기를 담는다 — 저장해야 반영되고, 새로 등록하는 회원의 QR 부터 적용된다 -->
               <set-state target="local" settingsForm.issuer="{{$event.target.value}}" :settingsChanged="true" :settingsErrors="null"/>
@@ -259,7 +264,7 @@
             <span data-ref="totp_settings_fallback_label" class="form-label">$t:sirsoft-totp.admin.settings.fallback_label</span>
             <p data-ref="totp_settings_fallback_hint" class="text-hint mt-1">$t:sirsoft-totp.admin.settings.fallback_hint</p>
           </div>
-          <toggle data-type="composite" data-ref="totp_settings_fallback_toggle" ariaLabel="$t:sirsoft-totp.admin.settings.fallback_label" checked="{{_local.settingsForm?.allow_mail_fallback !== false}}" size="md" disabled="{{_local.settingsSaving}}">
+          <toggle data-type="composite" data-ref="totp_settings_fallback_toggle" ariaLabel="$t:sirsoft-totp.admin.settings.fallback_label" checked="{{_local.settingsForm?.allow_mail_fallback !== false}}" size="md" disabled="{{_computed.isPluginReadOnly || (_local.settingsSaving)}}">
             <on type="change">
               <!-- 폴백 허용 여부를 담는다 — name 을 주지 않아 자동 바인딩 대상이 아니다(저장 전 값이 비어 있을 때 「꺼짐」으로 읽히지 않게 상태를 직접 담는다). 라벨 문구가 옆 칸에 있어 스위치 이름은 ariaLabel 로 붙인다 -->
               <set-state target="local" settingsForm.allow_mail_fallback="{{$event.target.checked}}" :settingsChanged="true" :settingsErrors="null"/>
@@ -271,7 +276,7 @@
           <p data-ref="totp_settings_fallback_off_warning_text" class="text-warning-soft">$t:sirsoft-totp.admin.settings.fallback_off_warning</p>
         </div>
         <div data-ref="totp_settings_actions" class="flex justify-end mt-4">
-          <button data-ref="totp_settings_save" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.settingsChanged || _local.settingsSaving}}">
+          <button data-ref="totp_settings_save" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}">
             <on type="click">
               <!-- 운영 설정 저장 — 응답(정규화된 저장값)을 폼에 되돌려 화면과 저장 상태를 맞춘다. 실패하면 칸별 사유를 카드 안에 보인다 -->
               <sequence>

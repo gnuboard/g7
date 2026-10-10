@@ -96,6 +96,8 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "결제완료로 바꾸는 쓰기라 주문 수정 권한(can_update)으로 잠근다 — 서버도 같은 권한으로 403 을 낸다.",
+                                            "id": "payment_confirm_deposit_button_{{payIdx}}",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -106,7 +108,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
+                                                "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             },
                                             "children": [
                                                 {
@@ -1246,7 +1249,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+                                                "className": "px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue"
                                         },
@@ -1329,8 +1333,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white",
-                                                "disabled": "{{_global.isCashReceiptBusy === true}}"
+                                                "className": "px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue"
                                         },
@@ -1413,9 +1417,9 @@
                                                 }
                                             ],
                                             "props": {
-                                                "disabled": "{{_global.isCashReceiptBusy === true}}",
+                                                "disabled": "{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}",
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                "className": "px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_issue"
                                         }

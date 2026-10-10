@@ -16,7 +16,9 @@
     <field name="selectedItem" :value="null"/>
     <field name="showCreatorDropdown" :value="null"/>
   </init-local>
-  <permissions/>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
   <slot name="content">
     <div data-ref="excel_download_content" class="admin-page-content">
       <div data-ref="page_header" class="mb-6">

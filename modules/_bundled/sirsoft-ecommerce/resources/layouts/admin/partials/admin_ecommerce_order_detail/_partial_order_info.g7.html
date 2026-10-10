@@ -321,8 +321,8 @@
                 <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
                 <span class="text-secondary">{{order.data?.orderer_name}}</span>
                 <span class="text-sm text-gray-400 dark:text-gray-500">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
-                <!-- 비회원 조회 비밀번호 재설정 버튼 -->
-                <button type="button" class="ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+                <!-- 비회원 조회 비밀번호 재설정 버튼 — 주문 수정 권한(can_update)으로 잠근다(형제 [메일 보내기]와 같은 키, 서버도 403). -->
+                <button data-ref="order_reset_guest_password_button" type="button" class="ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
                   <on type="click">
                     <open-modal target="modal_reset_guest_password"/>
                   </on>
@@ -425,7 +425,7 @@
               <div class="flex-center gap-2">
                 <input type="text" class="{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}" value="{{_local.form.recipient_zipcode}}" name="recipient_zipcode" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
                 <!-- 콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다 -->
-                <extension-point name="address_search_slot" data-ref="order_detail_address_search_slot">
+                <extension-point name="address_search_slot" data-ref="order_detail_address_search_slot" disabled="{{order?.data?.abilities?.can_update !== true}}">
                   <prop name="readOnlyFields">
                     <item>recipient_zipcode</item>
                   </prop>

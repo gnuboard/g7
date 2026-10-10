@@ -980,6 +980,7 @@ HTTP/1.1 200
 
 **설명** 등록된 IDV 프로바이더 목록을 각 프로바이더의 설정 스키마(`settings_schema`) 와 함께 반환합니다. `auth:sanctum` + `core.admin.identity.providers.read` 관리자 권한이 필요합니다. 각 프로바이더의 `getSettingsSchema()` 결과를 `core.identity.settings_schema` 필터 훅으로 확장 가능하게 통과시키므로, 관리자 프로바이더 설정 카드(코드 길이·만료 시간 등)를 스키마 기반으로 반복 렌더링할 때 사용합니다. 설정 스키마가 없는 공개용 목록은 `GET /api/identity/providers` 를 사용합니다.
 
+**권한 값(7.1.0)** 행 `abilities.can_update` 는 프로바이더 설정을 실제로 저장하는 환경설정 저장 권한(`core.settings.update`)으로 판정한다.
 
 ### POST /api/identity/callback/{providerId}
 <!-- @generated:start:api.identity.callback -->

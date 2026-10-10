@@ -72,6 +72,13 @@ export interface NotificationCenterProps {
   onDelete?: (notification: NotificationItem) => void;
   /** "미읽음만" 체크박스 토글 */
   onUnreadOnlyToggle?: (checked: boolean) => void;
+  /**
+   * 읽음 처리 권한 — false 면 「모두 읽음」 버튼을 숨기고, 닫을 때 보인 미읽음 id 를 onClose 로 보내지 않는다.
+   * 생략하면 true(기존 동작). 관리자 헤더는 응답 abilities.can_update 를 넘긴다.
+   */
+  canUpdate?: boolean;
+  /** 삭제 권한 — false 면 「모두 삭제」·개별 삭제 버튼을 숨긴다. 생략하면 true(기존 동작) */
+  canDelete?: boolean;
   /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
   dropdownAlign?: 'left' | 'right';
   className?: string;
@@ -115,6 +122,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   unreadOnly = false,
   onNotificationClick,
   onClose,
+  canUpdate = true,
+  canDelete = true,
   onLoadMore,
   onMarkAllRead,
   onDeleteAll,
@@ -226,7 +235,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
    */
   const handleClose = useCallback(() => {
     if (showNotifications) {
-      if (displayCount > 0) {
+      // 읽음 처리 권한이 없으면 서버가 403 으로 거절하므로 요청하지 않는다.
+      if (canUpdate && displayCount > 0) {
         const unreadIds = Array.from(visibleUnreadIdsRef.current).filter((id) => {
           const n = notifications.find((item) => String(item.id) === String(id));
           return n && !n.read;
@@ -240,7 +250,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       visibleUnreadIdsRef.current.clear();
       setShowNotifications(false);
     }
-  }, [showNotifications, onClose, displayCount, notifications]);
+  }, [showNotifications, onClose, displayCount, notifications, canUpdate]);
 
   /**
    * 외부 클릭 감지 — 드롭다운이 열려 있을 때만 리스너 등록
@@ -348,7 +358,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               )}
             </Div>
             <Div className="flex items-center gap-3 flex-shrink-0">
-              {onMarkAllRead && displayCount > 0 && (
+              {onMarkAllRead && canUpdate && displayCount > 0 && (
                 <Button
                   onClick={() => {
                     onMarkAllRead();
@@ -359,7 +369,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   {markAllReadText}
                 </Button>
               )}
-              {onDeleteAll && notifications.length > 0 && (
+              {onDeleteAll && canDelete && notifications.length > 0 && (
                 <Button
                   onClick={() => {
                     // 드롭다운은 닫지 않음 — 확인 모달이 닫히면 다시 자연스럽게 노출되어야 하고,
@@ -431,7 +441,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         {isUnread && (
                           <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />
                         )}
-                        {onDelete && (
+                        {onDelete && canDelete && (
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();

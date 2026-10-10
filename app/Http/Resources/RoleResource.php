@@ -35,6 +35,10 @@ class RoleResource extends BaseApiResource
                 ? $this->resource->isDeletable()
                 : true,
             'is_active' => $this->getValue('is_active', true),
+            // 최고관리자 역할은 사용 여부를 바꿀 수 없다 — 역할 폼이 사용 여부 토글을 잠그는 값
+            'is_active_locked' => $this->resource instanceof Role
+                ? $this->resource->isActiveStateLocked()
+                : $this->getValue('identifier') === 'admin',
             // 비밀번호 만료 (#736) — 역할 폼 선택칸이 읽는다(inherit·apply·exempt)
             'password_expiry_policy' => $this->passwordExpiryPolicyValue(),
             'users_count' => $this->when(
@@ -148,7 +152,8 @@ class RoleResource extends BaseApiResource
         $modifiable = $this->resource->isModifiableBy($actor instanceof User ? $actor : null);
 
         $abilities['can_update'] = ($abilities['can_update'] ?? false) && $modifiable;
-        $abilities['can_toggle_status'] = ($abilities['can_toggle_status'] ?? false) && $modifiable;
+        $abilities['can_toggle_status'] = ($abilities['can_toggle_status'] ?? false) && $modifiable
+            && ! $this->resource->isActiveStateLocked();
         $abilities['can_delete'] = ($abilities['can_delete'] ?? false) && $this->resource->isDeletable();
 
         return $abilities;

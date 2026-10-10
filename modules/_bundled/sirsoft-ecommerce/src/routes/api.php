@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExtraFeeTemplateController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\IdentityPolicyController as AdminIdentityPolicyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\MileageTransactionController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController;
@@ -291,9 +292,11 @@ Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
 // 만 본 그룹에 둔다.
 Route::prefix('guest/orders/{orderNumber}')
     ->group(function () {
-        // POST /guest/orders/{orderNumber}/cancel - 주문 취소
-        // 회원 취소 라우트·사유 목록 API 와 같은 「주문 취소」 권한(비로그인은 guest 역할)으로 판정한다 —
-        // 운영자가 권한을 거두면 버튼(abilities.can_cancel)·사유 목록·취소 API 가 함께 닫힌다.
+        // POST /guest/orders/{orderNumber}/cancel - 주문 취소 (구 취소 API — 주문 조회 화면은 아래 refund-requests 를 쓴다)
+        // 회원 취소 라우트·사유 목록 API 와 같은 「주문 취소」 권한(비로그인은 guest 역할)으로 판정한다.
+        // 비회원 주문 조회 화면의 [취소·환불 신청]은 `refund-requests` 로 가고, 그 신청이 즉시 취소 분기(결제완료 이전
+        // 상품)면 컨트롤러가 같은 「주문 취소」 권한을 다시 본다 — 버튼은 신청 가능 상품 응답의 `abilities.can_cancel`
+        // 로 잠긴다. 그래서 운영자가 권한을 거두면 이 API·즉시 취소 신청·버튼이 함께 닫힌다.
         Route::post('/cancel', [PublicOrderController::class, 'cancel'])
             ->middleware('permission:user,sirsoft-ecommerce.user-orders.cancel')
             ->name('guest.orders.cancel');
@@ -362,6 +365,7 @@ Route::prefix('guest/orders/{orderNumber}')
                 ->name('guest.orders.returns.store');
 
             // POST /guest/orders/{orderNumber}/refund-requests - 취소·환불 신청 (상태 자동 분기)
+            // 즉시 취소 분기는 「주문 취소」(`user-orders.cancel`) 권한도 컨트롤러가 본다 (회원 경로와 같다).
             Route::post('/refund-requests', [GuestClaimController::class, 'storeRefund'])
                 ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
                 ->name('guest.orders.refund-requests.store');
@@ -579,6 +583,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
             ->whereNumber('id')
             ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
             ->name('user.orders.returns.store');
+        // 즉시 취소 분기는 「주문 취소」(`user-orders.cancel`) 권한도 컨트롤러가 본다(`HandlesClaimActions::respondStoreRefund()`).
         Route::post('/{id}/refund-requests', [UserClaimController::class, 'storeRefund'])
             ->whereNumber('id')
             ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
@@ -801,6 +806,28 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('settings/{category}', [EcommerceSettingsController::class, 'show'])
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.show');
+
+    // 환경설정 「본인인증 정책」 탭 — 코어 정책 표에서 이커머스 몫(source_identifier=sirsoft-ecommerce)만 다룬다.
+    // 조회는 identity.policies.read, 추가·수정·삭제는 identity.policies.update(응답 abilities 와 같은 권한).
+    // 이커머스 몫이 아닌 정책 ID 는 404 로 답한다.
+    // GET    /api/modules/sirsoft-ecommerce/admin/identity-policies       - 목록
+    // POST   /api/modules/sirsoft-ecommerce/admin/identity-policies       - 운영자 정책 추가
+    // PUT    /api/modules/sirsoft-ecommerce/admin/identity-policies/{id}  - 수정(활성 토글 포함)
+    // DELETE /api/modules/sirsoft-ecommerce/admin/identity-policies/{id}  - 운영자 정책 삭제
+    Route::get('identity-policies', [AdminIdentityPolicyController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.read')
+        ->name('admin.identity-policies.index');
+    Route::post('identity-policies', [AdminIdentityPolicyController::class, 'store'])
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.update')
+        ->name('admin.identity-policies.store');
+    Route::put('identity-policies/{id}', [AdminIdentityPolicyController::class, 'update'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.update')
+        ->name('admin.identity-policies.update');
+    Route::delete('identity-policies/{id}', [AdminIdentityPolicyController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.update')
+        ->name('admin.identity-policies.destroy');
 
     // 마일리지 내역 관리 API
     Route::prefix('mileage-transactions')->group(function () {
@@ -1186,8 +1213,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         // DELETE /api/modules/sirsoft-ecommerce/admin/products/images/{id} - 이미지 삭제
         // PATCH  /api/modules/sirsoft-ecommerce/admin/products/images/reorder - 순서 변경
         // PATCH  /api/modules/sirsoft-ecommerce/admin/products/{productId}/images/{imageId}/thumbnail - 대표 이미지 설정
+        // 임시 업로드는 등록 화면도 쓴다 — 등록 또는 수정 권한(OR)으로 연다. 이미 있는 상품에 바로 올리는 아래 경로는 수정 권한이다.
         Route::post('/images', [AdminProductController::class, 'uploadImage'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.create|sirsoft-ecommerce.products.update,false')
             ->name('admin.products.images.upload-temp');
 
         Route::post('/{productId}/images', [AdminProductController::class, 'uploadImage'])
@@ -1283,8 +1311,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.categories.toggle-status');
 
         // 카테고리 이미지 관리
+        // 임시 업로드는 등록 화면도 쓴다 — 등록 또는 수정 권한(OR)으로 연다.
         Route::post('/images', [CategoryController::class, 'uploadImage'])
-            ->middleware('permission:admin,sirsoft-ecommerce.categories.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.categories.create|sirsoft-ecommerce.categories.update,false')
             ->name('admin.categories.images.upload-temp');
 
         Route::post('/{categoryId}/images', [CategoryController::class, 'uploadImage'])
@@ -1540,14 +1569,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.options.bulk-status.manual-paid-preview');
 
-        // 환불 예상금액 조회
+        // 환불 예상금액 조회 — 취소·환불 접수 창 전용이라 접수(`cancel-refund`)와 같은 권한이다.
         // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/estimate-refund
         Route::post('/{order}/estimate-refund', [OrderController::class, 'estimateRefund'])
-            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
             ->name('admin.orders.estimate-refund');
 
         // 주문 취소 (전체취소/부분취소) — 관리자 직권 [취소·환불 접수] 와 같은 서비스로 위임한다(§3-11).
         // 주문 상세 화면은 아래 `cancel-refund` 를 쓴다. 이 경로는 기존 API 호출부 호환용이다.
+        // `auto_advance_refund` 를 켜면 환불 실행 권한(`claims.execute-refund`)도 요구한다(컨트롤러가 403).
         // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel
         Route::post('/{order}/cancel', [OrderController::class, 'cancelOrder'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')

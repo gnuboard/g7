@@ -215,7 +215,8 @@
                                                             "props": {
                                                                 "type": "text",
                                                                 "placeholder": "$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company_placeholder",
-                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
+                                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
                                                         }
                                                     ]
@@ -249,7 +250,8 @@
                                                             "props": {
                                                                 "type": "text",
                                                                 "placeholder": "$t:sirsoft-pay_nicepayments.admin.escrow_tracking_number_placeholder",
-                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
+                                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
                                                         }
                                                     ]
@@ -282,7 +284,8 @@
                                                             ],
                                                             "props": {
                                                                 "type": "text",
-                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
+                                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
                                                         }
                                                     ]
@@ -318,7 +321,8 @@
                                                             ],
                                                             "props": {
                                                                 "type": "text",
-                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                                                "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
+                                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
                                                         }
                                                     ]
@@ -401,7 +405,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "disabled": "{{_local._escrowSubmitting || ![_local._escrow_delivery_name, _local._escrow_tracking_number, _local._escrow_register_name, _local._escrow_buyer_address].every((v) => String(v ?? '').trim() !== '')}}",
+                                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._escrowSubmitting || ![_local._escrow_delivery_name, _local._escrow_tracking_number, _local._escrow_register_name, _local._escrow_buyer_address].every((v) => String(v ?? '').trim() !== ''))}}",
                                                         "className": "flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     },
                                                     "children": [

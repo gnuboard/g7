@@ -108,10 +108,13 @@
     }
   },
   "read_only": "閲覧権限でアクセスしました。設定変更と為替レート更新は管理権限が必要です。",
+  "plugin_read_only": "このプラグイン設定を変更する権限がないため、設定値は読み取り専用で表示されます。",
   "site_time": "サイト時間帯更新時刻",
   "notification_channels": "送信手段",
   "save_channels": "送信手段を保存",
   "cancel": "キャンセル",
   "channel_template_missing": "この手段のテンプレートがないため送信されません",
-  "date_range_invalid": "終了日が開始日より前のため照会できません。期間を選択し直してください。"
+  "date_range_invalid": "終了日が開始日より前のため照会できません。期間を選択し直してください。",
+  "settings_forbidden": "プラグイン設定を閲覧する権限がないため、設定を読み込めず保存もできません。",
+  "notifications_forbidden": "通知設定を閲覧する権限がないため、失敗通知の一覧を読み込めませんでした。"
 }

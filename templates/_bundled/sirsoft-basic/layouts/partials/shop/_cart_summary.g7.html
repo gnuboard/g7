@@ -116,9 +116,10 @@
     </div>
     <!-- 배송 불가 안내 (D1 — 혼재 시 전체 차단). 배송 불가 상품 1개라도 있으면 주문하기 비활성. -->
     <div data-if="{{cartItems.data.has_unshippable_items === true}}" class="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">$t:shop.shippability.blocks_order</div>
+    <p data-if="{{cartItems.data?.abilities?.can_order === false}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:shop.order_permission_denied</p>
     <!-- 주문하기 — 먼저 화면을 잠그고(중복 클릭 차단) 임시 주문을 만든다. 비로그인이면 곧바로 주문서로
          가지 않고 로그인을 거치는데, 임시 주문은 cart_key 로 남아 있어 돌아와도 그 주문서가 이어진다 -->
-    <button class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true}}">
+    <button class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" data-ref="cart_order_button" disabled="{{(_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true) || cartItems.data?.abilities?.can_order !== true}}">
       <on type="click">
         <set-state target="local" :isOrdering="true"/>
         <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="POST">

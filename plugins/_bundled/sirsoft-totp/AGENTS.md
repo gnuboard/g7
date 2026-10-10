@@ -222,9 +222,9 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 8개 | `plugins/_bundled/sirsoft-totp/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -41,10 +41,11 @@ class BoardSettingsControllerTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // 관리자 사용자 생성 (환경설정 권한 포함)
+        // 관리자 사용자 생성 (환경설정 권한 포함) — 일괄 적용은 기존 게시판을 덮어쓰므로 게시판 수정 권한도 요구한다(7.1.0)
         $this->adminUser = $this->createAdminUser([
             'sirsoft-board.settings.read',
             'sirsoft-board.settings.update',
+            'sirsoft-board.boards.update',
         ]);
 
         // 일반 사용자 생성 (권한 없음)

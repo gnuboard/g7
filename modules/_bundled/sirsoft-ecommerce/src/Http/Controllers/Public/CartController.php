@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
@@ -551,6 +552,8 @@ class CartController extends PublicBaseController
             // 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 주문 전체 차단 플래그 (D1 — layer 1)
             'has_unshippable_items' => $this->hasUnshippableItems($result->items),
             'selected_shipping_country' => ResolveShippingCountry::getCountry(),
+            // [주문하기] 를 잠그는 키 — 주문 생성(`POST user/orders`)의 라우트 권한과 같다(비회원은 guest 역할로 판정).
+            'abilities' => ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')],
         ];
     }
 

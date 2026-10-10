@@ -127,6 +127,8 @@
       "pg_first": "PG優先で返金",
       "points_first": "マイレージ優先で返金"
     },
+    "no_request_permission": "申請権限がないため、キャンセル·返品·交換を申請できません。販売者にお問い合わせください。",
+    "no_cancel_permission": "注文キャンセルの権限がないため、すぐにキャンセルされる商品(決済完了前)は申請できません。販売者にお問い合わせください。",
     "refund_account_required_to_submit": "返金を受け取る口座を入力する必要があります。この注文は口座に返金されます。"
   },
   "change_product": {

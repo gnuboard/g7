@@ -558,6 +558,101 @@ class PluginSettingsControllerTest extends TestCase
     }
 
     /**
+     * 설정 조회 응답에 저장 권한(abilities.can_update)이 실린다 — 저장 권한 보유자
+     *
+     * 플러그인 설정 화면은 이 키로 읽기 전용 여부를 정한다. 키가 없으면 화면이 쓰기 권한을
+     * 알 길이 없어 읽기만 가진 운영자에게도 입력·저장이 살아 있었다.
+     *
+     * @scenario endpoint=show,plugin_existence=installed,permission=granted
+     *
+     * @effects show_response_includes_abilities_can_update_true
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_includes_can_update_true_for_update_holder(): void
+    {
+        $this->ensureDaumPostcodePlugin();
+
+        $response = $this->authRequest()->getJson('/api/admin/plugins/sirsoft-daum_postcode/settings');
+
+        $response->assertStatus(200);
+        $this->assertTrue($response->json('data.abilities.can_update'));
+    }
+
+    /**
+     * 설정 조회 응답의 abilities.can_update 는 조회 권한만 가진 운영자에게 false 다
+     *
+     * @scenario endpoint=show,plugin_existence=installed,permission=read_only
+     *
+     * @effects show_response_includes_abilities_can_update_false
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_includes_can_update_false_for_read_only(): void
+    {
+        $this->ensureDaumPostcodePlugin();
+
+        $user = $this->createAdminUser(['core.plugins.read']);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+            'Accept' => 'application/json',
+        ])->getJson('/api/admin/plugins/sirsoft-daum_postcode/settings');
+
+        $response->assertStatus(200);
+        $this->assertFalse($response->json('data.abilities.can_update'));
+    }
+
+    /**
+     * 저장 요청 본문의 abilities 키는 설정 파일에 남지 않는다
+     *
+     * 화면은 조회 응답을 그대로 폼에 담아 다시 보내므로 abilities 가 저장 본문에 섞인다.
+     * 권한 값은 서버가 매번 계산하는 것이라 저장하면 안 된다.
+     *
+     * @scenario endpoint=update,plugin_existence=installed,payload_scope=with_abilities
+     *
+     * @effects update_discards_abilities_key
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_discards_abilities_key(): void
+    {
+        $this->ensureDaumPostcodePlugin();
+
+        $response = $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [
+            'display_mode' => 'popup',
+            'abilities' => ['can_update' => true],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertTrue($response->json('data.abilities.can_update'));
+
+        $settingsPath = ExtensionStoragePath::plugin('sirsoft-daum_postcode', 'settings').'/setting.json';
+        $this->assertFileExists($settingsPath);
+        $savedContent = json_decode(File::get($settingsPath), true);
+        $this->assertArrayNotHasKey('abilities', $savedContent);
+
+        $this->cleanupTestSettings('sirsoft-daum_postcode');
+    }
+
+    /**
+     * Daum 우편번호 플러그인이 등록돼 있는지 확인하고 DB 레코드를 맞춘다.
+     *
+     * @return void 반환값 없음
+     */
+    private function ensureDaumPostcodePlugin(): void
+    {
+        if (! $this->pluginManager->getPlugin('sirsoft-daum_postcode')) {
+            $this->markTestSkipped('sirsoft-daum_postcode plugin not installed');
+        }
+
+        if (! Plugin::where('identifier', 'sirsoft-daum_postcode')->exists()) {
+            $this->createTestPlugin('sirsoft-daum_postcode');
+        }
+    }
+
+    /**
      * 설정 업데이트 응답에 업데이트된 설정 포함
      *
      * @scenario endpoint=update,plugin_existence=installed,payload_scope=within_schema

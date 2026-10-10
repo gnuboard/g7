@@ -11,7 +11,10 @@
           "display_mode": "layer",
           "popup_width": 500,
           "popup_height": 600,
-          "theme_color": "#2563eb"
+          "theme_color": "#2563eb",
+          "abilities": {
+            "can_update": true
+          }
         }
       }
     }

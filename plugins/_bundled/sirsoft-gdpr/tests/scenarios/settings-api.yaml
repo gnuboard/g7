@@ -26,6 +26,8 @@ effects:
   # 관리자 설정 API (기존 계약)
   - admin_settings_requires_authentication
   - admin_show_returns_saved_settings
+  # 설정 응답이 저장 권한(privacy.update) 판정을 싣는다 — 설정 화면 읽기 전용의 근거(7.1.0 abilities 게이트 G19)
+  - admin_show_reports_update_ability
   - admin_update_persists_validated_settings
   - admin_update_strips_removed_toggle_keys
   - admin_update_rejects_invalid_banner_position

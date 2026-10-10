@@ -471,5 +471,6 @@
     "save_channels": "발송 수단 저장",
     "cancel": "취소",
     "channel_template_missing": "이 수단의 템플릿이 없어 발송되지 않습니다",
-    "notifications": "알림 템플릿"
+    "notifications": "알림 템플릿",
+    "plugin_read_only": "개인정보 설정을 바꿀 권한이 없어 읽기 전용으로 표시됩니다."
 }

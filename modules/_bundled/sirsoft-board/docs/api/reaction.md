@@ -93,6 +93,8 @@ Content-Type: application/json
 
 ---
 
+**설명** 7.1.0 부터 그 게시판의 글 읽기 권한(`sirsoft-board.{slug}.posts.read`)이 없으면 403 입니다.
+
 ## POST /api/modules/sirsoft-board/boards/{slug}/comments/{commentId}/react
 
 댓글에 반응을 남깁니다. 등록·전환·해제 규칙과 응답 모양은 게시글 반응과 같고, 대상만 댓글입니다.
@@ -151,6 +153,8 @@ Content-Type: application/json
 > 비회원이 단 댓글(`user_id` 가 NULL)은 본인 판정이 불가능하므로 반응이 허용됩니다.
 
 ---
+
+**설명** 7.1.0 부터 그 게시판의 글·댓글 읽기 권한(`posts.read` + `comments.read`)이 모두 있어야 합니다(없으면 403).
 
 ## GET /api/modules/sirsoft-board/admin/reaction-types
 

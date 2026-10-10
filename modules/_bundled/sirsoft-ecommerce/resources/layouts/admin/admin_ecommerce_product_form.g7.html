@@ -16,9 +16,14 @@
       </on-code>
     </error-handling>
     <field name="errorCondition">
-      <field name="if" value="{{response?.data?.abilities?.can_update !== true}}"/>
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
       <field name="errorCode" :value="403"/>
     </field>
+  </data-source>
+  <!-- 등록·복사는 등록 권한(can_create)의 일인데 상품 응답(수정 진입)에는 그 키가 없고 등록 진입에는 응답 자체가 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다. 이 화면은 조회 권한이 있어야 열리므로 목록 조회가 막히지 않는다. 폼 전체의 읽기 전용 계산값(`isReadOnly`)이 수정 진입은 상품의 can_update, 등록·복사 진입은 이 응답의 can_create 를 보고, 구획의 입력·버튼·업로더·에디터·옵션 추가/삭제·드래그 손잡이가 모두 그 값 하나를 따른다. 응답이 아직 없으면(로딩 중·실패) 잠긴 쪽으로 시작한다. -->
+  <data-source id="product_abilities" label_key="$t:sirsoft-ecommerce.editor.data_source.product_abilities" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params :per_page="10"/>
+    <fallback :data="null"/>
   </data-source>
   <!-- 복사 진입 전용 엔드포인트다 — 원본을 그대로 주는 것이 아니라 어느 구획을 가져올지(`copy_*`)를 서버가 받아 골라 담아 준다. 어떤 항목을 복사할지는 복사 창에서 정해 쿼리로 넘어온다(SEO 만 기본 제외 — 검색엔진에 같은 내용이 둘로 잡히기 때문) -->
   <data-source id="copy_source" label_key="$t:sirsoft-ecommerce.editor.data_source.copy_source" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{query.copy_id}}/copy" method="GET" if="{{!route.itemCode &amp;&amp; !!query.copy_id}}" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
@@ -185,6 +190,7 @@
   </data-source>
   <computed name="currencyColumns">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default &amp;&amp; c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}</computed>
   <computed name="shippingPolicyOptions">{{((shipping_policies?.data?.data ?? []).some(p => p.id === product?.data?.shipping_policy_id) || !product?.data?.shipping_policy) ? (shipping_policies?.data?.data ?? []) : [...(shipping_policies?.data?.data ?? []), product.data.shipping_policy]}}</computed>
+  <computed name="isReadOnly">{{route.itemCode ? product?.data?.abilities?.can_update !== true : product_abilities?.data?.abilities?.can_create !== true}}</computed>
   <computed name="assignedPolicyInactive">{{!!product?.data?.shipping_policy &amp;&amp; product.data.shipping_policy.is_active === false}}</computed>
   <permissions>
     <permission>sirsoft-ecommerce.products.read</permission>
@@ -343,7 +349,7 @@
             </on>
             $t:sirsoft-ecommerce.common.list
           </button>
-          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-outline">
+          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product_abilities?.data?.abilities?.can_create === true}}" type="button" class="btn btn-outline">
             <on type="click">
               <open-modal target="modal_copy_product"/>
             </on>
@@ -374,7 +380,7 @@
             </on>
             $t:sirsoft-ecommerce.common.delete
           </button>
-          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" data-testid="product-save">
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" data-testid="product-save">
             <on type="click">
               <!-- 저장 — 보내기 전에 이미지 업로드부터 끝낸다. 업로드 구획이 아직 서버에 올리지 않은
                 파일을 들고 있을 수 있고, 그 결과 목록으로 폼의 이미지 항목을 갈아 끼운 뒤에야

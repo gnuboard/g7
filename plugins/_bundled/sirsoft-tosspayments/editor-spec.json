@@ -20,7 +20,10 @@
           "method_kakaopay": true,
           "method_naverpay": false,
           "method_payco": false,
-          "method_samsungpay": false
+          "method_samsungpay": false,
+          "abilities": {
+            "can_update": true
+          }
         }
       },
       "webhook_info": {

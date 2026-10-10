@@ -44,12 +44,15 @@ class ReactionApiTest extends BoardTestCase
             'use_reaction' => true,
             'active_reaction_types' => ['like', 'dislike'],
         ]);
+
+        // 반응 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트 S7) — 회원 역할에 부여해 둔다
+        $this->grantUserRolePermissions(['posts.read']);
     }
 
     /**
      * 반응 API 엔드포인트 URL 을 조립합니다.
-     * @param $postId postId 값
      *
+     * @param  $postId  postId 값
      * @return string 문자열
      */
     private function reactUrl(int $postId): string
@@ -61,6 +64,7 @@ class ReactionApiTest extends BoardTestCase
      * 반응 등록 → 카운트 +1, my_reaction_type_id 반영.
      *
      * @scenario case=register_first_like
+     *
      * @effects register_inserts_row_and_increments_count
      *
      * @return void 반환값 없음
@@ -90,6 +94,7 @@ class ReactionApiTest extends BoardTestCase
      * 다른 유형으로 전환 → 이전 -1·신규 +1 (증감 정합성).
      *
      * @scenario case=switch_like_to_dislike
+     *
      * @effects switch_updates_row_and_adjusts_both_counts
      *
      * @return void 반환값 없음
@@ -118,6 +123,7 @@ class ReactionApiTest extends BoardTestCase
      * 같은 유형 재클릭 → 해제, 카운트 -1, my_reaction_type_id null.
      *
      * @scenario case=remove_same_type
+     *
      * @effects remove_deletes_row_and_decrements_count
      *
      * @return void 반환값 없음
@@ -150,6 +156,7 @@ class ReactionApiTest extends BoardTestCase
      * 비로그인 요청은 401 로 차단된다 (확정 07).
      *
      * @scenario case=guest_react_blocked
+     *
      * @effects guest_react_returns_401
      *
      * @return void 반환값 없음
@@ -167,6 +174,7 @@ class ReactionApiTest extends BoardTestCase
      * use_reaction 이 꺼진 게시판은 422 로 차단된다.
      *
      * @scenario case=use_reaction_off_react_blocked
+     *
      * @effects use_reaction_off_react_returns_422
      *
      * @return void 반환값 없음
@@ -188,6 +196,7 @@ class ReactionApiTest extends BoardTestCase
      * 게시판이 켜지 않은(비활성) 유형은 검증 단계(422)에서 차단된다.
      *
      * @scenario case=inactive_type_react_blocked
+     *
      * @effects inactive_type_react_returns_422
      *
      * @return void 반환값 없음
@@ -209,6 +218,7 @@ class ReactionApiTest extends BoardTestCase
      * 본인 글에는 반응할 수 없다 (422, 확정 08).
      *
      * @scenario case=self_post_react_blocked
+     *
      * @effects self_post_react_returns_422
      *
      * @return void 반환값 없음
@@ -227,6 +237,7 @@ class ReactionApiTest extends BoardTestCase
      * 다른 게시판 소속이 아닌(존재하지 않는) 게시글은 404 로 차단된다.
      *
      * @scenario case=post_not_in_board
+     *
      * @effects post_not_in_board_returns_404
      *
      * @return void 반환값 없음
@@ -316,6 +327,7 @@ class ReactionApiTest extends BoardTestCase
      * 읽을 때 엉뚱한 인덱스를 읽어 개수가 항상 0/어긋나게 표시된다. 키는 항상 유형 ID 여야 한다.
      *
      * @scenario case=detail_shows_active_types_even_zero
+     *
      * @effects active_types_always_shown_even_zero_count
      *
      * @return void 반환값 없음

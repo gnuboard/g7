@@ -830,7 +830,8 @@
                                 {
                                     "id": "delete",
                                     "label": "$t:sirsoft-ecommerce.admin.carts.actions.delete",
-                                    "iconName": "trash"
+                                    "iconName": "trash",
+                                    "disabled": "{{carts?.data?.abilities?.can_manage !== true}}"
                                 },
                                 {
                                     "id": "go_to_member",

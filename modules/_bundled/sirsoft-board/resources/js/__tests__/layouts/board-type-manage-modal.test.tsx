@@ -420,7 +420,8 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
      */
     it('slug 필드가 수정 모드에서 비활성화된다', () => {
       const slugInput = findById(modal, 'bt_input_slug');
-      expect(slugInput.props.disabled).toBe("{{_computed.isReadOnly || _global.btFormMode === 'edit'}}");
+      // 유형 쓰기 API 는 게시판 등록 권한이라 부모 화면의 canManageBoardTypes 로 잠근다(7.1.0 abilities 게이트 board-admin-a #4)
+      expect(slugInput.props.disabled).toBe("{{$parent._computed.canManageBoardTypes !== true || _global.btFormMode === 'edit'}}");
     });
   });
 
@@ -927,7 +928,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
   });
 
-  // O-E-2 — 이름 필수 언어는 서버 규칙(LocaleRequiredTranslatable)과 같은 「사이트 기본 언어」다(2026-10-09 PO 확정).
+  // O-E-2 — 이름 필수 언어는 서버 규칙(LocaleRequiredTranslatable)과 같은 「사이트 기본 언어」다(2026-10-09 제품 결정).
   // 화면 언어와 무관하게 사이트 기본 언어 칸이 비면 잠그고, 서버가 `name`(필드 전체) 키나 사이트 기본 언어 키로
   // 돌려준 오류를 칸에 붙인다.
   describe('이름 필수 언어와 오류 키 (사이트 기본 언어 기준)', () => {
@@ -941,7 +942,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     };
     const ctxFor = ($locale: string, g: Record<string, unknown>, siteLocale = 'ko') => ({
       $locale,
-      _computed: { isReadOnly: false },
+      $parent: { _computed: { canManageBoardTypes: true } },
       _global: { btSaving: false, btFormSlug: 'notice', appConfig: { siteLocale }, ...g },
     });
 

@@ -2,7 +2,8 @@
     "editor": {
         "data_source": {
             "memoData": "メモデータ",
-            "memos": "メモ一覧"
+            "memos": "メモ一覧",
+            "memoCreateAbility": "メモ作成権限"
         },
         "palette": {
             "group": "Hello モジュール",
@@ -18,7 +19,8 @@
             "index": {
                 "title": "Hello メモ",
                 "description": "学習用メモ一覧",
-                "empty": "作成されたメモがありません。"
+                "empty": "作成されたメモがありません。",
+                "create_no_permission": "メモを作成する権限がありません。"
             },
             "form": {
                 "title_create": "メモ作成",
@@ -30,7 +32,8 @@
                 "actions": {
                     "save": "保存",
                     "cancel": "キャンセル"
-                }
+                },
+                "read_only": "このメモを保存する権限がないため、読み取り専用で表示されます。"
             }
         }
     },

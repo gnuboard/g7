@@ -82,7 +82,7 @@
                                 "rows": 15,
                                 "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
                                 "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                "disabled": "{{_computed.isReadOnly}}",
                                 "showHtmlModeToggle": true,
                                 "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}",
                                 "name": "description"
@@ -122,7 +122,7 @@
                                         "rows": 15,
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
                                         "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "showHtmlModeToggle": true,
                                         "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
                                     }

@@ -341,7 +341,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "disabled": "{{_local._kginicisCbtRetrying}}",
+                                        "disabled": "{{order?.data?.abilities?.can_execute_refund !== true || (_local._kginicisCbtRetrying)}}",
                                         "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
@@ -725,7 +725,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "disabled": "{{_local._kginicisCvsRechecking}}",
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsRechecking)}}",
                                         "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
@@ -848,7 +848,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "disabled": "{{_local._kginicisCvsSimulating}}",
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsSimulating)}}",
                                         "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
@@ -965,7 +965,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "disabled": "{{_local._kginicisCvsExpiring}}",
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsExpiring)}}",
                                         "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
@@ -2255,7 +2255,8 @@
                                             "props": {
                                                 "type": "text",
                                                 "placeholder": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder",
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
                                         }
                                     ]
@@ -2290,7 +2291,8 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             },
                                             "children": [
                                                 {
@@ -2488,7 +2490,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "disabled": "{{_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === ''}}",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === '')}}",
                                                 "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
                                             "children": [
@@ -2730,7 +2732,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "disabled": "{{_local._dncf_processing}}",
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._dncf_processing)}}",
                                         "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [

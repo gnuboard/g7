@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\PluginSettingsService;
@@ -181,7 +182,8 @@ class UserReceiptController extends PublicBaseController
             'selected_payment_method' => $paymentMeta['selected_payment_method'] ?? null,
             'embedded_pg_provider' => is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
             'embedded_pg_provider_label' => is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
-            'vbank_bank_code' => $this->vbankBankCode($payment),
+            // 관리자 확인용 값 — 화면만 숨기지 않고 응답에서도 주문 조회 권한자에게만 싣는다
+            'vbank_bank_code' => PermissionHelper::check('sirsoft-ecommerce.orders.read', Auth::user()) ? $this->vbankBankCode($payment) : null,
             'escrow_confirm_url' => $this->escrowConfirmUrl($orderNumber, (bool) ($payment->is_escrow ?? false)),
         ]);
     }

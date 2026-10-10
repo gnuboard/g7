@@ -146,7 +146,7 @@
                                     "props": {
                                         "className": "select w-full",
                                         "value": "{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "children": [
                                         {
@@ -307,7 +307,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.fill_detail_ref"
                                                 }
@@ -349,7 +349,8 @@
                                                 "minItems": 0,
                                                 "addLabel": "$t:sirsoft-ecommerce.admin.product.notice.add_item",
                                                 "emptyMessage": "$t:sirsoft-ecommerce.admin.product.notice.empty_message",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "readOnly": "{{_computed.isReadOnly}}",
                                                 "columns": [
                                                     {
                                                         "key": "name",

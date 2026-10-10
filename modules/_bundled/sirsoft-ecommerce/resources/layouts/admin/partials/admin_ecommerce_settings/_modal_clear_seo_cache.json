@@ -110,6 +110,7 @@
                             ]
                         },
                         {
+                            "id": "seo_clear_cache_confirm",
                             "type": "basic",
                             "name": "Button",
                             "if": "{{$parent._local.isClearingCache !== true}}",
@@ -180,7 +181,8 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-danger"
+                                "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                             },
                             "children": [
                                 {

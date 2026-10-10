@@ -94,6 +94,7 @@
 - 코어 권한 2건(`core.system`·`core.system.update`)의 일본어 번역을 추가했습니다 — 일본어 로케일의 역할 수정 화면에서 「시스템 관리」·「코어 업데이트」가 한국어로 남아 있었습니다.
 - 확장 공통 권한 2건(`core.extensions`·`core.extensions.custom_assets.manage`)의 일본어 번역을 추가했습니다 — 모듈·플러그인·템플릿에 운영자 CSS·JS·폰트·이미지를 추가하는 권한으로, 일본어 로케일의 역할 수정 화면에서 한국어로 남아 있었습니다.
 - 사용자 API 의 내 정보 권한 2종(`core.profile.read` 「マイ情報閲覧」·`core.profile.update` 「マイ情報編集」)과 그 묶음 이름(`core.profile`)의 일본어 번역을 권한 시드에 추가했습니다. 없으면 일본어 관리자 화면의 역할 편집에서 이 권한 이름이 한국어로 보입니다.
+- 7.1.0 권한 정비에 맞춘 안내 문구의 일본어 번역을 추가했습니다 — 관리자 화면에서 본인 계정 삭제 거절(`exceptions.cannot_delete_self`), 최고관리자 역할 사용 여부 변경 거절(`exceptions.role_active_state_locked`), 확장 설치 때 함께 설치할 확장·언어팩의 권한 부족 안내(`extensions.errors.cascade_permission_denied`)와 그 종류 이름(`extensions.cascade_types.*` 「モジュール」「プラグイン」「言語パック」)입니다. 없으면 일본어 화면에서 이 안내가 한국어로 보입니다.
 
 #### 알림
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`notification.variables.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 코어 알림의 변수 설명이 한국어로 보였습니다.

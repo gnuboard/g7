@@ -11,7 +11,7 @@
         <div data-ref="field_use_comment" class="">
           <div class="flex-center gap-4">
             <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
-              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment')}}">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment')}}" disabled="{{!_computed.canBulkApply}}">
                 <on type="change">
                   <!-- 「댓글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_comment') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment') : [...(_local.bulkApplyFields ?? []), 'use_comment']}}"/>
@@ -28,7 +28,7 @@
         <div data-ref="field_max_comment_depth" class="">
           <div class="flex-center gap-4">
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}" disabled="{{!_computed.canBulkApply}}">
                 <on type="change">
                   <!-- 「대댓글을 몇 단까지 허용할지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_comment_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_depth') : [...(_local.bulkApplyFields ?? []), 'max_comment_depth']}}"/>
@@ -48,7 +48,7 @@
         <div data-ref="field_comment_order" class="">
           <div class="flex-center gap-4">
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('comment_order')}}">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('comment_order')}}" disabled="{{!_computed.canBulkApply}}">
                 <on type="change">
                   <!-- 「댓글 정렬 순서」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('comment_order') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'comment_order') : [...(_local.bulkApplyFields ?? []), 'comment_order']}}"/>
@@ -70,7 +70,7 @@
         <div data-ref="field_min_comment_length" class="">
           <div class="flex-center gap-4">
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}" disabled="{{!_computed.canBulkApply}}">
                 <on type="change">
                   <!-- 「댓글 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_comment_length') : [...(_local.bulkApplyFields ?? []), 'min_comment_length']}}"/>
@@ -90,7 +90,7 @@
         <div data-ref="field_max_comment_length" class="">
           <div class="flex-center gap-4">
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}" disabled="{{!_computed.canBulkApply}}">
                 <on type="change">
                   <!-- 「댓글 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_length') : [...(_local.bulkApplyFields ?? []), 'max_comment_length']}}"/>

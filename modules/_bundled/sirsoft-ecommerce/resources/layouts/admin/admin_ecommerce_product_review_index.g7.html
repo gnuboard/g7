@@ -479,7 +479,7 @@
       <div data-ref="batch_actions" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-between flex-wrap gap-3">
         <div class="flex-center flex-wrap gap-3">
           <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.product_review.batch.selected_count|count={{_local.selectedReviews.length ?? 0}}</span>
-          <select name="batchAction" class="w-48" value="{{_local.batchAction ?? ''}}">
+          <select name="batchAction" class="w-48" value="{{_local.batchAction ?? ''}}" disabled="{{reviews.data?.abilities?.can_update !== true}}">
             <options>
               <option value="" disabled>$t:sirsoft-ecommerce.admin.product_review.batch.status_change</option>
               <option value="visible">$t:sirsoft-ecommerce.admin.product_review.filter.visible</option>
@@ -492,7 +492,7 @@
           </select>
         </div>
         <!-- 일괄 적용. 고른 작업과 대상 id 를 전역에 옮겨 담은 뒤 확인 모달을 연다 — 모달은 별도 컨텍스트라 이 화면의 폼 상태를 그대로 읽지 못한다 -->
-        <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.batchAction || (_local.selectedReviews ?? []).length === 0}}">
+        <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{reviews.data?.abilities?.can_update !== true || !_local.batchAction || (_local.selectedReviews ?? []).length === 0}}">
           <on type="click">
             <set-state target="global" reviewBatchAction="{{_local.batchAction}}" reviewBatchIds="{{_local.selectedReviews ?? []}}"/>
             <open-modal target="modal_status_change"/>
@@ -534,7 +534,7 @@
         </div>
       </div>
       <div data-ref="table_container" class="overflow-hidden mb-4">
-        <data-grid data-type="composite" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty">
+        <data-grid data-type="composite" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" selectable="{{reviews.data?.abilities?.can_update === true}}" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty">
           <blur-until-loaded sources="reviews"/>
           <prop name="expandContext">
             <field name="rowId" value="{{row.id}}"/>
@@ -789,13 +789,13 @@
                       <span class="text-secondary text-xs">{{`${row.reply_admin?.name ?? ''} (${row.reply_admin?.email ?? ''}) · ${row.replied_at ?? ''}${row.reply_updated_at ? ' · 수정: ' + row.reply_updated_at : ''}`}}</span>
                       <div class="flex gap-2 shrink-0">
                         <!-- 답글 고치기 — 어느 행이 편집 중인지 id 로 표시하고 지금 답글을 입력칸에 옮겨 담는다(행마다 폼을 따로 두지 않고 한 벌을 돌려 쓴다) -->
-                        <button type="button" class="btn btn-sm btn-outline">
+                        <button data-ref="review_reply_edit_button" type="button" class="btn btn-sm btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
                           <on type="click">
                             <set-state target="local" editingReviewId="{{row.id}}" editReplyContent="{{rowReplyContent}}"/>
                           </on>
                           $t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.edit
                         </button>
-                        <button type="button" class="btn btn-sm text-red-500 bg-red-50 border border-red-300 hover:bg-red-100 dark:bg-red-900/30 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/50">
+                        <button data-ref="review_reply_delete_button" type="button" class="btn btn-sm text-red-500 bg-red-50 border border-red-300 hover:bg-red-100 dark:bg-red-900/30 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
                           <on type="click">
                             <!-- 답글 삭제 — 지울 대상을 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 행 데이터를 못 본다) -->
                             <sequence>
@@ -809,7 +809,7 @@
                     </div>
                     <!-- 카드 본문: 답변 수정 폼 (편집 모드) -->
                     <div data-if="{{_local.editingReviewId === row.id}}" class="px-4 py-3">
-                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.editReplyContent ?? ''}}">
+                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.editReplyContent ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 고치는 중인 답글 본문 -->
                           <set-state target="local" editReplyContent="{{$event.target.value}}"/>
@@ -825,7 +825,7 @@
                         </on>
                         $t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.cancel
                       </button>
-                      <button type="button" class="btn btn-sm btn-primary" disabled="{{_local.isSubmitting}}">
+                      <button data-ref="review_reply_update_submit" type="button" class="btn btn-sm btn-primary" disabled="{{_local.isSubmitting || row.abilities?.can_update !== true}}">
                         <on type="click">
                           <!-- 고친 답글 저장 — 등록과 같은 엔드포인트다(서버가 덮어쓴다). 성공하면 편집을 접고 목록을 다시 받아 「수정: 날짜」까지 서버 값으로 맞춘다 -->
                           <sequence>
@@ -855,7 +855,7 @@
                     </div>
                     <!-- 카드 본문: 답변 입력 폼 -->
                     <div class="px-4 py-3">
-                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.replyText ?? ''}}">
+                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.replyText ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 새로 다는 답글 본문 — 고치기용 입력칸과 따로 둔다(둘이 같은 자리를 쓰면 편집 중에 다른 행의 등록 폼이 그 값을 물고 있는다) -->
                           <set-state target="local" replyText="{{$event.target.value}}"/>
@@ -864,7 +864,7 @@
                     </div>
                     <!-- 카드 푸터: 등록 버튼 -->
                     <div class="flex justify-end px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                      <button type="button" class="btn btn-primary" disabled="{{_local.isSubmittingReply}}">
+                      <button data-ref="review_reply_create_submit" type="button" class="btn btn-primary" disabled="{{_local.isSubmittingReply || row.abilities?.can_update !== true}}">
                         <on type="click">
                           <!-- 답글 등록 — 성공하면 입력칸을 비우고 목록을 다시 받아 그 행이 답글 있는 모습으로 바뀌게 한다 -->
                           <sequence>

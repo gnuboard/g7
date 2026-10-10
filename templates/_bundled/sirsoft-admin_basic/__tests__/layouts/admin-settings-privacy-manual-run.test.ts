@@ -3,7 +3,8 @@
  *
  * @description
  * 탈퇴 잔여정보 파기와 휴면 네 단계를 스케줄러와 무관하게 큐에 접수하는 버튼·확인 창·상태 줄의 계약을 고정한다.
- * 버튼은 실행 권한(`can_run`)이 있을 때만 그리고, 저장 안 된 변경이 있거나 같은 대상이 진행 중이면 막는다.
+ * 버튼은 상태 조회가 그 대상을 돌려주면 늘 그리고(2026-10-04 결정 — 보이되 비활성), 실행 권한(`can_run`)이 없거나
+ * 저장 안 된 변경이 있거나 같은 대상이 진행 중이면 막는다.
  * 확인 창은 건수를 다시 세고, 휴면 전환·탈퇴의 「대기기간 생략」을 바꾸면 고정값 갈래로 다시 센다.
  * 상태 소스는 진행 중이면 폴링하고, 끝나면 응답값(`finished_since`)만으로 대상 건수를 다시 받는다.
  */
@@ -77,11 +78,15 @@ describe('개인정보 조치 직권 실행 — 버튼 (#636 후속)', () => {
      *
      * @effects run_button_is_gated_by_run_permission_and_unsaved_changes
      */
-    it('실행 버튼은 실행 권한으로만 그리고, 저장 전 변경·진행 중 작업이 있으면 막는다', () => {
+    it('실행 버튼은 대상이 있으면 그리되, 실행 권한이 없거나 저장 전 변경·진행 중 작업이 있으면 막는다', () => {
         expect(runButtons.every(Boolean)).toBe(true);
 
         for (const button of runButtons as any[]) {
-            expect(button.if, button.id).toContain('?.can_run');
+            // 설정 보기만 가진 관리자도 버튼을 본다(보안 탭 「지금 실행」과 같은 방식) — 그리기 조건은 대상 존재뿐이고,
+            // 실행 권한은 잠금 조건에서 부정으로 본다.
+            expect(button.if, button.id).toMatch(/^\{\{!!privacyManualRuns\?\.data\?\.targets\?\.\[[^\]]+\]\}\}$/);
+            expect(button.if, button.id).not.toContain('can_run');
+            expect(button.props.disabled, button.id).toMatch(/^\{\{!privacyManualRuns\?\.data\?\.targets\?\.\[[^\]]+\]\?\.can_run \|\| /);
             expect(button.props.disabled, button.id).toContain('_local.hasChanges');
             expect(button.props.disabled, button.id).toContain('?.run?.is_active');
         }

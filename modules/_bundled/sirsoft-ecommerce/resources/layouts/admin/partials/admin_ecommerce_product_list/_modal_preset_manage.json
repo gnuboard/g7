@@ -60,6 +60,7 @@
                             },
                             "children": [
                                 {
+                                    "id": "preset_rename_button_{{presetIdx}}",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
@@ -85,7 +86,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon",
+                                        "className": "btn-icon disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{products?.data?.abilities?.can_update !== true}}",
                                         "aria-label": "$t:common.edit"
                                     },
                                     "children": [
@@ -100,6 +102,7 @@
                                     ]
                                 },
                                 {
+                                    "id": "preset_delete_button_{{presetIdx}}",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
@@ -125,7 +128,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                        "className": "btn-icon text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{products?.data?.abilities?.can_update !== true}}",
                                         "aria-label": "$t:common.delete"
                                     },
                                     "children": [
@@ -154,6 +158,7 @@
             },
             "children": [
                 {
+                    "id": "preset_save_new_button",
                     "type": "basic",
                     "name": "Button",
                     "actions": [
@@ -165,7 +170,8 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary w-full"
+                        "className": "btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.add_new"
                 }

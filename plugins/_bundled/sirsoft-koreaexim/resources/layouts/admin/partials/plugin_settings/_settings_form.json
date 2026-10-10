@@ -57,7 +57,7 @@
                                 "name": "auth_key",
                                 "type": "password",
                                 "autoComplete": "new-password",
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -93,7 +93,7 @@
                             "props": {
                                 "id": "koreaexim_auto_manage",
                                 "name": "auto_manage",
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -131,7 +131,7 @@
                                 "name": "update_time",
                                 "type": "text",
                                 "placeholder": "11:30",
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -175,7 +175,7 @@
                             "props": {
                                 "id": "koreaexim_rate_type",
                                 "name": "rate_type",
-                                "disabled": "{{_computed.isReadOnly}}",
+                                "disabled": "{{_computed.isSettingsReadOnly}}",
                                 "options": [
                                     {
                                         "value": "deal_bas_r",
@@ -228,7 +228,7 @@
                                 "type": "number",
                                 "min": 0,
                                 "max": 12,
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -267,7 +267,7 @@
                                 "type": "number",
                                 "min": 0,
                                 "max": 8,
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -306,7 +306,7 @@
                                 "type": "number",
                                 "min": 0,
                                 "max": 14,
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -345,7 +345,7 @@
                                 "type": "number",
                                 "min": 30,
                                 "max": 3650,
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -381,7 +381,7 @@
                             "props": {
                                 "id": "koreaexim_notify_on_failure",
                                 "name": "notify_on_failure",
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
                             }
                         },
                         {
@@ -442,7 +442,7 @@
                                             "props": {
                                                 "checked": "{{(_local.form?.run_days ?? []).includes(1)}}",
                                                 "aria-label": "$t:sirsoft-koreaexim.days.1",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
                                             }
                                         },
                                         {
@@ -477,7 +477,7 @@
                                             "props": {
                                                 "checked": "{{(_local.form?.run_days ?? []).includes(2)}}",
                                                 "aria-label": "$t:sirsoft-koreaexim.days.2",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
                                             }
                                         },
                                         {
@@ -512,7 +512,7 @@
                                             "props": {
                                                 "checked": "{{(_local.form?.run_days ?? []).includes(3)}}",
                                                 "aria-label": "$t:sirsoft-koreaexim.days.3",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
                                             }
                                         },
                                         {
@@ -547,7 +547,7 @@
                                             "props": {
                                                 "checked": "{{(_local.form?.run_days ?? []).includes(4)}}",
                                                 "aria-label": "$t:sirsoft-koreaexim.days.4",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
                                             }
                                         },
                                         {
@@ -582,7 +582,7 @@
                                             "props": {
                                                 "checked": "{{(_local.form?.run_days ?? []).includes(5)}}",
                                                 "aria-label": "$t:sirsoft-koreaexim.days.5",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
                                             }
                                         },
                                         {
@@ -617,7 +617,7 @@
                                             "props": {
                                                 "checked": "{{(_local.form?.run_days ?? []).includes(6)}}",
                                                 "aria-label": "$t:sirsoft-koreaexim.days.6",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
                                             }
                                         },
                                         {
@@ -652,7 +652,7 @@
                                             "props": {
                                                 "checked": "{{(_local.form?.run_days ?? []).includes(7)}}",
                                                 "aria-label": "$t:sirsoft-koreaexim.days.7",
-                                                "disabled": "{{_computed.isReadOnly}}"
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
                                             }
                                         },
                                         {

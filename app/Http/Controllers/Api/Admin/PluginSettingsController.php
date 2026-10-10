@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Extension\PluginManager;
+use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\UpdatePluginSettingsRequest;
 use App\Services\DriverRegistryService;
@@ -106,8 +107,29 @@ class PluginSettingsController extends AdminBaseController
 
         return $this->success(
             'common.success',
-            $this->withPublicAssetCatalog($identifier, $this->maskSensitive($identifier, $settings))
+            $this->withAbilities(
+                $this->withPublicAssetCatalog($identifier, $this->maskSensitive($identifier, $settings))
+            )
         );
+    }
+
+    /**
+     * 응답 설정에 화면이 읽기 전용 여부를 정할 권한 값(abilities)을 싣는다.
+     *
+     * 설정 화면은 조회 권한(core.plugins.read)으로 열리지만 저장은 core.plugins.update 가
+     * 필요하다. 이 값이 없으면 화면이 쓰기 권한을 알 수 없어 읽기만 가진 운영자에게도
+     * 입력·저장이 살아 있다. 판정 식별자는 저장 라우트의 permission 미들웨어와 같다.
+     *
+     * @param  array<string, mixed>  $settings  응답에 실을 설정
+     * @return array<string, mixed> abilities 가 붙은 설정
+     */
+    private function withAbilities(array $settings): array
+    {
+        $settings['abilities'] = [
+            'can_update' => PermissionHelper::check('core.plugins.update', request()->user()),
+        ];
+
+        return $settings;
     }
 
     /**
@@ -125,6 +147,10 @@ class PluginSettingsController extends AdminBaseController
         // 그대로 설정 파일에 병합되는 경로로만 동작했다 (mass-assignment).
         $settings = $request->validated();
 
+        // 화면은 조회 응답을 폼에 담아 그대로 되돌려 보내므로 abilities 가 섞여 온다.
+        // 권한 값은 요청마다 서버가 계산하는 것이라 설정으로 저장하지 않는다.
+        unset($settings['abilities']);
+
         $result = $this->pluginSettingsService->save($identifier, $settings, $failureReason);
 
         if (! $result) {
@@ -137,9 +163,11 @@ class PluginSettingsController extends AdminBaseController
         // 누락 시 저장 직후 선택지가 비어 보인다 (ecommerce 저장 응답과 동형)
         return $this->success(
             'plugins.settings.updated',
-            $this->withPublicAssetCatalog(
-                $identifier,
-                $this->maskSensitive($identifier, $this->pluginSettingsService->get($identifier) ?? [])
+            $this->withAbilities(
+                $this->withPublicAssetCatalog(
+                    $identifier,
+                    $this->maskSensitive($identifier, $this->pluginSettingsService->get($identifier) ?? [])
+                )
             )
         );
     }

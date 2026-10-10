@@ -2,6 +2,10 @@
 
 namespace Plugins\Sirsoft\Gdpr\Tests\Feature\Api\Admin;
 
+use App\Enums\PermissionType;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\PluginSettingsService;
 use Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
@@ -69,6 +73,34 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
             ->assertJsonPath('data.settings.banner_enabled', true)
             ->assertJsonPath('data.settings.cookie_categories.0.key', 'necessary')
             ->assertJsonMissingPath('data.settings.master_switch');
+    }
+
+    /**
+     * 설정 응답이 저장 권한(privacy.update) 판정을 싣는다 — 설정 화면 읽기 전용의 근거(7.1.0 abilities 게이트 G19).
+     *
+     * @scenario surface=admin_show
+     *
+     * @effects admin_show_reports_update_ability
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_reports_update_ability(): void
+    {
+        $viewer = User::factory()->create();
+        $role = Role::create(['identifier' => 'gdpr_viewer_'.uniqid(), 'name' => ['ko' => '조회', 'en' => 'Viewer'], 'is_active' => true]);
+        $role->permissions()->attach(Permission::firstOrCreate(
+            ['identifier' => 'sirsoft-gdpr.privacy.view'],
+            ['name' => ['ko' => '개인정보 조회', 'en' => 'View Privacy'], 'type' => PermissionType::Admin]
+        )->id);
+        $viewer->roles()->attach($role->id);
+
+        $this->actingAs($viewer)->getJson('/api/plugins/sirsoft-gdpr/admin/settings')
+            ->assertOk()
+            ->assertJsonPath('data.abilities.can_update', false);
+
+        $this->actingAs($this->createPrivacyOperatorUser())->getJson('/api/plugins/sirsoft-gdpr/admin/settings')
+            ->assertOk()
+            ->assertJsonPath('data.abilities.can_update', true);
     }
 
     /**

@@ -317,6 +317,7 @@
         "delete_all_confirm": "Are you sure you want to delete all notifications?",
         "delete_all_success": "All notifications have been deleted.",
         "delete_all_failed": "Failed to delete notifications.",
+        "no_permission": "You do not have permission to mark notifications as read or delete them.",
         "all_deleted": "All notifications have been deleted.",
         "unread_only": "Unread only",
         "new_notification_received": "New notification received.",

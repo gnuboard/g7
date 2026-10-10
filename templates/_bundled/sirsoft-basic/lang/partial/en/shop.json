@@ -641,5 +641,6 @@
     "page_title": "File a Guest Claim",
     "page_description": "File an exchange, return, or cancellation/refund request for a guest order.",
     "edit_page_title": "Edit Guest Claim"
-  }
+  },
+  "order_permission_denied": "You do not have permission to place orders. Please contact the seller."
 }

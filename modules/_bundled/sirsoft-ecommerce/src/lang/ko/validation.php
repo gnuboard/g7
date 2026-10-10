@@ -2410,4 +2410,10 @@ return [
         'complete_defaults_create_refund_request' => '완료 처리 기본값 - 환불신청서 접수',
         'complete_defaults_restore_stock' => '완료 처리 기본값 - 재고 복구',
     ],
+
+    // 본인인증 정책 탭 검증 메시지
+    'identity_policy' => [
+        'target_not_owned' => '이커머스 본인인증 정책은 이커머스 지점만 대상으로 할 수 있습니다. 훅·사용자 지정 범위는 「sirsoft-ecommerce.」, 경로 범위는 「api.modules.sirsoft-ecommerce.」로 시작해야 합니다.',
+        'nothing_to_update' => '변경할 항목이 없습니다.',
+    ],
 ];

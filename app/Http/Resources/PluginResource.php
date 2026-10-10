@@ -77,6 +77,8 @@ class PluginResource extends BaseApiResource
             'can_install' => 'core.plugins.install',
             'can_activate' => 'core.plugins.activate',
             'can_uninstall' => 'core.plugins.uninstall',
+            // 설정 화면 저장 권한 — 목록 카드 「설정」 메뉴가 이 값으로 잠긴다(설정 PUT 과 같은 식별자)
+            'can_update' => 'core.plugins.update',
         ];
     }
 
@@ -147,6 +149,8 @@ class PluginResource extends BaseApiResource
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),
+            // 상세 창이 목록 행(abilities 포함)을 담던 전역을 이 응답으로 덮어쓰므로 권한 메타도 함께 싣는다.
+            ...$this->resourceMeta(request()),
         ];
     }
 

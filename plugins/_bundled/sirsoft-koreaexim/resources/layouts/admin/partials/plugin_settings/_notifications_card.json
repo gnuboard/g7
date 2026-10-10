@@ -19,6 +19,16 @@
             "text": "$t:sirsoft-koreaexim.notifications"
         },
         {
+            "id": "koreaexim_notifications_forbidden",
+            "type": "basic",
+            "name": "P",
+            "if": "{{_local.koreaeximNotificationsForbidden === true}}",
+            "props": {
+                "className": "form-hint"
+            },
+            "text": "$t:sirsoft-koreaexim.notifications_forbidden"
+        },
+        {
             "id": "koreaexim_notification_definition_{{defIdx}}",
             "type": "basic",
             "name": "Div",

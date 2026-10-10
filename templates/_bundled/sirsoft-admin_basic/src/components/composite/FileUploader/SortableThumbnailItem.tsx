@@ -204,14 +204,19 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
           <Button
             type="button"
             data-uploader-action="primary"
+            // 비활성(읽기 전용)이면 대표 표시는 남기되 바꿀 수 없다 — 대표가 아닌 칸의 ★ 는 감춘다
+            disabled={disabled}
             onClick={(e) => {
               e.stopPropagation();
+              if (disabled) return;
               onPrimaryClick();
             }}
-            className={`absolute top-1.5 left-1.5 z-10 p-1 rounded-full transition-colors ${
+            className={`absolute top-1.5 left-1.5 z-10 p-1 rounded-full transition-colors disabled:cursor-not-allowed ${
               isPrimary
                 ? 'bg-yellow-500 text-white'
-                : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                : disabled
+                  ? 'hidden'
+                  : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
             }`}
             title={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
             aria-label={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}

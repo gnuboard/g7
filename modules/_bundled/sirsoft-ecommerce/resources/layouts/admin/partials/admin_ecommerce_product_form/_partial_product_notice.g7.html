@@ -24,7 +24,7 @@
               <span>$t:sirsoft-ecommerce.admin.product.buttons.manage_notice_template</span>
             </a>
           </div>
-          <select class="select w-full" value="{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <select class="select w-full" value="{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 템플릿을 고르면 곧바로 채우지 않고 확인 창을 거친다 — 이미 넣어 둔 고시 내용이 통째로 갈리기 때문이다. 고른 값은 확정될 때까지 전역에 대기한다 -->
               <action handler="sirsoft-ecommerce.confirmSelectNoticeTemplate" templateId="{{parseInt($event.target.value) || null}}"/>
@@ -53,7 +53,7 @@
             </div>
             <div class="flex-center gap-2">
               <responsive on="portable" class="row-stack w-full"/>
-              <button type="button" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <button type="button" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <responsive on="portable" class="flex-center justify-center w-full px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
                 <on type="click">
                   <!-- 「상세설명 참조」로 일괄 채우기 — 확인 창이 미리보기를 보여 줘야 해서 지금 폼을 통째로 전역에 옮겨 담고 연다 -->
@@ -67,7 +67,7 @@
             </div>
           </div>
           <multilingual-tab-panel data-type="composite" data-ref="notice_locale_panel" variant="underline" class="">
-            <dynamic-field-list data-type="composite" data-ref="notice_items_editor" name="notice_items" items="{{_local.form.notice_items ?? []}}" itemIdKey="key" errors="{{_local.errors}}" :enableDrag="true" :showIndex="true" :minItems="0" addLabel="$t:sirsoft-ecommerce.admin.product.notice.add_item" emptyMessage="$t:sirsoft-ecommerce.admin.product.notice.empty_message" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <dynamic-field-list data-type="composite" data-ref="notice_items_editor" name="notice_items" items="{{_local.form.notice_items ?? []}}" itemIdKey="key" errors="{{_local.errors}}" :enableDrag="true" :showIndex="true" :minItems="0" addLabel="$t:sirsoft-ecommerce.admin.product.notice.add_item" emptyMessage="$t:sirsoft-ecommerce.admin.product.notice.empty_message" disabled="{{_computed.isReadOnly}}" readOnly="{{_computed.isReadOnly}}">
               <prop name="columns">
                 <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product.notice.col_name"/>
                 <item key="content" type="multilingual" label="$t:sirsoft-ecommerce.admin.product.notice.col_value" placeholder="$t:sirsoft-ecommerce.admin.product.notice.input_placeholder"/>

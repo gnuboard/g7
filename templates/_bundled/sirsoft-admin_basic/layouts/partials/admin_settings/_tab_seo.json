@@ -213,6 +213,7 @@
                                     "name": "Toggle",
                                     "props": {
                                         "name": "seo.generator_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "size": "md"
                                     }
                                 }
@@ -694,6 +695,7 @@
                                     "name": "Toggle",
                                     "props": {
                                         "name": "seo.bot_detection_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "size": "md"
                                     }
                                 }
@@ -735,7 +737,7 @@
                                     "props": {
                                         "name": "seo.bot_detection_library_enabled",
                                         "size": "md",
-                                        "disabled": "{{!_local.form?.seo?.bot_detection_enabled}}"
+                                        "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"
                                     }
                                 }
                             ]
@@ -765,7 +767,7 @@
                                         "placeholder": "$t:admin.settings.seo.bot_user_agents_placeholder",
                                         "className": "w-full",
                                         "defaultVariant": "blue",
-                                        "disabled": "{{!_local.form?.seo?.bot_detection_enabled}}"
+                                        "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"
                                     }
                                 },
                                 {
@@ -848,6 +850,7 @@
                                     "name": "Toggle",
                                     "props": {
                                         "name": "seo.cache_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "size": "md"
                                     }
                                 }
@@ -872,6 +875,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "seo.cache_ttl",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "min": "{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}",
                                         "max": "{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}",
                                         "placeholder": "7200",
@@ -958,6 +962,7 @@
                                     "name": "Toggle",
                                     "props": {
                                         "name": "seo.sitemap_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "size": "md"
                                     }
                                 }
@@ -981,6 +986,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "seo.sitemap_schedule",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "className": "w-full",
                                         "options": [
                                             {
@@ -1020,6 +1026,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.sitemap_schedule_time",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "placeholder": "02:00",
                                         "className": ""
                                     }
@@ -1053,6 +1060,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "seo.sitemap_cache_ttl",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "min": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}",
                                         "max": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}",
                                         "placeholder": "86400",
@@ -1088,6 +1096,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "seo.sitemap_urls_per_file",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "min": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}",
                                         "max": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}",
                                         "placeholder": "50000",
@@ -1139,6 +1148,7 @@
                                     "name": "Toggle",
                                     "props": {
                                         "name": "seo.sitemap_gzip",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "size": "md"
                                     }
                                 }
@@ -1179,6 +1189,7 @@
                                     "name": "Toggle",
                                     "props": {
                                         "name": "seo.sitemap_hreflang_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
                                         "size": "md"
                                     }
                                 }

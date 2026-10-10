@@ -3,6 +3,7 @@
   "title_edit": "掲示板編集",
   "description": "掲示板設定を管理します",
   "read_only_message": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。",
+  "create_read_only_message": "掲示板の作成権限がないため、読み取り専用で表示されます。",
   "validation_error": "入力情報をご確認ください。",
   "add_category": "分類追加",
   "tabs": {
@@ -141,7 +142,8 @@
     "use_reaction": "リアクション使用",
     "active_reaction_types": "使用するリアクションタイプを選択",
     "use_comment_reaction": "コメントリアクション使用",
-    "manage_reaction_types": "タイプ管理"
+    "manage_reaction_types": "タイプ管理",
+    "manage_reaction_types_no_permission": "リアクションタイプを管理するには掲示板環境設定の更新権限が必要です。"
   },
   "placeholders": {
     "name": "例：お知らせ",

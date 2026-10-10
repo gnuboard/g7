@@ -7,6 +7,12 @@ return [
         'template' => '템플릿',
     ],
 
+    'cascade_types' => [
+        'module' => '모듈',
+        'plugin' => '플러그인',
+        'language_pack' => '언어팩',
+    ],
+
     'errors' => [
         'state_contract_conflict' => "':name' 상태 계약은 이미 :owner 확장이 소유하고 있어 :extension 확장에서 같은 이름을 선언할 수 없습니다.",
         'core_version_mismatch' => ':extension (:type)에는 그누보드7 코어 버전 :required 이상이 필요합니다. (현재: :installed)',
@@ -19,6 +25,7 @@ return [
         'zip_missing_version' => 'ZIP 내부의 :file 매니페스트에 version 필드가 없습니다.',
         'not_found' => '확장(:identifier) 을 찾을 수 없습니다.',
         'cascade_dependency_failed' => '동반 설치할 :type (:identifier) 의 설치에 실패했습니다: :message',
+        'cascade_permission_denied' => '함께 설치할 :type (:identifier) 을(를) 설치하거나 활성화할 권한이 없습니다.',
         'invalid_type' => '유효하지 않은 확장 타입입니다.',
         'not_auto_deactivated' => '이 확장은 코어 버전 호환성 문제로 자동 비활성화된 상태가 아닙니다.',
         'hidden_extension' => '내부용(hidden) 확장은 사용자 노출 대상이 아닙니다.',

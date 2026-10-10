@@ -286,7 +286,7 @@
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="delete" label="$t:sirsoft-ecommerce.admin.carts.actions.delete" iconName="trash"/>
+          <item id="delete" label="$t:sirsoft-ecommerce.admin.carts.actions.delete" iconName="trash" disabled="{{carts?.data?.abilities?.can_manage !== true}}"/>
           <item id="go_to_member" label="$t:sirsoft-ecommerce.admin.carts.actions.view_member" iconName="user"/>
         </prop>
         <on type="change" event="onSelectionChange">

@@ -133,9 +133,10 @@
                                     "name": "Div",
                                     "actions": [
                                         {
-                                            "comment": "전체 게시판에 적용. 라디오 자체가 아니라 감싼 자리를 눌러도 고르게 하려고 클릭으로 값을 세운다",
+                                            "comment": "전체 게시판에 적용. 라디오 자체가 아니라 감싼 자리를 눌러도 고르게 하려고 클릭으로 값을 세운다. 일괄 적용 권한이 없으면 카드를 눌러도 바뀌지 않는다",
                                             "type": "click",
                                             "handler": "setState",
+                                            "if": "{{_computed.canBulkApply}}",
                                             "params": {
                                                 "target": "local",
                                                 "bulkApplyAll": true
@@ -165,6 +166,7 @@
                                                 "name": "_bulkApplyAll",
                                                 "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.apply_all",
                                                 "className": "radio",
+                                                "disabled": "{{!_computed.canBulkApply}}",
                                                 "checked": "{{_local.bulkApplyAll !== false}}"
                                             }
                                         },
@@ -187,6 +189,7 @@
                                             "comment": "고른 게시판에만 적용",
                                             "type": "click",
                                             "handler": "setState",
+                                            "if": "{{_computed.canBulkApply}}",
                                             "params": {
                                                 "target": "local",
                                                 "bulkApplyAll": false
@@ -216,6 +219,7 @@
                                                 "name": "_bulkApplyAll",
                                                 "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.apply_selected",
                                                 "className": "radio",
+                                                "disabled": "{{!_computed.canBulkApply}}",
                                                 "checked": "{{_local.bulkApplyAll === false}}"
                                             }
                                         },
@@ -266,12 +270,22 @@
                                         "options": "{{$computed.boardOptions ?? []}}",
                                         "placeholder": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder",
                                         "className": "w-full",
-                                        "disabled": "{{_computed.isReadOnly}}"
+                                        "disabled": "{{!_computed.canBulkApply}}"
                                     }
                                 }
                             ]
                         }
                     ]
+                },
+                {
+                    "id": "bulk_apply_no_permission",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_computed.isReadOnly && !_computed.canBulkApply && (boards_list?.data?.data ?? []).length > 0}}",
+                    "props": {
+                        "className": "form-hint mt-6"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.bulk_apply.no_permission"
                 },
                 {
                     "type": "basic",
@@ -282,6 +296,7 @@
                     },
                     "children": [
                         {
+                            "id": "bulk_apply_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -337,7 +352,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "disabled": "{{_computed.isReadOnly}}",
+                                "disabled": "{{!_computed.canBulkApply}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [

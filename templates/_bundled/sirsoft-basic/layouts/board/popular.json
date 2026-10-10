@@ -35,7 +35,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards/popular",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": false,
+            "auth_mode": "optional",
             "refetchOnMount": true,
             "params": {
                 "period": "{{query.period ?? 'week'}}",

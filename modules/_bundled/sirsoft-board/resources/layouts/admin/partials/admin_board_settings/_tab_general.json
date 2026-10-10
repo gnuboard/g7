@@ -79,6 +79,7 @@
                                             "comment": "날짜를 「2026-08-04」처럼 그대로 적는 방식. 카드 아무 데나 눌러도 골라지도록 라디오가 아니라 카드에 이벤트를 달았고(라디오 자체는 클릭을 받지 않는다), 폼의 나머지 값을 잃지 않으려 두 층을 각각 펼쳐 담는다",
                                             "type": "click",
                                             "handler": "setState",
+                                            "if": "{{!_computed.isReadOnly}}",
                                             "params": {
                                                 "target": "local",
                                                 "hasChanges": true,
@@ -159,6 +160,7 @@
                                             "comment": "날짜를 「3일 전」처럼 지금과의 사이로 적는 방식 — 위 카드와 같은 짜임이고 담기는 값만 다르다",
                                             "type": "click",
                                             "handler": "setState",
+                                            "if": "{{!_computed.isReadOnly}}",
                                             "params": {
                                                 "target": "local",
                                                 "hasChanges": true,

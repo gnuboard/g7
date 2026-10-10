@@ -28,7 +28,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company</label>
-              <input type="text" placeholder="$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company_placeholder" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+              <input type="text" placeholder="$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company_placeholder" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
                   <set-state target="local" _escrow_delivery_name="{{$event.target.value}}"/>
@@ -37,7 +37,7 @@
             </div>
             <div>
               <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_tracking_number</label>
-              <input type="text" placeholder="$t:sirsoft-pay_nicepayments.admin.escrow_tracking_number_placeholder" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+              <input type="text" placeholder="$t:sirsoft-pay_nicepayments.admin.escrow_tracking_number_placeholder" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
                   <set-state target="local" _escrow_tracking_number="{{$event.target.value}}"/>
@@ -46,7 +46,7 @@
             </div>
             <div>
               <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_register_name</label>
-              <input type="text" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+              <input type="text" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
                   <set-state target="local" _escrow_register_name="{{$event.target.value}}"/>
@@ -55,7 +55,7 @@
             </div>
             <div class="sm:col-span-2">
               <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_buyer_address</label>
-              <input type="text" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+              <input type="text" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
                   <set-state target="local" _escrow_buyer_address="{{$event.target.value}}"/>
@@ -65,7 +65,7 @@
           </div>
           <div data-if="{{_local._escrowError}}" class="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._escrowError}}</div>
           <div class="flex justify-end">
-            <button disabled="{{_local._escrowSubmitting || ![_local._escrow_delivery_name, _local._escrow_tracking_number, _local._escrow_register_name, _local._escrow_buyer_address].every((v) => String(v ?? '').trim() !== '')}}" class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._escrowSubmitting || ![_local._escrow_delivery_name, _local._escrow_tracking_number, _local._escrow_register_name, _local._escrow_buyer_address].every((v) => String(v ?? '').trim() !== ''))}}" class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 에스크로 배송 등록 — 진행 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 네 칸 모두 서버 필수값이라 하나라도 비면 버튼이 잠긴다. 실패하면 서버가 준 검증·PG 문구를 그대로 보인다 -->
                 <sequence>

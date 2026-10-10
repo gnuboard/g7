@@ -62,7 +62,7 @@
               <div class="excel-card">
                 <div class="excel-card-header">
                   <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{feeItem.zipcode || '$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode'}}</span>
-                  <button data-if="{{policy?.data?.abilities?.can_update === true}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label="$t:common.delete">
+                  <button data-if="{{!_computed.isReadOnly}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label="$t:common.delete">
                     <on type="click">
                       <!-- 줄 삭제(좁은 화면 카드) — 넓은 화면 표에도 같은 버튼이 한 벌 더 있다. -->
                       <action handler="sirsoft-ecommerce.removeExtraFeeRow" countryIndex="{{_local.activeCountryTab ?? 0}}" feeIndex="{{feeItem._idx}}"/>
@@ -139,7 +139,7 @@
                     </input>
                   </td>
                   <td>
-                    <button data-if="{{policy?.data?.abilities?.can_update === true}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label="$t:common.delete">
+                    <button data-if="{{!_computed.isReadOnly}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label="$t:common.delete">
                       <on type="click">
                         <!-- 줄 삭제(넓은 화면 표) — 위 카드 판에도 같은 버튼이 있다. -->
                         <action handler="sirsoft-ecommerce.removeExtraFeeRow" countryIndex="{{_local.activeCountryTab ?? 0}}" feeIndex="{{feeItem._idx}}"/>

@@ -228,7 +228,7 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
-                // 본인인증 정책 관리 권한 (type: admin)
+                // 본인인증 정책 관리 권한 (type: admin) — 환경설정 「본인인증 정책」 탭의 조회·추가·수정·삭제 축
                 [
                     'identifier' => 'identity.policies',
                     'name' => [

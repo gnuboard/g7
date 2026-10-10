@@ -41,7 +41,8 @@ class AdminRoutePermissionTest extends PluginTestCase
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.escrow-delivery.form' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.escrow-delivery.register' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url' => 'permission:admin,sirsoft-ecommerce.settings.read',
-            'api.plugins.sirsoft-pay_nhnkcp.admin.health' => 'permission:admin,sirsoft-ecommerce.settings.read',
+            // 시스템 점검은 플러그인 설정 화면 카드라 화면 권한(core.plugins.update)으로도 읽는다(OR, 7.1.0 abilities 게이트 N4)
+            'api.plugins.sirsoft-pay_nhnkcp.admin.health' => 'permission:admin,sirsoft-ecommerce.settings.read|core.plugins.update,false',
         ];
 
         foreach ($expected as $routeName => $permissionMiddleware) {

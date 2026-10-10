@@ -433,7 +433,7 @@
         <prop name="rowActions">
           <item id="view" label="$t:admin.users.actions.view" iconName="eye"/>
           <item id="edit" label="$t:admin.users.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
-          <item id="delete" label="$t:admin.users.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
+          <item id="delete" label="$t:admin.users.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete" disabledReason="$t:admin.users.actions.delete_disabled_reason"/>
         </prop>
         <on type="change" event="onSelectionChange">
           <!-- 선택한 행의 id 를 전역에 둔다 — 일괄 처리 버튼과 확인 창이 모두 이 값을 읽으므로

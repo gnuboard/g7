@@ -651,6 +651,7 @@
                                                     "value": "{{_local.form?.content}}",
                                                     "isHtml": "{{_local.form?.content_mode === 'html'}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
+                                                    "readOnly": "{{_computed.isReadOnly}}",
                                                     "rows": 15,
                                                     "placeholder": "$t:sirsoft-page.admin.page.form.fields.content",
                                                     "name": "content"
@@ -685,6 +686,7 @@
                                                             "value": "{{_local.form?.content}}",
                                                             "isHtml": "{{_local.form?.content_mode === 'html'}}",
                                                             "disabled": "{{_computed.isReadOnly}}",
+                                                            "readOnly": "{{_computed.isReadOnly}}",
                                                             "rows": 15,
                                                             "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
                                                         }

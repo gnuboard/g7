@@ -104,7 +104,8 @@
                                 "rows": 3,
                                 "placeholder": "$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_placeholder",
                                 "value": "{{_local.publishMemo ?? ''}}",
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400",
+                                "disabled": "{{$parent._computed.isPluginReadOnly}}"
                             }
                         }
                     ]
@@ -216,7 +217,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "disabled": "{{!(_local.publishMemo ?? '').trim() || _local.isPublishing}}",
+                                "disabled": "{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
                             },
                             "children": [

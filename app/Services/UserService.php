@@ -6,6 +6,7 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\PasswordChangeSource;
 use App\Enums\UserStatus;
+use App\Exceptions\CannotDeleteSelfException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\PermissionEscalationException;
 use App\Extension\HookManager;
@@ -541,6 +542,7 @@ class UserService
      * @return bool 삭제 성공 여부
      *
      * @throws CannotDeleteSuperAdminException 슈퍼 관리자 삭제 시도 시
+     * @throws CannotDeleteSelfException 인증 액터가 자기 계정을 삭제하려 할 때
      * @throws ValidationException 관리자 계정 삭제 시도 또는 삭제 실패 시
      */
     public function deleteUser(User $user): bool
@@ -549,6 +551,12 @@ class UserService
             // 슈퍼 관리자는 시스템 불변식으로 삭제 불가 (관리 anchor 보호)
             if ($user->isSuperAdmin()) {
                 throw new CannotDeleteSuperAdminException;
+            }
+
+            // 관리자 화면에서 운영자 본인 계정은 지울 수 없다(제품 결정 2026-10-09) — 탈퇴는 마이페이지 경로로만.
+            // 인증 액터가 없는 경로(Artisan·내부 호출)는 해당 없음.
+            if (Auth::id() !== null && Auth::id() === $user->id) {
+                throw new CannotDeleteSelfException;
             }
 
             // 관리자 계정 삭제 가능 여부는 G7 역할/퍼미션/스코프 시스템에 위임
@@ -606,7 +614,8 @@ class UserService
                 throw $e;
             }
 
-            if ($e instanceof CannotDeleteSuperAdminException) {
+            // 정책상 거부는 그대로 올려 컨트롤러가 전용 안내를 내게 한다(삭제 실패로 바꾸지 않는다)
+            if ($e instanceof CannotDeleteSuperAdminException || $e instanceof CannotDeleteSelfException) {
                 throw $e;
             }
 

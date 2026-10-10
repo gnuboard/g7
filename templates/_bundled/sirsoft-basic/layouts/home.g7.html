@@ -13,7 +13,7 @@
     </seo>
   </meta>
   <!-- 사이트 규모 숫자 — 게시판·글·댓글·회원 수 네 카드가 이 한 응답을 나눠 쓴다. -->
-  <data-source id="stats" label_key="$t:editor.data_source.stats" type="api" endpoint="/api/modules/sirsoft-board/boards/stats" method="GET" :auto_fetch="true" loading_strategy="progressive">
+  <data-source id="stats" label_key="$t:editor.data_source.stats" type="api" endpoint="/api/modules/sirsoft-board/boards/stats" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <fallback>
       <field name="data">
         <field name="users" :value="0"/>
@@ -33,19 +33,19 @@
     </error-handling>
   </data-source>
   <!-- 최근 글 5건 — 게시판을 가리지 않고 새로 올라온 순서다(인기순인 아래 목록과 다르다). -->
-  <data-source id="recent_posts" label_key="$t:editor.data_source.recent_posts" type="api" endpoint="/api/modules/sirsoft-board/boards/posts/recent?limit=5" method="GET" :auto_fetch="true" loading_strategy="progressive">
+  <data-source id="recent_posts" label_key="$t:editor.data_source.recent_posts" type="api" endpoint="/api/modules/sirsoft-board/boards/posts/recent?limit=5" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
   <!-- 활발한 게시판 4개 — 게시판 자체의 순위다(개별 인기글을 모으는 인기글 화면과 다르다). -->
-  <data-source id="popular_boards" label_key="$t:editor.data_source.popular_boards" type="api" endpoint="/api/modules/sirsoft-board/boards/popular-boards?limit=4" method="GET" :auto_fetch="true" loading_strategy="progressive">
+  <data-source id="popular_boards" label_key="$t:editor.data_source.popular_boards" type="api" endpoint="/api/modules/sirsoft-board/boards/popular-boards?limit=4" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
   <!-- 게시판 소개 3개 — 헤더 메뉴가 쓰는 boards 와 같은 곳에서 오지만 첫 화면 카드용으로 개수를 줄여 따로 받는다(상속원의 그 데이터소스는 개수 제한이 없다). -->
-  <data-source id="home_boards" label_key="$t:editor.data_source.home_boards" type="api" endpoint="/api/modules/sirsoft-board/boards?limit=3" method="GET" :auto_fetch="true" loading_strategy="progressive">
+  <data-source id="home_boards" label_key="$t:editor.data_source.home_boards" type="api" endpoint="/api/modules/sirsoft-board/boards?limit=3" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>

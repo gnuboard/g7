@@ -109,7 +109,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
-                                            "comment": "채널 하나를 켜고 끈다 — 목록을 통째로 새로 만들면서 이 채널만 뒤집는다. 저장 버튼을 눌러야 반영되는 값이라 「변경 있음」도 함께 켠다",
+                                            "comment": "채널 하나를 켜고 끈다 — 목록을 통째로 새로 만들면서 이 채널만 뒤집는다. 저장 버튼을 눌러야 반영되는 값이라 「변경 있음」도 함께 켠다. 저장은 게시판 환경설정 PUT(settings.update)이라 잠금도 같은 축(isReadOnly)을 본다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -121,7 +121,7 @@
                                     ],
                                     "props": {
                                         "checked": "{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}",
-                                        "disabled": "{{_computed.isNotificationReadOnly}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 }
                             ]

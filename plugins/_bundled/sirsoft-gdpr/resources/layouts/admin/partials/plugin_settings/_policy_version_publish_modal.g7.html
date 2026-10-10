@@ -14,7 +14,7 @@
       </ul>
       <div class="pt-2">
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_label</label>
-        <textarea name="publish_memo" :rows="3" placeholder="$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_placeholder" value="{{_local.publishMemo ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400">
+        <textarea name="publish_memo" :rows="3" placeholder="$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_placeholder" value="{{_local.publishMemo ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400" disabled="{{$parent._computed.isPluginReadOnly}}">
           <on type="change">
             <!-- 발행 메모 — 무엇이 바뀌어 새 버전을 냈는지 남기는 자리다(이력 표에 그대로 보인다) -->
             <set-state target="local" publishMemo="{{$event?.target?.value ?? ''}}"/>
@@ -29,7 +29,7 @@
           <span>$t:common.cancel</span>
         </button>
         <!-- 발행 확정 — isPublishing 플래그로 발행 동안 스피너 노출 + 양쪽 버튼 disabled. closeModal 을 sequence 마지막에서 onSuccess 로 이동 (이전: 클릭 즉시 닫혀서 사용자가 발행 진행 상태 파악 불가). 발행 실패 시 모달 유지 → memo 수정 후 재시도 가능. -->
-        <button type="button" disabled="{{!(_local.publishMemo ?? '').trim() || _local.isPublishing}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
+        <button type="button" disabled="{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
           <on type="click">
             <sequence>
               <set-state target="local" :isPublishing="true"/>

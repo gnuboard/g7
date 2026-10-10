@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\MessageBizppurio\Controllers\Admin;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
@@ -85,6 +87,10 @@ class BizppurioTemplateController extends AdminBaseController
     {
         return ResponseHelper::success('sirsoft-message_bizppurio::messages.template.loaded', [
             'templates' => $this->service->summaryMap(),
+            // 알림 템플릿 편집 창의 비즈뿌리오 섹션이 입력·등록·검수 버튼을 잠그는 근거 — 쓰기 라우트와 같은 권한(messaging.manage)
+            'abilities' => [
+                'can_manage_messaging' => PermissionHelper::check('sirsoft-message_bizppurio.messaging.manage', Auth::user()),
+            ],
         ]);
     }
 

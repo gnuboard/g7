@@ -179,7 +179,8 @@
             "category_pc": "PC",
             "category_mobile": "모바일",
             "auto_fixed": "자동 복구됨",
-            "action_required": "↓ 사용자 조치 필요"
+            "action_required": "↓ 사용자 조치 필요",
+            "forbidden": "시스템 점검을 볼 권한이 없습니다. 이커머스 설정 조회 또는 플러그인 설정 수정 권한이 필요합니다."
         }
     },
     "easy_pay": {
@@ -194,5 +195,6 @@
             "applepay_ios_only": "애플페이는 IOS 기기에 모바일결제만 가능합니다.",
             "method_missing": "결제수단 정보가 없어 결제를 진행할 수 없습니다. 주문서를 다시 열어 주세요."
         }
-    }
+    },
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다."
 }

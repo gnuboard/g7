@@ -102,6 +102,10 @@ interface HeaderProps {
   notificationLoading?: boolean;
   /** "안 읽은 알림만" 필터 상태 */
   notificationUnreadOnly?: boolean;
+  /** 알림 읽음 처리 권한 — false 면 [모두 읽음] 숨김 */
+  notificationCanUpdate?: boolean;
+  /** 알림 삭제 권한 — false 면 [모두 삭제]·개별 삭제 숨김 */
+  notificationCanDelete?: boolean;
   /** 알림 드롭다운 제목 */
   notificationTitleText?: string;
   /** 알림 없음 텍스트 */
@@ -168,6 +172,8 @@ const Header: React.FC<HeaderProps> = ({
   notificationHasMore = false,
   notificationLoading = false,
   notificationUnreadOnly = false,
+  notificationCanUpdate = false,
+  notificationCanDelete = false,
   notificationTitleText,
   notificationEmptyText,
   notificationMarkAllReadText,
@@ -422,6 +428,8 @@ const Header: React.FC<HeaderProps> = ({
                 hasMore={notificationHasMore}
                 loading={notificationLoading}
                 unreadOnly={notificationUnreadOnly}
+                canUpdate={notificationCanUpdate}
+                canDelete={notificationCanDelete}
                 titleText={notificationTitleText ?? t('mypage.notifications.title')}
                 emptyText={notificationEmptyText ?? t('mypage.notifications.empty')}
                 markAllReadText={notificationMarkAllReadText ?? t('mypage.notifications.mark_all_read')}

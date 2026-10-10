@@ -20,7 +20,9 @@
         "selectedItem": null,
         "showCreatorDropdown": null
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.orders.read"
+    ],
     "slots": {
         "content": [
             {

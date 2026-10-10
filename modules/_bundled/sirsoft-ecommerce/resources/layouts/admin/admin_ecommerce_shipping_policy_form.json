@@ -40,7 +40,7 @@
                 }
             },
             "errorCondition": {
-                "if": "{{response?.data?.abilities?.can_update !== true}}",
+                "if": "{{response?.data?.abilities?.can_update === false}}",
                 "errorCode": 403
             },
             "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌리는데, 목록 진입 없이 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다"
@@ -91,6 +91,24 @@
                 }
             },
             "comment": "수정 진입일 때만 이 정책의 교환·반품 회수지를 받는다. 폼 본체를 기다리게 하지 않도록 background 로 받고 마운트마다 새로 받는다 — 응답이 편집보다 늦게 와도 아래 success 가 이미 손댄 버퍼를 지킨다"
+        },
+        {
+            "id": "policy_abilities",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.policy_abilities",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies",
+            "method": "GET",
+            "if": "{{!route.id}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "per_page": 10
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "등록 모드에는 정책 응답이 없어 등록 권한(can_create)·수정 권한(can_update)을 알 곳이 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다.\n    회수지 저장(claim-settings PUT)과 API 연결 시험은 수정 권한의 일이라, 등록 권한만 있는 운영자가 정책은 만들고 회수지는 403 으로 남는 부분 실패를 막는다.\n    폼 전체의 읽기 전용 계산값(`isReadOnly`)도 등록·복사 진입에서는 이 응답의 can_create 를 본다 — 등록 권한 없이 주소로 들어와도 입력칸과 [저장]이 함께 잠긴다(수정 화면과 같은 기준).\n    조회 권한이 없어 실패하면 폴백(null)으로 떨어져 잠긴 쪽으로 판정한다."
         },
         {
             "id": "ecommerce_settings",
@@ -172,7 +190,8 @@
         "rangeUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'range_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'range_weight' || p === 'range_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'range_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'range_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
         "perUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'per_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'per_weight' || p === 'per_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'per_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'per_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
         "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
-        "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
+        "isReadOnly": "{{route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_create !== true}}",
+        "lacksUpdate": "{{!!route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_update !== true}}"
     },
     "permissions": [
         "sirsoft-ecommerce.shipping-policies.read"
@@ -580,7 +599,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "disabled": "{{_local.isSaving || (route.id && policy?.data?.abilities?.can_update !== true)}}",
+                                            "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
                                             "className": "btn btn-primary flex-center gap-1.5"
                                         },
                                         "children": [

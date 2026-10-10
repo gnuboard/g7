@@ -13,7 +13,7 @@
     </seo>
   </meta>
   <!-- 인기글 상위 20건 — 기간은 URL 질의에서 오고 기본은 최근 일주일이다. 누구나 보는 화면이라 로그인을 요구하지 않는다. -->
-  <data-source id="popularPosts" label_key="$t:editor.data_source.popularPosts" type="api" endpoint="/api/modules/sirsoft-board/boards/popular" method="GET" :auto_fetch="true" :auth_required="false" :refetchOnMount="true">
+  <data-source id="popularPosts" label_key="$t:editor.data_source.popularPosts" type="api" endpoint="/api/modules/sirsoft-board/boards/popular" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
     <params period="{{query.period ?? 'week'}}" :limit="20"/>
     <error-handling>
       <on-code code="403">

@@ -318,10 +318,15 @@ class OrderResource extends BaseApiResource
     }
 
     /**
-     * 능력 맵에 주문 취소 가능 여부를 추가합니다.
+     * 능력 맵에 주문 취소 가능 여부와 환불 실행 가능 여부를 추가합니다.
      *
      * can_cancel은 단순 권한이 아닌 "상태 + 환경설정 + 권한" 복합 조건이므로
      * resolveAbilities()를 override하여 동적으로 계산합니다.
+     *
+     * 이 리소스는 관리자 주문 상세와 회원 주문 상세가 함께 쓰므로 두 축의 키가 한 맵에 실린다 —
+     * `can_read`·`can_update`·`can_execute_refund` 는 관리자 축(`orders.*`·`claims.execute-refund`),
+     * `can_cancel` 은 회원 축(`user-orders.cancel`)이다. 각 화면은 자기 축의 키만 읽는다(관리자 화면은 can_cancel 을,
+     * 회원 화면은 관리자 키를 쓰지 않는다). 회원 응답에서 관리자 키는 늘 false 다.
      *
      * @param  Request  $request  HTTP 요청 객체
      * @return array<string, bool> 능력 불리언 맵
@@ -338,6 +343,11 @@ class OrderResource extends BaseApiResource
 
         $abilities['can_cancel'] = $this->resource->isCancellable($cancellableStatuses)
             && PermissionHelper::check('sirsoft-ecommerce.user-orders.cancel');
+
+        // 관리자 주문 상세의 환불 실행 축 — 취소 창 「환불까지 한 번에 처리」·결제 플러그인 [환불 재시도] 를 잠그는 키다.
+        // 주문(orders) 리소스의 권한이 아니라 클레임 환불 실행 권한이라 abilityMap 에 섞지 않고 여기서 계산한다.
+        // 서버는 같은 권한으로 403 을 낸다(`OrderClaimController::canAutoAdvanceRefund()`). 회원 응답에서는 늘 false 다.
+        $abilities['can_execute_refund'] = PermissionHelper::check('sirsoft-ecommerce.claims.execute-refund', $request->user());
 
         return $abilities;
     }

@@ -32,6 +32,7 @@
 ### GET /api/modules/sirsoft-ecommerce/admin/inquiries
 
 - **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.inquiries.read`
+- **권한 메모(1.3.0)**: 컬렉션 `abilities.can_reply`(= `inquiries.update`)와 행 `abilities.can_reply`·`abilities.can_delete` — 「답변」·「삭제」 행 동작 잠금 키.
 
 **요청 파라미터**
 

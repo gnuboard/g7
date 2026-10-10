@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class RoleCollection extends BaseApiCollection
 {
@@ -20,6 +21,8 @@ class RoleCollection extends BaseApiCollection
             'can_create' => 'core.permissions.create',
             'can_update' => 'core.permissions.update',
             'can_delete' => 'core.permissions.delete',
+            // 행 RoleResource 와 같은 키 — 페이지 수준에서도 사용 여부 토글 권한을 읽을 수 있게 한다
+            'can_toggle_status' => 'core.permissions.update',
         ];
     }
 
@@ -34,7 +37,7 @@ class RoleCollection extends BaseApiCollection
         return [
             'data' => RoleResource::collection($this->collection),
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
-            'pagination' => $this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator ? [
+            'pagination' => $this->resource instanceof LengthAwarePaginator ? [
                 'current_page' => $this->resource->currentPage(),
                 'last_page' => $this->resource->lastPage(),
                 'per_page' => $this->resource->perPage(),

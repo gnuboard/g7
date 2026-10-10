@@ -19,9 +19,9 @@
               <span class="text-hint block">{{ch.source_label ?? ch.source}}</span>
             </div>
           </div>
-          <toggle data-type="composite" checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
+          <toggle data-type="composite" checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly || _computed.isReadOnly}}">
             <on type="change">
-              <!-- 전체 사용 여부. 폼에 담기는 값이라 이 줄만은 화면 저장 시점에 반영된다. -->
+              <!-- 전체 사용 여부. 이 값은 이커머스 설정 저장(settings.update)으로 반영되므로 그 읽기 전용(_computed.isReadOnly)도 함께 본다. 폼에 담기는 값이라 이 줄만은 화면 저장 시점에 반영된다. -->
               <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}" :hasChanges="true"/>
             </on>
           </toggle>

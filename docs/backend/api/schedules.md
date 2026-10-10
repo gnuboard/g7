@@ -156,6 +156,7 @@ HTTP/1.1 200
 
 **설명** 예약 작업(스케줄) 목록을 페이지네이션과 함께 조회하며, 응답에는 상태별 통계도 포함됩니다. `core.schedules.read` 권한이 필요합니다. `type`/`frequency`/`status`/`last_result`/`extension_type` 등으로 필터링하고 `sort_by`/`sort_order` 로 정렬할 수 있습니다. 관리자 스케줄 관리 화면의 목록·필터·요약 카드 표시에 사용합니다.
 
+**권한 값(7.1.0)** 응답 `data.abilities` 에 컬렉션 권한이 실린다 — `can_create`(= `core.schedules.create`)·`can_update`·`can_delete`·`can_run`. 「예약 작업 등록」·일괄 상태 변경·행 선택이 이 값으로 잠긴다.
 
 ### POST /api/admin/schedules
 <!-- @generated:start:api.admin.schedules.store -->

@@ -21,6 +21,9 @@
             "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -46,6 +49,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:sirsoft-ckeditor5.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "notice_banner",
@@ -227,7 +258,8 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "toolbar",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         },
                                                         "children": [
                                                             {
@@ -306,7 +338,8 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "editorHeight",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -395,7 +428,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "imageUpload"
+                                                            "name": "imageUpload",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -448,7 +482,8 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "imageMaxSizeMb",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -501,7 +536,8 @@
                                                         "props": {
                                                             "name": "public_asset_disk",
                                                             "className": "w-full",
-                                                            "options": "{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"
+                                                            "options": "{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
                                                     {
@@ -601,7 +637,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "unusedImageCleanup"
+                                                            "name": "unusedImageCleanup",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -655,7 +692,8 @@
                                                             "type": "number",
                                                             "name": "unusedImageRetentionDays",
                                                             "min": 1,
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -867,7 +905,8 @@
                                                     "placeholder": "{{extensionPointProps.placeholder ?? ''}}",
                                                     "isHtml": true,
                                                     "rows": 15,
-                                                    "showHtmlModeToggle": false
+                                                    "showHtmlModeToggle": false,
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -997,7 +1036,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "children": [

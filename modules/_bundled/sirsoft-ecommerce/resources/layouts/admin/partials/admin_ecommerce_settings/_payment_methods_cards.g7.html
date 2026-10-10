@@ -15,7 +15,8 @@
         </class-map>
         <div class="excel-card-header">
           <div class="flex-center gap-3 flex-1 min-w-0">
-            <div data-if="{{!$method._orphaned}}" :data-drag-handle="true" class="cursor-grab text-gray-400 dark:text-gray-500">
+            <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
+            <div data-ref="payment_method_drag_handle_card" data-if="{{!$method._orphaned &amp;&amp; !_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 dark:text-gray-500">
               <icon name="grip-vertical"/>
             </div>
             <!-- 브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다(#639) -->
@@ -26,7 +27,8 @@
             <span data-if="{{$method._orphaned_pg}}" data-testid="orphaned-pg-badge-{{$method.id}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge</span>
           </div>
           <div class="flex-center gap-2">
-            <toggle data-type="composite" data-if="{{!$method._orphaned}}" value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
+            <!-- 고객이 고를 수 없는 수단(customer_selectable === false)은 목록 표와 같이 잠근다 — 켜도 주문 생성이 422 로 거절된다. -->
+            <toggle data-type="composite" data-if="{{!$method._orphaned}}" value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
               <on type="change">
                 <!-- 사용 여부. 끄면 쇼핑몰 결제창에서 사라지고 설정은 남는다 — 이미 그 수단으로 결제된 주문에는 영향이 없다. -->
                 <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}" :hasChanges="true"/>

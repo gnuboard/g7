@@ -437,6 +437,7 @@
                                         "content": "{{_local.form?.content ?? ''}}",
                                         "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
                                         "disabled": "{{_computed.isReadOnly}}",
+                                        "readOnly": "{{_computed.isReadOnly}}",
                                         "rows": 15,
                                         "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
                                         "label": "$t:sirsoft-board.admin.posts.form.content",

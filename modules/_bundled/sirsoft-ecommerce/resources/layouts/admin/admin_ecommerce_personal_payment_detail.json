@@ -12,7 +12,9 @@
         "logPerPage": 10,
         "logExpanded": true
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.orders.read"
+    ],
     "slots": {
         "content": [
             {

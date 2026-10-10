@@ -506,3 +506,31 @@ describe('글자 크기 단축키 (§7.6)', () => {
     expect(stored()).toBe('19');
   });
 });
+
+describe('읽기 전용 단축키 (G26)', () => {
+  /**
+   * 읽기 전용이면 저장·모두 저장·새 파일 단축키가 아무것도 부르지 않는다 — 머리말 저장 버튼을 숨긴 것과 같은 판정.
+   *
+   * @scenario read_only=true,shortcut=save|saveAll|newFile
+   * @effects code_workspace_read_only_blocks_write_shortcuts
+   */
+  it('readOnly 면 저장·모두 저장·새 파일 단축키를 무시한다', () => {
+    const onSave = vi.fn();
+    const onSaveAll = vi.fn();
+    const onNewFile = vi.fn();
+    render(
+      <CodeWorkspace fileKey="layout:a" serverValue="x" serverRevision={1} readOnly onSave={onSave} onSaveAll={onSaveAll} onNewFile={onNewFile} />
+    );
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true, bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, altKey: true, cancelable: true, bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, altKey: true, cancelable: true, bubbles: true }));
+    });
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onSaveAll).not.toHaveBeenCalled();
+    expect(onNewFile).not.toHaveBeenCalled();
+  });
+});
+

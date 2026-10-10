@@ -26,7 +26,7 @@
     <fallback :data="null"/>
   </data-source>
   <!-- 등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다. 목록 응답에 실려 오는
-       `abilities.can_create` 가 아니면 화면을 403 으로 접는다(등록 전용 권한 조회 API 가 없어
+       `abilities.can_create` 가 false 면 화면을 403 으로 접는다(등록 전용 권한 조회 API 가 없어
        목록 API 를 그 용도로 쓴다). 받은 데이터 자체는 화면에서 쓰지 않는다. -->
   <data-source id="role_check" label_key="$t:editor.data_source.role_check" type="api" endpoint="/api/admin/roles" method="GET" :auto_fetch="true" auth_mode="required" if="{{!route?.id}}">
     <params :per_page="1"/>
@@ -196,8 +196,10 @@
               <div>
                 <span class="block text-heading">$t:admin.roles.form.is_active</span>
                 <span class="block text-label-subtle mt-0.5">$t:admin.roles.form.is_active_hint</span>
+                <span data-if="{{!!route?.id &amp;&amp; role?.data?.is_active_locked === true}}" class="block text-warning-soft mt-0.5">$t:admin.roles.form.is_active_locked_hint</span>
               </div>
-              <toggle data-type="composite" name="is_active"/>
+              <!-- 최고관리자 역할은 끌 수 없다 — 끄면 운영자 전원의 권한이 회수된다(서버도 422 로 거부). -->
+              <toggle data-type="composite" name="is_active" disabled="{{!!route?.id &amp;&amp; role?.data?.is_active_locked === true}}"/>
             </div>
           </div>
         </div>

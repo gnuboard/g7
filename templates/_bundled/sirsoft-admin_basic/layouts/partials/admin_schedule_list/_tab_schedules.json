@@ -1177,7 +1177,7 @@
                                 "className": "w-32",
                                 "placeholder": "$t:admin.schedules.bulk.status_change",
                                 "value": "",
-                                "disabled": "{{!_global.selectedScheduleIds?.length}}",
+                                "disabled": "{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}",
                                 "options": [
                                     {
                                         "value": "active",
@@ -1209,7 +1209,7 @@
                                 "className": "w-32",
                                 "placeholder": "$t:admin.schedules.bulk.action_run",
                                 "value": "",
-                                "disabled": "{{!_global.selectedScheduleIds?.length}}",
+                                "disabled": "{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_run !== true}}",
                                 "options": [
                                     {
                                         "value": "run",
@@ -1277,7 +1277,7 @@
                             ],
                             "props": {
                                 "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{!_global.selectedScheduleIds?.length}}"
+                                "disabled": "{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}"
                             },
                             "text": "$t:admin.schedules.bulk.apply"
                         }
@@ -1545,7 +1545,7 @@
                 "pageSize": "{{+(query.per_page || 20)}}",
                 "alwaysShowPagination": true,
                 "idField": "id",
-                "selectable": true,
+                "selectable": "{{schedules?.data?.abilities?.can_update === true}}",
                 "selectionScope": "page",
                 "showColumnSelector": true,
                 "responsiveBreakpoint": 768,
@@ -1823,17 +1823,27 @@
                                                 }
                                             }
                                         ],
-                                        "onError": {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.schedules.errors.status_update_failed'}}"
+                                        "onError": [
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:admin.schedules.errors.status_update_failed'}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "실패하면 목록을 다시 받아 스위치를 서버 값으로 되돌린다(바뀐 채로 남지 않게).",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "schedules"
+                                                }
                                             }
-                                        }
+                                        ]
                                     }
                                 ],
                                 "props": {
                                     "checked": "{{row.is_active}}",
+                                    "disabled": "{{row.abilities?.can_update !== true}}",
                                     "size": "sm",
                                     "ariaLabel": "{{row.name}}"
                                 }

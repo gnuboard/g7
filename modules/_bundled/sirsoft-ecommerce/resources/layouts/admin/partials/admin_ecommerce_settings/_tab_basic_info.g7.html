@@ -80,7 +80,8 @@
             <div class="stack-tight">
               <div class="flex-center gap-2">
                 <input type="text" name="basic_info.zipcode" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.zipcode" class="input w-28" :readOnly="false" disabled="{{_computed.isReadOnly}}"/>
-                <extension-point name="address_search_slot" data-ref="address_search_slot">
+                <!-- 주입된 [주소 검색] 버튼도 읽기 전용이면 잠근다 — 확장점은 호스트 상태를 모르므로 disabled 로 넘긴다. -->
+                <extension-point name="address_search_slot" data-ref="address_search_slot" disabled="{{_computed.isReadOnly}}">
                   <prop name="readOnlyFields">
                     <item>basic_info.zipcode</item>
                     <item>basic_info.base_address</item>

@@ -78,7 +78,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -154,7 +155,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {

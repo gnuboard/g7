@@ -567,6 +567,7 @@ HTTP/1.1 200
 
 단일 역할의 상세 정보를 조회한다. 역할 편집 화면과 복제(clone_from) 시 원본 값을 채우는 데 사용된다. 목록 응답과 달리 permissions 관계를 pivot(scope_type)과 함께 로드하므로 `permission_ids`·`permission_values`·`permissions`(계층 트리)와 `users_count` 가 항상 포함된다. `core.permissions.read` 권한이 필요하다.
 
+**응답 필드(7.1.0)** `is_active_locked`(불리언) — 사용 여부를 바꿀 수 없는 역할(최고관리자 역할)인지. 역할 폼이 사용 여부 토글을 잠그는 값이다.
 
 ### PUT /api/admin/roles/{role}
 <!-- @generated:start:api.admin.roles.update -->
@@ -684,6 +685,7 @@ HTTP/1.1 200
 
 기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」).
 
+**최고관리자 역할(7.1.0)** `admin` 역할에 `is_active: false` 를 보내면 422(`exceptions.role_active_state_locked`)이고 아무것도 바뀌지 않는다.
 
 ### PATCH /api/admin/roles/{role}/toggle-status
 <!-- @generated:start:api.admin.roles.toggle-status -->
@@ -787,4 +789,5 @@ HTTP/1.1 200
 
 역할의 `is_active` 상태를 반대로 토글한다(활성↔비활성). 목록 화면의 상태 스위치에서 호출되며, 별도 본문 없이 대상 역할만 지정하면 된다. 성공 시 사용자 수를 다시 집계한 갱신된 역할 리소스를 반환한다. `core.permissions.update` 권한이 필요하다.
 
+**최고관리자 역할(7.1.0)** 사용 여부를 끈 역할의 권한은 즉시 판정에서 빠진다. 그래서 최고관리자 역할(`admin`)은 최고관리자라도 끌 수 없고 422(`exceptions.role_active_state_locked`)를 낸다. 역할 응답의 `is_active_locked` 가 true 이고 `abilities.can_toggle_status` 는 false 다.
 

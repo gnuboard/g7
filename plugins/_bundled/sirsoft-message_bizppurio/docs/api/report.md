@@ -67,7 +67,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명**
+**설명** 응답 `data.abilities.can_manage_messaging`(메시징 관리 권한)은 설정 화면이 알림톡 템플릿 등록·검수·삭제·연결 확인 버튼을 잠그는 근거입니다(7.1.0).
 
 비즈뿌리오 발송 결과(리포트)를 수신할 콜백 URL을 관리자 설정 페이지에 표시하기 위해 반환하는 엔드포인트입니다. 관리자 환경설정 화면(`admin/plugin_settings.g7.html`)의 `report_url` data_source 가 이 값을 조회해 "리포트 수신 설정" 카드에 readonly 로 표시하고, 운영자가 그대로 복사해 비즈뿌리오 사업팀(또는 관리 콘솔의 리포트 수신 설정)에 URL PUSH 수신 주소로 등록합니다.
 

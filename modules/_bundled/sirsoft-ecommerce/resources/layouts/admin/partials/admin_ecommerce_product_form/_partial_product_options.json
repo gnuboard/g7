@@ -117,7 +117,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{((_local.ui.optionInputs ?? []).length) < 3 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
+                                    "if": "{{((_local.ui.optionInputs ?? []).length) < 3 && !_computed.isReadOnly}}",
                                     "actions": [
                                         {
                                             "comment": "옵션 그룹 추가 — 색·크기처럼 축을 늘린다(최대 3축)",
@@ -201,7 +201,7 @@
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.options.option_name_placeholder",
                                                         "layout": "compact",
                                                         "inputType": "text",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                        "disabled": "{{_computed.isReadOnly}}",
                                                         "autoBinding": false
                                                     }
                                                 }
@@ -238,7 +238,7 @@
                                                         "creatable": true,
                                                         "modalId": "multilingual_tag_edit_modal",
                                                         "statePath": "ui.optionInputs.{{optIdx}}.values",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                        "disabled": "{{_computed.isReadOnly}}",
                                                         "autoBinding": false,
                                                         "delimiters": [
                                                             ","
@@ -250,7 +250,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "if": "{{((_local.ui.optionInputs ?? []).length) > 1 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
+                                            "if": "{{((_local.ui.optionInputs ?? []).length) > 1 && !_computed.isReadOnly}}",
                                             "actions": [
                                                 {
                                                     "comment": "옵션 축 빼기 — 축이 하나뿐이면 뺄 수 없다",
@@ -297,7 +297,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                "disabled": "{{_computed.isReadOnly}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.options.generate_options"
                         }
@@ -558,7 +558,7 @@
                                                                                 "name": "default_option",
                                                                                 "className": "radio",
                                                                                 "checked": "{{opt.is_default === true}}",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -592,7 +592,7 @@
                                                                                 "layout": "compact",
                                                                                 "inputType": "text",
                                                                                 "size": "sm",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                                                "disabled": "{{_computed.isReadOnly}}",
                                                                                 "autoBinding": false
                                                                             }
                                                                         }
@@ -626,7 +626,7 @@
                                                                                 "className": "input text-right",
                                                                                 "value": "{{opt.list_price ?? 0}}",
                                                                                 "min": "0",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -673,7 +673,7 @@
                                                                                                 "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-24 text-right' : 'input w-24 text-right' }}",
                                                                                                 "value": "{{opt.selling_price ?? 0}}",
                                                                                                 "min": "0",
-                                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                                             }
                                                                                         },
                                                                                         {
@@ -752,7 +752,7 @@
                                                                                 "className": "input",
                                                                                 "value": "{{opt.sku ?? ''}}",
                                                                                 "placeholder": "-",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -792,7 +792,7 @@
                                                                                         "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full text-right' : 'input w-full text-right' }}",
                                                                                         "value": "{{opt.stock_quantity ?? 0}}",
                                                                                         "min": "0",
-                                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                        "disabled": "{{_computed.isReadOnly}}"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -836,7 +836,7 @@
                                                                                 "className": "input text-right",
                                                                                 "value": "{{opt.safe_stock_quantity ?? 0}}",
                                                                                 "min": "0",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -870,7 +870,7 @@
                                                                                 "value": "{{opt.weight ?? 0}}",
                                                                                 "min": "0",
                                                                                 "step": "0.01",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -904,7 +904,7 @@
                                                                                 "value": "{{opt.volume ?? 0}}",
                                                                                 "min": "0",
                                                                                 "step": "0.01",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -945,7 +945,7 @@
                                                                                         "value": "{{opt.mileage_value ?? 0}}",
                                                                                         "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_value_label",
                                                                                         "min": "0",
-                                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                        "disabled": "{{_computed.isReadOnly}}"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -967,7 +967,7 @@
                                                                                         "className": "select w-16",
                                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
                                                                                         "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type_label",
-                                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                        "disabled": "{{_computed.isReadOnly}}"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -1018,7 +1018,7 @@
                                                                                 "name": "option_active_{{optIdx}}",
                                                                                 "checked": "{{opt.is_active !== false}}",
                                                                                 "size": "sm",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                "disabled": "{{_computed.isReadOnly}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -1033,7 +1033,7 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Button",
-                                                                            "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                                            "if": "{{!_computed.isReadOnly}}",
                                                                             "actions": [
                                                                                 {
                                                                                     "comment": "이 옵션 줄 지우기 (넓은 화면 표)",
@@ -1094,7 +1094,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "flex-center w-full py-3 text-label-subtle hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             },
                                             "children": [
                                                 {
@@ -1173,7 +1173,7 @@
                                                                 "name": "default_option_mobile",
                                                                 "className": "radio",
                                                                 "checked": "{{opt.is_default === true}}",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
                                                         {
@@ -1203,7 +1203,7 @@
                                                                 "name": "option_active_mobile_{{optIdx}}",
                                                                 "checked": "{{opt.is_active !== false}}",
                                                                 "size": "sm",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         }
                                                     ]
@@ -1211,7 +1211,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                    "if": "{{!_computed.isReadOnly}}",
                                                     "actions": [
                                                         {
                                                             "comment": "이 옵션 줄 지우기 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
@@ -1283,7 +1283,7 @@
                                                                 "className": "input",
                                                                 "value": "{{opt.list_price ?? 0}}",
                                                                 "min": "0",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         }
                                                     ]
@@ -1324,7 +1324,7 @@
                                                                 "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-full' : 'input w-full' }}",
                                                                 "value": "{{opt.selling_price ?? 0}}",
                                                                 "min": "0",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
                                                         {
@@ -1374,7 +1374,7 @@
                                                                 "className": "input",
                                                                 "value": "{{opt.sku ?? ''}}",
                                                                 "placeholder": "SKU",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         }
                                                     ]
@@ -1415,7 +1415,7 @@
                                                                 "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full' : 'input w-full' }}",
                                                                 "value": "{{opt.stock_quantity ?? 0}}",
                                                                 "min": "0",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
                                                         {
@@ -1465,7 +1465,7 @@
                                                                 "className": "input",
                                                                 "value": "{{opt.safe_stock_quantity ?? 0}}",
                                                                 "min": "0",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         }
                                                     ]
@@ -1507,7 +1507,7 @@
                                                                 "value": "{{opt.weight ?? 0}}",
                                                                 "min": "0",
                                                                 "step": "0.01",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         }
                                                     ]
@@ -1549,7 +1549,7 @@
                                                                 "value": "{{opt.volume ?? 0}}",
                                                                 "min": "0",
                                                                 "step": "0.01",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         }
                                                     ]
@@ -1598,7 +1598,7 @@
                                                                         "value": "{{opt.mileage_value ?? 0}}",
                                                                         "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_value_label",
                                                                         "min": "0",
-                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                        "disabled": "{{_computed.isReadOnly}}"
                                                                     }
                                                                 },
                                                                 {
@@ -1620,7 +1620,7 @@
                                                                         "className": "select w-20",
                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
                                                                         "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type_label",
-                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                        "disabled": "{{_computed.isReadOnly}}"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -1711,7 +1711,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                "disabled": "{{_computed.isReadOnly}}",
                                                 "data-testid": "additional-option-use"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.use"
@@ -1731,7 +1731,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                "disabled": "{{_computed.isReadOnly}}",
                                                 "data-testid": "additional-option-not-use"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.not_use"
@@ -1775,8 +1775,11 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "추가 옵션 드래그 손잡이 — 폼이 읽기 전용(수정 진입은 수정 권한, 등록·복사 진입은 등록 권한 없음)이면 숨긴다(형제 삭제 버튼과 같은 조건).",
+                                                        "id": "additional_option_drag_handle",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "if": "{{!_computed.isReadOnly}}",
                                                         "props": {
                                                             "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 select-none",
                                                             "data-drag-handle": true
@@ -1848,7 +1851,7 @@
                                                                     "maxLength": 100,
                                                                     "required": true,
                                                                     "error": "{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}",
-                                                                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                                    "disabled": "{{_computed.isReadOnly}}",
                                                                     "autoBinding": false
                                                                 }
                                                             }
@@ -1880,7 +1883,7 @@
                                                                     "name": "additional_options_{{addIdx}}_required",
                                                                     "checked": "{{addOpt.is_required === true}}",
                                                                     "size": "sm",
-                                                                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                    "disabled": "{{_computed.isReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -1896,7 +1899,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Button",
-                                                        "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                        "if": "{{!_computed.isReadOnly}}",
                                                         "actions": [
                                                             {
                                                                 "comment": "추가옵션 그룹 통째로 빼기",
@@ -2004,7 +2007,7 @@
                                                                             "maxLength": 100,
                                                                             "required": true,
                                                                             "error": "{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}",
-                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                                            "disabled": "{{_computed.isReadOnly}}",
                                                                             "autoBinding": false
                                                                         }
                                                                     }
@@ -2056,7 +2059,7 @@
                                                                                     "value": "{{addVal.price_adjustment ?? 0}}",
                                                                                     "min": "0",
                                                                                     "step": "1",
-                                                                                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                    "disabled": "{{_computed.isReadOnly}}"
                                                                                 }
                                                                             },
                                                                             {
@@ -2132,7 +2135,7 @@
                                                                             "type": "radio",
                                                                             "name": "additional_options_{{addIdx}}_default",
                                                                             "checked": "{{addVal.is_default === true}}",
-                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                            "disabled": "{{_computed.isReadOnly}}"
                                                                         }
                                                                     },
                                                                     {
@@ -2173,7 +2176,7 @@
                                                                             "name": "additional_options_{{addIdx}}_values_{{addValIdx}}_active",
                                                                             "checked": "{{addVal.is_active !== false}}",
                                                                             "size": "sm",
-                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                            "disabled": "{{_computed.isReadOnly}}"
                                                                         }
                                                                     },
                                                                     {
@@ -2214,7 +2217,7 @@
                                                                             "name": "additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text",
                                                                             "checked": "{{addVal.allow_custom_text === true}}",
                                                                             "size": "sm",
-                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                            "disabled": "{{_computed.isReadOnly}}"
                                                                         }
                                                                     },
                                                                     {
@@ -2231,7 +2234,7 @@
                                                                 "comment": "선택지 삭제 (최소 1개 유지). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬",
                                                                 "type": "basic",
                                                                 "name": "Button",
-                                                                "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                                "if": "{{!_computed.isReadOnly}}",
                                                                 "actions": [
                                                                     {
                                                                         "comment": "선택지 하나 빼기 — 그룹은 최소 하나를 남긴다",
@@ -2265,7 +2268,7 @@
                                                         "comment": "선택지 추가 (그룹당 max 20)",
                                                         "type": "basic",
                                                         "name": "Button",
-                                                        "if": "{{(addOpt.values ?? []).length < 20 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
+                                                        "if": "{{(addOpt.values ?? []).length < 20 && !_computed.isReadOnly}}",
                                                         "actions": [
                                                             {
                                                                 "comment": "선택지 더하기(그룹당 최대 20)",
@@ -2311,7 +2314,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{(_local.form.additional_options ?? []).length < 5 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
+                                    "if": "{{(_local.form.additional_options ?? []).length < 5 && !_computed.isReadOnly}}",
                                     "actions": [
                                         {
                                             "comment": "추가옵션 그룹 더하기(최대 5)",

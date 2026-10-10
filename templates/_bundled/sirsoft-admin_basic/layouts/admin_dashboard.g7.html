@@ -83,11 +83,18 @@
     </fallback>
   </data-source>
   <!-- 확장 경고(코어 비호환·복구 가능 등). 유일한 `background` 소스다 — 첫 그림을 막지 않는다.
-       각 경고는 자기 처리 엔드포인트를 응답에 담아 오므로, 아래 버튼은 그 값을 그대로 호출한다. -->
+       각 경고는 자기 처리 엔드포인트와 그 엔드포인트를 부를 수 있는지(abilities.can_recover·can_dismiss)를
+       응답에 담아 오므로, 아래 버튼은 그 값으로 잠그고 주소를 그대로 호출한다. 시스템 알림 권한이 없으면
+       403 이 정상이라 토스트 없이 빈 목록으로 둔다(경고 블록도 같은 권한으로 숨겨진다). -->
   <data-source id="dashboard_alerts" label_key="$t:editor.data_source.dashboard_alerts" type="api" endpoint="/api/admin/dashboard/alerts" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 최근 알림 요약. 헤더 알림 센터(`notifications`)와는 별개 소스다 — 이쪽은 읽음 여부로 거르지
        않고 최근분을 그대로 보여 준다. -->
@@ -181,8 +188,9 @@
             <p data-ref="top_alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
             <p data-ref="top_alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
             <p data-ref="top_alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
+            <p data-ref="top_alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
             <div data-ref="top_alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
                 <on type="click">
                   <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.
                        버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.
@@ -212,7 +220,7 @@
                 <span data-if="{{!!alert.action_label}}">{{alert.action_label}}</span>
                 <span data-if="{{!alert.action_label}}">$t:extensions.alerts.open_action</span>
               </button>
-              <button data-ref="top_alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" aria-label="$t:extensions.alerts.dismiss_action">
+              <button data-ref="top_alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed" aria-label="$t:extensions.alerts.dismiss_action" disabled="{{alert.abilities?.can_dismiss !== true}}">
                 <on type="click">
                   <!-- 닫기는 조치가 아니라 「이 확장의 이 알림을 더 보지 않겠다」는 기록이다 — 서버에 남겨야 새로고침마다 되살아나지 않는다. 그래서 토스트 없이 목록만 다시 받는다. -->
                   <api-call :auth_required="true" target="/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss" method="POST">
@@ -475,8 +483,9 @@
                 <p data-ref="alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
                 <p data-ref="alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
                 <p data-ref="alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
+                <p data-ref="alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
                 <div data-ref="alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
                     <on type="click">
                       <!-- 복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —
                            복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.
@@ -508,7 +517,7 @@
                     <span data-if="{{!!alert.action_label}}">{{alert.action_label}}</span>
                     <span data-if="{{!alert.action_label}}">$t:extensions.alerts.open_action</span>
                   </button>
-                  <button data-ref="alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" aria-label="$t:extensions.alerts.dismiss_action">
+                  <button data-ref="alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed" aria-label="$t:extensions.alerts.dismiss_action" disabled="{{alert.abilities?.can_dismiss !== true}}">
                     <on type="click">
                       <!-- 경고 숨기기. 복구와 달리 확장 종류·식별자로 주소를 조립한다(경고가 그 둘을 실어
                            오지 않으면 버튼 자체가 렌더되지 않는다). 실패 갈래를 두지 않는다 — 실패하면

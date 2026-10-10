@@ -24,6 +24,7 @@
   - 자동 통지를 켠 채 채널이나 상한을 비웠을 때의 안내(`settings.fields.annual_notice_channels.required_when_enabled`, `annual_notice_batch_size.required_when_enabled`)
   - 서문 칸 이름의 언어 표기(`annual_notice_introduction.label_with_language`), 괄호 조사 없는 대체 문구(`validation.fallback.*`)
   - 알림 템플릿 카드의 권한 없음과 불러오기 실패 안내(`notification_definitions.forbidden_message`, `load_failed_message`)
+- 개인정보 설정 읽기 전용 안내의 일본어 번역을 추가했습니다.
 
 #### 알림 템플릿·메뉴
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.

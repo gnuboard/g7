@@ -355,7 +355,7 @@
           </div>
         </div>
         <!-- 미수납 추가결제를 내는 자리 — PG 결제면 결제창으로 넘어가며 진행 표시를 켠 채 두어 같은 건으로 두 번 진입하지 않게 하고, 마일리지 결제는 그 자리에서 끝난 뒤 신청서를 다시 읽는다. -->
-        <button type="button" class="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled="{{_local.isPayingClaim === true}}">
+        <button type="button" class="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors" data-ref="claim_pay_button" disabled="{{_local.isPayingClaim === true || claim.data?.claim?.can_pay !== true}}">
           <on type="click">
             <!-- 고른 수단을 함께 보낸다 — 고르지 않았으면(선택지가 하나뿐이거나 손대지 않았으면) 빈 값이라 서버가 대기 건에 확정해 둔 값을 그대로 쓴다. -->
             <action handler="sirsoft-ecommerce.payClaimOutstanding" payApiBase="{{_local.claimPayApiBase}}" paymentNumber="{{claim.data?.claim?.pending_payment?.payment_number}}" paymentMethod="{{(claim.data?.claim?.available_payment_methods ?? []).length &gt;= 2 ? (_local.claimPaymentMethod ?? '') : ''}}" isGuest="{{_local.isGuest === true}}" refreshDataSourceId="claim"/>

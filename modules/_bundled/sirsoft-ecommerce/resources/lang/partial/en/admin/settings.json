@@ -708,6 +708,8 @@
     "enable_success": "Policy enabled.",
     "disable_success": "Policy disabled.",
     "toggle_failed": "Failed to update policy state.",
+    "no_read_permission": "You do not have permission to view identity verification policies. The \"View ecommerce identity policies\" permission is required.",
+    "read_only_notice": "You do not have permission to change identity verification policies, so they are shown read-only. Adding, editing, or deleting policies requires the \"Update ecommerce identity policies\" permission.",
     "col": {
       "key": "Key",
       "scope": "Scope",

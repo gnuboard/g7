@@ -1196,7 +1196,8 @@
                                     "label": "$t:admin.users.actions.delete",
                                     "iconName": "trash",
                                     "variant": "danger",
-                                    "disabledField": "abilities.can_delete"
+                                    "disabledField": "abilities.can_delete",
+                                    "disabledReason": "$t:admin.users.actions.delete_disabled_reason"
                                 }
                             ],
                             "columns": [

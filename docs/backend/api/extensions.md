@@ -21,7 +21,7 @@
 <!-- @generated:start:api.admin.extensions.auto-deactivated -->
 - **라우트명**: `api.admin.extensions.auto-deactivated`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\ExtensionRecoveryController@autoDeactivated`
-- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate`
+- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate|core.modules.activate|core.templates.activate,false` (셋 중 하나)
 
 **요청 파라미터**
 
@@ -71,18 +71,19 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
+| 403 | Forbidden | 세 종류의 활성화 권한이 하나도 없는 경우 |
 
 <!-- @generated:end -->
 
 **설명** 코어 버전 비호환으로 자동 비활성화된 확장 목록을 타입별(`plugins`/`modules`/`templates`)로 반환합니다. 각 항목에는 식별자, 비호환 요구 버전, 비활성화 시각과 함께 현재 코어 버전이 담깁니다. 사용자가 dismiss한 알림과 hidden(학습용 샘플) 확장은 결과에서 제외됩니다. `core.plugins.activate` 권한이 필요하며, 상단 배너·대시보드 카드의 데이터 소스로 사용됩니다.
 
+**권한(7.1.0)** 응답의 `items.{plugins|modules|templates}` 는 현재 사용자가 그 종류의 활성화 권한(`core.{type}s.activate`)을 가진 경우에만 채워지고, 없으면 빈 목록이다.
 
 ### POST /api/admin/extensions/{type}/{identifier}/dismiss
 <!-- @generated:start:api.admin.extensions.dismiss -->
 - **라우트명**: `api.admin.extensions.dismiss`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\ExtensionRecoveryController@dismiss`
-- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate`
+- **인증/권한**: `auth:sanctum` + `permission:core.{type}s.activate` (확장 종류의 활성화 권한)
 
 **요청 파라미터**
 
@@ -129,7 +130,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
+| 403 | Forbidden | 그 확장 종류의 활성화 권한(`core.plugins.activate`·`core.modules.activate`·`core.templates.activate`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -141,7 +142,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.admin.extensions.recover -->
 - **라우트명**: `api.admin.extensions.recover`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\ExtensionRecoveryController@recover`
-- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate`
+- **인증/권한**: `auth:sanctum` + `permission:core.{type}s.activate` (확장 종류의 활성화 권한)
 
 **요청 파라미터**
 
@@ -190,7 +191,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
+| 403 | Forbidden | 그 확장 종류의 활성화 권한(`core.plugins.activate`·`core.modules.activate`·`core.templates.activate`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 (`extensions.errors.not_found`) |
 | 422 | Unprocessable Entity | 재검증 결과 여전히 코어 버전이 요구 버전에 미달하는 경우 — 글로벌 핸들러가 `core_version_mismatch` 로 변환 |
 

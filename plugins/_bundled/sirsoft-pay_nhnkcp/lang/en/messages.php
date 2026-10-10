@@ -58,6 +58,7 @@ return [
             'executable' => 'Execute permission OK (:mode)',
             'fixed' => 'Execute permission restored automatically: :before → 0755',
             'not_executable' => 'No execute permission (:before) — automatic fix failed',
+            'not_executable_no_permission' => 'No execute permission (:before) — automatic fix skipped because you do not have permission to change plugin settings',
             'not_executable_remediation' => "Grant execute permission to this file:\n  chmod 755 :path\nPrefix it with sudo if you are not the file owner.",
         ],
         'pub_key' => [

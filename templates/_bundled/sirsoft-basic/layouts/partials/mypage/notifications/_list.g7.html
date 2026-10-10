@@ -29,7 +29,7 @@
         <div class="flex items-center gap-3">
           <responsive on="portable" class="flex items-center justify-end gap-3"/>
           <!-- 읽지 않은 알림을 모두 읽음으로 표시한다. 목록이 비어 있으면 버튼 자체가 뜨지 않는다 -->
-          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" type="button">
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_update !== true}}" title="{{userNotifications?.data?.abilities?.can_update === true ? '' : '$t:mypage.notifications.no_permission'}}">
             <on type="click">
               <api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST">
                 <success>
@@ -44,7 +44,7 @@
             </on>
             $t:mypage.notifications.mark_all_read
           </button>
-          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" type="button">
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}" title="{{userNotifications?.data?.abilities?.can_delete === true ? '' : '$t:mypage.notifications.no_permission'}}">
             <on type="click">
               <open-modal target="notification_delete_all_confirm_modal"/>
             </on>
@@ -58,7 +58,7 @@
         <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}">
           <responsive on="portable" class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"/>
           <on type="click">
-            <api-call if="{{!notification.read_at}}" :auth_required="true" target="/api/user/notifications/{{notification.id}}/read" method="PATCH">
+            <api-call if="{{!notification.read_at &amp;&amp; userNotifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{notification.id}}/read" method="PATCH">
               <success>
                 <refetch-data-source dataSourceId="notification_unread_count"/>
                 <set-state target="global" notificationCount="{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"/>
@@ -93,7 +93,7 @@
                   <span data-if="{{notification.type_label}}" class="flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}">{{notification.type_label}}</span>
                 </div>
                 <!-- 삭제 버튼 -->
-                <button aria-label="$t:common.delete" title="$t:common.delete" class="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" type="button">
+                <button aria-label="$t:common.delete" title="{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}" class="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}">
                   <on type="click">
                     <api-call :stopPropagation="true" :auth_required="true" target="/api/user/notifications/{{notification.id}}" method="DELETE">
                       <success>

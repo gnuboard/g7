@@ -55,6 +55,7 @@ return [
             'executable' => '実行権限 OK (:mode)',
             'fixed' => '実行権限を自動復旧しました: :before → 0755',
             'not_executable' => '実行権限なし (:before) — 自動復旧に失敗',
+            'not_executable_no_permission' => '実行権限なし (:before) — プラグイン設定を変更する権限がないため、自動復旧を行いませんでした',
             'not_executable_remediation' => "このファイルに実行権限を付与してください:\n  chmod 755 :path\nファイルの所有者でない場合は先頭に sudo を付けてください。",
         ],
         'pub_key' => [

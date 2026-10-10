@@ -23,9 +23,28 @@
       </on-code>
     </error-handling>
     <field name="errorCondition">
-      <field name="if" value="{{response?.data?.abilities?.can_update !== true}}"/>
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
       <field name="errorCode" :value="403"/>
     </field>
+  </data-source>
+  <!-- 등록 진입 전용 — 쿠폰 응답이 없는 등록 진입에서 등록 권한(can_create)을 알 곳은 목록 응답의 컬렉션 abilities 뿐이라, 목록을 한 쪽만 받아 그 키만 본다.
+    수정 진입이 수정 권한이 없으면 화면을 403 으로 접는 것과 같은 기준으로, 등록 권한이 없으면(can_create=false) 주소로 바로 들어와도 입력칸이 그려지기 전에 403 화면으로 접는다.
+    응답을 받기 전에는 폼을 그리지 않고(blocking), 조회가 실패해도 오류 화면이다. [저장]은 폼 읽기 전용 계산값(`isReadOnly`)을 따라 응답에 키가 빠져도 잠긴 쪽이다. -->
+  <data-source id="coupon_abilities" label_key="$t:sirsoft-ecommerce.editor.data_source.coupon_abilities" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/promotion-coupons" method="GET" if="{{!route.id}}" :auto_fetch="true" auth_mode="required" loading_strategy="blocking">
+    <params :per_page="10"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_create === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+    <fallback :data="null"/>
   </data-source>
   <!-- 적용 분류를 고르는 트리. 폼 저장과 무관해 화면을 먼저 띄우고 뒤늦게 채운다 -->
   <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories/tree" method="GET" :auto_fetch="true" auth_mode="required" loading_strategy="progressive"/>
@@ -81,6 +100,7 @@
     <field name="selectedProductIds" :value="[]"/>
     <field name="selectedCategoryIds" :value="[]"/>
   </init-local>
+  <computed name="isReadOnly">{{route.id ? coupon?.data?.abilities?.can_update !== true : coupon_abilities?.data?.abilities?.can_create !== true}}</computed>
   <permissions>
     <permission>sirsoft-ecommerce.promotion-coupon.read</permission>
   </permissions>
@@ -117,7 +137,7 @@
               </on>
               $t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel
             </button>
-            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || (route.id &amp;&amp; coupon?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
                 <sequence>

@@ -332,7 +332,10 @@
                         "className": "text-sm px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}"
                     },
-                    "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request"
+                    "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request",
+                    "permissions": [
+                        "sirsoft-message_bizppurio.messaging.manage"
+                    ]
                 },
                 {
                     "type": "basic",
@@ -751,6 +754,9 @@
                             "name": "Span",
                             "text": "{{(_global.bz_tpl_modal?.isSaving ?? false) ? '$t:common.saving' : '$t:common.save'}}"
                         }
+                    ],
+                    "permissions": [
+                        "sirsoft-message_bizppurio.messaging.manage"
                     ]
                 }
             ]

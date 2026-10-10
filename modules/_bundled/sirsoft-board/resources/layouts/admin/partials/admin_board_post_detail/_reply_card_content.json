@@ -391,11 +391,12 @@
                                     "name": "Div",
                                     "actions": [
                                         {
-                                            "comment": "답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
+                                            "comment": "답글 첨부 내려받기 — 관리자 다운로드 라우트로 받고 그 권한(can_download)이 없으면 실행하지 않는다. 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
                                             "type": "click",
                                             "handler": "sirsoft-board.downloadAttachment",
+                                            "if": "{{post?.data?.abilities?.can_download === true}}",
                                             "params": {
-                                                "url": "{{attachment.download_url}}",
+                                                "url": "{{'/api/modules/sirsoft-board/admin/board/' + route?.slug + '/attachments/download/' + attachment.hash}}",
                                                 "filename": "{{attachment.original_filename}}"
                                             },
                                             "onError": {

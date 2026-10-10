@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\ExtensionOwnedRoleDeleteException;
+use App\Exceptions\RoleActiveStateLockedException;
 use App\Exceptions\SystemRoleDeleteException;
 use App\Extension\HookManager;
 use App\Models\Role;
@@ -164,12 +165,19 @@ class RoleService
      * @param  Role  $role  역할 모델
      * @param  array  $data  업데이트 데이터
      * @return Role 업데이트된 역할 모델
+     *
+     * @throws RoleActiveStateLockedException 최고관리자 역할을 끄려 할 때
      */
     public function updateRole(Role $role, array $data): Role
     {
         // 보호된 역할(코어/확장 소유) 수정 상한: 삭제 경로와 대칭.
         // 비-슈퍼관리자 액터는 admin 등 코어/확장 소유 역할을 변경할 수 없다.
         $this->assertActorMayModifyRole($role);
+
+        // 최고관리자 역할은 끌 수 없다 — 끄면 운영자 전원의 권한이 회수된다.
+        if ($role->isActiveStateLocked() && array_key_exists('is_active', $data) && ! $data['is_active']) {
+            throw new RoleActiveStateLockedException;
+        }
 
         // 권한 목록 분리
         $permissions = $data['permissions'] ?? null;
@@ -309,11 +317,18 @@ class RoleService
      *
      * @param  Role  $role  역할 모델
      * @return bool 토글 성공 여부
+     *
+     * @throws RoleActiveStateLockedException 최고관리자 역할일 때
      */
     public function toggleRoleStatus(Role $role): bool
     {
         // 보호된 역할(코어/확장 소유) 상태변경 상한: 삭제 경로와 대칭.
         $this->assertActorMayModifyRole($role);
+
+        // 최고관리자 역할은 사용 여부를 바꿀 수 없다 — 끄면 운영자 전원의 권한이 회수된다.
+        if ($role->isActiveStateLocked()) {
+            throw new RoleActiveStateLockedException;
+        }
 
         $newStatus = ! $role->is_active;
 

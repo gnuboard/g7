@@ -19,7 +19,9 @@
         "selectedItems": [],
         "selectAll": false
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.mileage.read"
+    ],
     "slots": {
         "content": [
             {

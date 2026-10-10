@@ -82,8 +82,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
         ->name('orders.escrow-delivery.register');
 
-    // 시스템 점검 (PC/모바일 결제 사전조건 진단 + 자동 chmod +x 복구)
+    // 시스템 점검 (PC/모바일 결제 사전조건 진단 + 자동 chmod +x 복구) — 플러그인 설정 화면 카드라 화면 권한으로도 읽는다(OR).
+    // 실행 권한 자동 복구는 컨트롤러가 플러그인 설정 수정 권한(core.plugins.update)일 때만 한다
     Route::get('/health', [HealthCheckController::class, 'check'])
-        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read|core.plugins.update,false')
         ->name('health');
 });

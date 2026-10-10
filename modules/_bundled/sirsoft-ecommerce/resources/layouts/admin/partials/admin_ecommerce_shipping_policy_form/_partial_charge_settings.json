@@ -566,7 +566,7 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Button",
-                                                                    "if": "{{policy?.data?.abilities?.can_update === true}}",
+                                                                    "if": "{{!_computed.isReadOnly}}",
                                                                     "actions": [
                                                                         {
                                                                             "comment": "구간 줄 삭제 — 지운 뒤 남은 줄들의 번호가 밀리므로 화면이 아니라 핸들러가 배열을 다시 만든다.",
@@ -1164,6 +1164,8 @@
                             },
                             "children": [
                                 {
+                                    "comment": "연결 시험은 서버가 수정 권한(shipping-policies.update)으로 받는다 — 등록 모드에서도 그 권한이 없으면 잠근다.",
+                                    "id": "api_test_call_button",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
@@ -1176,7 +1178,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn btn-secondary btn-sm",
-                                        "disabled": "{{_computed.isReadOnly || !_computed.activeCountrySetting?.api_endpoint || _global.apiTestLoading}}"
+                                        "disabled": "{{_computed.isReadOnly || _computed.lacksUpdate || !_computed.activeCountrySetting?.api_endpoint || _global.apiTestLoading}}"
                                     },
                                     "children": [
                                         {

@@ -108,6 +108,8 @@ export interface DynamicFieldListProps {
     name?: string;
     /** 읽기 전용 모드 */
     readOnly?: boolean;
+    /** 비활성 — readOnly 와 같이 다룬다(레이아웃 읽기 전용 게이트가 넘기는 값) */
+    disabled?: boolean;
     /** 새 항목 기본값 팩토리 */
     createDefaultItem?: () => Record<string, unknown>;
     /** 계층 구조 지원 - 자식 키 */

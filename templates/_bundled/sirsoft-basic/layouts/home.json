@@ -32,6 +32,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards/stats",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": {
@@ -66,6 +67,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards/posts/recent?limit=5",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
@@ -79,6 +81,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards/popular-boards?limit=4",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
@@ -92,6 +95,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards?limit=3",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []

@@ -895,14 +895,18 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
     return () => window.removeEventListener('popstate', onPopState);
   }, [dirtyKeys.length, confirmLeave]);
 
+  // 읽기 전용이면 쓰기 단축키(저장·모두 저장·새 파일)는 아무것도 하지 않는다 — 머리말 저장 버튼을 숨긴 것과
+  // 같은 판정이다. 핸들러를 비우지 않고 빈 함수로 두는 것은 브라우저 기본 동작(페이지 저장·새 창)을 계속 막기 위함이다.
+  const blockedWrite = useCallback(() => {}, []);
+
   const shortcutHandlers = useMemo<CodeShortcutHandlers>(
     () => ({
-      save: onSave,
-      saveAll: onSaveAll,
+      save: readOnly ? blockedWrite : onSave,
+      saveAll: readOnly ? blockedWrite : onSaveAll,
       preview: onPreview,
       versionHistory: onVersionHistory,
       exit: handleExit,
-      newFile: onNewFile,
+      newFile: readOnly ? blockedWrite : onNewFile,
       quickOpen: onQuickOpen,
       searchContent: onSearchContent,
       prevTab: () => goToTab(-1),
@@ -915,6 +919,8 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       help: () => setHelpOpen((open) => !open),
     }),
     [
+      readOnly,
+      blockedWrite,
       onSave,
       onSaveAll,
       onPreview,
@@ -1056,14 +1062,17 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
               {t('admin.templates.layout_edit.file.missing_draft_notice')}
             </Span>
             <Div className="flex gap-2 mt-2">
-              <Button
-                type="button"
-                data-testid="missing-save-as"
-                className="px-3 py-1 text-xs rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                onClick={() => onSaveAs?.({ target: { value: activeBuffer?.value ?? '', key: fileKey } })}
-              >
-                {t('admin.templates.layout_edit.file.save_as')}
-              </Button>
+              {/* 다른 이름으로 저장은 새 파일을 만드는 쓰기 동작이다 — 읽기 전용이면 보이지 않는다 */}
+              {!readOnly && (
+                <Button
+                  type="button"
+                  data-testid="missing-save-as"
+                  className="px-3 py-1 text-xs rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                  onClick={() => onSaveAs?.({ target: { value: activeBuffer?.value ?? '', key: fileKey } })}
+                >
+                  {t('admin.templates.layout_edit.file.save_as')}
+                </Button>
+              )}
               <Button
                 type="button"
                 data-testid="missing-discard"

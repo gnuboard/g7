@@ -154,7 +154,11 @@
             "read_at": "2026-05-28 10:02:00",
             "created_at": "2026-05-28 09:00:00"
           }
-        ]
+        ],
+        "abilities": {
+          "can_update": true,
+          "can_delete": true
+        }
       }
     },
     "searchResults": {
@@ -2347,6 +2351,10 @@
           "current_page": 1,
           "last_page": 1,
           "has_more_pages": false
+        },
+        "abilities": {
+          "can_update": true,
+          "can_delete": true
         }
       }
     },
@@ -7313,7 +7321,11 @@
             ],
             "refund_branch": "auto"
           }
-        ]
+        ],
+        "abilities": {
+          "can_request": true,
+          "can_cancel": true
+        }
       }
     }
   },

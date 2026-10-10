@@ -475,6 +475,23 @@ class UserClaimService
     }
 
     /**
+     * 취소·환불 신청이 어느 분기로 갈지 판정합니다. (`auto` 즉시 취소 | `request` 환불 심사)
+     *
+     * 접수 전에 분기를 알아야 하는 판정(즉시 취소 분기의 주문 취소 권한)이 쓴다. 판정은
+     * 접수와 같은 출처(`OrderRefundRequestService::resolveBranch()`)다.
+     *
+     * @param  Order  $order  주문
+     * @param  array  $items  신청 대상 [{order_option_id, quantity}]
+     * @return string 분기 (`auto` | `request`)
+     *
+     * @throws OrderClaimException 대상 부재 / 분기 혼재 / 신청 불가 상태
+     */
+    public function refundBranchFor(Order $order, array $items): string
+    {
+        return $this->refundRequestService->resolveBranch($order, $items);
+    }
+
+    /**
      * 취소·환불을 신청합니다. (D2 자동 분기 — 즉시취소 또는 환불신청서)
      *
      * 즉시취소 분기는 취소 파이프라인이 끝나면 첨부할 신청서가 없으므로 미귀속 첨부를 정리한다.

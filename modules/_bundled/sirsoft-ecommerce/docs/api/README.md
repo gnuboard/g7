@@ -32,6 +32,7 @@
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
 | [extra-fee-templates.md](extra-fee-templates.md) | `extra-fee-templates` | 10 |
 | [guest.md](guest.md) | `guest` | 20 |
+| [identity-policies.md](identity-policies.md) | `identity-policies` | 4 |
 | [inquiries.md](inquiries.md) | `inquiries` | 10 |
 | [mileage.md](mileage.md) | `mileage` | 3 |
 | [mileage-transactions.md](mileage-transactions.md) | `mileage-transactions` | 5 |

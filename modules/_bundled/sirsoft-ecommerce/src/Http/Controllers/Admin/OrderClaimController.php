@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
@@ -34,6 +35,12 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  * 미들웨어는 라우트 권한 하나만 보므로, 운영자의 주문 조회 범위는 `ClaimScopeGuard` 가 보탠다(EC-667 —
  * 주문 조회를 「본인만」 으로 묶은 운영자가 남의 주문에 직권 접수하지 못한다).
  * 도메인 거절은 `MapsClaimErrors::claimDomainError()` 가 422 로 바꾼다.
+ *
+ * 접수에 딸린 부가 동작은 그 동작의 권한을 따로 요구한다 — 접수 권한만으로 다른 권한의 일을 하지 못하게 한다.
+ *  - 「환불까지 한 번에 처리」(`auto_advance_refund`) = 환불 실행(`claims.execute-refund`) — PG 환불까지 간다
+ *  - 「접수와 함께 승인」(`approve`, 기본 켜짐) = 클레임 상태 변경(`claims.update-status`) — 승인 전이를 한다
+ * 권한이 없으면 접수 전에 403 으로 끝낸다(신청서가 반쯤 생긴 채 남지 않게). 화면은 같은 키
+ * (`order.abilities.can_execute_refund`, `claimRequestContext.abilities.can_update_status`)로 체크박스를 잠근다.
  */
 class OrderClaimController extends AdminBaseController
 {
@@ -41,6 +48,12 @@ class OrderClaimController extends AdminBaseController
 
     /** 직권 접수 권한 — 라우트 게이트와 같은 식별자 */
     private const PERMISSION_CREATE = 'sirsoft-ecommerce.claims.create';
+
+    /** 「접수와 함께 승인」 권한 — 클레임 상세의 상태 전이와 같은 식별자 */
+    private const PERMISSION_UPDATE_STATUS = 'sirsoft-ecommerce.claims.update-status';
+
+    /** 「환불까지 한 번에 처리」 권한 — 클레임 상세의 [환불하기] 와 같은 식별자 */
+    private const PERMISSION_EXECUTE_REFUND = 'sirsoft-ecommerce.claims.execute-refund';
 
     /**
      * @param  AdminClaimRequestService  $requestService  관리자 직권 접수 서비스
@@ -80,6 +93,11 @@ class OrderClaimController extends AdminBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.retrieved', [
                 'order_id' => $order->id,
+                // 접수 창의 부가 동작 체크박스를 잠그는 키 — 서버가 같은 권한으로 403 을 낸다.
+                'abilities' => [
+                    'can_update_status' => PermissionHelper::check(self::PERMISSION_UPDATE_STATUS),
+                    'can_execute_refund' => PermissionHelper::check(self::PERMISSION_EXECUTE_REFUND),
+                ],
                 'gates' => $this->requestService->gateStatuses(),
                 'reasons' => [
                     ClaimTypeEnum::EXCHANGE->value => $this->adminClaimService->reasonOptionsForType(ClaimTypeEnum::EXCHANGE),
@@ -133,7 +151,13 @@ class OrderClaimController extends AdminBaseController
         try {
             $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
 
-            $result = $this->requestService->requestExchange($order, $request->toServiceInput(), Auth::id());
+            $input = $request->toServiceInput();
+
+            if ($input['approve'] && ! $this->canApproveOnReceipt($order)) {
+                return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.claims.approve_on_receipt_forbidden', 403);
+            }
+
+            $result = $this->requestService->requestExchange($order, $input, Auth::id());
 
             return $this->requestedResponse($result);
         } catch (OrderClaimException $e) {
@@ -157,7 +181,13 @@ class OrderClaimController extends AdminBaseController
         try {
             $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
 
-            $result = $this->requestService->requestReturn($order, $request->toServiceInput(), Auth::id());
+            $input = $request->toServiceInput();
+
+            if ($input['approve'] && ! $this->canApproveOnReceipt($order)) {
+                return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.claims.approve_on_receipt_forbidden', 403);
+            }
+
+            $result = $this->requestService->requestReturn($order, $input, Auth::id());
 
             return $this->requestedResponse($result);
         } catch (OrderClaimException $e) {
@@ -180,6 +210,10 @@ class OrderClaimController extends AdminBaseController
     {
         try {
             $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
+
+            if ($request->shouldAutoAdvanceRefund() && ! self::canAutoAdvanceRefund($order, $this->claimScope)) {
+                return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.claims.auto_refund_forbidden', 403);
+            }
 
             $outcome = $this->requestService->requestCancelOrRefund($order, [
                 'full_cancel' => $request->isFullCancel(),
@@ -218,6 +252,55 @@ class OrderClaimController extends AdminBaseController
         } catch (Exception $e) {
             return $this->claimServerError('admin-cancel-refund-request', $e);
         }
+    }
+
+    /**
+     * 현재 운영자가 「환불까지 한 번에 처리」 를 할 수 있는지 판정합니다.
+     *
+     * 환불 실행 권한을 보유하고, 그 권한의 범위(주문 조회 범위와의 교집합)가 이 주문에 닿아야 한다 —
+     * 클레임 상세의 [환불하기](`ClaimController::executeRefund()`)와 같은 판정이다. 호환용 구 경로
+     * (`OrderController::cancelOrder()`)도 이 판정을 쓴다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  ClaimScopeGuard  $claimScope  권한 스코프 가드
+     * @return bool 자동 환불 가능 여부
+     */
+    public static function canAutoAdvanceRefund(Order $order, ClaimScopeGuard $claimScope): bool
+    {
+        if (! PermissionHelper::check(self::PERMISSION_EXECUTE_REFUND)) {
+            return false;
+        }
+
+        try {
+            $claimScope->assertOrderAccessible($order, self::PERMISSION_EXECUTE_REFUND);
+        } catch (AccessDeniedHttpException) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 현재 운영자가 「접수와 함께 승인」 을 할 수 있는지 판정합니다.
+     *
+     * 클레임 상세의 상태 전이(`ClaimController` 의 `claims.update-status`)와 같은 판정이다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return bool 함께 승인 가능 여부
+     */
+    protected function canApproveOnReceipt(Order $order): bool
+    {
+        if (! PermissionHelper::check(self::PERMISSION_UPDATE_STATUS)) {
+            return false;
+        }
+
+        try {
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_UPDATE_STATUS);
+        } catch (AccessDeniedHttpException) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

@@ -530,9 +530,10 @@ describe('slots.content 구조 검증', () => {
 
         // @scenario area=grid
         // @effects review_admin_list_grid_binds_reviews_and_blurs_until_first_load
-        it('DataGrid가 selectable=true 속성을 가져야 한다', () => {
+        it('DataGrid 의 행 선택은 리뷰 수정 권한(목록 abilities.can_update)으로 열린다', () => {
+            // 7.1.0 G12 — 일괄 상태 변경은 reviews.update 라우트다. 권한이 없으면 선택 자체를 닫는다.
             const datagrid = findById(contentRoot, 'review_datagrid');
-            expect(datagrid.props.selectable).toBe(true);
+            expect(datagrid.props.selectable).toBe('{{reviews.data?.abilities?.can_update === true}}');
         });
 
         // @scenario area=grid

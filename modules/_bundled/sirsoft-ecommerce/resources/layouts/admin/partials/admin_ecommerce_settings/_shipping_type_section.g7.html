@@ -110,7 +110,8 @@
           <item-template>
             <div class="border-t border-gray-200 dark:border-gray-700 contents">
               <td class="px-2 py-2 text-center">
-                <div :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
+                <div data-ref="shipping_type_drag_handle" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                   <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
                 </div>
               </td>

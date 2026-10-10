@@ -318,6 +318,28 @@ class ImageUploadAdminControllerTest extends PluginTestCase
     }
 
     /**
+     * 목록 응답이 삭제·설정 열기 권한 판정을 싣는다 — 화면이 행 선택·삭제·[설정 열기]를 잠그는 근거(7.1.0 abilities 게이트 plugins #9·#13).
+     *
+     * @effects admin_index_reports_abilities
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function index_reports_delete_and_settings_abilities(): void
+    {
+        $this->actingAs($this->userWithUploadPermissions(['read']))
+            ->getJson(self::INDEX_URL)
+            ->assertOk()
+            ->assertJsonPath('data.abilities.can_delete', false)
+            ->assertJsonPath('data.abilities.can_open_settings', false);
+
+        $this->actingAs($this->userWithUploadPermissions(['read', 'delete']))
+            ->getJson(self::INDEX_URL)
+            ->assertOk()
+            ->assertJsonPath('data.abilities.can_delete', true);
+    }
+
+    /**
      * 비로그인 요청은 목록에서 401 을 받는다.
      *
      * @effects admin_index_requires_authentication

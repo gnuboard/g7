@@ -387,7 +387,8 @@
             }
           ],
           "abilities": {
-            "can_manage": true
+            "can_manage": true,
+            "can_reply": true
           },
           "pagination": {
             "current_page": 1,
@@ -730,6 +731,7 @@
           "product_code": "TS-1001",
           "sales_product_code": "SP-TS-1001",
           "abilities": {
+            "can_order": true,
             "can_update": true,
             "can_delete": true
           },
@@ -1229,7 +1231,8 @@
           "abilities": {
             "can_read": true,
             "can_update": true,
-            "can_cancel": true
+            "can_cancel": true,
+            "can_execute_refund": true
           },
           "subtotal_amount": 76000,
           "subtotal_amount_formatted": "76,000원",
@@ -2276,6 +2279,15 @@
           }
         }
       },
+      "coupon_abilities": {
+        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+      },
+      "policy_abilities": {
+        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+      },
+      "product_abilities": {
+        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+      },
       "extra_fee_templates": {
         "data": {
           "data": [
@@ -2306,7 +2318,12 @@
               "fee_formatted": "4,000원",
               "is_active": false
             }
-          ]
+          ],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
         }
       },
       "presets": {
@@ -2322,7 +2339,8 @@
         "data": {
           "abilities": {
             "can_create": true,
-            "can_update": true
+            "can_update": true,
+            "can_delete": true
           },
           "data": [
             {
@@ -4108,6 +4126,7 @@
       "claimRequestContext": {
         "data": {
           "order_id": 1,
+          "abilities": { "can_update_status": true, "can_execute_refund": true },
           "gates": {
             "exchange": ["shipping", "delivered", "confirmed"],
             "return": ["shipping", "delivered", "confirmed"],
@@ -4218,7 +4237,9 @@
             "per_page": 20
           },
           "abilities": {
-            "can_create": true
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
           }
         }
       },
@@ -4339,6 +4360,7 @@
       },
       "cartItems": {
         "data": {
+          "abilities": { "can_order": true },
           "calculation": {
             "items": [
               "샘플"

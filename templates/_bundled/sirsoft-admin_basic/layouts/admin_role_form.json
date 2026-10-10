@@ -82,7 +82,7 @@
             "fallback": {
                 "data": null
             },
-            "comment": "등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다. 목록 응답에 실려 오는\n       `abilities.can_create` 가 아니면 화면을 403 으로 접는다(등록 전용 권한 조회 API 가 없어\n       목록 API 를 그 용도로 쓴다). 받은 데이터 자체는 화면에서 쓰지 않는다."
+            "comment": "등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다. 목록 응답에 실려 오는\n       `abilities.can_create` 가 false 면 화면을 403 으로 접는다(등록 전용 권한 조회 API 가 없어\n       목록 API 를 그 용도로 쓴다). 받은 데이터 자체는 화면에서 쓰지 않는다."
         },
         {
             "id": "clone_source",
@@ -647,14 +647,25 @@
                                                                     "className": "block text-label-subtle mt-0.5"
                                                                 },
                                                                 "text": "$t:admin.roles.form.is_active_hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!!route?.id && role?.data?.is_active_locked === true}}",
+                                                                "props": {
+                                                                    "className": "block text-warning-soft mt-0.5"
+                                                                },
+                                                                "text": "$t:admin.roles.form.is_active_locked_hint"
                                                             }
                                                         ]
                                                     },
                                                     {
+                                                        "comment": "최고관리자 역할은 끌 수 없다 — 끄면 운영자 전원의 권한이 회수된다(서버도 422 로 거부).",
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "is_active"
+                                                            "name": "is_active",
+                                                            "disabled": "{{!!route?.id && role?.data?.is_active_locked === true}}"
                                                         }
                                                     }
                                                 ]

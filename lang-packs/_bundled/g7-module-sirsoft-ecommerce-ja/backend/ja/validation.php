@@ -2247,4 +2247,10 @@ return [
         'complete_defaults_create_refund_request' => '完了処理デフォルト値 - 返金申請書受付',
         'complete_defaults_restore_stock' => '完了処理デフォルト値 - 在庫復元',
     ],
+
+    // 本人認証ポリシータブの検証メッセージ
+    'identity_policy' => [
+        'target_not_owned' => 'イーコマースの本人認証ポリシーはイーコマースの地点のみを対象にできます。フック・カスタム範囲は「sirsoft-ecommerce.」、ルート範囲は「api.modules.sirsoft-ecommerce.」で始まる必要があります。',
+        'nothing_to_update' => '変更する項目がありません。',
+    ],
 ];

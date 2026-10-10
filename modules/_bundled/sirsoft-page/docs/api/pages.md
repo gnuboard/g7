@@ -350,7 +350,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-page.admin.pages.check-slug -->
 - **라우트명**: `api.modules.sirsoft-page.admin.pages.check-slug`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageController@checkSlug`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create|sirsoft-page.pages.update,false` (OR)
 
 **요청 파라미터**
 
@@ -408,7 +408,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 슬러그 중복 여부를 확인합니다. `slug`(필수)와 선택 `exclude_id`(수정 화면에서 자기 자신을 중복 검사에서 제외)를 받아 `{ "exists": true|false }` 를 반환합니다. 페이지 생성/수정 폼에서 슬러그 입력 시 실시간 중복 검증에 사용합니다. 권한은 `pages.create` 를 요구합니다.
+**설명** 슬러그 중복 여부를 확인합니다. `slug`(필수)와 선택 `exclude_id`(수정 화면에서 자기 자신을 중복 검사에서 제외)를 받아 `{ "exists": true|false }` 를 반환합니다. 페이지 생성/수정 폼에서 슬러그 입력 시 실시간 중복 검증에 사용합니다. 권한은 `pages.create` 를 요구합니다. 7.1.0 부터 등록 화면과 수정 화면이 함께 쓰므로 등록·수정 권한 중 하나만 있어도 됩니다.
 
 
 ### DELETE /api/modules/sirsoft-page/admin/pages/{page}
@@ -1316,6 +1316,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 발행된 페이지를 슬러그로 조회하는 공개 엔드포인트입니다. 실제 미들웨어는 `optional.sanctum` 으로 비로그인 사용자도 발행 페이지를 볼 수 있습니다(위 표의 `auth:sanctum` 은 생성기 표기이며 토큰 없이도 통과). `sirsoft-page.pages.read` 권한을 가진 관리자는 미발행 페이지도 사용자 화면에서 미리볼 수 있으며(이때 응답에 preview 표시가 실림), 비로그인·일반 회원은 미발행 시 404 를 받습니다. `PublicPageResource` 는 관리자용 상세보다 축소된 공개 표면을 노출하고 `attachments` 를 포함합니다. `{slug}` 는 문자열 라우트 파라미터라 문서 생성 시 자동 실측에서 제외됩니다.
+**설명** 발행된 페이지를 슬러그로 조회하는 공개 엔드포인트입니다. 실제 미들웨어는 `optional.sanctum` 으로 비로그인 사용자도 발행 페이지를 볼 수 있습니다(위 표의 `auth:sanctum` 은 생성기 표기이며 토큰 없이도 통과). `sirsoft-page.pages.read` 권한을 가진 관리자는 미발행 페이지도 사용자 화면에서 미리볼 수 있으며(이때 응답에 preview 표시가 실림), 비로그인·일반 회원은 미발행 시 404 를 받습니다. `PublicPageResource` 는 관리자용 상세보다 축소된 공개 표면을 노출하고 `attachments` 를 포함합니다. `{slug}` 는 문자열 라우트 파라미터라 문서 생성 시 자동 실측에서 제외됩니다. 응답에 `abilities.can_update`(페이지 수정 권한·스코프)를 싣고, 페이지가 없으면 404 응답의 `errors.abilities.can_create`(페이지 등록 권한)를 싣습니다 — 공개 화면의 [편집]·[페이지 만들기] 를 그 권한자에게만 여는 근거입니다(7.1.0).
 
 

@@ -518,11 +518,14 @@ export function setAdminClaimRequestRowHandler(
  * 성공하면 새 신청서 상세로 간다 — 운영자는 접수 결과(승인 여부·청구)를 거기서 바로 확인한다.
  * 승인이 막혔으면(`approval_skipped`) 접수는 남았다는 사실과 사유를 함께 알린다.
  *
- * @param _action 액션 객체
+ * 「접수와 함께 승인」 은 상태 변경 권한(`claims.update-status`)의 일이다. 화면이 그 권한이 없다고 넘기면
+ * (`canApprove=false`) 체크 상태와 무관하게 승인을 싣지 않는다 — 서버는 승인 요청을 403 으로 거절한다.
+ *
+ * @param action 액션 객체 (params: canApprove — 승인 권한 여부, 생략 시 true)
  * @param _context 액션 컨텍스트
  */
 export async function submitAdminClaimRequestHandler(
-    _action: ActionWithParams,
+    action: ActionWithParams<{ canApprove?: boolean | string }>,
     _context?: ActionContext,
 ): Promise<void> {
     const G7Core = core();
@@ -542,7 +545,7 @@ export async function submitAdminClaimRequestHandler(
         const segment = state.type === 'exchange' ? 'exchanges' : 'returns';
         const response = await G7Core.api.post(
             `/api/modules/sirsoft-ecommerce/admin/orders/${state.orderNumber}/${segment}`,
-            { ...buildBody(state), approve: state.approve },
+            { ...buildBody(state), approve: state.approve && action?.params?.canApprove !== false && action?.params?.canApprove !== 'false' },
         );
 
         if (response?.success === false) {

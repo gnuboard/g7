@@ -10,6 +10,10 @@
       <set-state target="local" form="{{response.data.data}}"/>
     </success>
     <error-handling>
+      <on-code code="401">
+        <!-- 로그인이 필요한 게시판 — 안내와 이동은 form_meta 가 맡고 여기서는 조용히 넘긴다(두 번 뜨지 않게) -->
+        <suppress/>
+      </on-code>
       <on-code code="403">
         <!-- 권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원) -->
         <show-error-page target="content"/>
@@ -24,6 +28,11 @@
     <headers X-Board-Post-Verify-Token="{{_local.verificationToken ?? ''}}"/>
     <params post_id="{{route?.id ?? ''}}" parent_id="{{query?.parent_id ?? ''}}"/>
     <error-handling>
+      <on-code code="401">
+        <!-- 로그인이 필요한 게시판 — 목록·상세와 같게 안내하고 로그인 뒤 이 폼으로 돌아온다 -->
+        <toast type="info" message="$t:board.login_required"/>
+        <action handler="redirectToLoginWithReturn"/>
+      </on-code>
       <on-code code="403">
         <!-- 권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원) -->
         <show-error-page target="content"/>

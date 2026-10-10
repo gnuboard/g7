@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\ExtensionOwnedRoleDeleteException;
 use App\Exceptions\PermissionEscalationException;
+use App\Exceptions\RoleActiveStateLockedException;
 use App\Exceptions\SystemRoleDeleteException;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -168,6 +169,8 @@ class RoleController extends AdminBaseController
             );
         } catch (CannotModifyProtectedRoleException $e) {
             return $this->error('exceptions.cannot_modify_protected_role', 403);
+        } catch (RoleActiveStateLockedException $e) {
+            return $this->error('exceptions.role_active_state_locked', 422);
         } catch (PermissionEscalationException $e) {
             return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
@@ -215,6 +218,8 @@ class RoleController extends AdminBaseController
             }
         } catch (CannotModifyProtectedRoleException $e) {
             return $this->error('exceptions.cannot_modify_protected_role', 403);
+        } catch (RoleActiveStateLockedException $e) {
+            return $this->error('exceptions.role_active_state_locked', 422);
         } catch (Exception $e) {
             return $this->error('role.update_failed', 500, $e->getMessage());
         }

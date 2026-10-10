@@ -14,6 +14,7 @@
 - 알림톡 템플릿 작성 창의 버튼·바로연결 「링크 유형」 선택칸 이름(몇 번째 항목인지 함께 읽히는 화면 낭독기용 이름)의 일본어 번역을 추가했습니다.
 - 관리 응답 안내 문장(알림톡 템플릿 조회 `template.loaded`·없는 템플릿 `template.not_found`·분류 `template.categories_loaded`·발신 프로필 `template.profiles_loaded`·발송 결과 `dispatch_result.loaded`)을 일본어로 번역했습니다.
 - 환경설정 저장 오류 안내의 항목 이름(검수 모드 `settings.is_test_mode_attribute`·API 키 `settings.api_key_attribute`·알림톡 발신프로필 키 `settings.sender_key_attribute`)을 일본어로 번역했습니다.
+- 플러그인 설정 읽기 전용 안내와 알림톡 템플릿 관리 권한 없음 안내의 일본어 번역을 추가했습니다.
 
 ### Changed
 

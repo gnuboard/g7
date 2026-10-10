@@ -39,6 +39,20 @@
 `php artisan module:update gnuboard7-hello_module --force` 로 반영합니다.
 <!-- @intent END -->
 
+## 권한 게이트 (abilities)
+
+쓰기 UI 는 **응답의 `abilities` 로 잠그고**, 서버는 같은 권한으로 403 을 낸다. 서버만 막으면 사용자는 다 입력한 뒤에야
+거절당한다. 이 샘플은 그 최소 형태를 보인다(API 응답 필드는 [docs/api/memos.md](api/memos.md)).
+
+| 화면 | 근거 키 | 잠그는 것 |
+|---|---|---|
+| `admin_memo_list` | `memos.data.abilities.can_create`(컬렉션) | 「새 메모」 버튼 `disabled` + 이유 툴팁 |
+| `admin_memo_form`(생성) | `memoCreateAbility.data.abilities.can_create` — 목록 API 를 한 건만 받아 컬렉션 abilities 를 읽는다 | `_computed.isReadOnly` → 입력·저장 (응답이 없거나 실패하면 잠긴 쪽) · `_computed.readOnlyNoticeVisible` → 안내 문구 (응답이 권한 없음일 때만) |
+| `admin_memo_form`(수정) | `memoData.data.abilities.can_update`(단건 `resourceMeta`) | 같음 |
+
+- 응답이 오기 전에는 잠그지 않되(`!!data && …`) 저장 버튼은 응답 전에도 잠근다 — 응답 전 저장으로 우회하지 못하게.
+- 키 이름은 라우트 미들웨어와 같은 권한 식별자에서 나온다(`MemoCollection`·`MemoResource` 의 `abilityMap()`).
+
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

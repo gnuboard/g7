@@ -53,5 +53,6 @@
         "hint": "Theme color for the postcode search window. (e.g., #1D4ED8)"
       }
     }
-  }
+  },
+  "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

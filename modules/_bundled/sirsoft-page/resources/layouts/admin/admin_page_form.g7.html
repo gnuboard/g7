@@ -148,10 +148,10 @@
               <span class="text-required">*</span>
             </label>
             <!-- 편집기는 처음 그려질 때의 읽기 전용 여부로 굳는다. 그래서 수정 모드는 기존 값이 온 뒤, 등록 모드는 등록 권한 확인이 끝난 뒤에 그린다 — 먼저 그리면 권한 있는 관리자에게도 잠긴 편집기가 남는다 -->
-            <extension-point name="html_editor" data-ref="content_editor" data-if="{{route?.id ? _local.form?.content !== undefined : createAbility !== undefined}}" :multilingual="true" value="{{_local.form?.content}}" isHtml="{{_local.form?.content_mode === 'html'}}" disabled="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-page.admin.page.form.fields.content">
+            <extension-point name="html_editor" data-ref="content_editor" data-if="{{route?.id ? _local.form?.content !== undefined : createAbility !== undefined}}" :multilingual="true" value="{{_local.form?.content}}" isHtml="{{_local.form?.content_mode === 'html'}}" disabled="{{_computed.isReadOnly}}" readOnly="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-page.admin.page.form.fields.content">
               <prop name="name">"content"</prop>
               <default>
-                <html-editor data-type="composite" name="content" :multilingual="true" value="{{_local.form?.content}}" isHtml="{{_local.form?.content_mode === 'html'}}" disabled="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-page.admin.page.form.fields.content">
+                <html-editor data-type="composite" name="content" :multilingual="true" value="{{_local.form?.content}}" isHtml="{{_local.form?.content_mode === 'html'}}" disabled="{{_computed.isReadOnly}}" readOnly="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-page.admin.page.form.fields.content">
                   <on type="change">
                     <!-- 본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다 -->
                     <set-state target="local" form.content="{{$event.target.value}}"/>

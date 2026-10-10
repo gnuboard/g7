@@ -2,6 +2,7 @@
   "title": "게시판 환경설정",
   "description": "게시판 모듈의 기본값과 정책을 관리합니다",
   "read_only_message": "보기 권한만 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.",
+  "board_types_no_permission": "게시판 유형을 관리하려면 게시판 생성 권한이 필요합니다.",
   "page_info": "새 게시판 생성 시 적용되는 기본 설정을 관리합니다. 각 항목의 체크박스를 선택하면 기존 게시판에 일괄 적용할 수 있습니다.",
   "validation_error": "입력 정보를 확인해주세요.",
   "save_success": "설정이 저장되었습니다.",
@@ -295,6 +296,7 @@
     "select_boards_hint": "아래에서 일괄 적용할 게시판을 검색해 선택하세요.",
     "select_boards_placeholder": "게시판을 선택하세요",
     "apply_button": "일괄 적용",
+    "no_permission": "일괄 적용은 게시판 환경설정 수정 권한과 게시판 수정 권한이 모두 있어야 합니다.",
     "no_fields_selected": "적용할 항목이 선택되지 않았습니다.",
     "no_boards_selected": "적용할 게시판이 선택되지 않았습니다.",
     "checked_fields_notice": "전체 설정 저장 후 체크한 항목만 일괄 적용됩니다.",
@@ -389,6 +391,7 @@
       "cache_management": "SEO 캐시 관리",
       "cache_description": "게시판 관련 SEO 캐시를 수동으로 초기화합니다. 설정 저장 시 자동으로 초기화됩니다.",
       "clear_cache": "SEO 캐시 초기화",
+      "clear_cache_no_permission": "SEO 캐시를 초기화하려면 사이트 환경설정 수정 권한이 필요합니다.",
       "clear_cache_success": "SEO 캐시가 초기화되었습니다.",
       "clear_cache_error": "SEO 캐시 초기화에 실패했습니다."
     }
@@ -460,6 +463,8 @@
     "enable_success": "정책이 활성화되었습니다.",
     "disable_success": "정책이 비활성화되었습니다.",
     "toggle_failed": "정책 상태 변경에 실패했습니다.",
+    "no_read_permission": "본인인증 정책을 볼 권한이 없습니다. 「게시판 본인인증 정책 조회」 권한이 필요합니다.",
+    "read_only_notice": "본인인증 정책을 수정할 권한이 없어 읽기 전용으로 표시합니다. 정책을 추가·수정·삭제하려면 「게시판 본인인증 정책 수정」 권한이 필요합니다.",
     "col": {
       "key": "정책 키",
       "scope": "범위",

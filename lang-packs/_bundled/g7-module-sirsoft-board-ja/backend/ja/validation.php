@@ -764,4 +764,10 @@ return [
         'attachment_ids' => '添付ファイル',
         'password' => 'パスワード',
     ],
+
+    // 本人認証ポリシータブの検証メッセージ
+    'identity_policy' => [
+        'target_not_owned' => '掲示板の本人認証ポリシーは掲示板の地点のみを対象にできます。フック・カスタム範囲は「sirsoft-board.」、ルート範囲は「api.modules.sirsoft-board.」で始まる必要があります。',
+        'nothing_to_update' => '変更する項目がありません。',
+    ],
 ];

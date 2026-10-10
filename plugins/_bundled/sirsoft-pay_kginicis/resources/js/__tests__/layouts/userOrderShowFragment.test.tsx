@@ -132,7 +132,8 @@ describe('주문 상세 KG이니시스 결제 블록 조각', () => {
     // @effects vbank_info_uses_shop_formatted_due, bank_code_admin_only
     it('입금 대기 가상계좌는 입금 안내를 그리고 입금 기한은 쇼핑몰이 서식을 입힌 값을 그대로 쓴다 — 은행코드는 관리자만', async () => {
         await mount(kgOrder(VBANK_WAITING), {
-            state: { _local: { _kgReceipt: { receipt_type: 'inicis_receipt', receipt_url: 'https://receipt.example/r', vbank_bank_code: '04' } } },
+            // 은행코드는 서버가 주문 조회 권한자에게만 싣는다(7.1.0) — 회원 응답은 null 이고 그러면 줄을 그리지 않는다
+            state: { _local: { _kgReceipt: { receipt_type: 'inicis_receipt', receipt_url: 'https://receipt.example/r', vbank_bank_code: null } } },
         });
 
         const panel = document.getElementById('kginicis_vbank_info') as HTMLElement;

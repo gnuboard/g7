@@ -46,7 +46,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        // 예상금액 조회는 접수(claims.create) 축, 「환불까지 한 번에」 는 환불 실행 권한이 필요하다 (7.1.0).
+        $this->adminUser = $this->createAdminUser([
+            'sirsoft-ecommerce.orders.update',
+            'sirsoft-ecommerce.claims.create',
+            'sirsoft-ecommerce.claims.execute-refund',
+        ]);
 
         // 이전 테스트에서 저장된 환경설정 파일 제거 (RefreshDatabase 는 storage 롤백 안 함)
         $settingsDir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');

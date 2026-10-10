@@ -321,7 +321,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "px-4 py-2 text-sm rounded-lg bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{!(_global.adminCashReceiptForm?.identifier ?? '') || _global.isCashReceiptBusy === true}}"
+                                "disabled": "{{!(_global.adminCashReceiptForm?.identifier ?? '') || _global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue"
                         }

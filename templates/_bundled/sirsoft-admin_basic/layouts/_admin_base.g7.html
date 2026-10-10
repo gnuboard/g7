@@ -155,7 +155,7 @@
           <language-selector data-type="composite" data-ref="language_selector_desktop" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" languageText="$t:admin.language" :showCode="true"/>
           <!-- 통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions). 헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트). -->
           <slot-container data-type="composite" data-ref="header_currency_slot_desktop" slotId="header_currency" class="flex items-center"/>
-          <notification-center data-type="composite" data-ref="notification_center_desktop" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" dropdownAlign="right">
+          <notification-center data-type="composite" data-ref="notification_center_desktop" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
             <on event="onClose">
               <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
                    (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —
@@ -178,17 +178,21 @@
             <on event="onNotificationClick">
               <!-- 알림 클릭 — 이동과 읽음 처리를 **동시에** 낸다. 순차로 두면 읽음 응답을 기다리는
                    동안 화면이 멈춘 것처럼 보이고, 이동 자체는 읽음 성공에 걸 이유가 없다.
-                   알림에 링크가 없으면 알림 이력 화면으로 보낸다. -->
+                   알림에 링크가 없으면 알림 이력 화면으로 보낸다. 읽음 처리 권한이 없으면 이동만 한다. -->
               <parallel>
                 <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
-                <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
-                  <success>
-                    <refetch-data-source dataSourceId="notification_unread_count"/>
-                  </success>
-                  <fail>
-                    <toast type="error" message="{{error.message}}"/>
-                  </fail>
-                </api-call>
+                <conditions>
+                  <when if="{{notifications?.data?.abilities?.can_update === true}}">
+                    <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
+                      <success>
+                        <refetch-data-source dataSourceId="notification_unread_count"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </when>
+                </conditions>
               </parallel>
             </on>
             <on event="onMarkAllRead">
@@ -283,7 +287,7 @@
         </div>
         <div data-ref="mobile_header_right" class="mobile_header_right">
           <theme-toggle data-type="composite" data-ref="theme_toggle_mobile" autoText="$t:admin.theme.auto" lightText="$t:admin.theme.light" darkText="$t:admin.theme.dark"/>
-          <notification-center data-type="composite" data-ref="notification_center_mobile" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}">
+          <notification-center data-type="composite" data-ref="notification_center_mobile" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}">
             <on event="onClose">
               <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
                    (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —
@@ -306,17 +310,21 @@
             <on event="onNotificationClick">
               <!-- 알림 클릭 — 이동과 읽음 처리를 **동시에** 낸다. 순차로 두면 읽음 응답을 기다리는
                    동안 화면이 멈춘 것처럼 보이고, 이동 자체는 읽음 성공에 걸 이유가 없다.
-                   알림에 링크가 없으면 알림 이력 화면으로 보낸다. -->
+                   알림에 링크가 없으면 알림 이력 화면으로 보낸다. 읽음 처리 권한이 없으면 이동만 한다. -->
               <parallel>
                 <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
-                <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
-                  <success>
-                    <refetch-data-source dataSourceId="notification_unread_count"/>
-                  </success>
-                  <fail>
-                    <toast type="error" message="{{error.message}}"/>
-                  </fail>
-                </api-call>
+                <conditions>
+                  <when if="{{notifications?.data?.abilities?.can_update === true}}">
+                    <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
+                      <success>
+                        <refetch-data-source dataSourceId="notification_unread_count"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </when>
+                </conditions>
               </parallel>
             </on>
             <on event="onMarkAllRead">

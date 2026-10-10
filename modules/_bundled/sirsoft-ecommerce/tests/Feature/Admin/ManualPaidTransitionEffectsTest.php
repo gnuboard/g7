@@ -45,6 +45,8 @@ class ManualPaidTransitionEffectsTest extends ModuleTestCase
         $this->admin = $this->createAdminUser([
             'sirsoft-ecommerce.orders.read',
             'sirsoft-ecommerce.orders.update',
+            // 취소 창 예상금액 조회는 접수(claims.create) 축이다 (7.1.0).
+            'sirsoft-ecommerce.claims.create',
         ]);
     }
 

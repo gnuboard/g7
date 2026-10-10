@@ -189,6 +189,15 @@
                 },
                 {
                     "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.installPreview.dependencies.some(x => x.available && x.can_select !== true)}}",
+                    "props": {
+                        "className": "text-danger-soft mb-2"
+                    },
+                    "text": "$t:admin.modules.modals.cascade_no_permission_hint"
+                },
+                {
+                    "type": "basic",
                     "name": "Div",
                     "iteration": {
                         "source": "_global.installPreview.dependencies",
@@ -214,8 +223,8 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "checked": "{{(_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) && dep.default_selected)}}",
-                                "disabled": "{{!dep.available}}",
+                                "checked": "{{dep.can_select === true && ((_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) && dep.default_selected))}}",
+                                "disabled": "{{!dep.available || dep.can_select !== true}}",
                                 "className": "w-4 h-4"
                             }
                         },
@@ -279,6 +288,15 @@
                                 "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
                             },
                             "text": "$t:admin.modules.modals.dependency_inactive"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{dep.available && dep.can_select !== true}}",
+                            "props": {
+                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                            },
+                            "text": "$t:admin.modules.modals.cascade_no_permission"
                         }
                     ]
                 }
@@ -328,6 +346,15 @@
                 },
                 {
                     "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.installPreview.language_packs.some(x => x.can_select !== true)}}",
+                    "props": {
+                        "className": "text-danger-soft mb-2"
+                    },
+                    "text": "$t:admin.modules.modals.cascade_no_permission_hint"
+                },
+                {
+                    "type": "basic",
                     "name": "Div",
                     "iteration": {
                         "source": "_global.installPreview.language_packs",
@@ -353,8 +380,8 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "checked": "{{((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) && lp.default_selected)) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}",
-                                "disabled": "{{lp.depends_on_extension && !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)}}",
+                                "checked": "{{lp.can_select === true && (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) && lp.default_selected)) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}",
+                                "disabled": "{{lp.can_select !== true || (lp.depends_on_extension && !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}",
                                 "className": "w-4 h-4"
                             }
                         },
@@ -382,6 +409,15 @@
                                 "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
                             },
                             "text": "$t:admin.modules.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{lp.can_select !== true}}",
+                            "props": {
+                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                            },
+                            "text": "$t:admin.modules.modals.cascade_no_permission"
                         }
                     ]
                 }

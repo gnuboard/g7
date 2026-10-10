@@ -178,6 +178,7 @@
     "no_content_preview": "내용을 입력하면 미리보기가 표시됩니다",
     "attachments": "첨부파일",
     "attachments_desc": "최대 {{maxFiles}}개, 각 {{maxSize}}MB 이하",
+    "attachments_no_permission": "첨부파일 업로드 권한이 없어 파일을 올리거나 지울 수 없습니다.",
     "attached_files": "첨부된 파일",
     "confirm_remove_attachment_title": "첨부파일 삭제",
     "confirm_remove_attachment_message": "파일이 즉시 삭제됩니다. 게시글 저장과 관계없이 되돌릴 수 없습니다.",

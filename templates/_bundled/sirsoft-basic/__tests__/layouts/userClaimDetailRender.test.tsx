@@ -592,6 +592,8 @@ describe('클레임 신청서 상세 — 렌더', () => {
         outstanding_amount: 6000,
         outstanding_amount_formatted: '6,000원',
         charge_method_label: '승인 시점 결제',
+        // 결제 권한(7.1.0 G31) — 신청서 응답은 `can_pay` 를 늘 싣고 [결제하기]는 `can_pay !== true` 면 잠긴다.
+        can_pay: true,
         pending_payment: {
           payment_number: 'CP20260901-0002',
           payment_method_label: '신용카드',

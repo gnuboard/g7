@@ -149,7 +149,8 @@
     },
     "asset_url_mode_drift_title": "Asset file serving mode does not match this server",
     "asset_url_mode_drift_description": "With the saved style, some URLs may be intercepted by the server and pages may not load. Visitors are corrected automatically in the browser, but search engine bots are not, so please save the detected style in Settings.",
-    "asset_url_mode_drift_action": "Review in Settings > General"
+    "asset_url_mode_drift_action": "Review in Settings > General",
+    "alert_action_no_permission": "You do not have permission to handle this alert. Ask an administrator who has the permission."
   },
   "users": {
     "page_title": "User Management",
@@ -193,7 +194,8 @@
     "actions": {
       "view": "View",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "delete_disabled_reason": "Your own or a super admin account, or no delete permission. Withdraw from My Page."
     },
     "selected_count": "{count} selected",
     "bulk_activate": "Activate",
@@ -900,7 +902,9 @@
       "reactivate_language_packs_title": "Reactivate Language Packs",
       "reactivate_language_packs_message": "These language packs were deactivated along with this module. Reactivate them?",
       "reactivate_language_packs_success": "Language packs have been reactivated.",
-      "reactivate_language_packs_failed": "Failed to reactivate language packs."
+      "reactivate_language_packs_failed": "Failed to reactivate language packs.",
+      "cascade_no_permission": "No permission",
+      "cascade_no_permission_hint": "Items you lack permission for cannot be installed together. Ask an administrator who has the permission if needed."
     },
     "tabs": {
       "file_upload": "File Upload",
@@ -1115,7 +1119,9 @@
       "reactivate_language_packs_title": "Reactivate Language Packs",
       "reactivate_language_packs_message": "These language packs were deactivated along with this plugin. Reactivate them?",
       "reactivate_language_packs_success": "Language packs have been reactivated.",
-      "reactivate_language_packs_failed": "Failed to reactivate language packs."
+      "reactivate_language_packs_failed": "Failed to reactivate language packs.",
+      "cascade_no_permission": "No permission",
+      "cascade_no_permission_hint": "Items you lack permission for cannot be installed together. Ask an administrator who has the permission if needed."
     },
     "tabs": {
       "file_upload": "File Upload",
@@ -1299,7 +1305,7 @@
       "description": "Description",
       "description_placeholder": "Enter a description for this role",
       "is_active": "Role Activation",
-      "is_active_hint": "Inactive roles cannot be assigned to new users",
+      "is_active_hint": "Turning this off immediately revokes the permissions granted by this role, and it cannot be assigned to new users.",
       "permissions_section": "Permission Settings",
       "permissions_selected_suffix": " selected",
       "permissions_hint": "Select permissions to grant to this role. Click a group to expand or collapse.",
@@ -1315,7 +1321,8 @@
       "password_expiry_inherit": "Follow site settings",
       "password_expiry_apply": "Apply",
       "password_expiry_exempt": "Exempt",
-      "password_expiry_hint": "Whether expiry applies to members with this role. A member's own setting takes precedence, and when a member's roles disagree between \"Apply\" and \"Exempt\", \"Apply\" wins."
+      "password_expiry_hint": "Whether expiry applies to members with this role. A member's own setting takes precedence, and when a member's roles disagree between \"Apply\" and \"Exempt\", \"Apply\" wins.",
+      "is_active_locked_hint": "The administrator role cannot be turned off. Turning it off would revoke the admin permissions of every operator."
     },
     "modals": {
       "delete_title": "Delete Role",
@@ -2720,7 +2727,9 @@
       "reactivate_language_packs_title": "Reactivate Language Packs",
       "reactivate_language_packs_message": "These language packs were deactivated along with this template. Reactivate them?",
       "reactivate_language_packs_success": "Language packs have been reactivated.",
-      "reactivate_language_packs_failed": "Failed to reactivate language packs."
+      "reactivate_language_packs_failed": "Failed to reactivate language packs.",
+      "cascade_no_permission": "No permission",
+      "cascade_no_permission_hint": "Items you lack permission for cannot be installed together. Ask an administrator who has the permission if needed."
     },
     "tabs_install": {
       "file_upload": "File Upload",

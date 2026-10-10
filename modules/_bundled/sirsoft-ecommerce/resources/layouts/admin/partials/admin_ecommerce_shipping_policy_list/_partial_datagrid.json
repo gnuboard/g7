@@ -113,7 +113,7 @@
                 "id": "copy",
                 "label": "$t:sirsoft-ecommerce.admin.shipping_policy.action.copy",
                 "iconName": "fa-regular fa-copy",
-                "disabledField": "abilities.can_update"
+                "disabledField": "abilities.can_create"
             },
             {
                 "id": "divider",

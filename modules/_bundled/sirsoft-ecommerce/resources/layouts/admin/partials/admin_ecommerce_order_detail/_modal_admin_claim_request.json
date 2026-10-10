@@ -735,12 +735,12 @@
                     ]
                 },
                 {
-                    "comment": "「접수와 함께 승인」(D6) — 기본 켜짐. 추가결제가 필요한 건은 승인 대신 결제대기로 간다.",
+                    "comment": "「접수와 함께 승인」(D6) — 기본 켜짐. 추가결제가 필요한 건은 승인 대신 결제대기로 간다. 승인은 상태 변경 권한(claims.update-status)의 일이라, 그 권한이 없으면 꺼진 채 잠그고 제출에도 싣지 않는다(서버도 403).",
                     "id": "acr_009_approve",
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                        "className": "flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 {{claimRequestContext?.data?.abilities?.can_update_status === true ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}}"
                     },
                     "children": [
                         {
@@ -760,7 +760,8 @@
                             "props": {
                                 "autoBinding": false,
                                 "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600",
-                                "checked": "{{_global.adminClaimRequest?.approve !== false}}"
+                                "checked": "{{_global.adminClaimRequest?.approve !== false && claimRequestContext?.data?.abilities?.can_update_status === true}}",
+                                "disabled": "{{claimRequestContext?.data?.abilities?.can_update_status !== true}}"
                             }
                         },
                         {
@@ -769,6 +770,16 @@
                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.approve"
                         }
                     ]
+                },
+                {
+                    "id": "acr_009_approve_no_permission",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{claimRequestContext?.data?.abilities?.can_update_status !== true}}",
+                    "props": {
+                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.approve_no_permission"
                 },
                 {
                     "type": "basic",
@@ -819,6 +830,9 @@
                                     "comment": "직권 신청서를 제출한다 — 입력값은 창을 여는 핸들러가 채운 _global.adminClaimRequest 에서 모은다",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.submitAdminClaimRequest",
+                                    "params": {
+                                        "canApprove": "{{claimRequestContext?.data?.abilities?.can_update_status === true}}"
+                                    },
                                     "onError": {
                                         "comment": "실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
                                         "handler": "suppress"

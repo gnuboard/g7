@@ -30,7 +30,7 @@
         <span class="font-mono text-red-950 dark:text-red-100">{{kginicis_cbt_reconciliation.data?.retry_count ?? 0}}</span>
       </div>
       <div data-if="{{kginicis_cbt_reconciliation.data?.can_retry}}" class="flex items-center flex-wrap gap-2">
-        <button type="button" disabled="{{_local._kginicisCbtRetrying}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" disabled="{{order?.data?.abilities?.can_execute_refund !== true || (_local._kginicisCbtRetrying)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- CBT(국경간 거래) 환불 재시도. 성공·실패 어느 쪽이든 대사 결과를 다시 받는다 — 실패해도 PG 쪽 상태는 움직였을 수 있어 화면을 그대로 두면 다음 판단이 옛 상태 위에서 이뤄진다 -->
             <sequence>
@@ -93,7 +93,7 @@
         </div>
       </div>
       <div class="flex items-center flex-wrap gap-2">
-        <button data-ref="kginicis_cbt_cvs_recheck_button" type="button" disabled="{{_local._kginicisCvsRechecking}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="kginicis_cbt_cvs_recheck_button" type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsRechecking)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 편의점 입금을 PG 에 다시 물어 온다. 입금은 구매자가 오프라인에서 하므로 통보가 유실되면 주문만 미결제로 남는데, 이 버튼이 그 간극을 운영자가 직접 메우는 수단이다 -->
             <sequence>
@@ -117,7 +117,7 @@
           <span data-if="{{_local._kginicisCvsRechecking}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_rechecking</span>
           <span data-if="{{!_local._kginicisCvsRechecking}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_recheck_button</span>
         </button>
-        <button data-ref="kginicis_cbt_cvs_simulate_button" data-if="{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}" type="button" disabled="{{_local._kginicisCvsSimulating}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="kginicis_cbt_cvs_simulate_button" data-if="{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}" type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsSimulating)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 입금통보 모의 발송. 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다. 성공 시 주문과 결제 상태까지 다시 받는 것은 통보가 그 둘을 함께 바꾸기 때문이다 -->
             <sequence>
@@ -143,7 +143,7 @@
           <span data-if="{{_local._kginicisCvsSimulating}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulating</span>
           <span data-if="{{!_local._kginicisCvsSimulating}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulate_button</span>
         </button>
-        <button data-ref="kginicis_cbt_cvs_expire_button" data-if="{{kginicis_cbt_cvs.data?.can_mark_expired === true}}" type="button" disabled="{{_local._kginicisCvsExpiring}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="kginicis_cbt_cvs_expire_button" data-if="{{kginicis_cbt_cvs.data?.can_mark_expired === true}}" type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsExpiring)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 기한이 지난 편의점 입금 건을 수동으로 닫는다. 주문 상태도 함께 다시 받는다 — 만료 처리는 결제 대기 주문을 종료시키므로 결제 영역만 갱신하면 주문 머리말이 어긋난 채 남는다 -->
             <sequence>
@@ -367,7 +367,7 @@
       <div class="space-y-2">
         <div class="flex items-center gap-2">
           <label class="text-xs text-gray-500 dark:text-gray-400 w-16 flex-shrink-0">$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_label</label>
-          <input type="text" placeholder="$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono">
+          <input type="text" placeholder="$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono" disabled="{{order?.data?.abilities?.can_update !== true}}">
             <on type="change">
               <!-- 에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다 -->
               <set-state target="local" _ed_invoice="{{$event.target.value}}"/>
@@ -376,7 +376,7 @@
         </div>
         <div class="flex items-center gap-2">
           <label class="text-xs text-gray-500 dark:text-gray-400 w-16 flex-shrink-0">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_label</label>
-          <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+          <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" disabled="{{order?.data?.abilities?.can_update !== true}}">
             <on type="change">
               <!-- 택배사 — 이니시스가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다) -->
               <set-state target="local" _ed_ex_code="{{$event.target.value}}"/>
@@ -399,7 +399,7 @@
           </select>
         </div>
         <div class="flex justify-end">
-          <button disabled="{{_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === ''}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === '')}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <!-- 에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다. 둘 다 서버 필수값이라 비어 있으면 버튼이 잠긴다. 실패 문맥의 변수는 error 다(response 가 아니다) — 서버가 준 검증·PG 문구를 그대로 보인다 -->
               <sequence>
@@ -447,7 +447,7 @@
         <span class="text-gray-600 dark:text-gray-300">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_done</span>
       </div>
       <div data-if="{{kginicis_escrow_delivery.data?.deny_confirmed !== true}}" class="flex justify-end gap-2">
-        <button disabled="{{_local._dncf_processing}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._dncf_processing)}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 수취거부 확정 — 되돌릴 수 없는 처리라 버튼을 잠근 뒤 보내고 결과를 다시 받는다 -->
             <sequence>

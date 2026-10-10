@@ -9,12 +9,27 @@
   
   모듈이 기본 제공하는 정책은 지울 수 없고 관리자가 만든 것(`source_type === 'admin'`)만
   지워진다 — 그 판정은 서버가 준 값과 `abilities` 가 한다.
+
+  목록·켜고 끄기·추가·수정·삭제는 이커머스 모듈 경로(`/api/modules/sirsoft-ecommerce/admin/identity-policies`)를
+  이커머스 권한으로 쓴다 — 조회 권한이 없으면 탭 내용 대신 「권한 없음」, 수정 권한이 없으면 읽기 전용 안내를 보인다.
   
   넓은 화면 표와 좁은 화면 카드가 **같은 동작을 두 벌** 갖고 있으므로 한쪽만 고치면 화면 폭에
   따라 동작이 갈린다. -->
 <partial description="환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)">
   <div data-ref="tab_content_identity_policies" data-if="{{(_global.activeEcommerceSettingsTab || query.tab) === 'identity_policies'}}">
-    <div data-ref="page_root" class="admin-card">
+    <!-- 본인인증 정책 조회 권한(`sirsoft-ecommerce.identity.policies.read`)이 없으면 목록이 403 이다 — 탭 내용 대신 이유를 보인다 -->
+    <div data-ref="identity_policies_no_permission" data-if="{{_computed.identityPoliciesNoReadPermission}}" class="admin-card">
+      <div class="flex gap-2 text-tertiary">
+        <icon name="lock" size="sm" class="mt-0.5 flex-shrink-0"/>
+        <span>$t:sirsoft-ecommerce.admin.settings.identity.no_read_permission</span>
+      </div>
+    </div>
+    <div data-ref="page_root" data-if="{{!_computed.identityPoliciesNoReadPermission}}" class="admin-card">
+      <!-- 수정 권한(`sirsoft-ecommerce.identity.policies.update`)이 없으면 읽기 전용이다 — 추가·토글·편집은 잠기고 삭제는 숨는다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다 -->
+      <div data-ref="identity_policies_read_only_notice" data-if="{{ecommerceIdentityPolicies?.data?.abilities?.can_update === false}}" class="alert-warning mb-4">
+        <icon name="lock" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-ecommerce.admin.settings.identity.read_only_notice</span>
+      </div>
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_description</div>
       <div data-ref="page_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -170,7 +185,7 @@
                   <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 넓은 화면 표 — 사용 여부. 폼에 담지 않고 바로 서버로 나간다. 성공 알림과 목록 다시 부르기를 `<parallel>` 로 함께 하는 이유는 둘이 서로를 기다릴 필요가 없어서다. -->
-                      <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">
+                      <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/identity-policies/{{policy.id}}" method="PUT">
                         <success>
                           <parallel>
                             <toast type="success" message="{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"/>
@@ -266,7 +281,7 @@
               <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 좁은 화면 카드 — 사용 여부. 위 표 판본과 같은 호출이다. -->
-                  <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">
+                  <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/identity-policies/{{policy.id}}" method="PUT">
                     <success>
                       <parallel>
                         <toast type="success" message="{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"/>

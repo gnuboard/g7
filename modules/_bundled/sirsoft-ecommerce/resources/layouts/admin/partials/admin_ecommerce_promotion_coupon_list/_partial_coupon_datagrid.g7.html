@@ -86,8 +86,10 @@
       </column>
       <column field="name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" width="200px">
         <cell>
+          <!-- 수정 화면은 쿠폰 수정 권한이 있어야 열린다 — 권한이 없으면 링크 대신 이름만 보인다(행 「수정」과 같은 키). -->
+          <span data-ref="coupon_name_text" data-if="{{row.abilities?.can_update !== true}}" class="font-medium text-gray-900 dark:text-gray-100">{{row.localized_name}}</span>
           <!-- 쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다 -->
-          <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
+          <a data-ref="coupon_name_link" data-if="{{row.abilities?.can_update === true}}" href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
             <on type="click">
               <navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true">
                 <query/>
@@ -116,6 +118,7 @@
                 <field name="issueHistoryCoupon">
                   <field name="id" value="{{row.id}}"/>
                   <field name="name" value="{{row.localized_name}}"/>
+                  <field name="can_update" value="{{row.abilities?.can_update === true}}"/>
                 </field>
               </set-state>
               <refetch-data-source dataSourceId="couponIssues"/>
@@ -196,6 +199,7 @@
               <field name="issueHistoryCoupon">
                 <field name="id" value="{{$args[1].id}}"/>
                 <field name="name" value="{{$args[1].localized_name}}"/>
+                <field name="can_update" value="{{$args[1].abilities?.can_update === true}}"/>
               </field>
             </set-state>
             <refetch-data-source dataSourceId="couponIssues"/>

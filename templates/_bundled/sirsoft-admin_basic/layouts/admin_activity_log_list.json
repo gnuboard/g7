@@ -318,6 +318,7 @@
                                 "id": "bulk_action_bar",
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{activityLogs?.data?.abilities?.can_delete === true}}",
                                 "props": {
                                     "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
                                 },

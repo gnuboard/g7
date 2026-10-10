@@ -858,4 +858,10 @@ return [
         'attachment_ids' => '첨부파일',
         'password' => '비밀번호',
     ],
+
+    // 본인인증 정책 탭 검증 메시지
+    'identity_policy' => [
+        'target_not_owned' => '게시판 본인인증 정책은 게시판 지점만 대상으로 할 수 있습니다. 훅·사용자 지정 범위는 「sirsoft-board.」, 경로 범위는 「api.modules.sirsoft-board.」로 시작해야 합니다.',
+        'nothing_to_update' => '변경할 항목이 없습니다.',
+    ],
 ];

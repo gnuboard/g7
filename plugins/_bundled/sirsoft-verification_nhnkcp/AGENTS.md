@@ -156,9 +156,9 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 22개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
-| Vitest | 12개 | `vitest.config.ts` |
+| Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 22개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

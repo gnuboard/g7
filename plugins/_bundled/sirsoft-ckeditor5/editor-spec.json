@@ -46,6 +46,10 @@
             "scan_limited": false,
             "scan_window": 500,
             "reference_sources_incomplete": false
+          },
+          "abilities": {
+            "can_delete": true,
+            "can_open_settings": true
           }
         }
       }

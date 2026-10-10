@@ -128,7 +128,9 @@
       "title": "Refund Priority",
       "pg_first": "PG Payment First",
       "points_first": "Points/Mileage First"
-    }
+    },
+    "no_request_permission": "You do not have permission to request a cancellation, return, or exchange. Please contact the seller.",
+    "no_cancel_permission": "You do not have permission to cancel orders, so items that would be cancelled right away cannot be requested. Please contact the seller."
   },
   "change_product": {
     "title": "Change exchange option",

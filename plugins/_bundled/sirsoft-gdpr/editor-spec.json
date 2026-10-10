@@ -109,6 +109,9 @@
               "batch_size": 500,
               "introduction": {}
             }
+          },
+          "abilities": {
+            "can_update": true
           }
         }
       },

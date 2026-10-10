@@ -134,4 +134,48 @@ class HealthCheckControllerTest extends PluginTestCase
         $this->assertIsArray(data_get($payload, 'data.summary'));
         $this->assertIsArray(data_get($payload, 'data.checks'));
     }
+
+    /**
+     * 플러그인 설정 수정 권한이 없는 관리자에게는 실행 권한 자동 복구를 하지 않고, 「복구 실패」가 아니라
+     * 「권한이 없어 자동 복구를 하지 않았다」고 알린다. 파일 권한은 그대로 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=c05
+     *
+     * @effects health_check_cli_recovery_skipped_without_permission
+     */
+    public function test_cli_binary_without_permission_reports_recovery_skipped_not_failed(): void
+    {
+        $dir = sys_get_temp_dir().'/nhnkcp_health_'.uniqid();
+        mkdir($dir);
+        $file = $dir.'/test_cli';
+        file_put_contents($file, '');
+        @chmod($file, 0644);
+        $beforeMode = substr(sprintf('%o', fileperms($file)), -4);
+
+        try {
+            $controller = new HealthCheckController;
+            $binDir = new \ReflectionProperty(HealthCheckController::class, 'binDir');
+            $binDir->setAccessible(true);
+            $binDir->setValue($controller, $dir);
+            $check = new \ReflectionMethod(HealthCheckController::class, 'checkCliBinary');
+            $check->setAccessible(true);
+
+            // 로그인하지 않았다 → core.plugins.update 판정이 거짓
+            $row = $check->invoke($controller, 'test_cli', 'linux');
+
+            $this->assertSame('error', $row['status']);
+            $this->assertSame(
+                __('sirsoft-pay_nhnkcp::messages.health.cli.not_executable_no_permission', ['before' => $beforeMode]),
+                $row['detail']
+            );
+            $this->assertStringNotContainsString('자동 복구 실패', $row['detail']);
+            $this->assertNotEmpty($row['remediation'] ?? '');
+            $this->assertSame($beforeMode, substr(sprintf('%o', fileperms($file)), -4), '권한이 없으면 파일 권한을 바꾸지 않는다');
+        } finally {
+            @unlink($file);
+            @rmdir($dir);
+        }
+    }
 }

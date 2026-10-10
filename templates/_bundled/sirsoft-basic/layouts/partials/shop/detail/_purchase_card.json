@@ -590,6 +590,15 @@
                     },
                     "children": [
                         {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{product.data?.abilities?.can_order === false}}",
+                            "props": {
+                                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+                            },
+                            "text": "$t:shop.order_permission_denied"
+                        },
+                        {
                             "comment": "바로구매 버튼 — 판매 중인 옵션이 하나도 없는 상품은 잠근다(서버가 422 로 거절하는 상품). 옵션이 둘 이상인 상품은 선택한 옵션 라인 수량의 **합계**로 구매 한도를 판정한다. 라인별 max 만으로는 여러 라인을 합쳐 한도를 넘길 수 있다. 옵션이 없거나 하나뿐인 상품은 옵션 칸 대신 수량 선택기가 서고(위 분기와 같은 기준) 그 min/max 가 이미 막으므로 조건을 걸지 않는다 — option_groups 로 가르면 옵션 하나짜리 상품이 합계 0 으로 영영 잠긴다.",
                             "type": "basic",
                             "name": "Button",
@@ -717,7 +726,7 @@
                             "props": {
                                 "data-testid": "buy-now",
                                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options && (product.data?.options?.length ?? 0) > 1) && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
+                                "disabled": "{{(_local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options && (product.data?.options?.length ?? 0) > 1) && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))) || product.data?.abilities?.can_order !== true}}"
                             },
                             "children": [
                                 {

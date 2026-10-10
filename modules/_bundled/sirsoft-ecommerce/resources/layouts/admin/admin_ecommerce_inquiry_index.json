@@ -853,12 +853,14 @@
                                 {
                                     "id": "reply",
                                     "label": "$t:sirsoft-ecommerce.admin.inquiries.actions.reply",
-                                    "iconName": "comment"
+                                    "iconName": "comment",
+                                    "disabledField": "abilities.can_reply"
                                 },
                                 {
                                     "id": "delete",
                                     "label": "$t:sirsoft-ecommerce.admin.inquiries.actions.delete",
-                                    "iconName": "trash"
+                                    "iconName": "trash",
+                                    "disabledField": "abilities.can_delete"
                                 },
                                 {
                                     "id": "go_to_member",
@@ -1388,7 +1390,7 @@
                                 "type": "button",
                                 "data-testid": "admin-inquiries-reply-submit",
                                 "className": "px-4 py-2 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.replying_inquiries || !(_global.replyContent_inquiries || '').trim()}}"
+                                "disabled": "{{_global.replying_inquiries || !(_global.replyContent_inquiries || '').trim() || inquiries?.data?.abilities?.can_reply !== true}}"
                             },
                             "children": [
                                 {

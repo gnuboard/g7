@@ -7,6 +7,12 @@ return [
         'template' => 'Template',
     ],
 
+    'cascade_types' => [
+        'module' => 'module',
+        'plugin' => 'plugin',
+        'language_pack' => 'language pack',
+    ],
+
     'errors' => [
         'state_contract_conflict' => "The ':name' state contract is owned by :owner. :extension cannot declare the same name.",
         'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
@@ -19,6 +25,7 @@ return [
         'zip_missing_version' => 'Manifest :file inside ZIP has no version field.',
         'not_found' => 'Extension (:identifier) not found.',
         'cascade_dependency_failed' => 'Failed to install cascade dependency :type (:identifier): :message',
+        'cascade_permission_denied' => 'You do not have permission to install or activate the :type (:identifier) selected for installation together.',
         'invalid_type' => 'Invalid extension type.',
         'not_auto_deactivated' => 'This extension was not automatically deactivated due to core version incompatibility.',
         'hidden_extension' => 'Hidden (internal-only) extensions are not exposed to user actions.',

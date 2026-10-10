@@ -78,7 +78,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_comment')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_comment')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -154,7 +155,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -251,7 +253,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('comment_order')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('comment_order')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -337,7 +340,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -434,7 +438,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {

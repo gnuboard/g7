@@ -232,10 +232,10 @@
                                     "text": "$t:board.blinded_post"
                                 },
                                 {
-                                    "comment": "비밀글 안내",
+                                    "comment": "비밀글 안내 — 서버가 원문을 가린 경우(content null)만. 작성자·관리자처럼 열람 권한이 있으면 본문이 온다",
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{reply?.status !== 'blinded' && reply?.is_secret}}",
+                                    "if": "{{reply?.status !== 'blinded' && reply?.is_secret && reply?.content == null}}",
                                     "props": {
                                         "className": "italic text-gray-500 dark:text-gray-400"
                                     },
@@ -246,7 +246,7 @@
                                     "id": "reply_html_content_{{replyIndex}}",
                                     "type": "extension_point",
                                     "name": "html_content",
-                                    "if": "{{reply?.status !== 'blinded' && !reply?.is_secret}}",
+                                    "if": "{{reply?.status !== 'blinded' && !(reply?.is_secret && reply?.content == null)}}",
                                     "props": {
                                         "content": "{{reply?.content ?? ''}}",
                                         "isHtml": "{{(reply?.content_mode ?? 'text') === 'html'}}",
@@ -270,7 +270,7 @@
                             "comment": "4줄: 더보기/접기 토글 버튼 (테두리 없음) - 200자 이상이고 블라인드 아닌 경우만 표시",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{reply?.status !== 'blinded' && !reply?.is_secret && (reply?.content ?? '').length > 200}}",
+                            "if": "{{reply?.status !== 'blinded' && !(reply?.is_secret && reply?.content == null) && (reply?.content ?? '').length > 200}}",
                             "props": {
                                 "className": "flex justify-start"
                             },

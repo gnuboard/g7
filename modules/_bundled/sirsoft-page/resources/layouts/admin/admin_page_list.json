@@ -589,6 +589,7 @@
                         "id": "bulk_actions_area",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{pages?.data?.abilities?.can_update === true}}",
                         "props": {
                             "className": "bulk-actions-bar"
                         },
@@ -772,7 +773,7 @@
                             "serverCurrentPage": "{{pages?.data?.meta?.current_page ?? 1}}",
                             "serverTotalPages": "{{pages?.data?.meta?.last_page ?? null}}",
                             "serverHasMorePages": "{{pages?.data?.meta?.has_more_pages ?? false}}",
-                            "selectable": true,
+                            "selectable": "{{pages?.data?.abilities?.can_update === true}}",
                             "selectionScope": "page",
                             "selectedCountText": "",
                             "selectedIds": "{{_global.selectedIds_admin_pages || []}}",

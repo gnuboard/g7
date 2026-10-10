@@ -175,7 +175,7 @@
                             "props": {
                                 "name": "use_default_common_info",
                                 "checked": "{{_local.form.use_default_common_info ?? false}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                "disabled": "{{_computed.isReadOnly}}"
                             }
                         },
                         {
@@ -234,7 +234,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                "disabled": "{{_local.form.use_default_common_info || _computed.isReadOnly}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.common_info.none"
                         },
@@ -269,7 +269,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                "disabled": "{{_local.form.use_default_common_info || _computed.isReadOnly}}"
                             },
                             "children": [
                                 {
@@ -330,7 +330,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                        "disabled": "{{_local.form.use_default_common_info || _computed.isReadOnly}}"
                                     },
                                     "text": "{{$localized(commonInfo.name)}}"
                                 }

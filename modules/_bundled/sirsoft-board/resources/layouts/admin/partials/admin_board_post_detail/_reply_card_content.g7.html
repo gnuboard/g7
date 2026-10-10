@@ -73,8 +73,8 @@
         <div data-ref="reply_{{item.id}}_attachments_list_{{index}}" data-if="{{_local.expandedReplyAttachments?.[item.id]}}" data-each="attachment, index in item.attachments ?? []" class="mt-3 ml-4 grid grid-cols-1 gap-2">
           <div data-ref="attachment_card_{{index}}_{{item.id}}" class="flex-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group">
             <on type="click">
-              <!-- 답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다 -->
-              <action handler="sirsoft-board.downloadAttachment" url="{{attachment.download_url}}" filename="{{attachment.original_filename}}">
+              <!-- 답글 첨부 내려받기 — 관리자 다운로드 라우트로 받고 그 권한(can_download)이 없으면 실행하지 않는다. 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다 -->
+              <action if="{{post?.data?.abilities?.can_download === true}}" handler="sirsoft-board.downloadAttachment" url="{{'/api/modules/sirsoft-board/admin/board/' + route?.slug + '/attachments/download/' + attachment.hash}}" filename="{{attachment.original_filename}}">
                 <fail>
                   <toast type="error" message="$t:sirsoft-board.admin.posts.detail.download_failed"/>
                 </fail>

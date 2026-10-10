@@ -22,7 +22,7 @@
         </a>
       </div>
       <div data-ref="use_default_common_info_toggle" class="flex-center gap-3">
-        <toggle data-type="composite" name="use_default_common_info" checked="{{_local.form.use_default_common_info ?? false}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+        <toggle data-type="composite" name="use_default_common_info" checked="{{_local.form.use_default_common_info ?? false}}" disabled="{{_computed.isReadOnly}}">
           <on type="change">
             <!-- 켤 때 — 기본으로 지정된 안내문을 찾아 함께 걸어 준다(아래 목록이 잠기므로 여기서 골라 두지 않으면 아무것도 안 붙는다) -->
             <sequence if="{{$event.target.checked}}">
@@ -41,7 +41,7 @@
         <span class="text-label">$t:sirsoft-ecommerce.admin.product.common_info.use_default</span>
       </div>
       <div data-ref="common_info_buttons_container" data-if="{{(common_infos?.data?.data ?? []).length > 0}}" class="{{_local.errors?.common_info_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}">
-        <button data-ref="common_info_none_button" type="button" class="{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+        <button data-ref="common_info_none_button" type="button" class="{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || _computed.isReadOnly}}">
           <on type="click">
             <!-- 「사용 안 함」 — 선택을 비우면서 아래 상세 카드도 함께 접는다(가리킬 안내문이 없어진 카드가 펼쳐진 채 남지 않도록) -->
             <sequence>
@@ -52,7 +52,7 @@
           </on>
           $t:sirsoft-ecommerce.admin.product.common_info.none
         </button>
-        <button data-ref="common_info_default_button" data-if="{{(common_infos?.data?.data ?? []).some(c => c.is_default)}}" type="button" class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+        <button data-ref="common_info_default_button" data-if="{{(common_infos?.data?.data ?? []).some(c => c.is_default)}}" type="button" class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || _computed.isReadOnly}}">
           <on type="click">
             <!-- 기본 안내문 고르기 — 「따라가기」와 달리 지금 값만 붙이므로, 나중에 기본값이 바뀌어도 이 상품은 따라가지 않는다 -->
             <sequence>
@@ -64,7 +64,7 @@
           <span>{{$localized((common_infos?.data?.data ?? []).find(c => c.is_default)?.name)}}</span>
         </button>
         <div data-ref="common_info_other_buttons_wrapper_{{idx}}" data-each="commonInfo, idx in {{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}" class="contents">
-          <button data-ref="common_info_btn_{{commonInfo.id}}" type="button" class="{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+          <button data-ref="common_info_btn_{{commonInfo.id}}" type="button" class="{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || _computed.isReadOnly}}">
             <on type="click">
               <!-- 기본값이 아닌 안내문 고르기 -->
               <sequence>

@@ -58,6 +58,16 @@
                     "text": "$t:sirsoft-board.admin.posts.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
                 },
                 {
+                    "id": "attachments_no_permission",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_computed.isReadOnly && form_meta?.data?.board?.user_abilities?.can_upload !== true}}",
+                    "props": {
+                        "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+                    },
+                    "text": "$t:sirsoft-board.admin.posts.form.attachments_no_permission"
+                },
+                {
                     "type": "composite",
                     "name": "FileUploader",
                     "actions": [
@@ -98,7 +108,7 @@
                         }
                     ],
                     "props": {
-                        "disabled": "{{_computed.isReadOnly}}",
+                        "disabled": "{{_computed.isReadOnly || form_meta?.data?.board?.user_abilities?.can_upload !== true}}",
                         "collection": "post_attachments",
                         "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
                         "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",

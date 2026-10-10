@@ -812,6 +812,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 - **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claimable-options`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@claimableOptions`
 - **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수 (`VerifyGuestOrderToken`)
+- **권한 메모(1.3.0)**: 응답 `abilities.can_cancel`·`abilities.can_request` — guest 역할 기준의 신청 버튼 잠금 키(회원 경로와 같다).
 
 **요청 파라미터**
 
@@ -973,6 +974,7 @@ Content-Type: application/json
 - **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.refund-requests.store`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@storeRefund`
 - **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+- **권한 메모(1.3.0)**: 즉시 취소 분기(`auto`)면 guest 역할의 `sirsoft-ecommerce.user-orders.cancel` 도 요구한다. 없으면 403.
 
 **요청 파라미터** / **응답 필드**
 
@@ -1084,6 +1086,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 - **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claims.show`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@show`
 - **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+- **권한 메모(1.3.0)**: `claim.is_withdrawable`·`claim.is_editable` 은 각 권한(`user-claims.withdraw`·`user-claims.request`)을 함께 반영하고, `claim.can_pay` 는 `user-claims.pay` 다.
 
 **요청 파라미터**
 

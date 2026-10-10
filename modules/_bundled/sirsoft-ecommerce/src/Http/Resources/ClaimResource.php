@@ -4,6 +4,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -337,9 +338,15 @@ class ClaimResource extends BaseApiResource
             // 출처 축을 함께 본다(F3). 상태만 보면 반품·교환 발 환불신청서와 운영자 대리 접수
             // 건에도 [수정]/[철회] 버튼이 뜨고, 서버는 `source_type` 으로 거절하므로 **누르면
             // 언제나 422** 다. 버튼은 서 있는데 언제나 실패하는 경로라 오류로 보이지도 않는다.
-            'is_withdrawable' => $this->buyerMayEdit($claim) && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable(),
+            // 권한 축도 함께 본다 — [철회]는 `user-claims.withdraw`, [수정]은 `user-claims.request` 라우트 권한이다.
+            // 운영자가 권한을 거두면 버튼이 사라지고, 서버는 같은 권한으로 403 을 낸다(비회원은 guest 역할로 판정).
+            'is_withdrawable' => $this->buyerMayEdit($claim) && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable()
+                && PermissionHelper::check('sirsoft-ecommerce.user-claims.withdraw'),
             // 수정 가능 경계 = 철회 경계 (D13 — 승인 전)
-            'is_editable' => $type !== ClaimTypeEnum::CANCEL && $this->buyerMayEdit($claim) && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable(),
+            'is_editable' => $type !== ClaimTypeEnum::CANCEL && $this->buyerMayEdit($claim) && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable()
+                && PermissionHelper::check('sirsoft-ecommerce.user-claims.request'),
+            // 추가결제 [결제하기]의 권한(`user-claims.pay`) — 결제 대기 여부는 `pending_payment` 가 따로 말한다.
+            'can_pay' => PermissionHelper::check('sirsoft-ecommerce.user-claims.pay'),
             'reason_code' => $claim->reason_code ?? $claim->cancel_reason_type ?? null,
             'reason_label' => $this->resolveReasonLabel($claim, $type),
             'reason_detail' => $this->forList ? null : ($claim->reason_detail ?? $claim->cancel_reason ?? null),

@@ -39,6 +39,17 @@
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_loading_notice"
         },
         {
+            "comment": "등록 모드에서 수정 권한이 없으면 회수지 입력 묶음을 감추고 이유를 알린다 — 회수지는 정책을 만든 뒤 별도 저장(claim-settings PUT = 수정 권한)으로 반영되므로, 입력을 받으면 정책만 만들어지고 회수지는 거절되는 부분 실패가 난다.",
+            "id": "claim_addresses_no_update_notice",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!route.id && _computed.lacksUpdate}}",
+            "props": {
+                "className": "text-sm text-amber-700 dark:text-amber-400 mb-3"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_requires_update"
+        },
+        {
             "id": "claim_addresses_snapshot_notice",
             "type": "basic",
             "name": "Div",
@@ -68,6 +79,7 @@
             "id": "claim_address_blocks",
             "type": "basic",
             "name": "Div",
+            "if": "{{!!route.id || !_computed.lacksUpdate}}",
             "props": {
                 "className": "grid-2col-responsive"
             },

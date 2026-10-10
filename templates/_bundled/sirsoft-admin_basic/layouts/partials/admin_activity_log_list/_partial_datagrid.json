@@ -63,7 +63,7 @@
         "pageSize": "{{+(query.per_page || 20)}}",
         "alwaysShowPagination": true,
         "idField": "id",
-        "selectable": true,
+        "selectable": "{{activityLogs?.data?.abilities?.can_delete === true}}",
         "selectionScope": "page",
         "selectedIds": "{{_global.selectedIds_admin_activity_logs || []}}",
         "selectedCountText": "",

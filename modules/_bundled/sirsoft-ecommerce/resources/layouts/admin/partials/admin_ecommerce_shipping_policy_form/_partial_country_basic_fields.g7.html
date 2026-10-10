@@ -54,7 +54,7 @@
           </toggle>
         </div>
       </div>
-      <div data-ref="country_remove_area" data-if="{{(_local.form?.country_settings ?? []).length > 1 &amp;&amp; policy?.data?.abilities?.can_update === true}}" class="flex justify-end border-t border-gray-100 dark:border-gray-700">
+      <div data-ref="country_remove_area" data-if="{{(_local.form?.country_settings ?? []).length > 1 &amp;&amp; !_computed.isReadOnly}}" class="flex justify-end border-t border-gray-100 dark:border-gray-700">
         <button type="button" class="btn btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
           <on type="click">
             <!-- 이 나라 설정 삭제 — 확인 문구를 액션에 달아 별도 창 없이 묻는다. 이 버튼 자체가 나라가 둘 이상일 때만 나타나므로 마지막 하나는 지워지지 않는다. -->

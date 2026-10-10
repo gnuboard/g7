@@ -58,6 +58,13 @@ export interface NotificationCenterProps {
     onDelete?: (notification: NotificationItem) => void;
     /** "미읽음만" 체크박스 토글 */
     onUnreadOnlyToggle?: (checked: boolean) => void;
+    /**
+     * 읽음 처리 권한 — false 면 「모두 읽음」 버튼을 숨기고, 닫을 때 보인 미읽음 id 를 onClose 로 보내지 않는다.
+     * 생략하면 true(기존 동작). 관리자 템플릿 NotificationCenter 와 같은 계약.
+     */
+    canUpdate?: boolean;
+    /** 삭제 권한 — false 면 「모두 삭제」·개별 삭제 버튼을 숨긴다. 생략하면 true(기존 동작) */
+    canDelete?: boolean;
     /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
     dropdownAlign?: 'left' | 'right';
     className?: string;

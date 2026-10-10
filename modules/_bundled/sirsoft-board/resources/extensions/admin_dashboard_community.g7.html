@@ -1,6 +1,9 @@
-<!-- 관리자 대시보드의 커뮤니티 구획 — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 -->
+<!-- 관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 -->
 <extension extension-point="admin_dashboard_community" mode="append" priority="100">
   <div data-ref="community_section_wrapper" class="mb-4 md:mb-6 lg:mb-8">
+    <permissions>
+      <permission>sirsoft-board.dashboard.view</permission>
+    </permissions>
     <div data-ref="community_section_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
       <div data-ref="post_graph_today_summary" class="flex items-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
         <blur-until-loaded sources="board_overview"/>

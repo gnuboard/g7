@@ -21,6 +21,9 @@
             "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게"
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -46,6 +49,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:gnuboard7-hello_plugin.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "settings_form",
@@ -77,7 +108,8 @@
                                                 "props": {
                                                     "type": "checkbox",
                                                     "name": "log_enabled",
-                                                    "className": "mt-1 h-4 w-4 rounded text-blue-600"
+                                                    "className": "mt-1 h-4 w-4 rounded text-blue-600",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             },
                                             {
@@ -213,7 +245,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "children": [

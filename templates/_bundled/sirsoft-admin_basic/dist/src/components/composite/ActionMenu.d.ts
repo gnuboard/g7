@@ -12,6 +12,8 @@ export interface ActionMenuItem {
     divider?: boolean;
     /** 행 데이터의 필드 경로로 disabled 여부를 결정 (값이 falsy면 disabled) */
     disabledField?: string;
+    /** 잠긴 항목에 보일 안내 문구 — 항목 안 보조 줄과 title 로 「왜 잠겼는지」를 알린다(잠기지 않으면 숨김) */
+    disabledReason?: string;
     /** 조건부 표시 (false면 아이템 숨김, 엔진이 표현식 평가 후 boolean 전달) */
     if?: boolean;
 }

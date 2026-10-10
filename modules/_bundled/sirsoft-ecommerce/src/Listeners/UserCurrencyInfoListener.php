@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Helpers\PermissionHelper;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
 
@@ -43,6 +44,7 @@ class UserCurrencyInfoListener implements HookListenerInterface
      * 기본 핸들러 (getSubscribedHooks 의 method 매핑 사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -61,6 +63,8 @@ class UserCurrencyInfoListener implements HookListenerInterface
     public function injectPreferredCurrency(array $data, User $user): array
     {
         $data['ecommerce_preferred_currency'] = $this->profileRepository->getPreferredCurrency($user->id);
+        // 관리자 회원 상세의 결제 통화 칸을 잠그는 키 — 저장 검증(`UserPreferenceCoreSaveListener`)과 같은 권한이다.
+        $data['ecommerce_currency_can_manage'] = PermissionHelper::check('sirsoft-ecommerce.user-currency.manage');
 
         return $data;
     }

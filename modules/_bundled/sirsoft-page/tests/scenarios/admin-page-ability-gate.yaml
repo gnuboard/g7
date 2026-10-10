@@ -1,0 +1,17 @@
+feature: 관리자 페이지 화면 abilities 게이트 — 본문 편집기 readOnly·목록 선택 (7.1.0 abilities 게이트 page-hello #1·#5)
+
+description: |
+  - 본문 편집기(확장점·기본 HtmlEditor)에 disabled 와 함께 readOnly 를 넘겨 편집기 구현이 어느 쪽을 받든 읽기 전용이면 잠긴다(G09 사용처).
+  - 페이지 목록은 수정 권한이 없으면 행 체크박스와 일괄 바를 그리지 않는다.
+
+test_files:
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-ability-gate.test.ts
+
+axes:
+  case:
+    - page_editor_read_only
+    - page_list_without_update
+
+effects:
+  - page_editor_read_only_prop
+  - page_list_selection_hidden

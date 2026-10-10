@@ -350,7 +350,8 @@ trait BuildsManualPaidOrders
     protected function cancelThroughAdmin(Order $order, string $type = 'full', array $items = []): Order
     {
         $this->fakeManualPaidPgRefund();
-        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.orders.update']);
+        // 「환불까지 한 번에」 는 환불 실행 권한을 요구한다 (7.1.0 — 접수 권한만으로 PG 환불까지 가지 못한다).
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.orders.update', 'sirsoft-ecommerce.claims.execute-refund']);
 
         $body = ['type' => $type, 'reason' => 'changed_mind', 'auto_advance_refund' => true];
         if ($type === 'partial') {

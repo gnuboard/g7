@@ -99,7 +99,10 @@
       },
       "report_url": {
         "data": {
-          "url": "https://example.co.kr/api/plugins/sirsoft-message_bizppurio/webhook"
+          "url": "https://example.co.kr/api/plugins/sirsoft-message_bizppurio/webhook",
+          "abilities": {
+            "can_manage_messaging": true
+          }
         }
       }
     }

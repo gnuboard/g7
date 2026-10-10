@@ -75,7 +75,8 @@
                                         "type": "text",
                                         "name": "seo.meta_boards_title",
                                         "placeholder": "$t:sirsoft-board.admin.settings.seo.boards_page.title_placeholder",
-                                        "className": "{{_local.errors?.['seo.meta_boards_title'] ? 'input input-error' : 'input'}}"
+                                        "className": "{{_local.errors?.['seo.meta_boards_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -119,7 +120,8 @@
                                     "props": {
                                         "name": "seo.meta_boards_description",
                                         "rows": 3,
-                                        "className": "{{_local.errors?.['seo.meta_boards_description'] ? 'input-error resize-none' : ' resize-none'}}"
+                                        "className": "{{_local.errors?.['seo.meta_boards_description'] ? 'input-error resize-none' : ' resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -191,7 +193,8 @@
                                         "type": "text",
                                         "name": "seo.meta_board_title",
                                         "placeholder": "$t:sirsoft-board.admin.settings.seo.board_page.title_placeholder",
-                                        "className": "{{_local.errors?.['seo.meta_board_title'] ? 'input input-error' : 'input'}}"
+                                        "className": "{{_local.errors?.['seo.meta_board_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -235,7 +238,8 @@
                                     "props": {
                                         "name": "seo.meta_board_description",
                                         "rows": 3,
-                                        "className": "{{_local.errors?.['seo.meta_board_description'] ? 'input-error resize-none' : ' resize-none'}}"
+                                        "className": "{{_local.errors?.['seo.meta_board_description'] ? 'input-error resize-none' : ' resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -307,7 +311,8 @@
                                         "type": "text",
                                         "name": "seo.meta_post_title",
                                         "placeholder": "$t:sirsoft-board.admin.settings.seo.post_page.title_placeholder",
-                                        "className": "{{_local.errors?.['seo.meta_post_title'] ? 'input input-error' : 'input'}}"
+                                        "className": "{{_local.errors?.['seo.meta_post_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -351,7 +356,8 @@
                                     "props": {
                                         "name": "seo.meta_post_description",
                                         "rows": 3,
-                                        "className": "{{_local.errors?.['seo.meta_post_description'] ? 'input-error resize-none' : ' resize-none'}}"
+                                        "className": "{{_local.errors?.['seo.meta_post_description'] ? 'input-error resize-none' : ' resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -439,7 +445,8 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "name": "seo.seo_boards",
-                                                "className": "checkbox"
+                                                "className": "checkbox",
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -465,7 +472,8 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "name": "seo.seo_board",
-                                                "className": "checkbox"
+                                                "className": "checkbox",
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -491,7 +499,8 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "name": "seo.seo_post_detail",
-                                                "className": "checkbox"
+                                                "className": "checkbox",
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -532,6 +541,8 @@
                                             "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_description"
                                         },
                                         {
+                                            "comment": "코어 SEO 캐시 API(core.settings.update) 를 부른다 — 그 권한이 없으면 잠그고 이유를 아래에 적는다",
+                                            "id": "seo_clear_cache_button",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -650,7 +661,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "btn btn-danger",
-                                                "disabled": "{{_local.clearingCache ?? false}}"
+                                                "disabled": "{{!_computed.canClearSeoCache || (_local.clearingCache ?? false)}}"
                                             },
                                             "children": [
                                                 {
@@ -669,6 +680,16 @@
                                                     "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache"
                                                 }
                                             ]
+                                        },
+                                        {
+                                            "id": "seo_clear_cache_no_permission",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_computed.canClearSeoCache}}",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_no_permission"
                                         }
                                     ]
                                 }

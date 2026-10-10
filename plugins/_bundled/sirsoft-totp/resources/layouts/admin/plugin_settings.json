@@ -64,6 +64,9 @@
         "settingsSaving": false,
         "settingsErrors": null
     },
+    "computed": {
+        "isPluginReadOnly": "{{totpSettings?.data?.abilities?.can_update !== true}}"
+    },
     "transition_overlay": {
         "wait_for": [
             "totpEnrollment"
@@ -969,6 +972,34 @@
                         },
                         "children": [
                             {
+                                "id": "plugin_read_only_banner",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_computed.isPluginReadOnly && !!totpSettings?.data}}",
+                                "props": {
+                                    "role": "status",
+                                    "className": "alert-warning mt-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "lock",
+                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-warning-soft"
+                                        },
+                                        "text": "$t:sirsoft-totp.plugin_read_only"
+                                    }
+                                ]
+                            },
+                            {
                                 "id": "totp_settings_title",
                                 "type": "basic",
                                 "name": "H3",
@@ -1055,7 +1086,7 @@
                                             "maxLength": "64",
                                             "placeholder": "$t:sirsoft-totp.admin.settings.issuer_placeholder",
                                             "className": "input",
-                                            "disabled": "{{_local.settingsSaving}}"
+                                            "disabled": "{{_computed.isPluginReadOnly || (_local.settingsSaving)}}"
                                         }
                                     },
                                     {
@@ -1122,7 +1153,7 @@
                                             "ariaLabel": "$t:sirsoft-totp.admin.settings.fallback_label",
                                             "checked": "{{_local.settingsForm?.allow_mail_fallback !== false}}",
                                             "size": "md",
-                                            "disabled": "{{_local.settingsSaving}}"
+                                            "disabled": "{{_computed.isPluginReadOnly || (_local.settingsSaving)}}"
                                         }
                                     }
                                 ]
@@ -1216,7 +1247,7 @@
                                         "props": {
                                             "type": "button",
                                             "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                            "disabled": "{{!_local.settingsChanged || _local.settingsSaving}}"
+                                            "disabled": "{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}"
                                         },
                                         "children": [
                                             {

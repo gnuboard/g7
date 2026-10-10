@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
 use App\Exceptions\PermissionEscalationException;
+use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -329,6 +330,14 @@ class BoardController extends AdminBaseController
                 );
             }
 
+            // 생성·복사 모드는 BoardResource 를 거치지 않아 abilities 가 없다 — 등록 권한이 없는 관리자에게
+            // 폼이 열린 채 보이고 저장할 때만 403 이 났다. 저장(POST)과 같은 권한으로 판정해 화면이 잠그게 한다
+            if (! isset($data['abilities'])) {
+                $data['abilities'] = [
+                    'can_create' => PermissionHelper::check('sirsoft-board.boards.create', $request->user()),
+                ];
+            }
+
             $data['board_types'] = BoardTypeResource::collection(
                 $this->boardTypeService->getBoardTypes()
             );
@@ -337,6 +346,8 @@ class BoardController extends AdminBaseController
                 'limits' => config('sirsoft-board.limits', []),
                 // false 면 화면이 담당자 칸을 잠그고 이유를 보여 준다(생성·복사 모드), 수정 모드는 null
                 'can_assign_board_members' => $canAssignMembers,
+                // 「사용 반응 유형」 옆 [관리] 는 환경설정 화면으로 건너가 유형을 고치는 버튼이다 — 그 저장 권한이 없으면 잠근다
+                'can_manage_reaction_types' => PermissionHelper::check('sirsoft-board.settings.update', $request->user()),
             ];
 
             return $this->success('sirsoft-board::messages.boards.form_data_retrieved', $data);
