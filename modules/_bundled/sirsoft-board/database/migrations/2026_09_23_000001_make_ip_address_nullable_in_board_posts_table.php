@@ -16,6 +16,9 @@ return new class extends Migration
      *
      * 기존 행에 남은 자리표시값 '0.0.0.0' 을 NULL 로 되돌리는 정리는 업그레이드 스텝
      * (1.2.0 `NormalizePlaceholderPostIp`)이 맡습니다 — 스키마 변경과 데이터 변환을 나눈다.
+     *
+     * `->change()` 는 MySQL 에서 표를 다시 쓰므로 게시글이 많으면 그동안 board_posts 쓰기가 막힐 수 있다 —
+     * 글이 많은 사이트는 방문이 적은 시간에 업데이트한다.
      */
     public function up(): void
     {

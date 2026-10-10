@@ -18,7 +18,9 @@ const g7 = {
   api: { post: vi.fn(), delete: vi.fn() },
   t: (key: string) => key,
   toast: { success: vi.fn(), error: vi.fn() },
-  refetchDataSource: vi.fn(),
+  // 코어가 실제로 내놓는 표면만 둔다 — 가짜에 없는 멤버(`refetchDataSource`)를 채우면 `?.` 호출이
+  // 시험에서만 성공하고 화면에서는 조용히 아무 일도 하지 않는다(D3-2).
+  dataSource: { refetch: vi.fn() },
   dispatch: vi.fn(),
 };
 
@@ -124,5 +126,28 @@ describe('AvatarUploader — 공개 API 로 업로드·삭제', () => {
 
     await waitFor(() => expect(onDeleteError).toHaveBeenCalled());
     expect(onDeleteError.mock.calls[0][0].message).toBe('권한이 없습니다.');
+  });
+
+  // @scenario surface=avatar_upload
+  // @effects avatar_success_refetches_user_via_core_data_source
+  it('업로드 성공 뒤 성공 액션이 없으면 코어 G7Core.dataSource.refetch 로 user 를 다시 읽는다', async () => {
+    const onUploadSuccess = vi.fn();
+    chooseFile({ onUploadSuccess });
+
+    await waitFor(() => expect(onUploadSuccess).toHaveBeenCalled());
+    await waitFor(() => expect(g7.dataSource.refetch).toHaveBeenCalledWith('user'));
+  });
+
+  // @scenario surface=avatar_delete
+  // @effects avatar_success_refetches_user_via_core_data_source
+  it('삭제 성공 뒤 성공 액션이 없으면 코어 G7Core.dataSource.refetch 로 user 를 다시 읽는다', async () => {
+    const onDeleteSuccess = vi.fn();
+    render(
+      <AvatarUploader src="/storage/avatar.png" confirmDelete={false} deleteButtonText="DEL" onDeleteSuccess={onDeleteSuccess} />
+    );
+    fireEvent.click(screen.getByText('DEL'));
+
+    await waitFor(() => expect(onDeleteSuccess).toHaveBeenCalled());
+    await waitFor(() => expect(g7.dataSource.refetch).toHaveBeenCalledWith('user'));
   });
 });

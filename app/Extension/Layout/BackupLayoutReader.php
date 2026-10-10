@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
  * 나오면 기준으로 삼지 않는다).
  *
  * 백업 경로에서는 경로로 대상 템플릿·소유 확장을 뽑을 수 없으므로(`{id}_{타임스탬프}`) 컴파일 문맥을 강제 지정한다.
+ * 읽지 못한 레이아웃 파일은 그것만 빼고(로그) 나머지를 기준으로 돌려준다.
  */
 final class BackupLayoutReader
 {
@@ -28,7 +29,7 @@ final class BackupLayoutReader
      * @param  string  $backupPath  백업 디렉토리
      * @param  string  $type  확장 유형 (`templates`·`modules`·`plugins`)
      * @param  string  $identifier  확장 식별자
-     * @return array<string, array<string, mixed>> DB 레이아웃 이름 => 원본(조각 출처 표식 포함). 실패하면 빈 배열
+     * @return array<string, array<string, mixed>> DB 레이아웃 이름 => 원본(조각 출처 표식 포함). 읽지 못한 파일은 빠지고, 전체 실패면 빈 배열
      */
     public function layouts(string $backupPath, string $type, string $identifier): array
     {
@@ -41,9 +42,21 @@ final class BackupLayoutReader
         }
 
         $this->compileContextOverride = ['template' => $type === 'templates' ? $identifier : null, 'extension' => $identifier];
+        // 읽지 못한 파일만 빼고 나머지는 기준으로 쓴다 — 하나 때문에 전체를 버리면 그 확장의 옛 행이 모두 기준 없이 남아
+        // keep 업데이트가 새 판을 하나도 반영하지 못한다.
+        $this->skipInvalidLayouts = true;
+        $this->skippedLayoutErrors = [];
 
         try {
             $validated = $this->validateLayoutFiles($layoutsPath, $identifier, rtrim($type, 's'), true);
+
+            if ($this->skippedLayoutErrors !== []) {
+                Log::warning('업데이트 백업 레이아웃 일부를 읽지 못했습니다 — 그 화면만 비교 기준 없이 진행합니다', [
+                    'type' => $type,
+                    'identifier' => $identifier,
+                    'errors' => $this->skippedLayoutErrors,
+                ]);
+            }
         } catch (\Throwable $e) {
             Log::warning('업데이트 백업 레이아웃 컴파일 실패 — 비교 기준 없이 진행합니다', [
                 'type' => $type,
@@ -54,6 +67,7 @@ final class BackupLayoutReader
             return [];
         } finally {
             $this->compileContextOverride = null;
+            $this->skipInvalidLayouts = false;
         }
 
         $originals = [];

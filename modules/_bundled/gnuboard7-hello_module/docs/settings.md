@@ -93,8 +93,8 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `gnuboard7-hello_plugin` | 플러그인 | `>=0.1.0` |
-| `gnuboard7-hello_user_template` | 템플릿 | `>=0.1.0` |
+| `gnuboard7-hello_plugin` | 플러그인 | `>=0.2.0` |
+| `gnuboard7-hello_user_template` | 템플릿 | `>=0.2.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

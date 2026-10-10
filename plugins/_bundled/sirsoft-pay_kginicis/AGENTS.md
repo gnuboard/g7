@@ -156,10 +156,10 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 54개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
-| Vitest | 25개 | `vitest.config.ts` |
+| PHPUnit | 55개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
+| Vitest | 26개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 34개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 37개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

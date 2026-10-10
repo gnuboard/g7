@@ -27,6 +27,10 @@ return [
 
     'warnings' => [
         'auto_deactivated' => '코어 버전 호환성 문제로 :type ":identifier"의 활성 상태를 자동으로 해제했습니다.',
+        'dependency_version_unmet' => ':identifier :required 버전이 필요한데 지금 :installed 입니다',
+        'dependency_not_installed' => ':identifier :required 버전이 필요한데 설치되어 있지 않습니다',
+        'dependency_inactive' => ':identifier 확장이 꺼져 있습니다(필요 버전 :required)',
+        'dependency_summary' => '단, 의존 확장이 요구 조건에 못 미칩니다 — :list. 해당 확장도 업데이트하거나 켜세요.',
     ],
 
     'alerts' => [
@@ -72,6 +76,11 @@ return [
 
         // module:update · plugin:update · template:update 공통 옵션 검증·ZIP 안내
         'update' => [
+            'failure_outcome' => [
+                'restore_failed' => '이전 버전으로 되돌리지 못했습니다 — 파일이 섞였을 수 있습니다. 로그를 확인하고 같은 명령으로 다시 시도하세요.',
+                'kept_new' => '업데이트 마무리 단계에서 실패해 새 버전 파일과 버전 기록이 그대로 남아 있습니다. 원인을 해결한 뒤 같은 명령으로 다시 시도하세요.',
+                'unchanged' => '파일을 바꾸기 전에 실패해 바뀐 것이 없습니다.',
+            ],
             'invalid_layout_strategy' => '--layout-strategy 는 overwrite 또는 keep 이어야 합니다.',
             'invalid_source' => '--source 는 auto, bundled, github 중 하나여야 합니다.',
             'zip_source_conflict' => '--zip 은 --source 와 동시에 지정할 수 없습니다.',
@@ -120,6 +129,7 @@ return [
             'search_index_result' => '검색 인덱스: :summary',
             'manifest_required' => '--manifest 옵션이 필수이며 존재하는 파일이어야 합니다.',
             'manifest_parse_failed' => '매니페스트 JSON 파싱 실패: :path',
+            'lang_pack_phase_in_process' => '언어팩 단계를 새 프로세스로 분리하지 못해 이 프로세스에서 진행합니다 — 확장 데이터의 번역이 비면 끝난 뒤 php artisan language-pack:update <팩> --force 를 실행하세요.',
         ],
     ],
 

@@ -27,12 +27,8 @@ const mockG7Core = {
             mockLocalState = { ...mockLocalState, ...updates };
         }),
     },
-    locale: { current: () => currentLocale },
-    config: (key: string) => {
-        if (key === 'app.supported_locales') return ['ko', 'en', 'ja'];
-        if (key === 'app.locale') return 'ko';
-        return undefined;
-    },
+    // 코어 공개 API 그대로 — `G7Core.config()` 는 코어에 없다(D3-1). 지원 언어는 `locale.supported()` 로만 온다.
+    locale: { current: () => currentLocale, supported: () => ['ko', 'en', 'ja'] },
     t: (key: string) => key,
     toast,
     createLogger: () => ({ log: vi.fn(), warn: vi.fn(), error: vi.fn() }),
@@ -103,5 +99,24 @@ describe('옵션 생성 — 사이트 기본 언어 기준', () => {
         run();
 
         expect(mockLocalState.form.options).toHaveLength(2);
+    });
+
+    /**
+     * @scenario case=c04
+     * @effects option_generate_follows_site_locale
+     */
+    it('사이트 기본 언어가 지원 언어 목록 셋째(JA)여도 JA 칸으로 만든다 — 지원 언어를 코어 locale.supported() 로 읽는다', () => {
+        currentLocale = 'ko';
+        siteLocale = 'ja';
+        mockLocalState = {
+            form: { list_price: 20000, selling_price: 15000, options: [] },
+            ui: { optionInputs: [{ name: { ja: 'カラー', ko: '' }, values: [{ ja: '赤' }, { ja: '青' }] }] },
+        };
+
+        run();
+
+        expect(mockLocalState.form.options).toHaveLength(2);
+        expect(toast.error).not.toHaveBeenCalled();
+        expect(toast.warning).not.toHaveBeenCalled();
     });
 });

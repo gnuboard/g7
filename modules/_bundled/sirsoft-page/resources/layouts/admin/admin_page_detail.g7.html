@@ -192,7 +192,7 @@
               <span class="block text-body truncate">{{attachment_item?.original_filename ?? ''}}</span>
               <span class="text-hint block">{{attachment_item?.size_formatted ?? ''}}</span>
             </div>
-            <icon name="download" class="text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"/>
+            <icon name="download" class="text-gray-400 dark:text-gray-500 group-hover:text-blue-500 page-attachment-icon transition-colors"/>
           </div>
         </div>
       </div>
@@ -250,7 +250,7 @@
           </column>
           <column field="actions" header="$t:sirsoft-page.admin.page.detail.versions.actions" width="80px">
             <cell>
-              <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
+              <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 page-soft-button transition-colors">
                 <on type="click">
                   <!-- 버전 미리보기 — 그리드 행 전체를 전역에 담아 두고 창을 연다(창은 별도 컨텍스트라 행 변수를 볼 수 없다) -->
                   <sequence>

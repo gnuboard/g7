@@ -2234,7 +2234,7 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30"
+                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal"
                                                                                         },
                                                                                         "text": "{{$t('sirsoft-message_bizppurio.manage.' + (bzRow.has_content ? 'btn_edit' : 'btn_compose'))}}"
                                                                                     },
@@ -2342,7 +2342,7 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30",
+                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal",
                                                                                             "disabled": "{{_global.bz_row_busy ?? false}}"
                                                                                         },
                                                                                         "text": "$t:sirsoft-message_bizppurio.template.row.btn_request"
@@ -2441,7 +2441,7 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30"
+                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal"
                                                                                         },
                                                                                         "text": "$t:sirsoft-message_bizppurio.template.row.btn_release"
                                                                                     },
@@ -2703,7 +2703,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-4 max-h-[65vh] overflow-y-auto pr-1"
+                        "className": "space-y-4 bizppurio-scroll-panel overflow-y-auto pr-1"
                     },
                     "children": [
                         {
@@ -4777,7 +4777,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-teal-700 dark:text-teal-300 p-3 rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800"
+                                "className": "text-xs text-teal-700 dark:text-teal-300 p-3 rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 bizppurio-notice-teal"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.sms.hint"
                         },

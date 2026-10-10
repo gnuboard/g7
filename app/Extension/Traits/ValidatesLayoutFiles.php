@@ -77,6 +77,19 @@ trait ValidatesLayoutFiles
     private ?string $currentLayoutFile = null;
 
     /**
+     * 검증 오류가 있어도 통과한 레이아웃만 돌려줄지 — 업데이트 백업을 다시 읽어 비교 기준을 만드는 읽기
+     * ({@see BackupLayoutReader})만 켠다. 설치·갱신 검증은 종전대로 오류 하나에도 예외다.
+     */
+    protected bool $skipInvalidLayouts = false;
+
+    /**
+     * {@see $skipInvalidLayouts} 가 켜진 검증에서 건너뛴 오류 목록.
+     *
+     * @var array<int, string>
+     */
+    protected array $skippedLayoutErrors = [];
+
+    /**
      * 레이아웃 파일들을 검증합니다.
      *
      * @param  string  $layoutsPath  레이아웃 디렉토리 경로
@@ -240,6 +253,13 @@ trait ValidatesLayoutFiles
         // extends 상속 관계에서 data_sources ID 중복 검증
         $extendsErrors = $this->validateExtendsDataSourceIds($validatedLayouts, $sourceType);
         $errors = array_merge($errors, $extendsErrors);
+
+        // 비교 기준 읽기(백업)는 읽은 것만 쓴다 — 파일 하나 때문에 나머지 기준까지 버리지 않는다.
+        if ($this->skipInvalidLayouts) {
+            $this->skippedLayoutErrors = $errors;
+
+            return $validatedLayouts;
+        }
 
         // 오류가 하나라도 있으면 예외 발생
         if (! empty($errors)) {

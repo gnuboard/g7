@@ -1,0 +1,21 @@
+feature: 이커머스 처리기가 코어 공개 G7Core API 만 부른다
+
+description: |
+  7.1.0 출시 점검 D3-2: 코어에 없는 G7Core 멤버를 `?.` 로 불러 조용히 아무 일도 하지 않던 곳을 코어 공개 API 로 바꿨다.
+  카테고리 선택의 경로 표시는 `state.getDataSources()`(없음) 대신 `dataSource.get('categories')` 로 트리를 읽는다.
+  고시 템플릿 저장 뒤 목록 새로고침은 notice-template-modal-save.yaml 이 덮는다.
+  레이아웃·다른 패키지 어디서도 쓰지 않던 처리기 8종(uploadImages·processOrderBulkAction·downloadOrderExcel·
+  initCategoryInfosFromProduct·handleOrderRowAction·handleProductRowAction·updateActivityLogSort·updateActivityLogPerPage)은 삭제했다.
+
+axes:
+  case: [c01]
+  # c01: 경로 정보 없는 기존 카테고리를 트리에서 「상위 > 하위」로 복원
+
+effects:
+  - category_breadcrumb_reads_core_datasource
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/categoryTreeDataSource.test.ts
+
+validation:
+  browser_check: 카테고리가 지정된 상품 수정 화면 → 카테고리 하나 더 선택 [추가] → 기존 카테고리 칩이 「상위 > 하위」 경로로 보인다

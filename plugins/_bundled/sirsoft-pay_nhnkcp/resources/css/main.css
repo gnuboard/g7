@@ -78,3 +78,28 @@
 .dark .pay-nhnkcp-tone-info-strong {
     color: oklch(80.9% 0.105 251.813); /* blue-300 */
 }
+
+/*
+ * 환경설정 화면에만 있는 상태 유틸리티 — 관리자 템플릿 CSS 에 규칙이 생성되지 않는 것(다크 모드 짝·포커스·호버)을 여기서 둔다.
+ * 레이아웃은 생성되는 기본 유틸리티(`focus-within:ring-2 focus-within:ring-blue-500` 등)를 그대로 쓰고, 빠진 짝만 이 클래스가 맡는다.
+ */
+
+/* 입력+버튼 묶음 — 포커스 때 테두리를 지우고 다크 모드 포커스 링을 밝은 파랑으로 */
+.pay-nhnkcp-focus-group:focus-within {
+    border-color: transparent;
+}
+
+.dark .pay-nhnkcp-focus-group:focus-within {
+    --tw-ring-color: oklch(70.7% 0.165 254.624); /* blue-400 */
+}
+
+/* 경고 상자 안의 링크 — 호버 글자색 */
+@media (hover: hover) {
+    .pay-nhnkcp-link-warning:hover {
+        color: oklch(27.9% 0.077 45.635); /* amber-950 */
+    }
+
+    .dark .pay-nhnkcp-link-warning:hover {
+        color: oklch(96.2% 0.059 95.617); /* amber-100 */
+    }
+}

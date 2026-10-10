@@ -17,6 +17,9 @@
  * @since 1.0.0
  */
 
+// 설정 화면 상태 유틸리티(접두 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
+
 const PLUGIN_IDENTIFIER = 'sirsoft-verification_nhnkcp';
 const PROVIDER_ID = 'nhnkcp';
 const POPUP_FEATURES = 'width=410,height=500,scrollbars=yes,resizable=yes';

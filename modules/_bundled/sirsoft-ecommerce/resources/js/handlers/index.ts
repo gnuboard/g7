@@ -36,7 +36,6 @@ import {
     removeCategoryFromSelectionHandler,
     getCategoryBreadcrumbHandler,
     validateCategoryPathHandler,
-    initCategoryInfosFromProductHandler,
 } from './categoryHandlers';
 
 // 브랜드 관련 핸들러
@@ -76,7 +75,6 @@ import {
 
 // 이미지 관련 핸들러
 import {
-    uploadImagesHandler,
     setThumbnailHandler,
     reorderImagesHandler,
 } from './imageHandlers';
@@ -116,8 +114,6 @@ import {
     openLabelPeriodModalHandler,
     saveLabelPeriodHandler,
     removeLabelPeriodHandler,
-    updateActivityLogSortHandler,
-    updateActivityLogPerPageHandler,
     setDefaultShippingPolicyHandler,
     setLabelDatePresetHandler,
     toggleDefaultShippingPolicyHandler,
@@ -159,11 +155,8 @@ import {
     buildOrderColumnsHandler,
     toggleArrayValueHandler,
     syncOrderSelectionHandler,
-    handleOrderRowActionHandler,
-    processOrderBulkActionHandler,
     buildOrderBulkConfirmDataHandler,
     executeOrderBulkActionHandler,
-    downloadOrderExcelHandler,
     saveVisibleColumnsHandler,
     loadVisibleColumnsHandler,
     loadVisibleFiltersHandler,
@@ -210,7 +203,6 @@ import {
 } from './claimHandlers';
 
 // 상품 목록 핸들러
-import { handleProductRowActionHandler } from './productListHandlers';
 
 // 주문 상세 핸들러
 import {
@@ -380,7 +372,6 @@ export const handlerMap = {
     removeCategoryFromSelection: removeCategoryFromSelectionHandler,
     getCategoryBreadcrumb: getCategoryBreadcrumbHandler,
     validateCategoryPath: validateCategoryPathHandler,
-    initCategoryInfosFromProduct: initCategoryInfosFromProductHandler,
 
     // ===== 브랜드 관련 =====
     getBrandName: getBrandNameHandler,
@@ -417,7 +408,6 @@ export const handlerMap = {
     saveMultilingualTag: saveMultilingualTagHandler,
 
     // ===== 이미지 관련 =====
-    uploadImages: uploadImagesHandler,
     setThumbnail: setThumbnailHandler,
     reorderImages: reorderImagesHandler,
 
@@ -451,8 +441,6 @@ export const handlerMap = {
     openLabelPeriodModal: openLabelPeriodModalHandler,
     saveLabelPeriod: saveLabelPeriodHandler,
     removeLabelPeriod: removeLabelPeriodHandler,
-    updateActivityLogSort: updateActivityLogSortHandler,
-    updateActivityLogPerPage: updateActivityLogPerPageHandler,
     setDefaultShippingPolicy: setDefaultShippingPolicyHandler,
     setLabelDatePreset: setLabelDatePresetHandler,
     toggleDefaultShippingPolicy: toggleDefaultShippingPolicyHandler,
@@ -484,11 +472,8 @@ export const handlerMap = {
     buildOrderColumns: buildOrderColumnsHandler,
     toggleArrayValue: toggleArrayValueHandler,
     syncOrderSelection: syncOrderSelectionHandler,
-    handleOrderRowAction: handleOrderRowActionHandler,
-    processOrderBulkAction: processOrderBulkActionHandler,
     buildOrderBulkConfirmData: buildOrderBulkConfirmDataHandler,
     executeOrderBulkAction: executeOrderBulkActionHandler,
-    downloadOrderExcel: downloadOrderExcelHandler,
     downloadFile: downloadFileHandler,
     saveVisibleColumns: saveVisibleColumnsHandler,
     loadVisibleColumns: loadVisibleColumnsHandler,
@@ -533,7 +518,6 @@ export const handlerMap = {
     formatRefundInputTotal: formatRefundInputTotalHandler,
 
     // ===== 상품 목록 =====
-    handleProductRowAction: handleProductRowActionHandler,
 
     // ===== 주문 상세 =====
     initOrderDetailForm: initOrderDetailFormHandler,

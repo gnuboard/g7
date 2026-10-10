@@ -23,6 +23,10 @@
             "entry": "resources/js/index.ts",
             "output": "dist/js/module.iife.js"
         },
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/module.css"
+        },
         "handlers": true
     },
     "loading": {

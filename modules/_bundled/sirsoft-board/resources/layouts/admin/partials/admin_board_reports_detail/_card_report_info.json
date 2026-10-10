@@ -330,7 +330,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all"
+                                                "className": "border-b border-transparent board-link-underline transition-all"
                                             },
                                             "text": "{{report_detail?.data?.board?.name}}"
                                         },
@@ -361,7 +361,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500/80"
+                                                "className": "text-xs board-muted-note"
                                             },
                                             "text": "($t:sirsoft-board.admin.reports.detail.board_deleted)"
                                         }
@@ -404,7 +404,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all"
+                                                "className": "border-b border-transparent board-link-underline transition-all"
                                             },
                                             "text": "{{report_detail?.data?.post?.title}}"
                                         },
@@ -413,7 +413,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "arrow-up-right-from-square",
-                                                "className": "text-xs transform translate-x-0 group-hover:translate-x-0.5 transition-all"
+                                                "className": "text-xs board-external-icon transition-all"
                                             }
                                         }
                                     ]
@@ -464,7 +464,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all"
+                                                "className": "border-b border-transparent board-link-underline transition-all"
                                             },
                                             "text": "{{report_detail?.data?.post?.title}}"
                                         },
@@ -473,7 +473,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "arrow-up-right-from-square",
-                                                "className": "text-xs transform translate-x-0 group-hover:translate-x-0.5 transition-all"
+                                                "className": "text-xs board-external-icon transition-all"
                                             }
                                         }
                                     ]

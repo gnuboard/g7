@@ -275,7 +275,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 새 페이지를 생성합니다. `slug`(고유 필수)·`title`(다국어 배열 필수)·`content`·`content_mode`(html/text)·`published`·`seo_meta` 를 받아 `PageService::createPage()` 로 저장하고, `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 201 로 반환합니다. `temp_key` 는 페이지 저장 전 임시 업로드한 첨부(첨부 업로드 시 발급받은 키)를 생성된 페이지에 귀속시키는 데 씁니다. 다국어 `title` 에서 지금 화면 언어 값을 비우면 422 `errors.title` 이 칸 이름과 언어 이름을 함께 알린다(「페이지 제목의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the page title field is required.").
+**설명** 새 페이지를 생성합니다. `slug`(고유 필수)·`title`(다국어 배열 필수)·`content`·`content_mode`(html/text)·`published`·`seo_meta` 를 받아 `PageService::createPage()` 로 저장하고, `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 201 로 반환합니다. `temp_key` 는 페이지 저장 전 임시 업로드한 첨부(첨부 업로드 시 발급받은 키)를 생성된 페이지에 귀속시키는 데 씁니다. 다국어 `title` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.title` 이 칸 이름과 언어 이름을 함께 알린다(「페이지 제목의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the page title field is required.").
 
 
 ### PATCH /api/modules/sirsoft-page/admin/pages/bulk-publish
@@ -720,7 +720,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 페이지를 수정합니다. `{page}` 는 페이지 ID 입니다. `title`(필수)·`slug`·`content`·`content_mode`·`published`·`seo_meta` 를 받아 `PageService::updatePage()` 로 반영하고, 수정 시 이전 상태가 버전 이력으로 적재됩니다(`current_version` 증가). `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 반환합니다. 미존재 404, 스코프 밖 403. 다국어 `title` 에서 지금 화면 언어 값을 비우면 422 `errors.title` 이 칸 이름과 언어 이름을 함께 알린다(「페이지 제목의 한국어(ko) 값은 필수입니다.」).
+**설명** 페이지를 수정합니다. `{page}` 는 페이지 ID 입니다. `title`(필수)·`slug`·`content`·`content_mode`·`published`·`seo_meta` 를 받아 `PageService::updatePage()` 로 반영하고, 수정 시 이전 상태가 버전 이력으로 적재됩니다(`current_version` 증가). `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 반환합니다. 미존재 404, 스코프 밖 403. 다국어 `title` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.title` 이 칸 이름과 언어 이름을 함께 알린다(「페이지 제목의 한국어(ko) 값은 필수입니다.」).
 
 
 ### PATCH /api/modules/sirsoft-page/admin/pages/{page}/publish

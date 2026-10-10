@@ -50,3 +50,60 @@
     background-color: rgba(31, 41, 55, 0.5);
     border-color: #4b5563;
 }
+
+/*
+ * 관리자 환경설정 화면에만 있는 상태 유틸리티 — 관리자 템플릿은 자기 layouts/ 만 훑어 CSS 를 만들므로, 이 플러그인
+ * 레이아웃에만 있는 다크 모드 짝·왼쪽 강조선 색은 규칙이 생성되지 않는다. 그런 짝을 여기서 접두 클래스로 둔다.
+ * 레이아웃은 생성되는 기본 유틸리티를 그대로 쓰고, 빠진 짝만 이 클래스가 맡는다.
+ */
+
+/* 오류 입력칸 — 다크 모드 포커스 테두리 */
+.dark .gdpr-input-error-focus:focus {
+    border-color: oklch(70.4% 0.191 22.216); /* red-400 */
+}
+
+/* 표 줄 구분선 — 다크 모드 */
+.dark .gdpr-row-divider {
+    border-color: color-mix(in oklab, oklch(37.3% 0.034 259.733) 60%, transparent); /* gray-700/60 */
+}
+
+/* 안내 카드의 왼쪽 강조선 — 파랑(안내)·주황(경고) */
+.gdpr-accent-info {
+    border-left-color: oklch(62.3% 0.214 259.815); /* blue-500 */
+}
+
+.dark .gdpr-accent-info {
+    border-left-color: oklch(70.7% 0.165 254.624); /* blue-400 */
+}
+
+.gdpr-accent-warning {
+    border-left-color: oklch(76.9% 0.188 70.08); /* amber-500 */
+}
+
+.dark .gdpr-accent-warning {
+    border-left-color: oklch(82.8% 0.189 84.429); /* amber-400 */
+}
+
+/* 검증 오류가 있는 묶음 상자 — 다크 모드 배경 */
+.dark .gdpr-error-panel {
+    background-color: color-mix(in oklab, oklch(39.6% 0.141 25.723) 10%, transparent); /* red-900/10 */
+}
+
+/* 고정(잠금) 항목 상자 — 하늘색 아이콘·상자·라벨·칩의 다크 모드 짝 */
+.dark .gdpr-locked-icon {
+    color: oklch(74.6% 0.16 232.661); /* sky-400 */
+}
+
+.dark .gdpr-locked-box {
+    border-color: oklch(44.3% 0.11 240.79); /* sky-800 */
+    background-color: color-mix(in oklab, oklch(39.1% 0.09 240.876) 20%, transparent); /* sky-900/20 */
+}
+
+.dark .gdpr-locked-label {
+    color: oklch(82.8% 0.111 230.318); /* sky-300 */
+}
+
+.dark .gdpr-locked-chip {
+    color: oklch(82.8% 0.111 230.318); /* sky-300 */
+    background-color: color-mix(in oklab, oklch(39.1% 0.09 240.876) 40%, transparent); /* sky-900/40 */
+}

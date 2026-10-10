@@ -729,7 +729,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "download",
-                                                        "className": "text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"
+                                                        "className": "text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 board-attachment-icon transition-colors"
                                                     }
                                                 }
                                             ]
@@ -972,7 +972,7 @@
                             "props": {
                                 "content": "{{post?.data?.parent?.content ?? ''}}",
                                 "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
-                                "className": "{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                                "className": "{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : 'board-collapsed-content'}}"
                             },
                             "default": [
                                 {
@@ -981,7 +981,7 @@
                                     "props": {
                                         "content": "{{post?.data?.parent?.content ?? ''}}",
                                         "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
-                                        "className": "{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                                        "className": "{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : 'board-collapsed-content'}}"
                                     }
                                 }
                             ]

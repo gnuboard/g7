@@ -840,7 +840,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "download",
-                                                    "className": "text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"
+                                                    "className": "text-gray-400 dark:text-gray-500 group-hover:text-blue-500 page-attachment-icon transition-colors"
                                                 }
                                             }
                                         ]
@@ -1148,7 +1148,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 page-soft-button transition-colors"
                                                     },
                                                     "children": [
                                                         {

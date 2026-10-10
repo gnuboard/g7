@@ -74,7 +74,7 @@ flowchart LR
 |---|---|
 | 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
-| 의존 모듈 | `gnuboard7-hello_module` `>=0.1.0` |
+| 의존 모듈 | `gnuboard7-hello_module` `>=0.2.0` |
 <!-- @generated:requirements END -->
 
 ## 설치
@@ -140,7 +140,7 @@ php artisan plugin:activate gnuboard7-hello_plugin
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `gnuboard7-hello_module` | 모듈 | `>=0.1.0` | ✅ |
+| `gnuboard7-hello_module` | 모듈 | `>=0.2.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 

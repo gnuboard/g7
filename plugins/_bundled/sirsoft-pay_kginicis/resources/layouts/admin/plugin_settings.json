@@ -317,7 +317,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-transparent"
+                                                            "className": "flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-kginicis-focus-group"
                                                         },
                                                         "children": [
                                                             {
@@ -1165,7 +1165,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4"
+                                                    "className": "flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 pay-kginicis-panel-muted p-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1336,7 +1336,7 @@
                                                                     "href": "/admin/ecommerce/products",
                                                                     "target": "_blank",
                                                                     "rel": "noopener",
-                                                                    "className": "pay-kginicis-tone-info text-xs inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-md transition-colors"
+                                                                    "className": "pay-kginicis-tone-info text-xs inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 pay-kginicis-btn-info rounded-md transition-colors"
                                                                 },
                                                                 "children": [
                                                                     {

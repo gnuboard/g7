@@ -136,8 +136,8 @@ php artisan module:activate gnuboard7-hello_module
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `gnuboard7-hello_plugin` | 플러그인 | `>=0.1.0` |
-| `gnuboard7-hello_user_template` | 템플릿 | `>=0.1.0` |
+| `gnuboard7-hello_plugin` | 플러그인 | `>=0.2.0` |
+| `gnuboard7-hello_user_template` | 템플릿 | `>=0.2.0` |
 <!-- @generated:integrations END -->
 
 ## 문서

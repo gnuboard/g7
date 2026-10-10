@@ -38,6 +38,9 @@ axes:
     - settings_toggle_and_checkbox_persist
     - new_board_seeds_reaction_defaults
     - existing_site_update_backfills_reaction_defaults
+    # 1.1.2(7.0.11) 출발 업데이트 — 1.0.3 시드 스텝이 선택되지 않던 경로(BU-1·Q-5)
+    - update_from_1_1_2_enables_reactions
+    - fresh_install_seeds_reaction_types
     - reaction_type_label_localized
     - reaction_type_label_falls_back
     - react_logs_activity
@@ -89,6 +92,12 @@ effects:
   # 업그레이드 백필 — install 시더가 안 도는 update 경로에서 기본 유형을 채운다
   - reaction_types_backfilled_on_update_when_empty
   - reaction_type_backfill_preserves_user_edits
+  - reaction_types_seeded_from_1_1_2
+  - existing_board_active_reaction_types_backfilled
+  - backfill_keeps_operator_empty_selection
+  - backfill_skips_inactive_default_type
+  - legacy_ja_dislike_name_renamed_unless_overridden
+  - install_seeders_include_reaction_types
   # 다국어 (확정 15)
   - reaction_type_name_localized
   - missing_locale_falls_back_to_default
@@ -129,6 +138,7 @@ test_files:
   - modules/_bundled/sirsoft-board/tests/Unit/Repositories/ReactionRepositoryTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Database/Seeders/BoardReactionTypeSeederTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/ReactionTypeSeedBackfillTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/ReactionUpgradeFrom112Test.php
   - modules/_bundled/sirsoft-board/tests/Feature/User/ReactionApiTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/User/ReactionPayloadGateTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReactionTypeApiTest.php

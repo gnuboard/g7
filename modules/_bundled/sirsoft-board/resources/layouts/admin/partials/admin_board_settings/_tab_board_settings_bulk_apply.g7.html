@@ -50,7 +50,7 @@
             <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.settings.bulk_apply.apply_selected</span>
           </div>
         </div>
-        <div data-if="{{_local.bulkApplyAll === false}}" class="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700">
+        <div data-if="{{_local.bulkApplyAll === false}}" class="mt-3 p-3 rounded-lg board-bulk-apply-scope border border-gray-200 dark:border-gray-700">
           <p class="text-tertiary mb-2">$t:sirsoft-board.admin.settings.bulk_apply.select_boards_hint</p>
           <tag-input data-type="composite" value="{{_local._bulkApplyBoardIds ?? []}}" options="{{$computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full" disabled="{{_computed.isReadOnly}}">
             <on type="change">

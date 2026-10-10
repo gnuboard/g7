@@ -643,7 +643,7 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
     }
 
     /**
-     * purgeSamplePosts: 자기 글 타입 묶음과 문의 게시판의 답변 글만 영구 삭제한다.
+     * purgeSamplePosts: 자기 글 타입 묶음으로 넘겨받은 글과 그 글의 답변만 영구 삭제한다.
      *
      * 다른 타입 묶음은 게시판의 것이 아니므로 같은 ID 라도 건드리지 않습니다.
      *

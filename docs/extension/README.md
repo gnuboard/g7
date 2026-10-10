@@ -85,6 +85,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [sample-extensions.md](sample-extensions.md) | 학습용 최소 샘플 확장 4종 (gnuboard7-hello_*) — 계층 1:1 비교 레퍼런스 |
+| [admin-template-contract.md](admin-template-contract.md) | 관리자 템플릿 교체 계약 — 번들 확장 관리자 화면이 기대는 컴포넌트·공용 문구 키·스타일 클래스·조각 앵커 |
 
 ### 템플릿 시스템
 

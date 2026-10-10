@@ -73,7 +73,7 @@
                     "name": "Div",
                     "if": "{{(nicepay_escrow.data?.escrow_payments ?? []).length > 0}}",
                     "props": {
-                        "className": "alert-success"
+                        "className": "pay-nicepayments-notice-success"
                     },
                     "children": [
                         {
@@ -88,7 +88,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-success-soft"
+                                "className": "text-sm pay-nicepayments-tone-success-strong"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.admin.escrow_payment_notice"
                         }

@@ -81,7 +81,14 @@
         "receipt_label": "영수증",
         "receipt_view": "영수증 보기",
         "cash_receipt_label": "현금영수증",
-        "cash_receipt_view": "현금영수증 보기"
+        "cash_receipt_view": "현금영수증 보기",
+        "vbank_title": "가상계좌 입금 안내",
+        "vbank_bank": "은행",
+        "vbank_account": "계좌번호",
+        "vbank_holder": "예금주",
+        "vbank_amount": "입금 금액",
+        "vbank_due": "입금 기한",
+        "vbank_notice": "입금 기한 내에 입금하지 않으시면 주문이 자동 취소됩니다."
     },
     "admin": {
         "payment_panel_title": "토스페이먼츠 결제 정보",

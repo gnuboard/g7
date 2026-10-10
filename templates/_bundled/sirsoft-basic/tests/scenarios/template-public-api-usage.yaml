@@ -27,6 +27,7 @@ effects:
   - avatar_upload_via_core_api          # 업로드가 G7Core.api.post 에 avatar 파일을 담은 FormData 를 multipart 로 넘긴다
   - avatar_delete_via_core_api          # 삭제가 G7Core.api.delete 로 나간다
   - avatar_error_message_from_response  # 거절 시 서버 message, 없으면 기본 문구, 응답이 없으면 원래 오류 메시지
+  - avatar_success_refetches_user_via_core_data_source  # 성공 액션이 없으면 코어 G7Core.dataSource.refetch('user') 로 회원 정보를 다시 읽는다
   - identity_challenge_via_core_api     # challenge 시작이 G7Core.api.post 로 나가고 Accept-Language 는 코어가 붙인다
   - identity_target_resolution          # 인증 대상은 선언값 → 로그인 세션 → 가입 폼 순서로 정해 challenge body 에 싣는다
   - state_subscription_released         # 구독 해제 함수가 언마운트·종료 때 불려 구독자 수가 0 으로 돌아간다

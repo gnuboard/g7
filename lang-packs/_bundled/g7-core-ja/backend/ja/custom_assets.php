@@ -8,7 +8,7 @@ return [
         'read_failed' => 'ファイルを読み込めませんでした: :path',
         'write_failed' => 'ファイルを保存できませんでした: :path',
         'delete_failed' => 'ファイルを削除できませんでした: :path',
-        'directory_failed' => 'ディレクトリを作成できませんでした: :path',
+        'directory_failed' => 'ディレクトリを作成できませんでした: :path — 理由 :reason、所有者 :owner、権限 :perms、実行アカウント :process_user。対処: :hint',
         'invalid_path' => '許可されていないパスです: :path',
         'invalid_extension_target' => 'ターゲット拡張が見つかりません: :identifier',
         'extension_not_allowed' => '許可されていないファイル形式です: :extension',

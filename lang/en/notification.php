@@ -77,7 +77,7 @@ return [
         'no_recipient_resolved' => 'No recipient matched the recipient rules, so nothing was sent. Rules applied: :rule_names (rule codes: :rules)',
         'guest_email_empty' => 'The guest recipient has no email address, so nothing was sent. (Recipient rules: :rules)',
         'withdrawn_recipient' => 'The member has withdrawn, so nothing was sent over external channels (mail/SMS/AlimTalk). Withdrawal anonymises the contact details, leaving no deliverable address.',
-        'member_account_missing' => 'The member this notification was meant for no longer has an account, so nothing was sent. Contact details kept elsewhere (such as on an order) are not used as a substitute. (Recipient rules: :rules)',
+        'member_account_missing' => 'The member this notification was meant for no longer has an account, so nothing was sent. Contact details kept in other records are not used as a substitute. (Recipient rules: :rules)',
     ],
 
     // User notifications

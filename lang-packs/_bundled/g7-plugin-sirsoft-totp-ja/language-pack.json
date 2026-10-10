@@ -20,7 +20,7 @@
     "locale_name": "Japanese",
     "locale_native_name": "日本語",
     "text_direction": "ltr",
-    "g7_version": ">=7.0.0",
+    "g7_version": ">=7.1.0",
     "requires": {
         "target_version": null,
         "depends_on_core_locale": true

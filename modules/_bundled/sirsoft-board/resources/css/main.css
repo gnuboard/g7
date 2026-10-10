@@ -1,0 +1,105 @@
+/**
+ * sirsoft-board 화면 스타일 — 관리자 게시판 화면에만 있는 호버·다크 짝·반투명 배경
+ *
+ * 관리자 템플릿은 자기 레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃에만 있는 유틸리티
+ * (`dark:bg-gray-700/30`, `disabled:opacity-30` 등)는 규칙이 생성되지 않아 화면에서 조용히 빠졌다.
+ * 그런 자리는 이 파일에 `board-` 접두 클래스로 직접 둔다(docs/extension/module-assets.md 「확장 화면의 의미 색은
+ * 확장 CSS 가 싣는다」). 다른 확장의 클래스는 참조하지 않는다.
+ *
+ * - 이 파일은 템플릿의 `@layer utilities` 밖에 실린다 — 같은 속성의 템플릿 유틸리티보다 항상 앞선다. 그래서
+ *   한 자리의 밝은·다크·호버 색을 마크업 유틸리티와 나누지 않고 여기서 함께 정의한다(나누면 다크에서 밝은 값이 이기거나
+ *   다크 짝 검사가 짝을 찾지 못한다).
+ * - 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
+ * - 색은 템플릿 테마 변수를 먼저 쓰고, 없으면 Tailwind 4 기본 팔레트(oklch) 값으로 떨어진다.
+ */
+
+/* 첨부 다운로드 아이콘 — 첨부 행에 마우스를 올리면 다크 모드에서도 파란색 (글 상세·답글 카드) */
+.dark .group:hover .board-attachment-icon {
+    color: var(--color-blue-400, oklch(70.7% 0.165 254.624)); /* blue-400 */
+}
+
+/* 접힌 원글 본문 — 펼치기 전에는 이미지·표를 감춘다 (답글 상세의 원글 미리보기) */
+.board-collapsed-content img,
+.board-collapsed-content table {
+    display: none;
+}
+
+/* 비밀글 선택 카드 — 마우스를 올리면 테두리 강조 (글 작성 폼) */
+.board-secret-card:hover {
+    border-color: var(--color-amber-400, oklch(82.8% 0.189 84.429)); /* amber-400 */
+}
+
+.dark .board-secret-card:hover {
+    border-color: var(--color-amber-600, oklch(66.6% 0.179 58.318)); /* amber-600 */
+}
+
+/* 분류 선택 — 작은 화면에서는 가로 전체, 640px 이상에서는 16rem (글 작성 폼) */
+@media (min-width: 640px) {
+    .board-category-select {
+        width: 16rem;
+    }
+}
+
+/* 링크 밑줄 — 카드에 마우스를 올리면 밑줄이 나타난다 (신고 상세의 게시판·게시글 링크) */
+.group:hover .board-link-underline {
+    border-color: var(--color-blue-600, oklch(54.6% 0.245 262.881)); /* blue-600 */
+}
+
+.dark .group:hover .board-link-underline {
+    border-color: var(--color-blue-400, oklch(70.7% 0.165 254.624)); /* blue-400 */
+}
+
+/* 새 창 아이콘 — 카드에 마우스를 올리면 오른쪽으로 살짝 (신고 상세) */
+.group:hover .board-external-icon {
+    translate: 0.125rem 0;
+}
+
+/* 흐린 안내 — 삭제된 게시판 표시 (신고 상세) */
+.board-muted-note {
+    color: var(--color-gray-400, oklch(70.7% 0.022 261.325)); /* gray-400 */
+}
+
+.dark .board-muted-note {
+    color: color-mix(in oklab, var(--color-gray-500, oklch(55.1% 0.027 264.364)) 80%, transparent); /* gray-500/80 */
+}
+
+/* 일괄 적용 확인 창의 항목 묶음 구분선 */
+.board-bulk-apply-group {
+    border-color: var(--color-gray-100, oklch(96.7% 0.003 264.542)); /* gray-100 */
+}
+
+.dark .board-bulk-apply-group {
+    border-color: color-mix(in oklab, var(--color-gray-700, oklch(37.3% 0.034 259.733)) 50%, transparent); /* gray-700/50 */
+}
+
+/* 일괄 적용 대상 게시판 선택 상자 */
+.board-bulk-apply-scope {
+    background-color: var(--color-gray-50, oklch(98.5% 0.002 247.839)); /* gray-50 */
+}
+
+.dark .board-bulk-apply-scope {
+    background-color: color-mix(in oklab, var(--color-gray-700, oklch(37.3% 0.034 259.733)) 30%, transparent); /* gray-700/30 */
+}
+
+/* 신고 정책 탭의 알림 템플릿 행 */
+.board-notification-template-row {
+    background-color: var(--color-gray-50, oklch(98.5% 0.002 247.839)); /* gray-50 */
+}
+
+.dark .board-notification-template-row {
+    background-color: color-mix(in oklab, var(--color-gray-700, oklch(37.3% 0.034 259.733)) 40%, transparent); /* gray-700/40 */
+}
+
+/* 반응 유형 순서 이동 버튼 — 움직일 수 없을 때 흐리게 (반응 유형 카드) */
+.board-move-button:disabled {
+    opacity: 0.3;
+}
+
+/* 반응 유형 입력 확인 버튼 — 호버 배경 (반응 유형 편집기) */
+.board-confirm-button:hover {
+    background-color: var(--color-green-50, oklch(98.2% 0.018 155.826)); /* green-50 */
+}
+
+.dark .board-confirm-button:hover {
+    background-color: color-mix(in oklab, var(--color-green-900, oklch(39.3% 0.095 152.535)) 20%, transparent); /* green-900/20 */
+}

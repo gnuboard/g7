@@ -163,6 +163,49 @@ class TempKeyGeneratorLayoutUpgradeTest extends ModuleTestCase
         $this->assertSame(0, DB::table('template_layouts')->whereIn('id', $ids)->where('content', 'like', "%'temp_' + Date.now()%")->count());
     }
     /**
+     * 본문의 빈 map(`{}`)은 보정 뒤에도 `{}` 로 남고, 편집하지 않은 행의 해시·크기는 코어 표준형과 맞는다.
+     *
+     * 예전에는 본문을 연관 배열로 읽어 다시 썼으므로 운영자가 고친 행의 `{}`(요청 질의 `params.query`,
+     * 폼 초기값 등)가 `[]` 로 굳었다(BU-3).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario row_state=edited
+     *
+     * @effects empty_map_preserved_after_patch, unedited_row_hash_resynced
+     */
+    public function test_empty_maps_are_preserved_and_hash_follows_core_standard_form(): void
+    {
+        $content = json_encode([
+            'version' => '1.0.0',
+            'initLocal' => ['form' => new \stdClass],
+            'init_actions' => [
+                ['handler' => 'setState', 'params' => ['target' => 'local', 'tempKey' => self::LEGACY]],
+                ['handler' => 'apiCall', 'params' => ['endpoint' => '/api/modules/sirsoft-page/admin/attachments', 'query' => new \stdClass]],
+            ],
+            'components' => [['name' => 'FileUploader', 'props' => ['uploadUrl' => '/api/modules/sirsoft-page/admin/attachments']]],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $edited = $this->insertLayout('sirsoft-page.admin_page_form_edited', $content, 'module', edited: true);
+        $unedited = $this->insertLayout('sirsoft-page.admin_page_form_unedited', $content, 'module', edited: false);
+
+        $this->runUpgrade();
+
+        foreach ([$edited, $unedited] as $id) {
+            $after = DB::table('template_layouts')->find($id);
+            $decoded = json_decode($after->content);
+
+            $this->assertStringContainsString('{{$uuid()}}', $after->content);
+            $this->assertInstanceOf(\stdClass::class, $decoded->initLocal->form, '폼 초기값 {} 가 [] 로 바뀌었다');
+            $this->assertInstanceOf(\stdClass::class, $decoded->init_actions[1]->params->query, '요청 질의 {} 가 [] 로 바뀌었다');
+        }
+
+        $after = DB::table('template_layouts')->find($unedited);
+        $this->assertSame($this->hash($after->content), $after->original_content_hash, '보정이 편집으로 보인다');
+        $this->assertSame(strlen($this->normalize($after->content)), (int) $after->original_content_size);
+    }
+
+    /**
      * 1.2.0 업그레이드 스텝을 실행합니다.
      *
      * @return void 반환값 없음

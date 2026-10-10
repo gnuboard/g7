@@ -340,7 +340,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "{{_local.errors?.live_site_cd ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-transparent'}}"
+                                                            "className": "{{_local.errors?.live_site_cd ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 verification-nhnkcp-focus-group'}}"
                                                         },
                                                         "children": [
                                                             {

@@ -8,9 +8,9 @@
     </div>
   </inject>
   <inject target-id="tab_content_area" position="prepend_child">
-    <div data-if="{{(nicepay_escrow.data?.escrow_payments ?? []).length > 0}}" class="alert-success">
+    <div data-if="{{(nicepay_escrow.data?.escrow_payments ?? []).length > 0}}" class="pay-nicepayments-notice-success">
       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500 text-white flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.escrow_badge</span>
-      <span class="text-success-soft">$t:sirsoft-pay_nicepayments.admin.escrow_payment_notice</span>
+      <span class="text-sm pay-nicepayments-tone-success-strong">$t:sirsoft-pay_nicepayments.admin.escrow_payment_notice</span>
     </div>
   </inject>
   <inject target-id="tab_content_area" position="append_child">

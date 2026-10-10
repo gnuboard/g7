@@ -21,7 +21,7 @@
 - 검증 커맨드: `php artisan layout:decompile {path|--all}` (HTML→JSON 강검증·lint, 산출 JSON 미기록 — `--out` 지정 시 단일 파일 진단 덤프). 대상 템플릿 옵션은 없다 — 산출이 템플릿과 무관하므로, 템플릿 기준 검사는 템플릿 자신의 레이아웃(경로로 자기 템플릿을 안다)과 레이아웃 편집기(편집 대상 템플릿)에서만 한다
 - **템플릿 비의존 (2026-09-28 결정)**: 설치·업데이트·조각 주입·삭제·플러그인 설정 화면 어느 경로도 템플릿 컴포넌트 목록을 보지 않는다. JSON 레이아웃이 작성자가 적은 `name`·`type` 으로 설치되고 컴포넌트는 런타임이 활성 템플릿에서 찾았던 것과 똑같다. 그래서 활성 템플릿이 무엇이든(아직 없어도) 같은 JSON 이 등록되고, 템플릿을 바꿔도 확장 레이아웃이 다르게 컴파일되지 않는다
 - 이관(생성) 커맨드: `php artisan layout:compile {path|--all}` (JSON→HTML 소스 산출) / `--roundtrip` (왕복 동등성 검증)
-- 코퍼스(왕복 하네스·`<json>` 예산·이관 게이트의 모집단): 본 레이아웃(`layouts/`) **+ 레이아웃 확장 fragment(`extensions/`)**. 정의는 `LayoutCorpus` 가 SSoT — 스캔 글롭을 곳곳에 복제하면 한쪽만 넓힐 때 나머지가 반쪽 코퍼스로 남고 그 위에서 "escape-0" 같은 완료 판정이 나온다
+- 검사 대상 모집단(왕복 검사·`<json>` 예산의 대상): 본 레이아웃(`layouts/`) **+ 레이아웃 확장 fragment(`extensions/`)**. 정의는 `LayoutCorpus` 한 곳에 둔다 — 스캔 경로를 곳곳에 복제하면 한쪽만 넓힐 때 나머지는 일부만 검사하게 된다
 - 강검증 축(`LayoutValidator`): ① 구조(레이아웃/fragment) ② 엔드포인트 화이트리스트 ③ 컴포넌트 존재 ④ `wait_for` cross-field ⑤ `<script src>` 호스트 화이트리스트. **외부 URL·위험 스킴(`NoExternalUrls`)은 돌리지 않는다** — 설치 경로(`ValidatesLayoutFiles`)가 원래 돌리지 않아 `.json` 설치와 패리티를 맞춘 것이고(설계 결정 2026-07-20), 번들 결제 플러그인이 PG사 공식 주소를 정상 기능으로 들고 있다. 작성 API 경로(`Store/Update LayoutRequest`·`UpdateLayout{Content,ExtensionContent}Request`)에는 규칙이 그대로 살아 있다
 - overlay fragment 는 `injections` 없이도 성립한다 — `modals`·`data_sources`·`scripts`·`init_actions` 중 **하나 이상**을 기여하면 유효(런타임 병합 목록과 같은 판정). 아무것도 기여하지 않을 때만 거부
 - 설치 소스 강제: `{module|plugin|template}:{install|update|refresh-layout} --layout-source=json` — 컴파일러 회귀가 의심될 때 짝 `.json` 이 있는 레이아웃을 원본 JSON 기준으로 되돌려 설치하는 진단·복구 탈출구(기본 `auto`). 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일하고 로그에 미이행을 남긴다(조용히 누락시키면 등록이 사라져 빈 화면). 환경 기본값은 `LAYOUT_INSTALL_SOURCE`, SSoT 는 `config/template.php` 의 `layout_markup.install_source`. `{type}:update` 의 기존 `--source=auto|bundled|github`(업데이트 패키지 출처)와는 별개 옵션이다
@@ -106,7 +106,7 @@
 
 변환은 `App\Support\LayoutMarkup\PartialReferenceNotation` 한 벌이 맡는다(컴파일 2자리 · 역컴파일 2자리).
 규칙은 **접미사 치환**으로 좁게 정의되고 대소문자를 가린다 — 넓히면 매핑이 역함수가 아니게 되고
-(`_X.JSON` → `_X.g7.html` → `_X.json`), 왕복 게이트가 잡는 유일한 성질이 그 역함수성이기 때문이다.
+(`_X.JSON` → `_X.g7.html` → `_X.json`), 왕복 검사(`layout:compile --roundtrip`)가 잡는 유일한 성질이 그 역함수성이기 때문이다.
 규약 밖 표기(`.json`·확장자 없음·대소문자 불일치)는 조용히 통과시키지 않고 컴파일 에러로 세운다.
 
 `src` 값은 **참조 경로**일 뿐이고 실제로 어느 파일을 읽는지는 해석기가 고른다 — 짝 `.g7.html` 이
@@ -170,7 +170,7 @@
 > </inject>
 > ```
 >
-> 게이트는 이 컨테이너 안으로만 열린다 — 노드 자리의 `<prop name="columns">` 에 `<column>` 을 두면 종전대로 거부된다(`unexpected_structural_child`).
+> 이 허용은 이 컨테이너 안에서만 적용된다 — 노드 자리의 `<prop name="columns">` 에 `<column>` 을 두면 종전대로 거부된다(`unexpected_structural_child`).
 
 > **데이터소스의 구조값 키도 `<field name>` 으로 적는다 (D42 G11).** `<data-source>` 는 `data`·`params`·`headers`·`fallback` 넷만 전용 태그를 갖고 나머지 키는 속성으로 나간다. 값이 객체·배열이면 그 속성이 통짜 JSON 이 되므로, 액션의 구조값 파라미터와 **같은 표기**로 자식에 적는다.
 >
@@ -532,7 +532,7 @@ JSON 은 `comment` 키만 늘어난다).
 
 **자식이 이미 `<sequence>` 하나면 래퍼를 더 씌우지 않는다.** 주석을 그 `<sequence>` 앞에 그대로 단다.
 한 겹 더 감싸면 산출이 `sequence` 안의 `sequence` 가 되어 **구조가 바뀐다** — 주입 작업이 건드리면 안
-되는 것을 건드린 것이다. 이 자리는 앵커가 닫히고 컴파일·왕복도 모두 초록이라 게이트가 보지 못한다.
+되는 것을 건드린 것이다. 이 자리는 앵커가 닫히고 컴파일·왕복도 모두 초록이라 자동 검사로는 드러나지 않는다.
 왕복은 `JSON → 마크업 → JSON` 이라 **바뀐 뒤의 JSON 을 기준으로 항등**이기 때문이다. 이 형태를 보려면
 굽힌 `.json` 의 이전 판본과 현재 판본에서 `comment`/`_comment` 를 재귀 제거한 뒤 대조해야 한다 —
 주석만 늘었다면 두 결과가 같아야 한다.
@@ -573,7 +573,7 @@ JSON 은 `comment` 키만 늘어난다).
 실제로 낸 산출과의 대조**다 — 같은 태그라도 자리에 따라 갈리기 때문이다(`<prop-footer>`·Modal 자식 `<footer>` 는
 `props.footer` 로 접혀 자리가 없고, 같은 이름의 `Footer` 컴포넌트 노드에는 있다).
 
-이 검사가 없던 동안 `<on>` 앞 주석은 경고도 에러도 없이 사라졌다. 왕복 게이트는 JSON→마크업→JSON 이라
+이 검사가 없던 동안 `<on>` 앞 주석은 경고도 에러도 없이 사라졌다. 왕복 검사는 JSON→마크업→JSON 이라
 **마크업에만 있던 주석의 소실을 구조적으로 볼 수 없다** — 그 사각을 `CommentAttachmentGuardTest` 가 덮는다.
 
 ### 무엇을 쓰는가
@@ -652,7 +652,7 @@ JSON 은 `comment` 키만 늘어난다).
 같은 회차에 하한으로 세운다** — 도구 단위가 아니라 축 단위로 재야 한다. 다만 경로를 한정해 한 단락만
 돌릴 때는 인용 하한을 적용하지 않는다(한 단락에 인용이 0건인 것은 정상이다).
 
-주석을 넣는 변경이 **산출 JSON 을 `comment` 키 밖에서 건드리지 않았는지**는 별도로 잰다. 왕복 게이트는
+주석을 넣는 변경이 **산출 JSON 을 `comment` 키 밖에서 건드리지 않았는지**는 별도로 잰다. 왕복 검사는
 `JSON → 마크업 → JSON` 이라 바뀐 뒤의 JSON 을 기준으로 항등이므로 이 성질을 구조적으로 보지 못한다 —
 `comment`/`_comment` 를 재귀 제거한 뒤 이전 판본과 대조하는 축이 따로 있어야 한다.
 
@@ -684,7 +684,7 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 
 ## 11. 역변환 (JSON → `.g7.html`) 과 표기 탈출구 (S9)
 
-`layout:compile {path?|--all}`(설계 정의: compile=JSON→HTML) 이 JSON 레이아웃을 짝 `.g7.html` 소스로 산출한다(이관 웨이브용). 내부 구현 클래스는 `LayoutMarkupDecompiler`(JSON→요소 트리 역변환) 로, 각 최상위 키·노드 키를 첫 급부 문법으로 되돌리고 재컴파일이 원본과 **정규화 후 deep-equal** 임을 확인한다(`--roundtrip`). 왕복 하네스는 번들 전 레이아웃을 상시 검사한다(`LayoutMarkupRoundTripCorpusTest`). 이관된 `.g7.html` 은 원본 `.json` 과 100% 동등하고 `<json>` 탈출구가 0 건이어야 한다(회귀 게이트).
+`layout:compile {path?|--all}`(설계 정의: compile=JSON→HTML) 이 JSON 레이아웃을 짝 `.g7.html` 소스로 산출한다(기존 `.json` 레이아웃을 마크업 소스로 옮길 때 쓴다). 내부 구현 클래스는 `LayoutMarkupDecompiler`(JSON→요소 트리 역변환) 로, 각 최상위 키·노드 키를 첫 급부 문법으로 되돌리고 재컴파일이 원본과 **정규화 후 deep-equal** 임을 확인한다(`--roundtrip`). 왕복 검사(`layout:compile --all --roundtrip`)는 번들 전 레이아웃을 대상으로 한다(`LayoutMarkupRoundTripCorpusTest`). 이관된 `.g7.html` 은 원본 `.json` 과 100% 동등하고 `<json>` 탈출구가 0 건이어야 한다(회귀 검사 기준).
 
 ### 표기 탈출구 `<json>` — 100% 왕복 보장
 
@@ -707,7 +707,7 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 | 콜백 단일 원소 배열(`onSuccess:[{x}]`) | 객체(`{x}`) | 런타임 동치, compileCallbackActions 1개=객체 |
 | 제어 `params.{actions,cases,conditions}` | top-level | 런타임 동치(ActionDispatcher params.actions fallback) |
 
-정규화 목록에 **런타임 동치가 아닌 것을 넣으면 안 된다** — 넣는 순간 이관이 실제로 shape 를 바꿔놓아도 왕복 게이트가 green 이 된다. Select 옵션이 그 사례였다(아래 G13).
+정규화 목록에 **런타임 동치가 아닌 것을 넣으면 안 된다** — 넣는 순간 이관이 실제로 shape 를 바꿔놓아도 왕복 검사가 통과해 버린다. Select 옵션이 그 사례였다(아래 G13).
 
 #### 노드 `type` 은 렌더 갈래를 정한다
 
@@ -749,7 +749,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 - `<options>` 와 `:options` 는 같은 자리를 다투므로 함께 쓰면 충돌로 잡힌다.
 - 래퍼 밖 `<option>` 은 **절대 접지 않는다**. `multiple`/`size` 여부와 무관하다.
 
-종전에는 래퍼 없이 "`<select>` 직속 자식이 전부 정적 `<option>` 이면 접는다" 는 휴리스틱으로 갈랐다. 그 판정은 양방향 모두 틀렸다 — 형제 `<on>` 하나에 리프트가 통째로 불발했고(원본 `props.options` → `children`, 실측 44건), 반대로 진짜 Option 노드를 접었다(원본 `children` → `props.options`, 실측 2건). 정규화가 그 차이를 덮고 있어 왕복·설치 게이트는 46건 내내 green 이었다.
+종전에는 래퍼 없이 "`<select>` 직속 자식이 전부 정적 `<option>` 이면 접는다" 는 휴리스틱으로 갈랐다. 그 판정은 양방향 모두 틀렸다 — 형제 `<on>` 하나에 리프트가 통째로 불발했고(원본 `props.options` → `children`, 실측 44건), 반대로 진짜 Option 노드를 접었다(원본 `children` → `props.options`, 실측 2건). 정규화가 그 차이를 덮고 있어 왕복·설치 검사는 46건 내내 통과했다.
 
 ### 노드 레벨 `<permissions>`·`<meta>` (D36)
 
@@ -790,7 +790,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
   - 점 없는 **템플릿 컴포넌트** 오타(`<dvi>` → `Dvi`)는 종전대로 오류(`component_not_in_registry`)다.
   - 확장 컴포넌트는 템플릿 `nesting.json` 판정에서 뺀다 — 템플릿은 어떤 확장이 설치될지 몰라 그 이름을 `accepts` 에 적을 수 없다.
 - 편집기가 여는 것은 **설치본**이라 저장소 파일과 다르다 — 설치가 `<include src>`·`<modal src>` 조각을 인라인한 평탄 문서이고, 인라인 모달의 원래 이름은 `<modal name>` 으로 남는다. 저장하면 본문이 서버 정규형(역변환 산출)으로 갱신되므로 손으로 맞춘 줄바꿈·들여쓰기는 유지되지 않는다.
-- 변환은 설치·게이트와 **같은 클래스**(`LayoutMarkupDecompiler`·`LayoutMarkupCompiler`)를 탄다. 왕복 오라클(`layout:compile --roundtrip`)도 같은 진입점이라 "게이트는 초록인데 편집기 저장은 거부" 가 생기지 않는다.
+- 변환은 설치·검증과 **같은 클래스**(`LayoutMarkupDecompiler`·`LayoutMarkupCompiler`)를 탄다. 왕복 오라클(`layout:compile --roundtrip`)도 같은 진입점이라 "검사는 통과하는데 편집기 저장은 거부" 가 생기지 않는다.
 - 설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다(행마다 역변환→프로덕션 컴파일→왕복 대조 + 조각 등록 정합성).
 - `.g7.html` 내려받기·복사 버튼은 HTML 버퍼를 그대로 파일·클립보드로 옮긴다 — 저장소로 되가져올 때 위 인라인 상태를 감안한다.
 
@@ -802,30 +802,30 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 이 목록이 필요한 이유는 실측이다 — 최상위 키 선언이 네 곳에 흩어져 있고, 실제로 갈려 있었다
 (`comment` 가 마크업 검증에는 있고 편집기 저장 화이트리스트에는 없어 저장이 조용히 떨궜다).
 
-### 기계가 잡는 자리 (고치지 않으면 게이트가 red 다)
+### 자동 검사가 잡는 자리 (고치지 않으면 검사가 실패한다)
 
-| 대상 | 함께 고칠 곳 | 잡는 게이트 |
+| 대상 | 함께 고칠 곳 | 잡는 검사 |
 | --- | --- | --- |
-| **액션 핸들러** | 엔진 `ActionDispatcher`(switch 또는 `registerHandler`) + `ActionHandlerManifest::CORE_HANDLERS` | 하네스 가드 `handler-manifest-drift` — 두 선언을 토크나이즈해 대조. 한쪽만 고치면 red |
-| **최상위 키** | `DocumentCompiler::KEY_ORDER` + audit `ALLOWED_ROOT_KEYS` + `UpdateLayoutContentRequest::rules()` | 하네스 가드 `root-key-ledger` — 네 벌 차집합을 등재와 대조. 미등재 신규 차이만 red |
-| **마크업 문법 일반** | 짝 `.json` 재생성 | `php artisan layout:decompile --all --check` (Stop 훅 상주) |
+| **액션 핸들러** | 엔진 `ActionDispatcher`(switch 또는 `registerHandler`) + `ActionHandlerManifest::CORE_HANDLERS` | 두 선언을 토큰 단위로 대조하는 저장소 검사 — 한쪽만 고치면 실패 |
+| **최상위 키** | `DocumentCompiler::KEY_ORDER` + audit `ALLOWED_ROOT_KEYS` + `UpdateLayoutContentRequest::rules()` | 네 선언의 차집합을 등재 목록과 대조하는 저장소 검사 — 등재되지 않은 새 차이만 실패 |
+| **마크업 문법 일반** | 짝 `.json` 재생성 | `php artisan layout:decompile --all --check` |
 | **컴파일 계약** | 왕복 보존 | `php artisan layout:compile --all --roundtrip` |
 | **규정 ↔ 검사 도구** | 규정 ↔ 룰 매핑 등재 | 매핑 검증기 — `codified` 는 룰 실재, `compiler-enforced` 는 컴파일러 에러 코드 실재를 확인 |
 
 **새 최상위 키를 넣을 때 특히**: `UpdateLayoutContentRequest` 에 `content.<키>` 규칙이 없으면
 Laravel `validated()` 가 그 키를 떨군다. 컴파일러와 마크업 검증만 고치면 **파일로는 살아 있고
-편집기로 저장하는 순간 사라지는** 상태가 된다 — 화면도 게이트도 조용하다.
+편집기로 저장하는 순간 사라지는** 상태가 된다 — 화면에도 검사에도 드러나지 않는다.
 
 ### 사람이 판단할 자리 (기계가 대신할 수 없다)
 
 - **이름** — 명명 3순위 규칙(§"명명 3순위 규칙")의 적용은 의미 판단이다. "이 낱말이 G7 개념어인가",
   "표준 HTML 어휘와 충돌하는가" 는 정규식으로 답이 나오지 않는다.
 - **정당한 차이인가** — 네 벌이 갈리는 것 자체가 결함은 아니다. fragment 전용 키·deprecated
-  별칭·DB 컬럼으로 승격된 키는 정당하게 갈린다. 그래서 게이트는 차집합을 0 으로 만들지 않고
+  별칭·DB 컬럼으로 승격된 키는 정당하게 갈린다. 그래서 이 검사는 차집합을 0 으로 만들지 않고
   **사유와 함께 등재**하도록 요구한다. 사유를 적는 것이 사람의 일이다.
 - **`<json>` 탈출구를 쓸 때인가** — 정식 문법으로 표현되는데 원시 JSON 으로 우회하는 것은
-  부채다. 반대로 왕복 보장을 위해 탈출구가 필요한 자리도 실재한다. 왕복 게이트는 사용량을
+  부채다. 반대로 왕복 보장을 위해 탈출구가 필요한 자리도 실재한다. 왕복 검사는 사용량을
   계량으로만 보고하고, 개별 정당성은 사람이 본다.
 - **엔진이 정말 소비하는가** — 키를 선언만 하고 엔진이 읽지 않으면 그 키는 죽은 키다.
-  `root-key-ledger` 는 소비처를 증거 토큰으로 확인하지만, "이 자리에서 읽는 것이 맞는가" 는
+  최상위 키 대조 검사는 소비처를 증거 토큰으로 확인하지만, "이 자리에서 읽는 것이 맞는가" 는
   코드를 읽어야 안다(D54).

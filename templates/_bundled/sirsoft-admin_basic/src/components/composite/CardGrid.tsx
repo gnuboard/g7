@@ -193,13 +193,13 @@ const processActionMenuActions = (
           const actionId = item.onClick;
           const actionDef = actionsMap.get(actionId);
 
-          if (actionDef && G7Core?.ActionDispatcher) {
+          // 실행은 코어 공개 API `G7Core.dispatch` 로 한다. 카드 행 컨텍스트(row·$value·index)를
+          // 바인딩 데이터로 넘겨 `{{row.id}}` 같은 표현식이 그 카드의 행으로 풀리게 한다.
+          if (actionDef && typeof G7Core?.dispatch === 'function') {
             return {
               ...item,
               onClick: () => {
-                // 액션 컨텍스트 생성 (row 데이터 포함)
-                const actionContext = { ...context };
-                G7Core.ActionDispatcher.dispatch(actionDef, actionContext);
+                G7Core.dispatch(actionDef, { componentContext: { data: { ...context } } });
               },
             };
           }

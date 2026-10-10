@@ -142,7 +142,7 @@
                             "name": "Label",
                             "if": "{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) && !_local.form?.parent_id}}",
                             "props": {
-                                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
                                 {
@@ -214,7 +214,7 @@
                             "name": "Label",
                             "if": "{{form_meta?.data?.board?.secret_mode === 'enabled'}}",
                             "props": {
-                                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
                                 {

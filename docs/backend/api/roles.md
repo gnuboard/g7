@@ -286,7 +286,7 @@ HTTP/1.1 201
 
 **설명**
 
-새 역할을 생성한다. `identifier` 는 소문자로 시작하는 영숫자·언더스코어 형식(`^[a-z][a-z0-9_]*$`)이어야 하고 전역 고유해야 한다. `name`·`description` 은 다국어 필드로, 문자열로 보내면 설정된 로케일 전체에 동일 값이 채워지고 객체(`{"ko":..., "en":...}`)로도 보낼 수 있다. `permissions` 는 `[{id, scope_type}]` 형식으로 부여할 권한과 각 권한의 적용 범위(scope_type: null=전체, role, self)를 지정한다. 검증 규칙은 `core.role.store_validation_rules` 필터 훅으로 확장이 확장할 수 있다. `core.permissions.create` 권한이 필요하며 성공 시 201 로 생성된 역할을 반환한다. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the role name field is required.").
+새 역할을 생성한다. `identifier` 는 소문자로 시작하는 영숫자·언더스코어 형식(`^[a-z][a-z0-9_]*$`)이어야 하고 전역 고유해야 한다. `name`·`description` 은 다국어 필드로, 문자열로 보내면 설정된 로케일 전체에 동일 값이 채워지고 객체(`{"ko":..., "en":...}`)로도 보낼 수 있다. `permissions` 는 `[{id, scope_type}]` 형식으로 부여할 권한과 각 권한의 적용 범위(scope_type: null=전체, role, self)를 지정한다. 검증 규칙은 `core.role.store_validation_rules` 필터 훅으로 확장이 확장할 수 있다. `core.permissions.create` 권한이 필요하며 성공 시 201 로 생성된 역할을 반환한다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the role name field is required.").
 
 
 ### GET /api/admin/roles/active
@@ -682,7 +682,7 @@ HTTP/1.1 200
 
 **설명**
 
-기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」).
+기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」).
 
 
 ### PATCH /api/admin/roles/{role}/toggle-status

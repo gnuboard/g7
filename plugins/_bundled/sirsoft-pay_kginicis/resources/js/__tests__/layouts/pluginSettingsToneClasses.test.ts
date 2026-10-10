@@ -190,7 +190,7 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
         expect(tokens(dnsLabel)).toContain(`${PREFIX}label-narrow`);
 
         for (const name of usedPrefixed.filter((c) => !c.startsWith(`${PREFIX}tone-`))) {
-            expect({ name, defined: new RegExp(`\\.${name}\\s*\\{`).test(cssSource) }).toEqual({ name, defined: true });
+            expect({ name, defined: new RegExp(`\\.${name}(:[a-z-]+)?\\s*\\{`).test(cssSource) }).toEqual({ name, defined: true });
         }
     });
 
@@ -220,7 +220,7 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
         expect(selectors.length).toBeGreaterThan(0);
         for (const group of selectors) {
             for (const sel of group.split(',').map((s) => s.trim())) {
-                expect(sel).toMatch(new RegExp(`^(\\.dark\\s+)?\\.${PREFIX}[a-z-]+$`));
+                expect(sel).toMatch(new RegExp(`^(\\.dark\\s+)?\\.${PREFIX}[a-z-]+(:(hover|focus|focus-within))?$`));
             }
         }
     });

@@ -54,6 +54,7 @@ axes:
 effects:
   # P4 업그레이드 데이터
   - upgrade_seeds_operator_refund_reasons_with_seeder_names_and_language_pack
+  - upgrade_fills_missing_reason_translations_from_bundled_language_pack
   - no_module_migration_inserts_claim_reason_rows
   - upgrade_step_and_fresh_install_seeder_produce_the_same_operator_reasons
   - claim_settings_merge_freezes_legacy_default_and_adds_auto_approve_keys

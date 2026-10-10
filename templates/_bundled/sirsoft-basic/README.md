@@ -89,7 +89,7 @@ flowchart LR
 |---|---|
 | 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-board` `>=1.0.0` |
+| 의존 모듈 | `sirsoft-board` `>=1.2.0` |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
 | 의존 모듈 | `sirsoft-page` `>=1.1.0` |
 | 의존 플러그인 | `sirsoft-daum_postcode` `>=1.0.0` |
@@ -170,7 +170,7 @@ php artisan template:update sirsoft-basic --force
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-board` | 모듈 | `>=1.0.0` | ✅ |
+| `sirsoft-board` | 모듈 | `>=1.2.0` | ✅ |
 | `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
 | `sirsoft-page` | 모듈 | `>=1.1.0` | ✅ |
 | `sirsoft-daum_postcode` | 플러그인 | `>=1.0.0` | ✅ |

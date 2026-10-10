@@ -117,7 +117,7 @@ class ExtensionUpdateLayoutSyncOutputTest extends TestCase
             case 'module':
                 $manager = Mockery::mock(ModuleManager::class, function (MockInterface $m) use ($identifier, $check, $result, $strategy, $modified) {
                     $m->shouldReceive('loadModules')->once();
-                    $m->shouldReceive('checkModuleUpdate')->with($identifier)->andReturn($check);
+                    $m->shouldReceive('checkModuleUpdate')->with($identifier, null)->andReturn($check);
                     $m->shouldReceive('hasModifiedLayouts')->with($identifier)->andReturn($modified);
                     $m->shouldReceive('updateModule')->once()
                         ->withArgs(fn (string $id, bool $force, $progress, VendorMode $vendor, string $layoutStrategy) => $id === $identifier && $layoutStrategy === $strategy)
@@ -130,7 +130,7 @@ class ExtensionUpdateLayoutSyncOutputTest extends TestCase
             case 'plugin':
                 $manager = Mockery::mock(PluginManager::class, function (MockInterface $m) use ($identifier, $check, $result, $strategy, $modified) {
                     $m->shouldReceive('loadPlugins')->once();
-                    $m->shouldReceive('checkPluginUpdate')->with($identifier)->andReturn($check);
+                    $m->shouldReceive('checkPluginUpdate')->with($identifier, null)->andReturn($check);
                     $m->shouldReceive('hasModifiedLayouts')->with($identifier)->andReturn($modified);
                     $m->shouldReceive('updatePlugin')->once()
                         ->withArgs(fn (string $id, bool $force, $progress, VendorMode $vendor, string $layoutStrategy) => $id === $identifier && $layoutStrategy === $strategy)
@@ -143,7 +143,7 @@ class ExtensionUpdateLayoutSyncOutputTest extends TestCase
             default:
                 $manager = Mockery::mock(TemplateManager::class, function (MockInterface $m) use ($identifier, $check, $result, $strategy, $modified) {
                     $m->shouldReceive('loadTemplates')->once();
-                    $m->shouldReceive('checkTemplateUpdate')->with($identifier)->andReturn($check);
+                    $m->shouldReceive('checkTemplateUpdate')->with($identifier, null)->andReturn($check);
                     $m->shouldReceive('hasModifiedLayouts')->with($identifier)->andReturn($modified);
                     $m->shouldReceive('updateTemplate')->once()
                         ->withArgs(fn (string $id, bool $force, $progress, string $layoutStrategy) => $id === $identifier && $layoutStrategy === $strategy)

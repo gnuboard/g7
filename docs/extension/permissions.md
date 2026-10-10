@@ -127,7 +127,7 @@ public function isAdmin(): bool
     [
         'identifier' => 'core.users',
         'category' => 'users',
-        'order' => 1,
+        'order' => 100,                             // ← 정수. 코어 카테고리는 100 단위
         'type' => 'admin',                          // ← 카테고리 타입 명시
         'permissions' => [
             ['identifier' => 'core.users.read', 'type' => 'admin', ...],   // ← 권한 타입 명시
@@ -137,7 +137,7 @@ public function isAdmin(): bool
     [
         'identifier' => 'core.user-notifications',
         'category' => 'user-notifications',
-        'order' => 7.6,
+        'order' => 760,
         'type' => 'user',                           // ← 사용자 컨텍스트 카테고리
         'permissions' => [
             ['identifier' => 'core.user-notifications.read', 'type' => 'user', ...],
@@ -148,6 +148,7 @@ public function isAdmin(): bool
 
 ```text
 ✅ 필수: 신규 코어 권한 정의 시 카테고리/개별 권한 모두에 `type` 명시 (가독성 + 의도 명확화)
+✅ 필수: `order` 는 정수 — 권한 행의 정렬 칸이 정수라 `7.65` 같은 소수는 반올림되어 이웃과 같은 순위가 됩니다. 코어 카테고리는 100 단위(100, 200, … 760)로 두어 사이에 새 카테고리를 끼울 자리를 남깁니다
 ✅ 카테고리 type은 (1) 명시 필드 (2) 하위 권한이 모두 동일 type일 때 추론 (3) admin 기본값 우선순위로 결정됨
 ✅ 권한 type 미지정 시 카테고리 type을 상속
 ```

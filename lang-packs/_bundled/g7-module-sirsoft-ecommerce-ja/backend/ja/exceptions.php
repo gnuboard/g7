@@ -132,7 +132,7 @@ return [
     'claim_refund_already_executed' => '既に返金が実行済みか実行中の申請です。再読み込みして状態を確認してください。',
     'claim_refund_exceeds_method_remaining' => ':method の返金額(:requested)がその手段の残高(:remaining)を超えています。金額を分けて再度お試しください。',
     'claim_refund_exceeds_cancellable' => '返金額(:requested)がキャンセル可能金額(:cancellable)を超えています。',
-    'claim_refund_points_requires_member' => '非会員注文にはマイレージ返金を指定できません。',
+    'claim_refund_points_requires_member' => '非会員注文には「マイレージで返金」を指定できません。',
     'mileage_refund_failed' => 'マイレージの返還・付与に失敗したため、返金を実行しませんでした。しばらくしてから再度お試しください。',
     'coupon_restore_failed' => 'クーポンの復元に失敗したため、処理を実行しませんでした。しばらくしてから再度お試しください。',
     'stock_restore_failed' => '在庫の復元に失敗したため、処理を実行しませんでした。しばらくしてから再度お試しください。',

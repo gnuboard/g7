@@ -25,7 +25,7 @@
     <div data-if="{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- 공지사항 카드 (게시판 관리 권한 또는 공지 등록 권한 보유자 전용 — 서버도 같은 권한으로 판정한다) -->
-        <label data-if="{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) &amp;&amp; !_local.form?.parent_id}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+        <label data-if="{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) &amp;&amp; !_local.form?.parent_id}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <div class="flex items-start gap-3">
             <input type="checkbox" name="is_notice" class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
             <div class="flex-1">
@@ -38,7 +38,7 @@
           </div>
         </label>
         <!-- 비밀글 카드 (enabled 모드) -->
-        <label data-if="{{form_meta?.data?.board?.secret_mode === 'enabled'}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+        <label data-if="{{form_meta?.data?.board?.secret_mode === 'enabled'}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <div class="flex items-start gap-3">
             <input type="checkbox" name="is_secret" class="mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
             <div class="flex-1">

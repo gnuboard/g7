@@ -341,7 +341,7 @@ class BoardService
     /**
      * 인기 게시글을 캐시와 함께 조회합니다.
      *
-     * 캐시 키에 locale을 포함하지 않습니다 (쿼리 결과는 locale에 무관).
+     * 캐시 키에 locale 을 포함합니다 — 게시판 이름·작성자 상태 문구가 언어별 값이다.
      *
      * @param  string  $period  기간 (today, week, month, year)
      * @param  int  $limit  조회 개수

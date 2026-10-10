@@ -90,7 +90,7 @@ permissions
         'name' => ['ko' => '사용자 관리', 'en' => 'User Management'],
         'description' => [...],
         'category' => 'users',     // 카테고리 슬러그
-        'order' => 1,
+        'order' => 100,            // 정수(소수는 반올림돼 동순위). 코어 카테고리는 100 단위로 두어 사이에 끼울 자리를 남김
         'type' => 'admin',         // 카테고리 타입 (선택, 미지정 시 하위 권한에서 추론)
         'permissions' => [
             [

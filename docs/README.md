@@ -11,8 +11,8 @@
 |----------|---------|----------|
 | [백엔드](backend/) | 40개 | 정상 |
 | [프론트엔드](frontend/) | 49개 | 정상 |
-| [확장 시스템](extension/) | 37개 | 정상 |
-| 공통 | 20개 | 정상 |
+| [확장 시스템](extension/) | 38개 | 정상 |
+| 공통 | 21개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -228,10 +228,11 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
 | [README.md](frontend/templates/README.md) | 템플릿별 컴포넌트·핸들러·레이아웃 문서 |
 
-### 확장 시스템 (37개)
+### 확장 시스템 (38개)
 
 | 문서 | 제목 |
 |------|------|
+| [admin-template-contract.md](extension/admin-template-contract.md) | 관리자 템플릿 교체 계약 |
 | [analytics-extension-points.md](extension/analytics-extension-points.md) | 방문자 통계 확장 기여 지점 |
 | [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
@@ -270,7 +271,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [upgrade-step-guide.md](extension/upgrade-step-guide.md) | 업그레이드 스텝 작성 가이드 (Upgrade Step Guide) |
 | [vendor-bundle.md](extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) |
 
-### 공통 (20개)
+### 공통 (21개)
 
 | 문서 | 제목 |
 |------|------|
@@ -294,6 +295,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [SECURITY.md](SECURITY.md) | 그누보드7 템플릿 엔진 보안 가이드 |
 | [testing-guide.md](testing-guide.md) | 그누보드7 테스트 가이드 |
 | [e2e-testing.md](testing/e2e-testing.md) | 그누보드7 Playwright E2E 테스트 가이드 |
+| [7.0.x-to-7.1.0.md](upgrade/7.0.x-to-7.1.0.md) | 7.0.x → 7.1.0 업그레이드 안내 |
 
 ### AI 도구
 

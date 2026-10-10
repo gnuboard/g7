@@ -16,6 +16,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 중단된 업데이트를 다시 실행해도 이미 만든 표에서 멈추지 않는다
+        if (Schema::hasTable('board_reactions')) {
+            return;
+        }
+
         Schema::create('board_reactions', function (Blueprint $table) {
             $table->id()->comment('반응 이력 ID');
             $table->unsignedBigInteger('user_id')->comment('반응한 사용자 ID');

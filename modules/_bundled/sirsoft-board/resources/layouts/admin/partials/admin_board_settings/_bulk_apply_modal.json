@@ -141,7 +141,7 @@
                                         "item_var": "sectionGroup"
                                     },
                                     "props": {
-                                        "className": "border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
+                                        "className": "border-b board-bulk-apply-group last:border-b-0"
                                     },
                                     "children": [
                                         {

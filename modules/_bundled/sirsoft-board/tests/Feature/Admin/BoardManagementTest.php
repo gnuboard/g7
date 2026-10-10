@@ -590,6 +590,27 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
+     * getFormData 생성 모드의 금지어는 환경설정 「게시판 기본 설정」(basic_defaults)의 금지어로 채워진다.
+     *
+     * 예전에는 금지어 칸이 없는 스팸·보안 설정(spam_security)에서 읽어 새 게시판 폼의 금지어가 늘 빈칸이었다(B-19).
+     *
+     * @effects form_data_create_mode_blocked_keywords_from_basic_defaults
+     *
+     * @return void 반환값 없음
+     */
+    public function test_get_form_data_create_mode_prefills_blocked_keywords_from_basic_defaults(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-board.basic_defaults.blocked_keywords', ['스팸', '광고']);
+        Config::set('g7_settings.modules.sirsoft-board.spam_security.blocked_keywords', ['다른값']);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data');
+
+        $response->assertStatus(200);
+        $this->assertSame(['스팸', '광고'], $response->json('data.blocked_keywords'));
+    }
+
+    /**
      * getFormData에 _meta (limits) 포함 테스트
      *
      * @scenario case=form_data_meta_limits

@@ -68,6 +68,28 @@ trait RendersLayoutSyncResult
     }
 
     /**
+     * 갱신한 확장이 요구하는 의존 확장이 없거나 꺼져 있거나 버전이 모자라면 건별 경고를 출력합니다.
+     *
+     * 갱신은 막지 않는다 — 운영자가 그 의존 확장도 함께 올리도록 알리는 것이 목적이다(7.1.0 출시 점검 Q-6).
+     *
+     * @param  mixed  $result  확장 업데이트 결과 (`dependency_warnings` — `{message}` 원소)
+     * @param  string  $indent  줄 앞 들여쓰기 (core:update 의 확장별 줄은 두 칸)
+     * @return void 반환값 없음
+     */
+    protected function renderDependencyWarnings(mixed $result, string $indent = ''): void
+    {
+        $warnings = is_array($result) ? ($result['dependency_warnings'] ?? []) : [];
+
+        if (! is_array($warnings)) {
+            return;
+        }
+
+        foreach ($warnings as $warning) {
+            $this->warn($indent.'⚠️  '.(is_array($warning) ? ($warning['message'] ?? '') : (string) $warning));
+        }
+    }
+
+    /**
      * 덮어쓰기 전략일 때 덮어쓰일 운영자 수정본(레이아웃 + 확장 조각)을 경고합니다.
      *
      * @param  array{modified_count?: int, modified_layouts?: list<array{name: string, updated_at?: string|null}>}  $modified  `hasModifiedLayouts()` 응답

@@ -24,7 +24,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-amber-50 dark:bg-gray-900 border border-amber-200 dark:border-gray-700 border-l-4 border-l-amber-500 dark:border-l-amber-400 rounded-lg p-3 flex-center gap-2"
+                        "className": "bg-amber-50 dark:bg-gray-900 border border-amber-200 dark:border-gray-700 border-l-4 gdpr-accent-warning rounded-lg p-3 flex-center gap-2"
                     },
                     "children": [
                         {

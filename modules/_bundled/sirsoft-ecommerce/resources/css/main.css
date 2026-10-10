@@ -1,8 +1,71 @@
 /**
- * sirsoft-ecommerce 모듈 스타일
+ * sirsoft-ecommerce 모듈 스타일 — 이 모듈 관리자 화면에만 있는 유틸리티
  *
- * 모듈 전용 CSS 스타일을 정의합니다.
- * 현재는 빈 파일이며, 필요 시 모듈 전용 스타일을 추가합니다.
+ * 관리자 템플릿은 자기 레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃(`resources/layouts/**`)에만 있는
+ * 유틸리티(`min-w-[16rem]`, `dark:bg-pink-900/20`, `disabled:opacity-30` 등)는 규칙이 생성되지 않아 화면에서 조용히
+ * 빠졌다(7.1.0 출시 점검 D3-4). 그런 유틸리티를 이 파일이 같은 이름으로 싣는다(docs/extension/module-assets.md
+ * 「확장 화면의 의미 색은 확장 CSS 가 싣는다」 — 확장 자기 CSS 에 둔다).
+ *
+ * - 규칙은 템플릿과 같은 `utilities` 레이어에 넣는다. 모듈 CSS 는 템플릿 CSS 뒤에 실리므로 Tailwind 가 만든 순서
+ *   (기본 → 반응형·상태 변형)가 그대로 유지되고, 같은 요소의 템플릿 변형(예: `dark:hover:bg-gray-800`)을 덮지 않는다.
+ *   레이어 순서 선언은 템플릿(Tailwind 4)과 같다 — 이 파일이 먼저 실리는 경우에도 순서가 뒤바뀌지 않게 한다.
+ * - 선택자 형태는 관리자 템플릿 빌드와 같다: 다크는 `.dark` 조상, `md:` 는 48rem 미디어 쿼리, 상태는 의사 클래스.
+ * - 색은 템플릿 테마 변수를 먼저 쓰고, 없으면 Tailwind 4 기본 팔레트(oklch) 값으로 떨어진다.
+ * - 새 레이아웃에서 템플릿 CSS 에 없는 유틸리티를 쓰면 여기에 더한다.
  */
 
-/* 모듈 전용 스타일은 여기에 추가 */
+@layer properties, theme, base, components, utilities;
+
+@layer utilities {
+    /* ── 크기 ─────────────────────────────────────────────────────── */
+    .aspect-\[3\/1\] { aspect-ratio: 3 / 1; } /* 메인 배너 미리보기·등록 */
+    .h-\[150px\] { height: 150px; } /* 상품 폼 분류 선택 목록 */
+    .h-\[180px\] { height: 180px; }
+    .max-h-\[calc\(100vh-200px\)\] { max-height: calc(100vh - 200px); } /* 공통정보 편집 패널 */
+    .min-h-\[100px\] { min-height: 100px; } /* 주문 상세 문자 발송 창 */
+    .min-w-20 { min-width: calc(var(--spacing, 0.25rem) * 20); } /* 처리 로그 표 */
+    .min-w-40 { min-width: calc(var(--spacing, 0.25rem) * 40); }
+    .min-w-64 { min-width: calc(var(--spacing, 0.25rem) * 64); } /* 목록 검색칸 */
+    .min-w-\[70px\] { min-width: 70px; } /* 상품 옵션 표 머리 */
+    .min-w-\[100px\] { min-width: 100px; }
+    .min-w-\[130px\] { min-width: 130px; } /* 개인결제 목록 */
+    .min-w-\[140px\] { min-width: 140px; }
+    .min-w-\[160px\] { min-width: 160px; }
+    .min-w-\[8rem\] { min-width: 8rem; } /* 클레임 일괄 처리 확인 창 */
+    .min-w-\[16rem\] { min-width: 16rem; } /* 클레임 상세·일괄 처리 사유 입력 */
+    .w-\[50px\] { width: 50px; } /* 배송정책 추가 배송비 */
+    .w-\[140px\] { width: 140px; }
+    .w-\[180px\] { width: 180px; }
+
+    /* ── 간격·배치 ───────────────────────────────────────────────── */
+    .p-px { padding: 1px; } /* 은행 관리 창 오류 테두리 */
+    .pl-9 { padding-left: calc(var(--spacing, 0.25rem) * 9); } /* 할인코드 생성 접두 아이콘 */
+    .justify-self-center { justify-self: center; } /* 주문 취소 창 */
+
+    /* ── 테두리·배경 ─────────────────────────────────────────────── */
+    .border-l-blue-500 { border-left-color: var(--color-blue-500, oklch(62.3% 0.214 259.815)); } /* 입금 수동 매칭 선택 행 */
+
+    /* ── 상태 변형 ───────────────────────────────────────────────── */
+    .hover\:bg-white\/30:hover { background-color: color-mix(in oklab, var(--color-white, #fff) 30%, transparent); } /* 배너 미리보기 화살표 */
+    .hover\:opacity-70:hover { opacity: 0.7; }
+    .hover\:opacity-80:hover { opacity: 0.8; } /* 리뷰 이미지 썸네일 */
+    .hover\:text-amber-700:hover { color: var(--color-amber-700, oklch(55.5% 0.163 48.998)); } /* 상품 폼 기타 정보 링크 */
+    .disabled\:opacity-20:disabled { opacity: 0.2; } /* 리뷰 이미지 미리보기 이전·다음 */
+    .disabled\:opacity-30:disabled { opacity: 0.3; } /* 마일리지 통화 행 이동·삭제 */
+
+    /* ── 다크 모드 ───────────────────────────────────────────────── */
+    .dark .dark\:bg-blue-900\/10 { background-color: color-mix(in oklab, var(--color-blue-900, oklch(37.9% 0.146 265.522)) 10%, transparent); }
+    .dark .dark\:bg-gray-700\/40 { background-color: color-mix(in oklab, var(--color-gray-700, oklch(37.3% 0.034 259.733)) 40%, transparent); }
+    .dark .dark\:bg-gray-900\/40 { background-color: color-mix(in oklab, var(--color-gray-900, oklch(21% 0.034 264.665)) 40%, transparent); }
+    .dark .dark\:bg-pink-900\/20 { background-color: color-mix(in oklab, var(--color-pink-900, oklch(40.8% 0.153 2.432)) 20%, transparent); }
+    .dark .dark\:border-gray-700\/50 { border-color: color-mix(in oklab, var(--color-gray-700, oklch(37.3% 0.034 259.733)) 50%, transparent); }
+    .dark .dark\:hover\:bg-pink-900\/30:hover { background-color: color-mix(in oklab, var(--color-pink-900, oklch(40.8% 0.153 2.432)) 30%, transparent); }
+    .dark .dark\:hover\:bg-red-900\/50:hover { background-color: color-mix(in oklab, var(--color-red-900, oklch(39.6% 0.141 25.723)) 50%, transparent); }
+
+    /* ── 반응형 ──────────────────────────────────────────────────── */
+    @media (min-width: 48rem) {
+        .md\:w-24 { width: calc(var(--spacing, 0.25rem) * 24); } /* 개인결제·결제 실패 이력 검색칸 */
+        .md\:w-28 { width: calc(var(--spacing, 0.25rem) * 28); }
+        .md\:w-36 { width: calc(var(--spacing, 0.25rem) * 36); }
+    }
+}

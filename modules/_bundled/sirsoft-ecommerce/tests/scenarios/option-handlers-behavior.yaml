@@ -1,0 +1,13 @@
+feature: 상품 옵션·추가옵션 처리기
+
+description: |
+  상품 폼 옵션 처리기(optionHandlers) 전반의 행 추가·삭제·추가옵션·필수목록 동작. 7.1.0 출시 점검 D3-1: 지원 언어 가짜를 코어 공개 API locale.supported() 모양으로 교체.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35]
+
+effects:
+  - option_handlers_behavior
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/optionHandlers.test.ts

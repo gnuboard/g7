@@ -335,6 +335,9 @@
 편집의 추가금(`updateOptionField` 의 `price_adjustment_formatted`)도 기본 통화로 이것을 씁니다 — 레이아웃 표현식에서
 원화를 이어 붙일 때는 `$t('sirsoft-ecommerce.currency.krw_prefix') + 금액 + $t('sirsoft-ecommerce.currency.krw_suffix')` 로 적습니다
 (배송정책 도서산간 템플릿 창의 대체 표기). 서버 `*_formatted` 와 같은 규칙이라 한 화면에서 「₩5,000」과 「5,000원」이 섞이지 않습니다.
+`currency.krw_prefix`·`currency.krw_suffix` 는 다른 확장도 읽는 **공유 키**입니다 — 번들 결제 플러그인(나이스페이먼츠)의 관리자 주문
+상세 조각이 원화 금액을 같은 방식으로 이어 붙입니다. 키 이름이나 「접두 + 금액 + 접미」 구성을 바꾸면 그 조각의 금액 표기가 깨지므로
+함께 고칩니다.
 
 환경설정 알림 탭의 템플릿 편집 창(`_modal_notification_template_edit`)은 코어 창의 사본입니다(게시판·수출입은행
 플러그인과 함께 네 벌). 수신자 규칙 종류를 바꾸면 새 종류의 빈 규칙으로 갈아 끼우고, 관련 사용자면 정의가 선언한
@@ -358,7 +361,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 226개 (정의: `resources/js/handlers/index.ts`).
+핸들러 218개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -384,7 +387,6 @@
 | `removeCategoryFromSelection` | `sirsoft-ecommerce.removeCategoryFromSelection` |
 | `getCategoryBreadcrumb` | `sirsoft-ecommerce.getCategoryBreadcrumb` |
 | `validateCategoryPath` | `sirsoft-ecommerce.validateCategoryPath` |
-| `initCategoryInfosFromProduct` | `sirsoft-ecommerce.initCategoryInfosFromProduct` |
 | `getBrandName` | `sirsoft-ecommerce.getBrandName` |
 | `getBrandDescription` | `sirsoft-ecommerce.getBrandDescription` |
 | `updatePrice` | `sirsoft-ecommerce.updatePrice` |
@@ -411,7 +413,6 @@
 | `updateMultilingualTagValue` | `sirsoft-ecommerce.updateMultilingualTagValue` |
 | `cancelMultilingualTag` | `sirsoft-ecommerce.cancelMultilingualTag` |
 | `saveMultilingualTag` | `sirsoft-ecommerce.saveMultilingualTag` |
-| `uploadImages` | `sirsoft-ecommerce.uploadImages` |
 | `setThumbnail` | `sirsoft-ecommerce.setThumbnail` |
 | `reorderImages` | `sirsoft-ecommerce.reorderImages` |
 | `updateDescription` | `sirsoft-ecommerce.updateDescription` |
@@ -439,8 +440,6 @@
 | `openLabelPeriodModal` | `sirsoft-ecommerce.openLabelPeriodModal` |
 | `saveLabelPeriod` | `sirsoft-ecommerce.saveLabelPeriod` |
 | `removeLabelPeriod` | `sirsoft-ecommerce.removeLabelPeriod` |
-| `updateActivityLogSort` | `sirsoft-ecommerce.updateActivityLogSort` |
-| `updateActivityLogPerPage` | `sirsoft-ecommerce.updateActivityLogPerPage` |
 | `setDefaultShippingPolicy` | `sirsoft-ecommerce.setDefaultShippingPolicy` |
 | `setLabelDatePreset` | `sirsoft-ecommerce.setLabelDatePreset` |
 | `toggleDefaultShippingPolicy` | `sirsoft-ecommerce.toggleDefaultShippingPolicy` |
@@ -462,11 +461,8 @@
 | `buildOrderColumns` | `sirsoft-ecommerce.buildOrderColumns` |
 | `toggleArrayValue` | `sirsoft-ecommerce.toggleArrayValue` |
 | `syncOrderSelection` | `sirsoft-ecommerce.syncOrderSelection` |
-| `handleOrderRowAction` | `sirsoft-ecommerce.handleOrderRowAction` |
-| `processOrderBulkAction` | `sirsoft-ecommerce.processOrderBulkAction` |
 | `buildOrderBulkConfirmData` | `sirsoft-ecommerce.buildOrderBulkConfirmData` |
 | `executeOrderBulkAction` | `sirsoft-ecommerce.executeOrderBulkAction` |
-| `downloadOrderExcel` | `sirsoft-ecommerce.downloadOrderExcel` |
 | `downloadFile` | `sirsoft-ecommerce.downloadFile` |
 | `saveVisibleColumns` | `sirsoft-ecommerce.saveVisibleColumns` |
 | `loadVisibleColumns` | `sirsoft-ecommerce.loadVisibleColumns` |
@@ -507,7 +503,6 @@
 | `openClaimRefundExecute` | `sirsoft-ecommerce.openClaimRefundExecute` |
 | `executeClaimRefund` | `sirsoft-ecommerce.executeClaimRefund` |
 | `formatRefundInputTotal` | `sirsoft-ecommerce.formatRefundInputTotal` |
-| `handleProductRowAction` | `sirsoft-ecommerce.handleProductRowAction` |
 | `initOrderDetailForm` | `sirsoft-ecommerce.initOrderDetailForm` |
 | `toggleProductSelection` | `sirsoft-ecommerce.toggleProductSelection` |
 | `toggleAllProducts` | `sirsoft-ecommerce.toggleAllProducts` |

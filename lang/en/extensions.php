@@ -27,6 +27,10 @@ return [
 
     'warnings' => [
         'auto_deactivated' => ':type ":identifier" has been automatically deactivated due to core version incompatibility.',
+        'dependency_version_unmet' => ':identifier :required is required, but :installed is installed',
+        'dependency_not_installed' => ':identifier :required is required, but it is not installed',
+        'dependency_inactive' => 'Extension :identifier is turned off (requires :required)',
+        'dependency_summary' => 'However, some dependencies do not meet the requirements — :list. Update or turn on those extensions as well.',
     ],
 
     'alerts' => [
@@ -72,6 +76,11 @@ return [
 
         // Shared option validation and ZIP notices for module:update / plugin:update / template:update
         'update' => [
+            'failure_outcome' => [
+                'restore_failed' => 'Could not roll back to the previous version — files may be mixed. Check the log and run the same command again.',
+                'kept_new' => 'The update failed in its final stage; the new version files and version record remain. Fix the cause and run the same command again.',
+                'unchanged' => 'The update failed before any files were replaced; nothing was changed.',
+            ],
             'invalid_layout_strategy' => '--layout-strategy must be either overwrite or keep.',
             'invalid_source' => '--source must be one of auto, bundled, github.',
             'zip_source_conflict' => '--zip cannot be used together with --source.',
@@ -120,6 +129,7 @@ return [
             'search_index_result' => 'Search index: :summary',
             'manifest_required' => 'The --manifest option is required and must point to an existing file.',
             'manifest_parse_failed' => 'Failed to parse manifest JSON: :path',
+            'lang_pack_phase_in_process' => 'Could not run the language pack phase in a separate process; continuing in this process — if extension data translations are empty afterwards, run php artisan language-pack:update <pack> --force.',
         ],
     ],
 

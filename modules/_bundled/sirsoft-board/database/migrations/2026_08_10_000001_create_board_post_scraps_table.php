@@ -18,6 +18,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 중단된 업데이트를 다시 실행해도 이미 만든 표에서 멈추지 않는다
+        if (Schema::hasTable('board_post_scraps')) {
+            return;
+        }
+
         Schema::create('board_post_scraps', function (Blueprint $table) {
             $table->id()->comment('스크랩 ID');
             $table->unsignedBigInteger('user_id')->comment('스크랩한 회원 ID');

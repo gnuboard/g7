@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\File;
  * 분기 기준이 이 값인데, 기본값으로 새로 깔면 운영자가 좁혀 둔 취소 가능 상태가
  * 조용히 넓어져 그동안 취소를 막아 온 상태에서 취소가 열린다.
  *
+ * 실효 구조: 런타임은 `claim.instant_cancel_statuses` 를 늘 `order_settings.cancellable_statuses` 의
+ * 별칭으로 읽는다(EcommerceSettingsService). 그래서 claim 쪽 사본만 적으면 보호가 되지 않는다 — 저장본
+ * `order_settings.json` 에 그 키가 없는 사이트는 1.3.0 기본값(미결제 2종 포함)으로 넓어진다. 같은 1.2.x 값을
+ * `order_settings.cancellable_statuses` 에도 없을 때만 적어 실제 판정값을 고정한다(7.1.0 출시 점검 EU-3).
+ *
  * 기존 설정이 이미 존재하면 덮어쓰지 않는다(SettingsMigrator addField/addCategory 보장).
  *
  * ## 값은 이 버전에 동결한다
@@ -29,12 +34,14 @@ use Illuminate\Support\Facades\File;
  * 같은 방식으로 없는 키만 채운다.
  *
  * 1.3.0 이 새로 도입한 자동 승인 3키(`auto_approve_refund_statuses` ·
- * `auto_approve_refund_payment_methods` · `auto_approve_refund_payment_methods_decided`)도 함께
- * 넣는다 — 빠지면 저장본만 보는 도구(백업·이관)가 이 세 값을 모른 채 남는다.
+ * `auto_approve_refund_payment_methods` · `auto_approve_refund_payment_methods_decided`)도 claim 카테고리
+ * 기본값 한 벌로 함께 넣는다. 동작상 필수는 아니다 — 런타임은 저장본에 없는 키를 defaults.json 으로 채운다.
+ * 같은 이유로 claim 밖의 새 항목(`privacy_retention` 카테고리, `language_currency.rate_provider`)은 넣지 않는다
+ * (기본값 병합으로 동작하고, 운영자가 저장하면 그때 파일에 적힌다).
  *
  * idempotent: 이미 병합된 사이트는 적용 대상이 없어 no-op.
  * V-1 안전: SettingsMigrator·File 은 1.3.0 이전 코어에도 존재하는 헬퍼다. 저장 경로는
- * `ExtensionStoragePath`(코어 7.0.10 — 이 버전의 최소 요구 코어)가 해석한다 — 직접 조립하면
+ * `ExtensionStoragePath`(코어 7.0.10 부터 존재 — 이 버전의 최소 요구 코어는 7.1.0)가 해석한다 — 직접 조립하면
  * 디스크 root 가 바뀐 환경·테스트 환경에서 운영 설정 파일을 가리킨다.
  */
 class MergeClaimSettingsDefaults implements DataMigration
@@ -105,6 +112,8 @@ class MergeClaimSettingsDefaults implements DataMigration
             ])
             // 카테고리가 이미 있는 사이트(부분 적용 후 재실행 등)를 위해 개별 필드도 보강한다.
             ->addField('claim.instant_cancel_statuses', $instantCancelStatuses)
+            // 런타임 판정값은 order_settings 쪽이다(별칭) — 저장본에 키가 없으면 같은 값으로 고정한다(EU-3).
+            ->addField('order_settings.cancellable_statuses', $instantCancelStatuses)
             // 선교환 2키(D1·D2)도 없는 키만 채운다 — 카테고리가 이미 있는 사이트는 addCategory 가 건너뛴다.
             ->addField('claim.advance_exchange_enabled', false)
             ->addField('claim.advance_exchange_collection_due_days', 14);

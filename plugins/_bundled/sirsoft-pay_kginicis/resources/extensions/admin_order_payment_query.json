@@ -117,7 +117,7 @@
                                     "name": "Span",
                                     "if": "{{kginicis_cbt_reconciliation.data?.status === 'manual_refund_required'}}",
                                     "props": {
-                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40 text-danger-soft"
+                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40 pay-kginicis-tone-danger-strong"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_manual_badge"
                                 },
@@ -126,7 +126,7 @@
                                     "name": "Span",
                                     "if": "{{kginicis_cbt_reconciliation.data?.status === 'auto_refunded'}}",
                                     "props": {
-                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/40 text-success-soft"
+                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/40 pay-kginicis-tone-success-strong"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refunded_badge"
                                 }
@@ -437,7 +437,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-danger-soft leading-relaxed"
+                                "className": "text-xs pay-kginicis-tone-info-strong leading-relaxed"
                             },
                             "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_ops_description"
                         },
@@ -582,7 +582,7 @@
                                     "name": "Div",
                                     "if": "{{(kginicis_cbt_cvs.data?.notify_history ?? []).length === 0}}",
                                     "props": {
-                                        "className": "text-danger-soft"
+                                        "className": "text-xs pay-kginicis-tone-info"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_history_empty"
                                 },
@@ -618,7 +618,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-danger-soft"
+                                                        "className": "font-semibold pay-kginicis-tone-info-strong"
                                                     },
                                                     "text": "{{notify.result ?? '-'}}"
                                                 },
@@ -1839,7 +1839,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-danger-soft font-mono font-semibold"
+                                                                        "className": "pay-kginicis-tone-danger font-mono font-semibold"
                                                                     },
                                                                     "text": "{{(_local._kginicisResult ?? kginicis_status.data)?._cancel_price ?? '-'}}"
                                                                 },
@@ -1968,7 +1968,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Td",
                                                                                             "props": {
-                                                                                                "className": "px-2 py-1.5 text-danger-soft font-mono"
+                                                                                                "className": "px-2 py-1.5 pay-kginicis-tone-danger font-mono"
                                                                                             },
                                                                                             "text": "{{pcItem.price ?? '-'}}"
                                                                                         },

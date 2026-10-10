@@ -260,8 +260,8 @@
 | `sirsoft-ecommerce.inquiry.delete_reply` | filter | — | `src/Services/ProductInquiryService.php:563` |
 | `sirsoft-ecommerce.inquiry.get_by_ids` | filter | — | `src/Services/ProductInquiryService.php:203` 외 1곳 |
 | `sirsoft-ecommerce.inquiry.get_settings` | filter | — | `src/Listeners/ProductInquiryBoardListener.php:279` 외 3곳 |
-| `sirsoft-ecommerce.inquiry.purge_sample_posts` | filter | — | `database/seeders/Sample/ProductInquirySeeder.php:183` |
-| `sirsoft-ecommerce.inquiry.seed_sample_post` | filter | — | `database/seeders/Sample/ProductInquirySeeder.php:232` |
+| `sirsoft-ecommerce.inquiry.purge_sample_posts` | filter | — | `database/seeders/Sample/Concerns/PurgesProductInquiries.php:39` |
+| `sirsoft-ecommerce.inquiry.seed_sample_post` | filter | — | `database/seeders/Sample/ProductInquirySeeder.php:237` |
 | `sirsoft-ecommerce.inquiry.store_validation_messages` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:60` |
 | `sirsoft-ecommerce.inquiry.store_validation_rules` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:44` |
 | `sirsoft-ecommerce.inquiry.update` | filter | — | `src/Services/ProductInquiryService.php:439` |
@@ -826,8 +826,8 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 
 | 샘플 시더 훅 | 인자 | 기대 반환 |
 |---|---|---|
-| `inquiry.seed_sample_post` | `(null, string $slug, array $question, ?array $reply)` — question: title·content·user_id·author_name·password(평문)·is_secret·created_at / reply: content·user_id·created_at | `['post_id' => int, 'inquirable_type' => string]` (`inquiry.create` 와 같은 모양) |
-| `inquiry.purge_sample_posts` | `(0, string $slug, array<string, int[]> $inquirables)` — 피벗에 기록된 타입별 글 ID 묶음 | 영구 삭제한 글 수 |
+| `inquiry.seed_sample_post` | `(null, string $slug, array $question, ?array $reply)` — question: title·content·user_id·author_name·password(평문)·is_secret·created_at / reply: content·user_id·created_at | `['post_id' => int, 'inquirable_type' => string]` (`inquiry.create` 와 같은 모양) · 생성 뒤 게시판 글 수와 질문의 답변 수를 다시 센다 |
+| `inquiry.purge_sample_posts` | `(0, string $slug, array<string, int[]> $inquirables)` — 피벗에 기록된 타입별 글 ID 묶음 | 영구 삭제한 글 수 — 넘겨받은 게시판 글 타입의 글과 그 글의 답변만(같은 게시판 안). 그 글들의 댓글·첨부(저장소 파일 포함)·반응·스크랩도 지우고 게시판 글·댓글 수를 다시 센다. 운영자가 실제 문의에 단 답변은 남는다 |
 
 **비회원 주문 알림의 수신 전화번호**: 주문 알림 6종(`order_confirmed`·`order_pending_deposit`·`order_shipped`·
 `order_delivered`·`order_completed`·`order_cancelled`)은 비회원 주문이면 주문자 연락처를 extract_data 의

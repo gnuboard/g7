@@ -709,7 +709,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-transparent"
+                                                            "className": "flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-nhnkcp-focus-group"
                                                         },
                                                         "children": [
                                                             {
@@ -1490,7 +1490,7 @@
                                                     "href": "https://partner.kcp.co.kr/",
                                                     "target": "_blank",
                                                     "rel": "noopener noreferrer",
-                                                    "className": "mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 hover:text-amber-950 dark:text-amber-200 dark:hover:text-amber-100"
+                                                    "className": "mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 pay-nhnkcp-link-warning"
                                                 },
                                                 "children": [
                                                     {

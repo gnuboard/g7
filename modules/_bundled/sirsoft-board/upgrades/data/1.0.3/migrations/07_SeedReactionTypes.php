@@ -10,11 +10,15 @@ use Illuminate\Support\Facades\Schema;
 /**
  * 게시판 반응 유형(추천/비추천) 기본 데이터를 백필합니다.
  *
- * 반응 유형은 관리자 CRUD 화면이 없어 BoardReactionTypeSeeder 가 유일한 등록 경로인데,
- * 시더는 module:install 에서만 자동 실행되고 module:update 경로에서는 실행되지 않는다.
- * 따라서 반응 기능(1.0.3) 이전에 이미 설치된 사이트가 업데이트만 받으면 board_reaction_types
+ * 기본 반응 유형은 BoardReactionTypeSeeder 가 만드는데, 시더는 module:install 에서만 자동 실행되고
+ * module:update 경로에서는 실행되지 않는다(관리자 반응 유형 편집 화면에서 유형을 추가할 수는 있지만
+ * 기본 유형인 추천·비추천을 대신 만들어 주지는 않는다).
+ * 따라서 반응 기능 이전에 이미 설치된 사이트가 업데이트만 받으면 board_reaction_types
  * 테이블이 비어 관리 화면의 "사용할 반응 유형" 목록이 아무것도 표시되지 않는다. 이 스텝이
  * 업그레이드 시 기본 유형(추천·비추천)을 채워 그 공백을 메운다.
+ *
+ * 이 스텝은 1.0.3 미만에서 출발할 때만 선택된다. 1.0.3 이상(예: 1.1.2)에서 출발하는 사이트는
+ * 같은 일을 하는 1.2.0 스텝(data/1.2.0/migrations/06_SeedReactionTypes.php)이 맡는다.
  *
  * idempotent: code 로 존재를 확인해 없는 유형만 삽입한다. 이미 있으면(신규 설치 시더가 넣었거나
  * 운영자가 편집했으면) 건드리지 않아 사용자 수정(user_overrides)과 활성 상태를 보존한다.
@@ -42,7 +46,7 @@ class SeedReactionTypes implements DataMigration
         ],
         [
             'code' => 'dislike',
-            'name' => ['ko' => '비추천', 'en' => 'Not Recommend', 'ja' => 'ひどい'],
+            'name' => ['ko' => '비추천', 'en' => 'Not Recommend', 'ja' => 'よくない'],
             'icon' => 'fas fa-thumbs-down',
             'display_order' => 2,
         ],

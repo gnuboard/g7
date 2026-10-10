@@ -1,0 +1,24 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   row × super_admin 조합은 두 테스트가 한 픽스처 안에서 함께 덮는다(행 3종을 한 번에 넣고 최고관리자 유무만 바꾼다).
+feature: 1.3.0 업그레이드 — 1.2.1 운영자 택배사·배송유형·클레임 사유에 생성자 표식
+
+description: |
+  1.3.0 시더는 시드 목록에서 빠진 미사용 행을 정리하되 운영자 행을 남기려고 범위를 `created_by IS NULL` 로 좁혔다.
+  1.2.1 관리자 화면은 created_by 를 채우지 않아 그 시절 운영자 행도 NULL 이라, 업그레이드 뒤 재시드 때 지워질 수 있었다
+  (7.1.0 출시 점검 EU-2). 업그레이드 스텝이 역대 시더 코드 밖의 NULL 행에 최고관리자를 생성자로 채운다.
+
+axes:
+  row:
+    - seed_code_null        # 시더 코드, 생성자 없음 → 그대로(정리 대상 유지)
+    - operator_code_null    # 시더에 없던 코드, 생성자 없음 → 최고관리자 표식
+    - operator_code_owned   # 이미 생성자 있음 → 그대로
+  super_admin: [present, absent]
+
+effects:
+  - legacy_operator_catalog_rows_marked
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/MarkLegacyOperatorCatalogRowsTest.php
+
+validation:
+  browser_check: 1.2.1 에서 택배사 「동네 퀵」을 만들어 두고 7.1.0 일괄 업데이트 → ja 언어팩 활성화(재시드) 뒤에도 환경설정 > 배송 > 택배사 목록에 「동네 퀵」이 남는다

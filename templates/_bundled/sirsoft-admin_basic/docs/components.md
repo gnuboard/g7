@@ -483,6 +483,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 > 인자 없이 감싸 호출한다.
 > 회귀 테스트: `src/components/composite/__tests__/ExtensionCardGrid.test.tsx`,
 > `__tests__/layouts/admin-extension-list-action-gates.test.tsx`.
+>
+> **`CardGrid` 카드 메뉴의 액션 이름 onClick**
+>
+> 카드 셀의 `ActionMenu` 가 `actions` 배열을 두고 항목을 `"onClick": "<액션 id>"` 로 가리키면, 격자가 그 항목을 함수로
+> 바꿔 코어 공개 API `G7Core.dispatch(액션, { componentContext: { data: { row, $value, index } } })` 로 실행한다 — 액션
+> 안의 `{{row.…}}` 는 그 카드의 행으로 풀린다. 행 컨텍스트에는 `_global` 이 없으므로 전역 값이 필요한 액션은 이벤트
+> 방식(`"event": "onItemClick"` + `switch`)을 쓴다. 종전에는 코어에 없는 멤버를 찾아 조용히 건너뛰었다(7.1.0 에서 수정).
+> 회귀 테스트: `src/components/composite/__tests__/CardGrid.actionDispatch.test.tsx`.
 | `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, isHtml, purifyConfig, text |
 
 #### 폼/입력

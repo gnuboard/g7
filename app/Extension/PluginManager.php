@@ -2,6 +2,7 @@
 
 namespace App\Extension;
 
+use App\Exceptions\ExtensionUpdateFailedException;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
@@ -24,7 +25,9 @@ use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
 use App\Extension\Helpers\DependencyEnricher;
+use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionRollbackCacheRepair;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
@@ -735,6 +738,11 @@ class PluginManager implements PluginManagerInterface
             // 방금 활성으로 바뀐 이 플러그인이 목록에서 빠진 채 라우트가 박제되고,
             // 라우트 캐시에는 스캔 폴백이 없어 오류·경고 없이 그 엔드포인트만 404 가 된다.
             self::invalidatePluginStatusCache();
+
+            // 관리자 메뉴를 언어팩 번역 필터를 거쳐 다시 동기화한다 — 플러그인 자신의 activate() 가 필터 없이 메뉴를
+            // 동기화하면(예: 첨부 이미지 관리) 재활성화 때 언어팩 메뉴 이름(일본어 등)이 ko/en 으로 돌아간다. 멱등 upsert 이고
+            // 운영자가 고친 칸(user_overrides)은 보존된다.
+            $this->createPluginMenus($plugin);
 
             // soft deleted된 플러그인 레이아웃 복원 (재활성화 시)
             $this->restorePluginLayouts($plugin->getIdentifier());
@@ -4081,20 +4089,24 @@ class PluginManager implements PluginManagerInterface
     /**
      * 단일 플러그인의 업데이트 가능 여부를 확인합니다.
      *
-     * 일반 업데이트 우선순위 (GitHub 엄격 우선):
-     *   1. GitHub URL 존재 + API 조회 성공 → GitHub 결과만 신뢰
-     *      a. GitHub 버전 > 현재 → 'github' 소스 반환
-     *      b. GitHub 버전 ≤ 현재 → "업데이트 없음" 즉시 반환 (bundled 폴백 없음)
-     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망)
+     * 일반 업데이트 우선순위:
+     *   1. GitHub URL 존재 + API 조회 성공
+     *      a. 소스 미지정이고 번들 판이 GitHub 최신·현재보다 높음 → 'bundled' 소스 반환 (코어와 함께 배포된 번들이 호환 기준 —
+     *         확장 공개 릴리스가 코어 출시보다 늦을 때 「업데이트 없음」으로 끝나던 문제)
+     *      b. GitHub 버전 > 현재 → 'github' 소스 반환
+     *      c. 그 밖 → "업데이트 없음"
+     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망, `github` 지정이면 폴백하지 않음)
+     *   `bundled` 지정이면 GitHub 를 보지 않고 번들만 비교한다 (CLI `--source`).
      *
      * --force 업데이트 우선순위는 resolveForceUpdateSource() 참조 (번들 우선).
      *
      * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
      * @param  string  $identifier  플러그인 식별자
+     * @param  string|null  $source  소스 지정 (`bundled`·`github`, null 이면 자동 — GitHub·번들 중 높은 버전)
      * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null} 업데이트 확인 결과
      */
-    public function checkPluginUpdate(string $identifier): array
+    public function checkPluginUpdate(string $identifier, ?string $source = null): array
     {
         $record = $this->pluginRepository->findByIdentifier($identifier);
         if (! $record) {
@@ -4106,8 +4118,8 @@ class PluginManager implements PluginManagerInterface
         // 활성 manifest 의 g7_version (github 경로 베스트 이펙트 + 폴백)
         $activeRequiredCoreVersion = $plugin ? $plugin->getRequiredCoreVersion() : null;
 
-        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
-        if ($plugin && $plugin->getGithubUrl()) {
+        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (번들 지정이면 건너뜀)
+        if ($source !== 'bundled' && $plugin && $plugin->getGithubUrl()) {
             try {
                 $latestVersion = $this->fetchLatestVersion($plugin);
             } catch (\Throwable $e) {
@@ -4120,7 +4132,16 @@ class PluginManager implements PluginManagerInterface
             }
 
             if ($latestVersion !== null) {
-                // GitHub 조회 성공 → GitHub 결과만 신뢰 (bundled 폴백 없음)
+                // 소스를 지정하지 않았으면 코어와 함께 배포된 번들이 공개 최신보다 새 판일 때 번들을 후보로 본다 — 확장 공개
+                // 릴리스가 코어 출시보다 늦으면 GitHub 결과만 믿어 「업데이트 없음」으로 끝났다(W3 실측: 번들 1.1.0, 공개 1.0.4).
+                $bundled = $source === null ? $this->bundledPluginUpdateCandidate($identifier, $activeRequiredCoreVersion) : null;
+                if ($bundled !== null
+                    && version_compare($bundled['version'], $latestVersion, '>')
+                    && version_compare($bundled['version'], $currentVersion, '>')) {
+                    return $this->buildPluginUpdateResponse(true, 'bundled', $bundled['version'], $currentVersion, $bundled['required']);
+                }
+
+                // GitHub 조회 성공 → GitHub 결과 기준 (위에서 더 높은 번들 판은 이미 후보로 돌려줬다)
                 // GitHub 경로는 release manifest 미다운로드 → 현재 활성 manifest 의 g7_version 으로
                 // 베스트 이펙트 호환성 판정. 정확한 판정은 staging 단계 (A.1) 에서 수행됨.
                 if (version_compare($latestVersion, $currentVersion, '>')) {
@@ -4146,6 +4167,11 @@ class PluginManager implements PluginManagerInterface
             Log::info('플러그인 업데이트 확인: GitHub 조회 실패로 bundled 폴백', [
                 'plugin' => $identifier,
             ]);
+        }
+
+        // github 지정 — 번들로 폴백하지 않는다(문서: GitHub 단독).
+        if ($source === 'github') {
+            return $this->buildPluginUpdateResponse(false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion);
         }
 
         // 2. _bundled에서 업데이트 확인 (GitHub URL 없음 OR GitHub 조회 실패)
@@ -4186,6 +4212,26 @@ class PluginManager implements PluginManagerInterface
             $currentVersion,
             $activeRequiredCoreVersion
         );
+    }
+
+    /**
+     * 번들(`_bundled`) 판 플러그인의 버전과 코어 요구 버전을 돌려줍니다 — 번들에 없으면 null.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @param  string|null  $activeRequiredCoreVersion  설치본의 코어 요구 버전 (번들 manifest 에 없을 때의 폴백)
+     * @return array{version: string, required: string|null}|null 번들 후보
+     */
+    private function bundledPluginUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
+    {
+        $meta = $this->bundledPlugins[$identifier]
+            ?? (ExtensionPendingHelper::loadBundledExtensions($this->pluginsPath, 'plugin.json')[$identifier] ?? null);
+        $version = is_array($meta) ? ($meta['version'] ?? null) : null;
+
+        if (! is_string($version) || $version === '') {
+            return null;
+        }
+
+        return ['version' => $version, 'required' => $this->resolveUpdateTargetRequiredCoreVersion('bundled', $meta, $activeRequiredCoreVersion)];
     }
 
     /**
@@ -4788,7 +4834,7 @@ class PluginManager implements PluginManagerInterface
 
             // 훅 발행: 플러그인 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
             // @deprecated 'core.plugins.updated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_update.
-            //   번들 결제 플러그인(RestoreLayoutExtensionsAfterUpdateListener)·사외 확장이 구독한다.
+            //   번들 확장은 구독하지 않는다. 이 훅을 아직 구독하는 외부 확장 호환을 위해서만 남긴다.
             HookManager::doAction('core.plugins.updated', $identifier);
 
             Log::info('플러그인 업데이트 완료', [
@@ -4798,6 +4844,14 @@ class PluginManager implements PluginManagerInterface
                 'source' => $updateSource,
             ]);
 
+            // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
+            // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.
+            $dependencyWarnings = DependencyVersionWarnings::afterUpdate(
+                'plugin',
+                $identifier,
+                $this->pluginsPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'plugin.json'
+            );
+
             $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
@@ -4805,10 +4859,11 @@ class PluginManager implements PluginManagerInterface
                 'layout_strategy' => $layoutStrategy,
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
-                'message' => __('plugins.update_success', [
+                'dependency_warnings' => $dependencyWarnings,
+                'message' => DependencyVersionWarnings::appendToMessage(__('plugins.update_success', [
                     'plugin' => $identifier,
                     'version' => $toVersion,
-                ]),
+                ]), $dependencyWarnings),
             ];
         } catch (\Throwable $e) {
             // 실패 시: 백업 복원 + 상태 복원
@@ -4816,6 +4871,9 @@ class PluginManager implements PluginManagerInterface
                 'plugin' => $identifier,
                 'error' => $e->getMessage(),
             ]);
+
+            // 실패 시점에 되돌릴 백업이 있었는지 — 백업을 지운 뒤(마무리 단계) 실패면 새 판이 남는다. 실패 안내가 실제 결과를 말하게 한다.
+            $hadBackup = $backupPath !== null;
 
             if ($backupPath) {
                 try {
@@ -4849,12 +4907,18 @@ class PluginManager implements PluginManagerInterface
             // 캐시 TTL(기본 하루) 동안 이 플러그인의 화면이 계속 404 로 남는다.
             self::invalidatePluginStatusCache();
 
-            throw new \RuntimeException(
+            // 업데이트 도중 새 판 기준으로 다시 만든 훅 캐시·확장 autoload 를 지금 디스크(되돌린 판) 기준으로 맞춘다 — 남겨 두면 되돌린
+            // 판에 없는 리스너를 부팅 때 불러 사이트 전체가 500 이 된다(W3 리허설). 새 프로세스로 굽고, 못 띄우면 훅 캐시를 지운다.
+            ExtensionRollbackCacheRepair::rebuild($this->extensionManager);
+
+            throw ExtensionUpdateFailedException::fromFailure(
                 __('plugins.errors.update_failed', [
                     'plugin' => $identifier,
                     'error' => $e->getMessage(),
                 ]),
-                0,
+                $filesRestored,
+                $hadBackup,
+                $recordedColumns !== [],
                 $e
             );
         }

@@ -7,7 +7,7 @@
 2. lang-packs/_bundled/ 패키지(ja, fr 등)는 비보호 — 사용자가 install/uninstall/update/activate/deactivate 자유
 3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약). 설치는 호스트가 설치돼 있으면 꺼져 있어도 허용(꺼진 채 설치)
 4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의. 호스트가 꺼진 동안 켜 달라는 요청으로 설치된 팩은 호스트를 켤 때 함께 켜짐
-5. 업데이트 우선순위: GitHub 1순위 + bundled 폴백 (force 시 bundled 우선) — 모듈/플러그인 패턴 동일
+5. 업데이트 출처: GitHub 공개 최신과 bundled 판 중 높은 버전(같으면 GitHub), 실제 업데이트도 확인이 고른 출처에서 받음. --force·--source=bundled 는 bundled — 모듈·플러그인·템플릿과 같은 규칙
 ```
 
 ## 개요
@@ -444,24 +444,35 @@ wrap 이 필요한 이유: TemplateService 가 모듈/플러그인 자체 ko 데
 
 ## 공식 일본어 번들 언어팩 (g7-*-ja)
 
-G7 는 일본어 번들 언어팩 12종을 공식 제공합니다. ko 원본을 LLM 으로 자동 번역하여 빌드된 산출물이며, 사용자 환경에서는 일반 번들 확장과 동일하게 `language-pack:install --source=bundled` 로 설치합니다.
+G7 는 일본어 번들 언어팩 23종을 공식 제공합니다. ko 원본을 LLM 으로 자동 번역하여 빌드된 산출물이며, 사용자 환경에서는 일반 번들 확장과 동일하게 `language-pack:install --source=bundled` 로 설치합니다.
 
 ### 패키지 구성
 
 | scope | 식별자 | target_identifier |
 |---|---|---|
 | core | `g7-core-ja` | (null) |
-| template | `g7-template-sirsoft-admin_basic-ja` | sirsoft-admin_basic |
-| template | `g7-template-sirsoft-basic-ja` | sirsoft-basic |
 | template | `g7-template-gnuboard7-hello_admin_template-ja` | gnuboard7-hello_admin_template |
 | template | `g7-template-gnuboard7-hello_user_template-ja` | gnuboard7-hello_user_template |
-| module | `g7-module-sirsoft-ecommerce-ja` | sirsoft-ecommerce |
-| module | `g7-module-sirsoft-board-ja` | sirsoft-board |
-| module | `g7-module-sirsoft-page-ja` | sirsoft-page |
+| template | `g7-template-sirsoft-admin_basic-ja` | sirsoft-admin_basic |
+| template | `g7-template-sirsoft-basic-ja` | sirsoft-basic |
 | module | `g7-module-gnuboard7-hello_module-ja` | gnuboard7-hello_module |
+| module | `g7-module-sirsoft-board-ja` | sirsoft-board |
+| module | `g7-module-sirsoft-ecommerce-ja` | sirsoft-ecommerce |
+| module | `g7-module-sirsoft-page-ja` | sirsoft-page |
+| plugin | `g7-plugin-gnuboard7-hello_plugin-ja` | gnuboard7-hello_plugin |
 | plugin | `g7-plugin-sirsoft-ckeditor5-ja` | sirsoft-ckeditor5 |
+| plugin | `g7-plugin-sirsoft-daum_postcode-ja` | sirsoft-daum_postcode |
+| plugin | `g7-plugin-sirsoft-gdpr-ja` | sirsoft-gdpr |
+| plugin | `g7-plugin-sirsoft-koreaexim-ja` | sirsoft-koreaexim |
 | plugin | `g7-plugin-sirsoft-marketing-ja` | sirsoft-marketing |
+| plugin | `g7-plugin-sirsoft-message_bizppurio-ja` | sirsoft-message_bizppurio |
+| plugin | `g7-plugin-sirsoft-pay_kginicis-ja` | sirsoft-pay_kginicis |
+| plugin | `g7-plugin-sirsoft-pay_nhnkcp-ja` | sirsoft-pay_nhnkcp |
+| plugin | `g7-plugin-sirsoft-pay_nicepayments-ja` | sirsoft-pay_nicepayments |
 | plugin | `g7-plugin-sirsoft-tosspayments-ja` | sirsoft-tosspayments |
+| plugin | `g7-plugin-sirsoft-totp-ja` | sirsoft-totp |
+| plugin | `g7-plugin-sirsoft-verification_kginicis-ja` | sirsoft-verification_kginicis |
+| plugin | `g7-plugin-sirsoft-verification_nhnkcp-ja` | sirsoft-verification_nhnkcp |
 
 ### 입력 → 산출 매핑
 
@@ -473,6 +484,7 @@ G7 는 일본어 번들 언어팩 12종을 공식 제공합니다. ko 원본을 
 | `g7-module-{mod}-ja` | `modules/_bundled/{mod}/{src,resources}/lang/ko/*.php` + `resources/lang/ko.json` + `resources/lang/partial/ko/**/*.json` (재귀) | `backend/ja/*.php` + `frontend/ja.json` + `frontend/partial/**/*.json` |
 | `g7-module-sirsoft-ecommerce-ja` seed | `ShippingTypeSeeder`, `ClaimReasonSeeder`, `EcommerceNotificationDefinitionSeeder` ko 추출 | `seed/{shipping_types,claim_reasons,notifications}.json` |
 | `g7-module-sirsoft-board-ja` seed | `BoardTypeSeeder::DEFAULT_BOARD_TYPES` 상수 추출 | `seed/board_types.json` |
+| `g7-module-sirsoft-page-ja` seed | `PageSeeder` 샘플 페이지(제목·본문) ko 추출 | `lang-packs/_bundled/g7-module-sirsoft-page-ja/seed/pages.json` |
 | 모듈 ja 팩 (공통) | `module.php` 의 `getAdminMenus` / `getRoles` / `getPermissions` 추출 | `seed/{menus,roles,permissions}.json` |
 | 플러그인 ja 팩 (공통) | `plugin.php` 의 `getRoles` / `getPermissions` 추출 | `seed/{roles,permissions}.json` |
 | 모든 확장 ja 팩 | `module.json` / `plugin.json` / `template.json` 의 `name`/`description` ko | `seed/manifest.json` |

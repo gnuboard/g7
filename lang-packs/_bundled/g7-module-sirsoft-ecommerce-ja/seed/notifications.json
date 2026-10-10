@@ -12,6 +12,14 @@
       "database": {
         "subject": "決済が完了しました",
         "body": "{name}様、注文番号 {order_number} の決済が完了しました。"
+      },
+      "sms": {
+        "subject": "決済が完了しました",
+        "body": "{name}様、注文番号 {order_number} の決済が完了しました。"
+      },
+      "alimtalk": {
+        "subject": "決済が完了しました",
+        "body": "{name}様、注文番号 {order_number} の決済が完了しました。"
       }
     }
   },
@@ -26,6 +34,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">配送開始のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文の商品が発送されました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>配送業者:</strong> {carrier_name}</p><p style=\"margin:5px 0\"><strong>送り状番号:</strong> {tracking_number}</p></div><p style=\"color:#555;line-height:1.6\">注文詳細および配送状況は、下のボタンをクリックして確認できます。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "商品が発送されました",
+        "body": "{name}様、注文番号 {order_number} が {carrier_name}(送り状番号: {tracking_number})で発送されました。"
+      },
+      "sms": {
+        "subject": "商品が発送されました",
+        "body": "{name}様、注文番号 {order_number} が {carrier_name}(送り状番号: {tracking_number})で発送されました。"
+      },
+      "alimtalk": {
         "subject": "商品が発送されました",
         "body": "{name}様、注文番号 {order_number} が {carrier_name}(送り状番号: {tracking_number})で発送されました。"
       }
@@ -44,6 +60,14 @@
       "database": {
         "subject": "購入が確定しました",
         "body": "{name}様、注文番号 {order_number} の購入が確定しました。"
+      },
+      "sms": {
+        "subject": "購入が確定しました",
+        "body": "{name}様、注文番号 {order_number} の購入が確定しました。"
+      },
+      "alimtalk": {
+        "subject": "購入が確定しました",
+        "body": "{name}様、注文番号 {order_number} の購入が確定しました。"
       }
     }
   },
@@ -58,6 +82,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #DC2626;padding-bottom:10px\">注文キャンセルのお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、注文がキャンセルされました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>キャンセル理由:</strong> {cancel_reason}</p></div><p style=\"color:#555;line-height:1.6\">返金は決済方法に応じて3～7営業日以内に処理されます。注文詳細は、下のボタンをクリックして確認できます。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "注文がキャンセルされました",
+        "body": "{name}様、注文番号 {order_number} がキャンセルされました。理由: {cancel_reason}"
+      },
+      "sms": {
+        "subject": "注文がキャンセルされました",
+        "body": "{name}様、注文番号 {order_number} がキャンセルされました。理由: {cancel_reason}"
+      },
+      "alimtalk": {
         "subject": "注文がキャンセルされました",
         "body": "{name}様、注文番号 {order_number} がキャンセルされました。理由: {cancel_reason}"
       }
@@ -76,6 +108,14 @@
       "database": {
         "subject": "新しい注文が受け付けられました",
         "body": "{customer_name}様が注文番号 {order_number} (決済金額: {total_amount})を受け付けました。"
+      },
+      "sms": {
+        "subject": "新しい注文が受け付けられました",
+        "body": "{customer_name}様が注文番号 {order_number} (決済金額: {total_amount})を受け付けました。"
+      },
+      "alimtalk": {
+        "subject": "新しい注文が受け付けられました",
+        "body": "{customer_name}様が注文番号 {order_number} (決済金額: {total_amount})を受け付けました。"
       }
     }
   },
@@ -90,6 +130,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">新しい商品問い合わせ受付</h2><p style=\"color:#555;line-height:1.6\">{name}様、新しい商品問い合わせが受け付けられました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>商品名:</strong> {product_name}</p><p style=\"margin:5px 0\"><strong>問い合わせ者:</strong> {customer_name}</p><p style=\"margin:5px 0\"><strong>問い合わせ内容:</strong> {inquiry_content}</p></div><p style=\"color:#555;line-height:1.6\">管理者ページで問い合わせ内容を確認して回答してください。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{inquiry_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">問い合わせを確認する</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "新しい商品問い合わせが受け付けられました",
+        "body": "{customer_name}様が \"\\{product_name}\\\" 商品に問い合わせを残しました。"
+      },
+      "sms": {
+        "subject": "新しい商品問い合わせが受け付けられました",
+        "body": "{customer_name}様が \"\\{product_name}\\\" 商品に問い合わせを残しました。"
+      },
+      "alimtalk": {
         "subject": "新しい商品問い合わせが受け付けられました",
         "body": "{customer_name}様が \"\\{product_name}\\\" 商品に問い合わせを残しました。"
       }
@@ -108,6 +156,14 @@
       "database": {
         "subject": "問い合わせ回答が登録されました",
         "body": "{name}様、\"\\{product_name}\\\" 商品問い合わせに回答が登録されました。"
+      },
+      "sms": {
+        "subject": "問い合わせ回答が登録されました",
+        "body": "{name}様、\"\\{product_name}\\\" 商品問い合わせに回答が登録されました。"
+      },
+      "alimtalk": {
+        "subject": "問い合わせ回答が登録されました",
+        "body": "{name}様、\"\\{product_name}\\\" 商品問い合わせに回答が登録されました。"
       }
     }
   },
@@ -122,6 +178,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">振込案内</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文ありがとうございます。以下の口座にお振込みいただくと、注文が処理されます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>振込金額:</strong> {deposit_amount}</p><p style=\"margin:5px 0\"><strong>振込先銀行:</strong> {bank_name}</p><p style=\"margin:5px 0\"><strong>口座番号:</strong> {account_number}</p><p style=\"margin:5px 0\"><strong>口座名義人:</strong> {account_holder}</p><p style=\"margin:5px 0\"><strong>振込人名:</strong> {depositor_name}</p><p style=\"margin:5px 0\"><strong>振込期限:</strong> {deposit_due_at}</p></div><p style=\"color:#555;line-height:1.6\">振込期限までにお振込みいただかない場合、注文が自動キャンセルされる可能性があります。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "振込案内",
+        "body": "{name}様、注文番号 {order_number} の振込金額は {deposit_amount} です。({bank_name} {account_number})"
+      },
+      "sms": {
+        "subject": "振込案内",
+        "body": "{name}様、注文番号 {order_number} の振込金額は {deposit_amount} です。({bank_name} {account_number})"
+      },
+      "alimtalk": {
         "subject": "振込案内",
         "body": "{name}様、注文番号 {order_number} の振込金額は {deposit_amount} です。({bank_name} {account_number})"
       }
@@ -140,6 +204,14 @@
       "database": {
         "subject": "商品の配送が完了いたしました",
         "body": "{name}様、注文番号 {order_number} の配送が完了いたしました。"
+      },
+      "sms": {
+        "subject": "商品の配送が完了いたしました",
+        "body": "{name}様、注文番号 {order_number} の配送が完了いたしました。"
+      },
+      "alimtalk": {
+        "subject": "商品の配送が完了いたしました",
+        "body": "{name}様、注文番号 {order_number} の配送が完了いたしました。"
       }
     }
   },
@@ -154,6 +226,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">マイレージ失効予定のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、お持ちのマイレージの一部がまもなく失効する予定です。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>失効予定マイレージ:</strong> {amount}ポイント</p><p style=\"margin:5px 0\"><strong>失効予定日:</strong> {expires_date}</p><p style=\"margin:5px 0\"><strong>現在の残高:</strong> {balance}ポイント</p></div><p style=\"color:#555;line-height:1.6\">失効前にマイレージを使用してください。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{mileage_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">マイレージ履歴を見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "マイレージ失効予定のお知らせ",
+        "body": "{name}様、{amount}ポイントのマイレージが {expires_date} に失効する予定です。"
+      },
+      "sms": {
+        "subject": "マイレージ失効予定のお知らせ",
+        "body": "{name}様、{amount}ポイントのマイレージが {expires_date} に失効する予定です。"
+      },
+      "alimtalk": {
         "subject": "マイレージ失効予定のお知らせ",
         "body": "{name}様、{amount}ポイントのマイレージが {expires_date} に失効する予定です。"
       }
@@ -172,6 +252,14 @@
       "database": {
         "subject": "注文の決済が完了しました",
         "body": "{customer_name}様の注文({order_number})の決済が完了しました。決済金額 {total_amount}。"
+      },
+      "sms": {
+        "subject": "注文の決済が完了しました",
+        "body": "{customer_name}様の注文({order_number})の決済が完了しました。決済金額 {total_amount}。"
+      },
+      "alimtalk": {
+        "subject": "注文の決済が完了しました",
+        "body": "{customer_name}様の注文({order_number})の決済が完了しました。決済金額 {total_amount}。"
       }
     }
   },
@@ -186,6 +274,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">顧客が購入を確定しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、顧客が購入を確定しました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>注文者:</strong> {customer_name}</p><p style=\"margin:5px 0\"><strong>決済金額:</strong> {total_amount}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文管理へ移動</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "顧客が購入を確定しました",
+        "body": "{customer_name}様が注文({order_number})を購入確定しました。"
+      },
+      "sms": {
+        "subject": "顧客が購入を確定しました",
+        "body": "{customer_name}様が注文({order_number})を購入確定しました。"
+      },
+      "alimtalk": {
         "subject": "顧客が購入を確定しました",
         "body": "{customer_name}様が注文({order_number})を購入確定しました。"
       }
@@ -204,6 +300,14 @@
       "database": {
         "subject": "キャンセル済み注文への入金が確認されました",
         "body": "キャンセル済み注文({order_number})に{deposit_amount}の入金が確認されました。お客様に返金してください。"
+      },
+      "sms": {
+        "subject": "キャンセル済み注文への入金が確認されました",
+        "body": "キャンセル済み注文({order_number})に{deposit_amount}の入金が確認されました。お客様に返金してください。"
+      },
+      "alimtalk": {
+        "subject": "キャンセル済み注文への入金が確認されました",
+        "body": "キャンセル済み注文({order_number})に{deposit_amount}の入金が確認されました。お客様に返金してください。"
       }
     }
   },
@@ -218,6 +322,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換申請が受け付けられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換申請が受け付けられました。{request_origin_notice}検討後、処理結果をご案内いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
+        "subject": "交換申請が受け付けられました",
+        "body": "{name}様、交換申請({claim_number})が受け付けられました。{request_origin_notice}"
+      },
+      "sms": {
+        "subject": "交換申請が受け付けられました",
+        "body": "{name}様、交換申請({claim_number})が受け付けられました。{request_origin_notice}"
+      },
+      "alimtalk": {
         "subject": "交換申請が受け付けられました",
         "body": "{name}様、交換申請({claim_number})が受け付けられました。{request_origin_notice}"
       }
@@ -236,6 +348,14 @@
       "database": {
         "subject": "顧客が交換を申請しました",
         "body": "{requester_name}様が交換を申請しました({claim_number})。"
+      },
+      "sms": {
+        "subject": "顧客が交換を申請しました",
+        "body": "{requester_name}様が交換を申請しました({claim_number})。"
+      },
+      "alimtalk": {
+        "subject": "顧客が交換を申請しました",
+        "body": "{requester_name}様が交換を申請しました({claim_number})。"
       }
     }
   },
@@ -250,6 +370,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換追加金のお支払いをお願いします</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換処理のため追加金額が発生しました。下記金額をお支払いいただくと処理が続行します。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>合計請求額:</strong> {charge_amount}</p><p style=\"margin:5px 0\"><strong>未決済金額:</strong> {outstanding_amount}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "交換追加金のお支払いをお願いします",
+        "body": "{name}様、交換申請({claim_number})の未決済金額は {outstanding_amount} です。"
+      },
+      "sms": {
+        "subject": "交換追加金のお支払いをお願いします",
+        "body": "{name}様、交換申請({claim_number})の未決済金額は {outstanding_amount} です。"
+      },
+      "alimtalk": {
         "subject": "交換追加金のお支払いをお願いします",
         "body": "{name}様、交換申請({claim_number})の未決済金額は {outstanding_amount} です。"
       }
@@ -268,6 +396,14 @@
       "database": {
         "subject": "交換追加金のお支払いが完了しました",
         "body": "{name}様、交換申請({claim_number})の追加決済({paid_amount})が完了しました。"
+      },
+      "sms": {
+        "subject": "交換追加金のお支払いが完了しました",
+        "body": "{name}様、交換申請({claim_number})の追加決済({paid_amount})が完了しました。"
+      },
+      "alimtalk": {
+        "subject": "交換追加金のお支払いが完了しました",
+        "body": "{name}様、交換申請({claim_number})の追加決済({paid_amount})が完了しました。"
       }
     }
   },
@@ -282,6 +418,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換追加決済が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、顧客が交換追加金をお支払いしました。次の処理を進めてください。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>申請者:</strong> {requester_name}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>お支払い金額:</strong> {paid_amount}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">クレーム管理へ</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "交換追加決済が完了しました",
+        "body": "{requester_name}様の交換追加決済が完了しました({claim_number})。"
+      },
+      "sms": {
+        "subject": "交換追加決済が完了しました",
+        "body": "{requester_name}様の交換追加決済が完了しました({claim_number})。"
+      },
+      "alimtalk": {
         "subject": "交換追加決済が完了しました",
         "body": "{requester_name}様の交換追加決済が完了しました({claim_number})。"
       }
@@ -300,6 +444,14 @@
       "database": {
         "subject": "交換申請が承認されました",
         "body": "{name}様、交換申請({claim_number})が承認されました。"
+      },
+      "sms": {
+        "subject": "交換申請が承認されました",
+        "body": "{name}様、交換申請({claim_number})が承認されました。"
+      },
+      "alimtalk": {
+        "subject": "交換申請が承認されました",
+        "body": "{name}様、交換申請({claim_number})が承認されました。"
       }
     }
   },
@@ -314,6 +466,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換処理が保留されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換処理が一時保留されました。確認が完了しましたら、改めてご案内させていただきます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>保留のご案内:</strong> {admin_memo}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "交換処理が保留されました",
+        "body": "{name}様、交換申請({claim_number})の処理が保留されました。"
+      },
+      "sms": {
+        "subject": "交換処理が保留されました",
+        "body": "{name}様、交換申請({claim_number})の処理が保留されました。"
+      },
+      "alimtalk": {
         "subject": "交換処理が保留されました",
         "body": "{name}様、交換申請({claim_number})の処理が保留されました。"
       }
@@ -332,6 +492,14 @@
       "database": {
         "subject": "交換申請が却下されました",
         "body": "{name}様、交換申請({claim_number})が却下されました。理由: {reject_reason}"
+      },
+      "sms": {
+        "subject": "交換申請が却下されました",
+        "body": "{name}様、交換申請({claim_number})が却下されました。理由: {reject_reason}"
+      },
+      "alimtalk": {
+        "subject": "交換申請が却下されました",
+        "body": "{name}様、交換申請({claim_number})が却下されました。理由: {reject_reason}"
       }
     }
   },
@@ -346,6 +514,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収の準備を進めています</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品の回収準備を進めています。回収が開始しましたら、改めてご案内させていただきます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "回収の準備を進めています",
+        "body": "{name}様、交換申請({claim_number})の商品回収準備を進めています。"
+      },
+      "sms": {
+        "subject": "回収の準備を進めています",
+        "body": "{name}様、交換申請({claim_number})の商品回収準備を進めています。"
+      },
+      "alimtalk": {
         "subject": "回収の準備を進めています",
         "body": "{name}様、交換申請({claim_number})の商品回収準備を進めています。"
       }
@@ -364,6 +540,14 @@
       "database": {
         "subject": "回収が開始されました",
         "body": "{name}様、交換申請({claim_number})の商品回収が開始されました。"
+      },
+      "sms": {
+        "subject": "回収が開始されました",
+        "body": "{name}様、交換申請({claim_number})の商品回収が開始されました。"
+      },
+      "alimtalk": {
+        "subject": "回収が開始されました",
+        "body": "{name}様、交換申請({claim_number})の商品回収が開始されました。"
       }
     }
   },
@@ -378,6 +562,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品が回収されました。検査後に次のステップを進めます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "回収が完了しました",
+        "body": "{name}様、交換申請({claim_number})の商品が回収されました。"
+      },
+      "sms": {
+        "subject": "回収が完了しました",
+        "body": "{name}様、交換申請({claim_number})の商品が回収されました。"
+      },
+      "alimtalk": {
         "subject": "回収が完了しました",
         "body": "{name}様、交換申請({claim_number})の商品が回収されました。"
       }
@@ -396,6 +588,14 @@
       "database": {
         "subject": "再発送の準備を進めています",
         "body": "{name}様、交換申請({claim_number})の再発送準備を進めています。"
+      },
+      "sms": {
+        "subject": "再発送の準備を進めています",
+        "body": "{name}様、交換申請({claim_number})の再発送準備を進めています。"
+      },
+      "alimtalk": {
+        "subject": "再発送の準備を進めています",
+        "body": "{name}様、交換申請({claim_number})の再発送準備を進めています。"
       }
     }
   },
@@ -410,6 +610,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">再配送が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品が発送されました。下記の送り状で配送状況をご確認いただけます。{advance_exchange_notice}</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>発送送り状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
+        "subject": "再発送が開始されました",
+        "body": "{name}様、交換申請({claim_number})の商品が発送されました。"
+      },
+      "sms": {
+        "subject": "再発送が開始されました",
+        "body": "{name}様、交換申請({claim_number})の商品が発送されました。"
+      },
+      "alimtalk": {
         "subject": "再発送が開始されました",
         "body": "{name}様、交換申請({claim_number})の商品が発送されました。"
       }
@@ -428,6 +636,14 @@
       "database": {
         "subject": "再発送商品が到着しました",
         "body": "{name}様、交換申請({claim_number})の商品が配送完了しました。"
+      },
+      "sms": {
+        "subject": "再発送商品が到着しました",
+        "body": "{name}様、交換申請({claim_number})の商品が配送完了しました。"
+      },
+      "alimtalk": {
+        "subject": "再発送商品が到着しました",
+        "body": "{name}様、交換申請({claim_number})の商品が配送完了しました。"
       }
     }
   },
@@ -442,6 +658,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換処理が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換処理が完了しました。ご利用ありがとうございます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "交換処理が完了しました",
+        "body": "{name}様、交換申請({claim_number})の処理が完了しました。"
+      },
+      "sms": {
+        "subject": "交換処理が完了しました",
+        "body": "{name}様、交換申請({claim_number})の処理が完了しました。"
+      },
+      "alimtalk": {
         "subject": "交換処理が完了しました",
         "body": "{name}様、交換申請({claim_number})の処理が完了しました。"
       }
@@ -460,6 +684,14 @@
       "database": {
         "subject": "返品申請が受け付けられました",
         "body": "{name}様、返品申請({claim_number})が受け付けられました。{request_origin_notice}"
+      },
+      "sms": {
+        "subject": "返品申請が受け付けられました",
+        "body": "{name}様、返品申請({claim_number})が受け付けられました。{request_origin_notice}"
+      },
+      "alimtalk": {
+        "subject": "返品申請が受け付けられました",
+        "body": "{name}様、返品申請({claim_number})が受け付けられました。{request_origin_notice}"
       }
     }
   },
@@ -474,6 +706,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">顧客が返品を申請しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、顧客が返品申請を行いました。申請内容を確認して処理してください。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>申請者:</strong> {requester_name}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">クレーム管理に移動</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "顧客が返品を申請しました",
+        "body": "{requester_name}様が返品を申請しました({claim_number})。"
+      },
+      "sms": {
+        "subject": "顧客が返品を申請しました",
+        "body": "{requester_name}様が返品を申請しました({claim_number})。"
+      },
+      "alimtalk": {
         "subject": "顧客が返品を申請しました",
         "body": "{requester_name}様が返品を申請しました({claim_number})。"
       }
@@ -492,6 +732,14 @@
       "database": {
         "subject": "返品追加金の決済をお願いいたします",
         "body": "{name}様、返品申請({claim_number})の未決済金額は {outstanding_amount} です。"
+      },
+      "sms": {
+        "subject": "返品追加金の決済をお願いいたします",
+        "body": "{name}様、返品申請({claim_number})の未決済金額は {outstanding_amount} です。"
+      },
+      "alimtalk": {
+        "subject": "返品追加金の決済をお願いいたします",
+        "body": "{name}様、返品申請({claim_number})の未決済金額は {outstanding_amount} です。"
       }
     }
   },
@@ -506,6 +754,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返品追加金の決済が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品追加金の決済が確認されました。引き続き処理いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>決済金額:</strong> {paid_amount}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "返品追加金の決済が完了しました",
+        "body": "{name}様、返品申請({claim_number})の追加決済({paid_amount})が完了しました。"
+      },
+      "sms": {
+        "subject": "返品追加金の決済が完了しました",
+        "body": "{name}様、返品申請({claim_number})の追加決済({paid_amount})が完了しました。"
+      },
+      "alimtalk": {
         "subject": "返品追加金の決済が完了しました",
         "body": "{name}様、返品申請({claim_number})の追加決済({paid_amount})が完了しました。"
       }
@@ -524,6 +780,14 @@
       "database": {
         "subject": "返品追加決済が完了しました",
         "body": "{requester_name}様の返品追加決済が完了しました({claim_number})。"
+      },
+      "sms": {
+        "subject": "返品追加決済が完了しました",
+        "body": "{requester_name}様の返品追加決済が完了しました({claim_number})。"
+      },
+      "alimtalk": {
+        "subject": "返品追加決済が完了しました",
+        "body": "{requester_name}様の返品追加決済が完了しました({claim_number})。"
       }
     }
   },
@@ -538,6 +802,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返品申請が承認されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品申請が承認されました。次のステップが進みましたら、改めてご案内いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "返品申請が承認されました",
+        "body": "{name}様、返品申請({claim_number})が承認されました。"
+      },
+      "sms": {
+        "subject": "返品申請が承認されました",
+        "body": "{name}様、返品申請({claim_number})が承認されました。"
+      },
+      "alimtalk": {
         "subject": "返品申請が承認されました",
         "body": "{name}様、返品申請({claim_number})が承認されました。"
       }
@@ -556,6 +828,14 @@
       "database": {
         "subject": "返品処理が保留されました",
         "body": "{name}様、返品申請({claim_number})の処理が保留されました。"
+      },
+      "sms": {
+        "subject": "返品処理が保留されました",
+        "body": "{name}様、返品申請({claim_number})の処理が保留されました。"
+      },
+      "alimtalk": {
+        "subject": "返品処理が保留されました",
+        "body": "{name}様、返品申請({claim_number})の処理が保留されました。"
       }
     }
   },
@@ -570,6 +850,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返品申請が却下されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品申請が却下されました。詳しい理由は下記をご確認ください。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>却下理由:</strong> {reject_reason}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "返品申請が却下されました",
+        "body": "{name}様、返品申請({claim_number})が却下されました。理由: {reject_reason}"
+      },
+      "sms": {
+        "subject": "返品申請が却下されました",
+        "body": "{name}様、返品申請({claim_number})が却下されました。理由: {reject_reason}"
+      },
+      "alimtalk": {
         "subject": "返品申請が却下されました",
         "body": "{name}様、返品申請({claim_number})が却下されました。理由: {reject_reason}"
       }
@@ -588,6 +876,14 @@
       "database": {
         "subject": "回収を準備しています",
         "body": "{name}様、返品申請({claim_number})の商品回収を準備しています。"
+      },
+      "sms": {
+        "subject": "回収を準備しています",
+        "body": "{name}様、返品申請({claim_number})の商品回収を準備しています。"
+      },
+      "alimtalk": {
+        "subject": "回収を準備しています",
+        "body": "{name}様、返品申請({claim_number})の商品回収を準備しています。"
       }
     }
   },
@@ -602,6 +898,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品商品の回収が開始されました。下記の送り状で進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>回収送り状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
+        "subject": "回収が開始されました",
+        "body": "{name}様、返品申請({claim_number})の商品回収が開始されました。"
+      },
+      "sms": {
+        "subject": "回収が開始されました",
+        "body": "{name}様、返品申請({claim_number})の商品回収が開始されました。"
+      },
+      "alimtalk": {
         "subject": "回収が開始されました",
         "body": "{name}様、返品申請({claim_number})の商品回収が開始されました。"
       }
@@ -620,6 +924,14 @@
       "database": {
         "subject": "回収が完了しました",
         "body": "{name}様、返品申請({claim_number})の商品が回収されました。"
+      },
+      "sms": {
+        "subject": "回収が完了しました",
+        "body": "{name}様、返品申請({claim_number})の商品が回収されました。"
+      },
+      "alimtalk": {
+        "subject": "回収が完了しました",
+        "body": "{name}様、返品申請({claim_number})の商品が回収されました。"
       }
     }
   },
@@ -634,6 +946,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返品処理が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品処理が完了しました。ご利用ありがとうございます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "返品処理が完了しました",
+        "body": "{name}様、返品申請({claim_number})の処理が完了しました。"
+      },
+      "sms": {
+        "subject": "返品処理が完了しました",
+        "body": "{name}様、返品申請({claim_number})の処理が完了しました。"
+      },
+      "alimtalk": {
         "subject": "返品処理が完了しました",
         "body": "{name}様、返品申請({claim_number})の処理が完了しました。"
       }
@@ -652,6 +972,14 @@
       "database": {
         "subject": "返金申請が受け付けられました",
         "body": "{name}様、返金申請({claim_number})が受け付けられました。{request_origin_notice}"
+      },
+      "sms": {
+        "subject": "返金申請が受け付けられました",
+        "body": "{name}様、返金申請({claim_number})が受け付けられました。{request_origin_notice}"
+      },
+      "alimtalk": {
+        "subject": "返金申請が受け付けられました",
+        "body": "{name}様、返金申請({claim_number})が受け付けられました。{request_origin_notice}"
       }
     }
   },
@@ -666,6 +994,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">顧客が返金を申請しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、顧客が返金申請を提出しました。申請内容を確認して処理してください。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>申請者:</strong> {requester_name}</p><p style=\"margin:5px 0\"><strong>進行状況:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">クレーム管理へ</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "顧客が返金を申請しました",
+        "body": "{requester_name}様が返金を申請しました({claim_number})。"
+      },
+      "sms": {
+        "subject": "顧客が返金を申請しました",
+        "body": "{requester_name}様が返金を申請しました({claim_number})。"
+      },
+      "alimtalk": {
         "subject": "顧客が返金を申請しました",
         "body": "{requester_name}様が返金を申請しました({claim_number})。"
       }
@@ -684,6 +1020,14 @@
       "database": {
         "subject": "返金申請が承認されました",
         "body": "{name}様、返金申請({claim_number})が承認されました。"
+      },
+      "sms": {
+        "subject": "返金申請が承認されました",
+        "body": "{name}様、返金申請({claim_number})が承認されました。"
+      },
+      "alimtalk": {
+        "subject": "返金申請が承認されました",
+        "body": "{name}様、返金申請({claim_number})が承認されました。"
       }
     }
   },
@@ -698,6 +1042,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返金処理が保留されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返金処理が一時保留されました。確認が完了次第、再度ご案内します。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状況:</strong> {status_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "返金処理が保留されました",
+        "body": "{name}様、返金申請({claim_number})の処理が保留されました。"
+      },
+      "sms": {
+        "subject": "返金処理が保留されました",
+        "body": "{name}様、返金申請({claim_number})の処理が保留されました。"
+      },
+      "alimtalk": {
         "subject": "返金処理が保留されました",
         "body": "{name}様、返金申請({claim_number})の処理が保留されました。"
       }
@@ -716,6 +1068,14 @@
       "database": {
         "subject": "返金申請が却下されました",
         "body": "{name}様、返金申請({claim_number})が却下されました。理由: {reject_reason}"
+      },
+      "sms": {
+        "subject": "返金申請が却下されました",
+        "body": "{name}様、返金申請({claim_number})が却下されました。理由: {reject_reason}"
+      },
+      "alimtalk": {
+        "subject": "返金申請が却下されました",
+        "body": "{name}様、返金申請({claim_number})が却下されました。理由: {reject_reason}"
       }
     }
   },
@@ -730,6 +1090,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返金処理が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返金処理が完了しました。ご利用ありがとうございました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状況:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>返金金額:</strong> {refund_amount}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>返金内訳:</strong> {refund_breakdown}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "返金処理が完了しました",
+        "body": "{name}様、返金申請({claim_number})の処理が完了しました。"
+      },
+      "sms": {
+        "subject": "返金処理が完了しました",
+        "body": "{name}様、返金申請({claim_number})の処理が完了しました。"
+      },
+      "alimtalk": {
         "subject": "返金処理が完了しました",
         "body": "{name}様、返金申請({claim_number})の処理が完了しました。"
       }
@@ -748,6 +1116,14 @@
       "database": {
         "subject": "クレーム申請取下",
         "body": "{requester_name}様の{claim_type_label}申請({claim_number})が取り下げられました。{withdraw_origin_notice}"
+      },
+      "sms": {
+        "subject": "クレーム申請取下",
+        "body": "{requester_name}様の{claim_type_label}申請({claim_number})が取り下げられました。{withdraw_origin_notice}"
+      },
+      "alimtalk": {
+        "subject": "クレーム申請取下",
+        "body": "{requester_name}様の{claim_type_label}申請({claim_number})が取り下げられました。{withdraw_origin_notice}"
       }
     }
   },
@@ -762,6 +1138,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">申請商品の一部が処理されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、申請いただいた {total_count} 件の商品のうち {processed_count} 件が {decision_label} 処理されました。残りの {remaining_count} 件は引き続き検討中です。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>クレームタイプ:</strong> {claim_type_label}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>今回処理された商品:</strong> {processed_count}</p><p style=\"margin:5px 0\"><strong>残りの商品:</strong> {remaining_count}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>処理された商品一覧:</strong> {item_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
+        "subject": "申請商品部分処理",
+        "body": "{name}様、申請({claim_number}) {total_count} 件中 {processed_count} 件が {decision_label} 処理されました。残りの {remaining_count} 件は検討中です。\n{item_lines}"
+      },
+      "sms": {
+        "subject": "申請商品部分処理",
+        "body": "{name}様、申請({claim_number}) {total_count} 件中 {processed_count} 件が {decision_label} 処理されました。残りの {remaining_count} 件は検討中です。\n{item_lines}"
+      },
+      "alimtalk": {
         "subject": "申請商品部分処理",
         "body": "{name}様、申請({claim_number}) {total_count} 件中 {processed_count} 件が {decision_label} 処理されました。残りの {remaining_count} 件は検討中です。\n{item_lines}"
       }
@@ -780,6 +1164,14 @@
       "database": {
         "subject": "申請取り消しのご案内",
         "body": "{name}様、{claim_type_label}申請({claim_number})がお客様のご要望により販売者が取り消しました。"
+      },
+      "sms": {
+        "subject": "申請取り消しのご案内",
+        "body": "{name}様、{claim_type_label}申請({claim_number})がお客様のご要望により販売者が取り消しました。"
+      },
+      "alimtalk": {
+        "subject": "申請取り消しのご案内",
+        "body": "{name}様、{claim_type_label}申請({claim_number})がお客様のご要望により販売者が取り消しました。"
       }
     }
   },
@@ -794,6 +1186,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収送り状が登録されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品の回収送り状が登録されました。以下の運送状により回収進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>回収運送状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}より送信されました。</p></div>"
       },
       "database": {
+        "subject": "回収送り状が登録されました",
+        "body": "{name}様、交換申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
+      },
+      "sms": {
+        "subject": "回収送り状が登録されました",
+        "body": "{name}様、交換申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
+      },
+      "alimtalk": {
         "subject": "回収送り状が登録されました",
         "body": "{name}様、交換申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
       }
@@ -812,6 +1212,14 @@
       "database": {
         "subject": "交換商品を送信しました",
         "body": "{name}様、交換申請({claim_number})の交換商品を送信いたしました。\n{tracking_lines}"
+      },
+      "sms": {
+        "subject": "交換商品を送信しました",
+        "body": "{name}様、交換申請({claim_number})の交換商品を送信いたしました。\n{tracking_lines}"
+      },
+      "alimtalk": {
+        "subject": "交換商品を送信しました",
+        "body": "{name}様、交換申請({claim_number})の交換商品を送信いたしました。\n{tracking_lines}"
       }
     }
   },
@@ -826,6 +1234,14 @@
         "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収送り状が登録されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品商品の回収送り状が登録されました。以下の運送状により回収進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>回収運送状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}より送信されました。</p></div>"
       },
       "database": {
+        "subject": "回収送り状が登録されました",
+        "body": "{name}様、返品申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
+      },
+      "sms": {
+        "subject": "回収送り状が登録されました",
+        "body": "{name}様、返品申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
+      },
+      "alimtalk": {
         "subject": "回収送り状が登録されました",
         "body": "{name}様、返品申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
       }
@@ -844,6 +1260,14 @@
       "database": {
         "subject": "先交換回収遅延",
         "body": "{requester_name}様の先交換({claim_number})の古い商品が期限({collection_due_date})を{overdue_days}日超過しました。"
+      },
+      "sms": {
+        "subject": "先交換回収遅延",
+        "body": "{requester_name}様の先交換({claim_number})の古い商品が期限({collection_due_date})を{overdue_days}日超過しました。"
+      },
+      "alimtalk": {
+        "subject": "先交換回収遅延",
+        "body": "{requester_name}様の先交換({claim_number})の古い商品が期限({collection_due_date})を{overdue_days}日超過しました。"
       }
     }
   },
@@ -856,6 +1280,14 @@
       "mail": {
         "subject": "{subject}",
         "body": "<div style=\"font-family:'Meiryo',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><div style=\"color:#333;line-height:1.7\">{message}</div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">ご注文番号 {order_number} に関するご案内です。本メールは <a href=\"{site_url}\">{app_name}</a> から送信されました。</p></div>"
+      },
+      "sms": {
+        "subject": "{subject}",
+        "body": "{message} ご注文番号 {order_number} に関するご案内です。本メールは {app_name} から送信されました。"
+      },
+      "alimtalk": {
+        "subject": "{subject}",
+        "body": "{message} ご注文番号 {order_number} に関するご案内です。本メールは {app_name} から送信されました。"
       }
     }
   },
@@ -868,6 +1300,14 @@
       "mail": {
         "subject": "[{app_name}] 決済本人確認認証コード",
         "body": "<h1>決済本人確認</h1><p>決済を進行するために本人確認が必要です。以下の認証コードを入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に失効します。</p><p><strong>ご本人が決済を進行していない場合は、このメールを無視し、すぐにパスワードを変更してください。</strong></p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] 決済本人確認認証コード",
+        "body": "決済本人確認 決済を進行するために本人確認が必要です。以下の認証コードを入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 ご本人が決済を進行していない場合は、このメールを無視し、すぐにパスワードを変更してください。 ありがとうございます。 {app_name}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] 決済本人確認認証コード",
+        "body": "決済本人確認 決済を進行するために本人確認が必要です。以下の認証コードを入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 ご本人が決済を進行していない場合は、このメールを無視し、すぐにパスワードを変更してください。 ありがとうございます。 {app_name}"
       }
     }
   }

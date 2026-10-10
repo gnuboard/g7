@@ -255,7 +255,7 @@
                                     ],
                                     "props": {
                                         "value": "{{$carrier.type ?? 'domestic'}}",
-                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'select-error w-full' : 'w-full'}}",
+                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'input-error w-full' : 'w-full'}}",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "options": [
                                             {

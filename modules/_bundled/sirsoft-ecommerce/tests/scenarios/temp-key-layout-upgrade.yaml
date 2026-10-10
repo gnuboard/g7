@@ -22,6 +22,7 @@ effects:
   - other_module_rows_untouched
   - extension_rows_patched
   - chunked_scan_covers_all_rows
+  - empty_map_preserved_after_patch # 본문의 {} 가 [] 로 굳지 않는다(U2-3)
 
 scale:
   - { n: 100000, dataset: template_layouts, assert: [chunked_scan_bounded_memory, all_rows_patched_across_chunks] }

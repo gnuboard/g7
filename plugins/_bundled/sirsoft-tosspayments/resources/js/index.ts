@@ -5,6 +5,8 @@
  * 레이아웃 JSON에서 "sirsoft-tosspayments.requestPayment" 형태로 호출할 수 있게 합니다.
  */
 
+// 설정 화면 상태 유틸리티(접두 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 import { handlerMap } from './handlers';
 import { reportPaymentFailureOnReturn } from './paymentCloseReport';
 

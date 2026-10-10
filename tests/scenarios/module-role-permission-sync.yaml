@@ -1,0 +1,26 @@
+feature: 모듈 역할·권한 동기화 (설치·재설치)
+
+description: |
+  모듈을 설치하면 module.php 의 권한 정의(모듈 루트 + 범주 + 리프)가 그대로 만들어지고, 리프마다 선언된 역할에
+  붙는다. 다시 설치(업데이트)하면 권한 이름은 정의값으로 덮어쓰고, 운영자가 user_overrides 로 표시한 해제는 지키며,
+  표시 없이 빠진 할당은 다시 붙이고, 운영자가 직접 더한 역할 할당은 남긴다.
+
+  기대 권한 수는 시험에 숫자로 박지 않고 정의에서 센다 — 게시판은 기능이 늘 때마다 권한 범주가 더해진다.
+
+axes:
+  case:
+    - fresh_install
+    - reinstall
+    - reinstall_with_user_override
+
+effects:
+  - permissions_created_from_definition
+  - roles_assigned_from_definition
+  - no_user_overrides_on_fresh_install
+  - permission_overwritten_by_definition
+  - overridden_permission_kept_detached
+  - non_overridden_permission_reattached
+  - user_added_assignment_preserved
+
+test_files:
+  - tests/Feature/Module/ModuleRolePermissionSyncTest.php

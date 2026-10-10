@@ -92,14 +92,15 @@
 
 ## [engine-v1.78.1] - 2026-10-09
 
+### Added
+
+- `AuthConfig.guestOnlyPaths` — 로그인 이동 시 복귀 경로로 싣지 않을 로그인 전용 화면 경로. 기본값은 관리자 `/admin/login`·`/admin/forgot-password`·`/admin/reset-password`, 사용자 `/login`·`/register`·`/forgot-password`·`/reset-password` 이며 `loginPath` 는 항상 포함됩니다. 다른 경로를 쓰는 템플릿은 `AuthManager.updateConfig(type, { guestOnlyPaths })` 로 바꿉니다 (AuthManager.ts)
+
 ### Fixed
 
 - 세션이 끊긴 채 로그인 화면 자체(`/login`, `/admin/login`)를 열면 데이터 소스 401 이 로그인 이동을 일으키면서 로그인 화면 자신을 복귀 경로(`?redirect=/login`)로 실어, 로그인(비밀번호 변경 단계 포함)을 마친 뒤 다시 로그인 폼에 떨어지던 문제. 로그인·가입·비밀번호 찾기·재설정 화면은 복귀 경로로 싣지 않고, 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣습니다 (AuthManager.ts `getLoginRedirectUrl`, 회귀: `AuthManager.test.ts`)
 - 언어를 바꾸거나 저장해 둔 언어로 시작해도 `<html lang>` 이 서버가 처음 찍은 언어로 남던 문제. 시작할 때와 `changeLocale()` 때 앱 로케일로 맞춥니다(밑줄 로케일은 하이픈으로) (TemplateApp.ts `syncDocumentLang`, 회귀: `TemplateApp.documentLang.test.ts`)
 
-### Added
-
-- `AuthConfig.guestOnlyPaths` — 로그인 이동 시 복귀 경로로 싣지 않을 로그인 전용 화면 경로. 기본값은 관리자 `/admin/login`·`/admin/forgot-password`·`/admin/reset-password`, 사용자 `/login`·`/register`·`/forgot-password`·`/reset-password` 이며 `loginPath` 는 항상 포함됩니다. 다른 경로를 쓰는 템플릿은 `AuthManager.updateConfig(type, { guestOnlyPaths })` 로 바꿉니다 (AuthManager.ts)
 ## [engine-v1.78.0] - 2026-10-06
 
 ### Added
@@ -263,6 +264,15 @@
 ## [engine-v1.72.1] - 2026-09-27
 
 > 2026-09-13 작성 당시 `engine-v1.66.2` 로 적었으나, develop-7.1.0 병합(1.67~1.71)과 번호가 뒤집혀 최상위 다음 패치(`engine-v1.71.1`)로 다시 매겼고, develop-7.1.0 16차 병합(2026-09-27)에서 그 번호를 먼저 쓴 `engine-v1.71.1`(2026-09-21, 편집기 반복 항목 scope)·`engine-v1.72.0`(2026-09-26, 방문자 통계 트래커)과 다시 겹쳐 최상위 다음 패치로 한 번 더 옮겼다. 과거 이력 문서의 `engine-v1.66.2` 와 2026-09-13~27 사이 이 브랜치 문서의 `engine-v1.71.1`(SPA 이동 `_local` 잔존 수정)은 이 절을 가리킨다.
+>
+> 발생 시점: 엔진 번들 이분 탐색으로 2026-06-21 번들(f7eb1615f)까지 정상, 2026-06-23 번들(3a2e76e46)부터 재현 — 창 안의 엔진 변경은 `0c3c32d4c`(engine-v1.50.0 COMPONENT 경로 `_global._local` 동기화)뿐이다. 2026-09-01 `addMissingLeafKeys` 보충(engine-v1.63.3)이 유출 범위를 바뀐 키에서 저장소 A 의 전체 키로 넓혔다. 확장(레이아웃·핸들러·컴포넌트) 변경과는 무관하다
+
+### Changed
+
+- `loadScript` 가 로드를 미룰 스크립트를 코어 속성 `data-g7-script-deferred`(`SCRIPT_DEFERRED_ATTRIBUTE`)로 판별합니다.
+  종전에는 특정 동의 관리 플러그인의 속성 이름을 직접 봤습니다. 스크립트를 막는 확장은 src setter 에서 이 속성을 붙입니다.
+- 방문자 통계 동의 브리지가 코어 API(`/api/analytics/consent`)와 코어 이벤트(`g7:analytics-permission-changed`)를 씁니다.
+  동의 확인 대상 유무는 활성 플러그인 이름이 아니라 서버가 인라인한 `settings.analytics.consent_provider` 로 판정합니다.
 
 ### Fixed
 
@@ -276,18 +286,7 @@
 #### 진단 규칙 `spa-local-leak` 추가 (devtools)
 - `DiagnosticEngine` 에 목록 → 목록 SPA 이동 뒤 `_local` 에 이전 화면 키가 남는 증상을 짚는 규칙을 추가했다. 이동 뒤 마운트 콜백 흔적만으로는 발화하지 않고, 현재 레이아웃이 알지 못하는 `_local` 키가 실제로 남았을 때만 발화한다 — 컬럼 선택기가 있는 목록은 정상 진입에서도 같은 콜백을 내기 때문이다. 해결 안내는 g7-state 로 현재 레이아웃 state 에 없는 키를 찾는 절차다 (DiagnosticEngine.ts)
 
-### Notes
-- 발생 시점: 엔진 번들 이분 탐색으로 2026-06-21 번들(f7eb1615f)까지 정상, 2026-06-23 번들(3a2e76e46)부터 재현 — 창 안의 엔진 변경은 `0c3c32d4c`(engine-v1.50.0 COMPONENT 경로 `_global._local` 동기화)뿐이다. 2026-09-01 `addMissingLeafKeys` 보충(engine-v1.63.3)이 유출 범위를 바뀐 키에서 저장소 A 의 전체 키로 넓혔다. 확장(레이아웃·핸들러·컴포넌트) 변경과는 무관하다
-
-
-### Changed
-
-- `loadScript` 가 로드를 미룰 스크립트를 코어 속성 `data-g7-script-deferred`(`SCRIPT_DEFERRED_ATTRIBUTE`)로 판별합니다.
-  종전에는 특정 동의 관리 플러그인의 속성 이름을 직접 봤습니다. 스크립트를 막는 확장은 src setter 에서 이 속성을 붙입니다.
-- 방문자 통계 동의 브리지가 코어 API(`/api/analytics/consent`)와 코어 이벤트(`g7:analytics-permission-changed`)를 씁니다.
-  동의 확인 대상 유무는 활성 플러그인 이름이 아니라 서버가 인라인한 `settings.analytics.consent_provider` 로 판정합니다.
-
-### Fixed
+#### 반복 컨텍스트 안의 확장점이 버려지던 문제
 
 - 반복 컨텍스트(DataGrid 셀 `cellChildren`, 카드 children 등) 안의 확장점(`extension_point`)이 「컴포넌트를 찾을 수 없습니다」
   경고와 함께 통째로 버려지던 문제를 고쳤습니다. `renderItemChildren` 이 확장점을 컴포넌트 이름으로 찾았기 때문입니다.

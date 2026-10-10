@@ -200,7 +200,7 @@ export function AvatarUploader({
       if (uploadSuccessActions?.length) {
         uploadSuccessActions.forEach(action => G7Core?.dispatch?.(action));
       } else {
-        G7Core?.refetchDataSource?.('user');
+        G7Core?.dataSource?.refetch?.('user');
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -288,7 +288,7 @@ export function AvatarUploader({
       if (deleteSuccessActions?.length) {
         deleteSuccessActions.forEach(action => G7Core?.dispatch?.(action));
       } else {
-        G7Core?.refetchDataSource?.('user');
+        G7Core?.dataSource?.refetch?.('user');
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));

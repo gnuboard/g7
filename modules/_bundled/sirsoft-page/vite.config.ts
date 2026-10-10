@@ -4,8 +4,8 @@ import path from 'path';
 /**
  * sirsoft-page 모듈 빌드 설정
  *
- * 액션 핸들러만 담은 경량 IIFE 번들이다(컴포넌트·CSS 없음). 코어가 활성 모듈 번들을 페이지에
- * 실으면 엔트리가 즉시 실행되어 핸들러를 ActionDispatcher 에 등록한다.
+ * 액션 핸들러와 관리자 화면 전용 접두 클래스 CSS(dist/css/module.css)를 담은 경량 IIFE 번들이다(컴포넌트 없음).
+ * 코어가 활성 모듈 번들을 페이지에 실으면 엔트리가 즉시 실행되어 핸들러를 ActionDispatcher 에 등록한다.
  *
  * 빌드: php artisan module:build sirsoft-page --production
  */
@@ -32,7 +32,8 @@ export default defineConfig({
             output: {
                 entryFileNames: 'js/module.iife.js',
                 chunkFileNames: 'js/[name]-[hash].js',
-                assetFileNames: 'assets/[name][extname]',
+                // index.ts 가 불러오는 CSS 는 module.json assets.css.output 과 같은 경로로 낸다
+                assetFileNames: (info) => (info.name?.endsWith('.css') ? 'css/module.css' : 'assets/[name][extname]'),
             },
         },
 

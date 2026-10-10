@@ -52,6 +52,7 @@ effects:
   # 병합 엔진 — 단위별 판정
   - untouched_unit_takes_new_version
   - operator_modified_unit_is_kept
+  - backup_base_survives_one_unreadable_layout
   - conflicting_change_keeps_operator_version_and_is_reported
   - removal_follows_the_side_that_removed
   - data_sources_merge_by_item_id
@@ -102,6 +103,7 @@ test_files:
   - tests/Unit/Extension/Layout/LayoutThreeWayMergerTest.php
   - tests/Unit/Extension/Layout/LayoutContentComparatorTest.php
   - tests/Unit/Extension/Layout/LayoutEditorRoundTripMergeTest.php
+  - tests/Unit/Extension/Layout/BackupLayoutReaderTest.php
   - tests/Unit/Extension/ValidatesLayoutFilesPartialOriginTest.php
   - tests/Feature/Extension/LayoutRowSynchronizerTest.php
   - tests/Feature/Extension/LayoutKeepMergeTest.php

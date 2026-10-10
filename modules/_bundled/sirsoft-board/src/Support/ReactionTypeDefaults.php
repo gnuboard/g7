@@ -6,7 +6,8 @@ namespace Modules\Sirsoft\Board\Support;
  * 반응 유형 기본값 단일 원천(SSoT).
  *
  * 같은 기본값이 시더(BoardReactionTypeSeeder)와 업그레이드 백필
- * (upgrades/data/1.0.3/migrations/07_SeedReactionTypes.php)에 두 벌로 정의돼 있어
+ * (upgrades/data/1.0.3/migrations/07_SeedReactionTypes.php,
+ * upgrades/data/1.2.0/migrations/06_SeedReactionTypes.php)에 따로 정의돼 있어
  * 한쪽만 고치면 신규 설치와 업그레이드 설치의 유형이 갈라졌다.
  *
  * 현행 SSoT 는 이 클래스이며 시더가 여기서 읽는다. 백필 스텝은 이미 실행된 설치본의
@@ -34,7 +35,7 @@ final class ReactionTypeDefaults
             ],
             [
                 'code' => 'dislike',
-                'name' => ['ko' => '비추천', 'en' => 'Not Recommend', 'ja' => 'ひどい'],
+                'name' => ['ko' => '비추천', 'en' => 'Not Recommend', 'ja' => 'よくない'],
                 'icon' => 'fas fa-thumbs-down',
                 'display_order' => 2,
                 'is_active' => true,
