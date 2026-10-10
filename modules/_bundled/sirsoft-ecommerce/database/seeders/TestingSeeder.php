@@ -23,6 +23,8 @@ class TestingSeeder extends Seeder
 {
     /**
      * 테스트용 기본 데이터를 시딩합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -33,7 +35,8 @@ class TestingSeeder extends Seeder
                 'vendor' => 'sirsoft',
                 'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
                 'status' => ExtensionStatus::Active->value,
-                'version' => '1.0.0',
+                // 버전은 manifest 를 따른다 — 고정값이면 버전 비교 경로(업그레이드·의존 검사)가 옛 버전으로 판단한다
+                'version' => $this->manifestVersion(),
             ]
         );
 
@@ -78,6 +81,8 @@ class TestingSeeder extends Seeder
 
     /**
      * 주문 시퀀스를 초기화합니다.
+     *
+     * @return void 반환값 없음
      */
     private function createOrderSequence(): void
     {
@@ -104,6 +109,8 @@ class TestingSeeder extends Seeder
 
     /**
      * 배송사 초기 데이터를 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     private function createShippingCarriers(): void
     {
@@ -135,7 +142,7 @@ class TestingSeeder extends Seeder
      * 환불 유형만 시드한다. 교환·반품 사유는 테스트가 필요한 것만 직접 만든다 — 기본 목록을 깔면
      * 사유 개수를 세는 테스트가 설치 시더의 목록 변경에 묶인다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function createClaimReasons(): void
     {
@@ -157,6 +164,7 @@ class TestingSeeder extends Seeder
      *
      * @param  Role  $guestRole  비회원 역할
      * @param  Role  $userRole  일반 사용자 역할
+     * @return void 반환값 없음
      */
     private function createUserPermissions(Role $guestRole, Role $userRole): void
     {
@@ -187,5 +195,17 @@ class TestingSeeder extends Seeder
         // guest와 user 역할에 모든 사용자 권한 부여
         $guestRole->permissions()->syncWithoutDetaching($permissionIds);
         $userRole->permissions()->syncWithoutDetaching($permissionIds);
+    }
+
+    /**
+     * 모듈 manifest(module.json)의 버전을 읽습니다.
+     *
+     * @return string 모듈 버전 (읽지 못하면 1.0.0)
+     */
+    private function manifestVersion(): string
+    {
+        $manifest = json_decode((string) @file_get_contents(dirname(__DIR__, 2).'/module.json'), true);
+
+        return is_array($manifest) && is_string($manifest['version'] ?? null) ? $manifest['version'] : '1.0.0';
     }
 }

@@ -27,6 +27,8 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Models\PostScrap;
+use Modules\Sirsoft\Board\Models\Reaction;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
@@ -1829,32 +1831,81 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
-     * ID 목록의 게시글을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     * 지정한 게시글과 그 답변 글(자손 전체)을 하위 데이터와 함께 영구 삭제합니다 (소프트 삭제된 글 포함).
      *
-     * @param  array<int, int>  $ids  게시글 ID 목록
-     * @return int 삭제된 게시글 수
+     * 게시판 전체 답변을 비우던 정리(SB-1)는 운영자가 실제 문의에 단 답변까지 지웠다. 이제는
+     * 넘겨받은 원글에서 parent_id 로 이어진 자손만 모은다. 댓글·첨부 행·반응(글·댓글)·스크랩도 함께
+     * 지워 고아 행을 남기지 않는다. 첨부 파일 본문은 저장소가 다루지 않는다 — 호출하는 쪽이 먼저
+     * AttachmentService::purgeByPostIds 로 파일과 행을 정리한다(남은 행은 여기서 지운다).
+     *
+     * @param  int  $boardId  게시판 ID (다른 게시판의 같은 ID 는 지우지 않는다)
+     * @param  array<int, int>  $ids  삭제할 원글 ID 목록
+     * @return int 삭제된 게시글 수 (답변 포함)
      */
-    public function forceDeleteByIds(array $ids): int
+    public function forceDeleteWithRepliesByIds(int $boardId, array $ids): int
     {
-        if ($ids === []) {
+        $allIds = $this->collectWithRepliesIds($boardId, $ids);
+
+        if ($allIds === []) {
             return 0;
         }
 
-        return (int) Post::withTrashed()->whereIn('id', $ids)->forceDelete();
+        return (int) DB::transaction(function () use ($boardId, $allIds) {
+            $commentIds = Comment::withTrashed()
+                ->where('board_id', $boardId)
+                ->whereIn('post_id', $allIds)
+                ->pluck('id')
+                ->all();
+
+            Reaction::query()->where('target_type', 'post')->whereIn('target_id', $allIds)->delete();
+            if ($commentIds !== []) {
+                Reaction::query()->where('target_type', 'comment')->whereIn('target_id', $commentIds)->delete();
+            }
+            PostScrap::query()->whereIn('post_id', $allIds)->delete();
+            Attachment::withTrashed()->where('board_id', $boardId)->whereIn('post_id', $allIds)->forceDelete();
+            Comment::withTrashed()->where('board_id', $boardId)->whereIn('post_id', $allIds)->forceDelete();
+
+            return Post::withTrashed()->where('board_id', $boardId)->whereIn('id', $allIds)->forceDelete();
+        });
     }
 
     /**
-     * 게시판의 답변 글(parent_id 가 있는 글)을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     * 지정한 게시글(그 게시판 안의 것만)과 자손 답글 전체의 ID 를 모읍니다 (소프트 삭제된 글 포함).
      *
      * @param  int  $boardId  게시판 ID
-     * @return int 삭제된 게시글 수
+     * @param  array<int, int>  $ids  원글 ID 목록
+     * @return array<int, int> 원글 + 자손 답글 ID
      */
-    public function forceDeleteRepliesByBoardId(int $boardId): int
+    public function collectWithRepliesIds(int $boardId, array $ids): array
     {
-        return (int) Post::withTrashed()
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn (int $id) => $id > 0)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $postIds = Post::withTrashed()
             ->where('board_id', $boardId)
-            ->whereNotNull('parent_id')
-            ->forceDelete();
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        // 자손 답글 수집 (레벨 순회 + 방문 가드)
+        $allIds = $postIds;
+        $frontier = $postIds;
+        while ($frontier !== []) {
+            $children = Post::withTrashed()
+                ->where('board_id', $boardId)
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $frontier = array_values(array_diff($children, $allIds));
+            $allIds = array_merge($allIds, $frontier);
+        }
+
+        return $allIds;
     }
 
     /**

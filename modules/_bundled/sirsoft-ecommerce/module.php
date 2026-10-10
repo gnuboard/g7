@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Benchmark\OrderCreationBenchmark;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\SequenceSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
@@ -1438,6 +1439,7 @@ class Module extends AbstractModule
      *
      * 배열 순서대로 실행됩니다.
      * 나머지 시더는 개발/테스트용이므로 설치 시 필수 참조 데이터만 실행합니다.
+     * 배송유형은 설정 배송 탭과 배송정책 등록이 고르는 카탈로그라 새 설치에서도 채워야 합니다.
      *
      * @return array<class-string<Seeder>> 시더 클래스명 배열 (FQCN)
      */
@@ -1445,6 +1447,7 @@ class Module extends AbstractModule
     {
         return [
             SequenceSeeder::class,
+            ShippingTypeSeeder::class,
             ShippingCarrierSeeder::class,
             ClaimReasonSeeder::class,
         ];
