@@ -736,6 +736,24 @@ describe('직권 접수 실행 (submitAdminClaimRequest)', () => {
     });
 
     /**
+     * 상태 변경 권한이 없는 운영자(화면이 `canApprove=false` 로 넘김)는 「접수와 함께 승인」 이 켜진 상태값이어도
+     * 승인을 싣지 않는다 — 서버가 승인 요청을 403 으로 거절하므로, 접수까지는 되게 꺼진 값을 보낸다. (7.1.0 S3)
+     * @scenario claim_type=return, gate_side=shipped
+     * @effects admin_request_submit_omits_approval_without_permission
+     */
+    it('승인 권한이 없으면 approve=false 로 접수한다', async () => {
+        await openRequest('return');
+        setField('reasonCode', 'defective');
+        setField('chargeMethod', 'free');
+        mockG7Core.api.post.mockResolvedValueOnce({ success: true, data: { claim_number: 'RT20260901000001', approval_skipped: null } });
+
+        await submitAdminClaimRequestHandler({ handler: 'sirsoft-ecommerce.submitAdminClaimRequest', params: { canApprove: false } } as any, mockContext);
+
+        const [, body] = mockG7Core.api.post.mock.calls[0];
+        expect(body.approve).toBe(false);
+    });
+
+    /**
      * 승인이 막히면 접수는 남는다(D6) — 성공 토스트가 아니라 경고로, 서버 문구와 사유를 함께 알린다.
      *
      * @scenario claim_type=return, gate_side=shipped

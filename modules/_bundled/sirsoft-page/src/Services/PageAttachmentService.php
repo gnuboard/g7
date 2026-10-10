@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
+use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Support\AttachmentLimits;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -33,10 +34,12 @@ class PageAttachmentService
      *
      * @param  PageAttachmentRepositoryInterface  $attachmentRepository  첨부파일 저장소
      * @param  StorageInterface  $storage  스토리지 드라이버 (모듈 서비스 프로바이더가 주입 — attachments 카테고리 디스크)
+     * @param  PageRepositoryInterface  $pageRepository  페이지 저장소 (업로드 대상 페이지의 스코프 판정용)
      */
     public function __construct(
         private PageAttachmentRepositoryInterface $attachmentRepository,
         private StorageInterface $storage,
+        private PageRepositoryInterface $pageRepository,
     ) {}
 
     /**
@@ -156,6 +159,12 @@ class PageAttachmentService
         // 비워 두면 임시 경로가 `temp//파일` 이 되어 저장소 경로 가드가 거부한다
         if (! $pageId && ! $tempKey) {
             $tempKey = Str::uuid()->toString();
+        }
+
+        // 기존 페이지에 붙이는 업로드는 그 페이지의 수정 권한·스코프를 본다 — 업로드 라우트는 정적 경로라 미들웨어
+        // 스코프 검사를 건너뛰고, 등록 권한만으로도 통과하므로 서비스가 다시 판정한다
+        if ($pageId) {
+            $this->assertUploadTargetPage($pageId);
         }
 
         // 개수 상한 최종 방어선 — 단일 업로드를 N 번 반복하는 경로도 여기서 막힌다
@@ -462,7 +471,29 @@ class PageAttachmentService
 
         // 부모를 못 읽으면 막는다(fail-closed) — 첨부에 page_id 가 있는데 페이지를 못 찾는
         // 것은 정상 상태가 아니고, 통과시키면 게이트가 있어야 할 자리가 비어 버린다.
-        if (! $page || ! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
+        // 삭제 라우트가 등록·수정 어느 권한으로도 열리므로(임시 첨부 정리) 연결된 첨부는 수정 권한을 여기서 직접 본다.
+        if (! $page
+            || ! PermissionHelper::check('sirsoft-page.pages.update', Auth::user())
+            || ! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+    }
+
+    /**
+     * 기존 페이지에 첨부를 더하는 업로드가 그 페이지의 수정 권한·스코프 안인지 검사합니다.
+     *
+     * @param  int  $pageId  대상 페이지 ID
+     * @return void
+     *
+     * @throws AccessDeniedHttpException 페이지가 없거나 수정 권한·스코프 밖인 경우
+     */
+    private function assertUploadTargetPage(int $pageId): void
+    {
+        $page = $this->pageRepository->findById($pageId);
+
+        if (! $page
+            || ! PermissionHelper::check('sirsoft-page.pages.update', Auth::user())
+            || ! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
     }

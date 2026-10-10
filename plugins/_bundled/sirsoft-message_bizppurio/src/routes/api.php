@@ -1,5 +1,6 @@
 <?php
 
+use App\Helpers\PermissionHelper;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Services\PluginSettingsService;
@@ -45,6 +46,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
             'success' => true,
             'data' => [
                 'url' => $origin.'/api/plugins/sirsoft-message_bizppurio/webhook',
+                // 설정 화면이 알림톡 템플릿 등록·검수·삭제·연결 확인 버튼을 잠그는 근거 — 그 API 들과 같은 권한(messaging.manage)
+                'abilities' => [
+                    'can_manage_messaging' => PermissionHelper::check('sirsoft-message_bizppurio.messaging.manage', auth()->user()),
+                ],
             ],
         ]);
     })->middleware('permission:admin,core.plugins.read')

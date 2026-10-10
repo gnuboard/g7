@@ -604,7 +604,7 @@
             $t:sirsoft-ecommerce.admin.product.action.reset
           </button>
           <!-- 지금 조건을 프리셋으로 저장. 조건을 전역으로 옮겨 담은 뒤 이름 입력 창을 연다 — 창은 별도 컨텍스트라 이 화면의 필터를 읽지 못한다 -->
-          <button data-ref="preset_save_button_desktop" type="button" class="btn btn-outline">
+          <button data-ref="preset_save_button_desktop" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
             <responsive on="portable" class="hidden"/>
             <on type="click">
               <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
@@ -629,7 +629,7 @@
           <icon name="sliders" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.product.action.edit_search</span>
         </button>
-        <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1">
+        <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
           <on type="click">
             <!-- 좁은 화면용 짝 버튼(위 넓은 화면 버튼은 여기서 숨는다). 담는 값과 여는 창은 같다. -->
             <sequence>

@@ -55,6 +55,12 @@ function evaluateDisabled(expression: string, product: any, local: any = {}): bo
 
 const NO_OPTION_GUARD = '(Array.isArray(product.data?.options) && product.data.options.length === 0)';
 
+/**
+ * 주문 권한(7.1.0 shop#3) — 상품 응답은 `abilities.can_order` 를 늘 싣고 [바로 구매]는 `can_order !== true` 면 잠긴다.
+ * 이 파일은 옵션 없음 가드만 재므로 권한은 있는 상태로 둔다. 빼면 「잠긴다」 단언이 권한 게이트 때문에 공허하게 통과한다.
+ */
+const CAN_ORDER = { abilities: { can_order: true } };
+
 describe('_purchase_card.json - 구매할 수 있는 옵션이 없는 상품', () => {
     const buyNow = collectNodes(purchaseCard, (n) => n.name === 'Button' && n.props?.['data-testid'] === 'buy-now')[0];
     const addToCart = collectNodes(purchaseCard, (n) => n.name === 'Button' && n.props?.['data-testid'] === 'add-to-cart')[0];
@@ -75,7 +81,7 @@ describe('_purchase_card.json - 구매할 수 있는 옵션이 없는 상품', (
      * @effects purchase_buttons_disabled_without_purchasable_option
      */
     it('옵션이 빈 배열이면 두 버튼이 잠긴다', () => {
-        const product = { options: [], option_groups: [], is_shippable_to_selected_country: true };
+        const product = { options: [], option_groups: [], is_shippable_to_selected_country: true, ...CAN_ORDER };
         expect(evaluateDisabled(buyNow.props.disabled, product)).toBe(true);
         expect(evaluateDisabled(addToCart.props.disabled, product)).toBe(true);
     });
@@ -85,7 +91,7 @@ describe('_purchase_card.json - 구매할 수 있는 옵션이 없는 상품', (
      * @effects purchase_buttons_enabled_with_purchasable_option
      */
     it('판매 중인 옵션이 하나라도 있으면 옵션 없음 가드로 잠기지 않는다 (회귀 가드)', () => {
-        const product = { options: [{ id: 1 }], option_groups: [], is_shippable_to_selected_country: true };
+        const product = { options: [{ id: 1 }], option_groups: [], is_shippable_to_selected_country: true, ...CAN_ORDER };
         expect(evaluateDisabled(buyNow.props.disabled, product)).toBe(false);
         expect(evaluateDisabled(addToCart.props.disabled, product)).toBe(false);
     });
@@ -95,7 +101,7 @@ describe('_purchase_card.json - 구매할 수 있는 옵션이 없는 상품', (
      * @effects missing_options_key_does_not_disable
      */
     it('응답에 options 키가 없으면 옵션 없음으로 판정하지 않는다', () => {
-        const product = { option_groups: [], is_shippable_to_selected_country: true };
+        const product = { option_groups: [], is_shippable_to_selected_country: true, ...CAN_ORDER };
         expect(evaluateDisabled(buyNow.props.disabled, product)).toBe(false);
         expect(evaluateDisabled(addToCart.props.disabled, product)).toBe(false);
     });

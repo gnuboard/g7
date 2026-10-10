@@ -502,6 +502,40 @@ class AdminInquiryListControllerTest extends ModuleTestCase
 
         return (int) $inquiry->id;
     }
+
+    /**
+     * 목록은 답변·삭제 버튼을 잠글 능력 키를 컬렉션과 행 양쪽에 싣는다 (7.1.0 G13).
+     *
+     * 답변 등록은 `inquiries.update`, 삭제는 `inquiries.delete` 라우트 권한과 같은 식별자다.
+     *
+     * @effects admin_product_inquiry_exposes_reply_and_delete_abilities
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_exposes_reply_and_delete_abilities(): void
+    {
+        $this->seedRow($this->memberA);
+
+        $this->actingAs($this->readOnlyAdmin)
+            ->getJson($this->apiBase)
+            ->assertStatus(200)
+            ->assertJsonPath('data.abilities.can_reply', false)
+            ->assertJsonPath('data.data.0.abilities.can_reply', false)
+            ->assertJsonPath('data.data.0.abilities.can_delete', false);
+
+        $manager = $this->createAdminUser([
+            'sirsoft-ecommerce.inquiries.read',
+            'sirsoft-ecommerce.inquiries.update',
+            'sirsoft-ecommerce.inquiries.delete',
+        ]);
+
+        $this->actingAs($manager)
+            ->getJson($this->apiBase)
+            ->assertStatus(200)
+            ->assertJsonPath('data.abilities.can_reply', true)
+            ->assertJsonPath('data.data.0.abilities.can_reply', true)
+            ->assertJsonPath('data.data.0.abilities.can_delete', true);
+    }
 }
 
 /**

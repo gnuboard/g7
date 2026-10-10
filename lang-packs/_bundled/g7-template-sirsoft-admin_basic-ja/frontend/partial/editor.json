@@ -1690,7 +1690,8 @@
     "analytics_row_trend": "訪問者統計の項目推移",
     "role_menus_tree": "アクセス可能なメニューツリー",
     "passwordExpiryPreview": "パスワード有効期限の対象件数",
-    "passwordExpiryManualRuns": "パスワード有効期限の手動実行状態"
+    "passwordExpiryManualRuns": "パスワード有効期限の手動実行状態",
+    "user_check": "会員登録権限の確認"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

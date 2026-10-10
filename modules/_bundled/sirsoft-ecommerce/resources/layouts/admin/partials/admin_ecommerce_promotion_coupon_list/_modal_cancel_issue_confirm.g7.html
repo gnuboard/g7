@@ -17,7 +17,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting || _global.issueHistoryCoupon?.can_update !== true}}">
         <on type="click">
           <!-- 발급취소. 되돌릴 수 없는 동작이라 확인 창을 거치고, 성공하면 대상까지 비워 같은 값이 다음 열림에 남지 않게 한다. -->
           <sequence>

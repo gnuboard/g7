@@ -631,5 +631,6 @@
     "page_title": "비회원 클레임 신청",
     "page_description": "비회원 주문의 교환·반품·취소/환불을 신청합니다.",
     "edit_page_title": "비회원 신청 내용 수정"
-  }
+  },
+  "order_permission_denied": "주문 권한이 없어 주문할 수 없습니다. 판매자에게 문의해 주세요."
 }

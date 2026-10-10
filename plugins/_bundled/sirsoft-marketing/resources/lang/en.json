@@ -110,5 +110,6 @@
       "confirm": "Deactivate Instead",
       "restored": "The channel was restored as disabled. Click Save to apply."
     }
-  }
+  },
+  "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

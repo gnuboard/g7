@@ -154,29 +154,26 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
       {/* enableDrag가 false일 때 계층 구조용 패딩만 적용 (level > 0인 경우에만) */}
       {!enableDrag && level > 0 && <Div style={{ paddingLeft: `${paddingLeft}px` }} />}
 
-      {/* 펼침/접힘 버튼 - 계층 구조가 있을 때만 표시 */}
-      {enableDrag && (
-        <>
-          {item.hasChildren ? (
-            <Button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onExpandToggle?.();
-              }}
-              className={`flex-shrink-0 p-1 ${dragHandleClassName}`}
-              aria-label={isExpanded ? tOr('common.collapse', 'Collapse') : tOr('common.expand', 'Expand')}
-              aria-expanded={!!isExpanded}
-            >
-              <Icon
-                name={isExpanded ? 'chevron-down' : 'chevron-right'}
-                className="w-4 h-4"
-              />
-            </Button>
-          ) : (
-            <Div className="flex-shrink-0 w-6" />
-          )}
-        </>
+      {/* 펼침/접힘 버튼 - 계층 구조가 있을 때만 표시. 끌기(enableDrag)와 무관하다 — 읽기 전용(끌기 끔)
+          운영자도 하위 메뉴·카테고리를 펼쳐 볼 수 있어야 한다. */}
+      {item.hasChildren ? (
+        <Button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onExpandToggle?.();
+          }}
+          className={`flex-shrink-0 p-1 ${dragHandleClassName}`}
+          aria-label={isExpanded ? tOr('common.collapse', 'Collapse') : tOr('common.expand', 'Expand')}
+          aria-expanded={!!isExpanded}
+        >
+          <Icon
+            name={isExpanded ? 'chevron-down' : 'chevron-right'}
+            className="w-4 h-4"
+          />
+        </Button>
+      ) : (
+        <Div className="flex-shrink-0 w-6" />
       )}
 
       {/* 선택 모드 체크박스 — 행 클릭과 같은 토글이라 클릭 전파는 막는다 */}

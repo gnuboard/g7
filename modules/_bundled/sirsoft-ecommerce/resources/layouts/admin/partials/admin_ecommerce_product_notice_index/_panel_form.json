@@ -441,6 +441,7 @@
                                                 "addLabel": "$t:sirsoft-ecommerce.admin.product_notice_template.form.add_field",
                                                 "enableDrag": true,
                                                 "disabled": "{{_global.panelMode === 'edit' && _global.selectedTemplate?.abilities?.can_update !== true}}",
+                                                "readOnly": "{{_global.panelMode === 'edit' && _global.selectedTemplate?.abilities?.can_update !== true}}",
                                                 "minItems": 1,
                                                 "emptyMessage": "$t:sirsoft-ecommerce.admin.product_notice_template.form.empty_fields",
                                                 "errors": "{{_local.errors}}",

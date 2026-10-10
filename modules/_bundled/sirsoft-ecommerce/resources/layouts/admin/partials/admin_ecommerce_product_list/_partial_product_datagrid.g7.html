@@ -159,7 +159,7 @@
       </column>
       <prop name="rowActions">
         <item id="edit" label="$t:sirsoft-ecommerce.admin.product.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
-        <item id="copy" label="$t:sirsoft-ecommerce.admin.product.action.copy" iconName="fa-regular fa-copy" disabledField="abilities.can_update"/>
+        <item id="copy" label="$t:sirsoft-ecommerce.admin.product.action.copy" iconName="fa-regular fa-copy" disabled="{{products?.data?.abilities?.can_create !== true}}"/>
         <item id="divider" :divider="true"/>
         <item id="delete" label="$t:sirsoft-ecommerce.admin.product.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
       </prop>

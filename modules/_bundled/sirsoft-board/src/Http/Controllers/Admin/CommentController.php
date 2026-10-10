@@ -60,8 +60,9 @@ class CommentController extends AdminBaseController
             return $this->forbidden('sirsoft-board::messages.permission.denied');
         }
 
-        // admin.write 권한이 있고 본인 댓글이면 수정/삭제 가능
-        if ($this->checkBoardPermission($slug, 'admin.write') && $this->isCommentOwner($commentUserId)) {
+        // admin.comments.write 권한이 있고 본인 댓글이면 수정/삭제 가능 — 종전 'admin.write' 는 config 에 없는 권한이라
+        // 작성자 본인도 manage 가 없으면 자기 댓글을 고치지 못했다
+        if ($this->checkBoardPermission($slug, 'admin.comments.write') && $this->isCommentOwner($commentUserId)) {
             return null;
         }
 

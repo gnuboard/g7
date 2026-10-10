@@ -3712,7 +3712,8 @@
         "per_page": 20,
         "total": 3,
         "abilities": {
-          "can_install": true
+          "can_install": true,
+          "can_view_language_packs": true
         }
       }
     },
@@ -3821,6 +3822,10 @@
           "per_page": 15,
           "total": 3,
           "has_more_pages": false
+        },
+        "abilities": {
+          "can_update": true,
+          "can_delete": true
         }
       },
       "channels": [
@@ -3959,7 +3964,8 @@
         "per_page": 20,
         "total": 3,
         "abilities": {
-          "can_install": true
+          "can_install": true,
+          "can_view_language_packs": true
         }
       }
     },
@@ -4568,6 +4574,16 @@
         "total": 3
       }
     },
+    "user_check": {
+      "data": {
+        "data": [],
+        "abilities": {
+          "can_create": true,
+          "can_update": true,
+          "can_delete": true
+        }
+      }
+    },
     "schedule_history": {
       "data": [
         {
@@ -4592,6 +4608,7 @@
     },
     "schedules": {
       "data": {
+        "abilities": { "can_create": true, "can_update": true, "can_delete": true, "can_run": true },
         "pagination": { "total": 3, "current_page": 1, "last_page": 1, "per_page": 20 },
         "data": [
           {
@@ -5205,7 +5222,8 @@
         "per_page": 15,
         "abilities": {
           "can_create": true,
-          "can_install": true
+          "can_install": true,
+          "can_view_language_packs": true
         }
       }
     },

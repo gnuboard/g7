@@ -1832,6 +1832,7 @@
                         },
                         {
                             "comment": "미수납 추가결제를 내는 자리 — PG 결제면 결제창으로 넘어가며 진행 표시를 켠 채 두어 같은 건으로 두 번 진입하지 않게 하고, 마일리지 결제는 그 자리에서 끝난 뒤 신청서를 다시 읽는다.",
+                            "id": "claim_pay_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -1851,7 +1852,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                                "disabled": "{{_local.isPayingClaim === true}}"
+                                "disabled": "{{_local.isPayingClaim === true || claim.data?.claim?.can_pay !== true}}"
                             },
                             "children": [
                                 {

@@ -41,7 +41,7 @@
 
 ### GET /api/modules/sirsoft-board/admin/reaction-types
 
-- **인증**: `auth:sanctum` + `admin` · **권한**: `sirsoft-board.settings.read`
+- **인증**: `auth:sanctum` + `admin` · **권한**: `sirsoft-board.settings.read` 또는 `sirsoft-board.boards.read` (OR — 게시판 폼의 「사용 반응 유형」 선택지로도 쓰인다, 7.1.0)
 - **활성 유형만** `display_order` 순으로 돌려줍니다 (게시판 폼 체크박스 옵션 소스)
 
 **응답 필드** (`data.reaction_types[]`)

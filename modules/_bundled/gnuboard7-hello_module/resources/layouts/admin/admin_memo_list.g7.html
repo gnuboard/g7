@@ -23,7 +23,7 @@
     <div data-ref="memo_list_wrapper" class="admin-page-content">
       <div data-ref="memo_list_header" class="flex-between mb-6">
         <h1 data-ref="memo_list_title" class="text-page-heading">$t:gnuboard7-hello_module.admin.memos.index.title</h1>
-        <button data-ref="memo_create_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors">
+        <button data-ref="memo_create_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{memos?.data?.abilities?.can_create !== true}}" title="{{memos?.data?.abilities?.can_create === true ? '' : '$t:gnuboard7-hello_module.admin.memos.index.create_no_permission'}}">
           <on type="click">
             <!-- 새 메모 작성. 작성을 취소하고 돌아올 때를 위해 목록 상태를 함께 넘긴다 -->
             <navigate path="/admin/memos/create" :mergeQuery="true">

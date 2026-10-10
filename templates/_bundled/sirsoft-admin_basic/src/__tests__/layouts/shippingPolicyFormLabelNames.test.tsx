@@ -113,7 +113,12 @@ async function renderPartial(partialFile: string): Promise<HTMLElement> {
         componentRegistry: setupRegistry(),
         locale: 'ko',
         translations: { 'sirsoft-ecommerce': { admin: { shipping_policy: lang } } },
-        initialData: { _computedDefinitions: mainLayout.computed },
+        // 신규 등록 화면은 목록 응답(`policy_abilities`)의 수정 권한이 있어야 회수지 입력 묶음을 연다(`lacksUpdate`,
+        // 응답 전·권한 없음은 감춤 — 회수지는 정책 생성 뒤 수정 권한으로 따로 저장된다). 수정 권한이 있는 관리자로 그린다.
+        initialData: {
+            _computedDefinitions: mainLayout.computed,
+            policy_abilities: { data: { abilities: { can_create: true, can_update: true } } },
+        },
         initialState: { _local: newPolicyState() },
     });
     const { container } = await utils.render();

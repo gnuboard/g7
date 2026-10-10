@@ -210,7 +210,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{_global.currentUser?.is_admin === true && !!_local._kgReceipt?.vbank_bank_code}}",
+                                    "if": "{{!!_local._kgReceipt?.vbank_bank_code}}",
                                     "props": {
                                         "className": "flex items-center justify-between"
                                     },

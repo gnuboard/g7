@@ -771,7 +771,8 @@
                                 {
                                     "id": "delete",
                                     "label": "$t:sirsoft-ecommerce.admin.wishlists.actions.delete",
-                                    "iconName": "trash"
+                                    "iconName": "trash",
+                                    "disabled": "{{wishlists?.data?.abilities?.can_manage !== true}}"
                                 },
                                 {
                                     "id": "go_to_member",

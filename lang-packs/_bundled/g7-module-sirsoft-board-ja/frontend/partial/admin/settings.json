@@ -2,6 +2,7 @@
   "title": "掲示板の環境設定",
   "description": "掲示板モジュールのデフォルト値とポリシーを管理します",
   "read_only_message": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。",
+  "board_types_no_permission": "掲示板タイプを管理するには掲示板の作成権限が必要です。",
   "page_info": "新しい掲示板を作成する際に適用されるデフォルト設定を管理します。各項目のチェックボックスを選択すると、既存の掲示板に一括適用できます。",
   "validation_error": "入力情報を確認してください。",
   "save_success": "設定が保存されました。",
@@ -294,6 +295,7 @@
     "apply_selected": "選択した掲示板",
     "select_boards_placeholder": "掲示板を選択してください",
     "apply_button": "一括適用",
+    "no_permission": "一括適用には掲示板環境設定の更新権限と掲示板の更新権限の両方が必要です。",
     "no_fields_selected": "適用する項目が選択されていません。",
     "no_boards_selected": "適用する掲示板が選択されていません。",
     "checked_fields_notice": "全体設定を保存した後、チェックした項目のみ一括適用されます。",
@@ -389,6 +391,7 @@
       "cache_management": "SEOキャッシュ管理",
       "cache_description": "掲示板関連のSEOキャッシュを手動で初期化します。設定保存時に自動で初期化されます。",
       "clear_cache": "SEOキャッシュ初期化",
+      "clear_cache_no_permission": "SEOキャッシュを初期化するにはサイト環境設定の更新権限が必要です。",
       "clear_cache_success": "SEOキャッシュが初期化されました。",
       "clear_cache_error": "SEOキャッシュ初期化に失敗しました。"
     }
@@ -460,6 +463,8 @@
     "enable_success": "ポリシーが有効化されました。",
     "disable_success": "ポリシーが無効化されました。",
     "toggle_failed": "ポリシーステータス変更に失敗しました。",
+    "no_read_permission": "本人認証ポリシーを閲覧する権限がありません。「掲示板 本人認証ポリシー閲覧」権限が必要です。",
+    "read_only_notice": "本人認証ポリシーを編集する権限がないため、読み取り専用として表示されます。ポリシーを追加·編集·削除するには「掲示板 本人認証ポリシー編集」権限が必要です。",
     "col": {
       "key": "ポリシーキー",
       "scope": "範囲",

@@ -37,6 +37,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\OrderCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimRequestService;
+use Modules\Sirsoft\Ecommerce\Services\ClaimScopeGuard;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
@@ -502,12 +503,21 @@ class OrderController extends AdminBaseController
      *
      * 환불할 돈이 없는 주문(미결제·0원)은 환불신청서 없이 취소신청서가 즉시 생긴다(D1·D3).
      *
+     * 「환불까지 한 번에 처리」 는 환불 실행 권한(`claims.execute-refund`)이 있어야 한다 — 직권 접수
+     * 경로(`OrderClaimController::storeCancelRefund()`)와 같은 판정이다. 이 경로의 라우트 권한
+     * (`orders.update`)만으로 PG 환불까지 가지 못하게 한다.
+     *
      * @param  CancelOrderRequest  $request  주문 취소 요청 데이터
      * @param  Order  $order  대상 주문 모델
      * @return JsonResponse 취소 결과 JSON 응답
      */
     public function cancelOrder(CancelOrderRequest $request, Order $order): JsonResponse
     {
+        if ($request->shouldAutoAdvanceRefund()
+            && ! OrderClaimController::canAutoAdvanceRefund($order, app(ClaimScopeGuard::class))) {
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.claims.auto_refund_forbidden', 403);
+        }
+
         try {
             $outcome = $this->adminClaimRequestService->requestCancelOrRefund(
                 $order,

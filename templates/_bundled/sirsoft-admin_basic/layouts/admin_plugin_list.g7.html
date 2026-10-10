@@ -273,9 +273,9 @@
             ? { label: '$t:admin.plugins.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }
             : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.plugins.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true } : null),
           actions: [
-            { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_activate !== true },
+            { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_update !== true },
             { id: 'refresh_layouts', label: '$t:admin.plugins.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
-            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' },
+            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || plugins?.data?.abilities?.can_view_language_packs !== true },
             { id: 'view_detail', label: '$t:admin.plugins.actions.view_detail', iconName: 'info-circle' },
             { id: 'uninstall', label: '$t:admin.plugins.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }
           ]

@@ -240,6 +240,7 @@ class UserResource extends BaseApiResource
      * 리소스별 권한을 해석합니다.
      *
      * 슈퍼관리자 계정은 시스템 불변식상 삭제 불가하므로 can_delete=false 로 강제합니다.
+     * 요청한 운영자 본인 계정도 관리자 화면에서는 삭제할 수 없으므로 can_delete=false 입니다.
      * 그 외 사용자(관리자 포함)의 삭제 가능 여부는 G7 역할/퍼미션/스코프 시스템
      * (PermissionHelper::checkScopeAccess) 이 평가합니다.
      *
@@ -270,6 +271,11 @@ class UserResource extends BaseApiResource
             if (! UserGradeGuard::mayModify($target, $actor instanceof User ? $actor : null)) {
                 $abilities['can_update'] = false;
                 $abilities['can_assign_roles'] = false;
+            }
+
+            // 본인 계정은 관리자 화면에서 지울 수 없다 — 서버(UserService::deleteUser)와 같은 판정.
+            if ($actor instanceof User && $actor->id === $target->id) {
+                $abilities['can_delete'] = false;
             }
         }
 

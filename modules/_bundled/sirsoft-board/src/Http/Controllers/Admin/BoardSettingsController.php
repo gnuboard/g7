@@ -56,8 +56,16 @@ class BoardSettingsController extends AdminBaseController
             $settings['report_permissions'] = $this->settingsService->getReportPermissionRoles();
             $settings = $this->appendReactionTypesToSettings($settings);
 
+            $user = $request->user();
+            $canUpdate = PermissionHelper::check('sirsoft-board.settings.update', $user);
             $settings['abilities'] = [
-                'can_update' => PermissionHelper::check('sirsoft-board.settings.update', $request->user()),
+                'can_update' => $canUpdate,
+                // 일괄 적용은 기존 게시판 설정을 덮어쓰므로 게시판 수정 권한도 요구한다(제품 결정 2026-10-09) — 라우트와 같은 두 권한
+                'can_bulk_apply' => $canUpdate && PermissionHelper::check('sirsoft-board.boards.update', $user),
+                // 게시판 유형 추가·수정·삭제 API 는 게시판 등록 권한을 쓴다(board-types 라우트)
+                'can_manage_board_types' => PermissionHelper::check('sirsoft-board.boards.create', $user),
+                // SEO 캐시 초기화는 코어 API(/api/admin/seo/clear-cache)라 코어 환경설정 수정 권한이 필요하다
+                'can_clear_seo_cache' => PermissionHelper::check('core.settings.update', $user),
             ];
 
             $settings['_meta'] = [

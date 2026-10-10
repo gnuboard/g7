@@ -2,7 +2,13 @@
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
 <meta title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description"/>
 <!-- 플러그인 설정값 — 화면을 열 때마다 다시 받아 폼(_local.form)의 초기값으로 깐다. 저장 뒤에도 다시 받는다 -->
-<data-source id="settings" label_key="$t:sirsoft-koreaexim.settings_tab" type="api" endpoint="/api/admin/plugins/sirsoft-koreaexim/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+<data-source id="settings" label_key="$t:sirsoft-koreaexim.settings_tab" type="api" endpoint="/api/admin/plugins/sirsoft-koreaexim/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+<error-handling>
+<on-code code="403">
+<set-state target="local" :koreaeximSettingsForbidden="true"/>
+</on-code>
+</error-handling>
+</data-source>
 <!-- 상태 요약(자동 관리·키 등록·마지막 실행·호출 예산·다음 실행 시각). 권한이 없으면 403 을 콘텐츠 영역 오류 화면으로 보인다 -->
 <data-source id="koreaeximStatus" label_key="$t:sirsoft-koreaexim.status" type="api" endpoint="/api/plugins/sirsoft-koreaexim/admin/status" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
 <error-handling>
@@ -65,9 +71,16 @@
 </field>
 </field>
 </fallback>
+<error-handling>
+<on-code code="403">
+<set-state target="local" :koreaeximNotificationsForbidden="true"/>
+</on-code>
+</error-handling>
 </data-source>
 <computed name="activeTab">{{query.tab || _global.activeKoreaeximTab || 'settings'}}</computed>
 <computed name="isReadOnly">{{koreaeximStatus?.data?.abilities?.can_manage !== true}}</computed>
+<computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+<computed name="isSettingsReadOnly">{{koreaeximStatus?.data?.abilities?.can_manage !== true || settings?.data?.abilities?.can_update !== true}}</computed>
 <computed name="isNotificationReadOnly">{{koreaeximNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
 <permissions>
 <permission>sirsoft-koreaexim.exchange_rate.view</permission>
@@ -98,7 +111,13 @@
 </sequence>
 </on>
 </tab-navigation>
-<div data-if="{{_computed.isReadOnly}}" role="status" class="alert-info mb-4">$t:sirsoft-koreaexim.read_only</div>
+<!-- 읽기 전용 안내 — 빠진 권한마다 따로 알린다. 플러그인 설정 수정 권한이 없으면 설정 폼이, 환율 관리 권한이 없으면 설정 폼과 환율 갱신이 잠긴다. 응답이 오기 전·설정 403 일 때는 띄우지 않는다 -->
+<div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mb-4">
+<icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+<span class="text-warning-soft">$t:sirsoft-koreaexim.plugin_read_only</span>
+</div>
+<div data-ref="koreaexim_read_only_banner" data-if="{{_computed.isReadOnly &amp;&amp; !!koreaeximStatus?.data}}" role="status" class="alert-info mb-4">$t:sirsoft-koreaexim.read_only</div>
+<div data-ref="koreaexim_settings_forbidden" data-if="{{_local.koreaeximSettingsForbidden === true}}" role="status" class="alert-warning mb-4">$t:sirsoft-koreaexim.settings_forbidden</div>
 <div data-ref="koreaexim_tab_content" class="tab-content">
 <include src="partials/plugin_settings/_tab_settings.g7.html"/>
 <include src="partials/plugin_settings/_tab_history.g7.html"/>
@@ -110,7 +129,7 @@
 </on>
 <span>$t:common.cancel</span>
 </button>
-<button type="button" data-ref="koreaexim_save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+<button type="button" data-ref="koreaexim_save" disabled="{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
 <on type="click">
 <!-- 설정 저장 — 폼 전체를 PUT 하고 성공하면 설정·상태를 다시 받아 변경 표시를 내린다. 검증 오류는 _local.errors 로 각 필드 밑에 그린다 -->
 <sequence>

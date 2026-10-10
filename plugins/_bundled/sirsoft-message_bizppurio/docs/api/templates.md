@@ -300,7 +300,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.view`)이 없는 경우 |
 
-**설명**
+**설명** 응답 `data.abilities.can_manage_messaging` 은 알림 템플릿 편집 창의 비즈뿌리오 섹션 잠금 근거입니다(7.1.0).
 
 알림 설정 3면(코어/게시판/이커머스)의 행 하단 UI 가 소비하는 `notification_type` 키 요약 맵이다.
 행 수는 알림 정의 수에 묶인 설정성 데이터라 페이지네이션 없이 전량 내려준다.

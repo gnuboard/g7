@@ -77,6 +77,7 @@ effects:
   - order_retention_target_button_wraps_on_narrow_viewports
   - order_manual_run_processes_while_off
   - order_delete_mode_manual_run_requires_order_delete_permission
+  - order_delete_mode_manual_run_is_runnable_by_the_admin_role
   - order_manual_run_button_opens_the_confirm_modal
   - claim_personal_data_is_anonymized_with_the_order
   - claim_records_are_purged_with_images_without_cascade

@@ -11,13 +11,13 @@
       <div class="row-stack">
         <div data-ref="field_category_title" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
-          <input type="text" name="seo.meta_category_title" placeholder="{commerce_name} - {category_name}" class="{{_local.errors?.['seo.meta_category_title'] ? 'input input-error' : 'input'}}"/>
+          <input type="text" name="seo.meta_category_title" placeholder="{commerce_name} - {category_name}" class="{{_local.errors?.['seo.meta_category_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_category_title']}}" class="form-error">{{_local.errors?.['seo.meta_category_title']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {category_name}</p>
         </div>
         <div data-ref="field_category_description" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
-          <textarea name="seo.meta_category_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.category_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_category_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"/>
+          <textarea name="seo.meta_category_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.category_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_category_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_category_description']}}" class="form-error">{{_local.errors?.['seo.meta_category_description']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {category_description}</p>
         </div>
@@ -28,13 +28,13 @@
       <div class="row-stack">
         <div data-ref="field_search_title" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
-          <input type="text" name="seo.meta_search_title" placeholder="{commerce_name} - {keyword_name}" class="{{_local.errors?.['seo.meta_search_title'] ? 'input input-error' : 'input'}}"/>
+          <input type="text" name="seo.meta_search_title" placeholder="{commerce_name} - {keyword_name}" class="{{_local.errors?.['seo.meta_search_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_search_title']}}" class="form-error">{{_local.errors?.['seo.meta_search_title']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {keyword_name}</p>
         </div>
         <div data-ref="field_search_description" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
-          <textarea name="seo.meta_search_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.search_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_search_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"/>
+          <textarea name="seo.meta_search_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.search_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_search_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_search_description']}}" class="form-error">{{_local.errors?.['seo.meta_search_description']?.[0] ?? ''}}</span>
         </div>
       </div>
@@ -44,13 +44,13 @@
       <div class="row-stack">
         <div data-ref="field_product_title" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
-          <input type="text" name="seo.meta_product_title" placeholder="{commerce_name} - {product_name}" class="{{_local.errors?.['seo.meta_product_title'] ? 'input input-error' : 'input'}}"/>
+          <input type="text" name="seo.meta_product_title" placeholder="{commerce_name} - {product_name}" class="{{_local.errors?.['seo.meta_product_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_product_title']}}" class="form-error">{{_local.errors?.['seo.meta_product_title']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {product_name}</p>
         </div>
         <div data-ref="field_product_description" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
-          <textarea name="seo.meta_product_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.product_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_product_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"/>
+          <textarea name="seo.meta_product_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.product_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_product_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_product_description']}}" class="form-error">{{_local.errors?.['seo.meta_product_description']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {product_description}</p>
         </div>
@@ -61,13 +61,13 @@
       <div class="row-stack">
         <div data-ref="field_shop_index_title" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
-          <input type="text" name="seo.meta_shop_index_title" placeholder="{commerce_name}" class="{{_local.errors?.['seo.meta_shop_index_title'] ? 'input input-error' : 'input'}}"/>
+          <input type="text" name="seo.meta_shop_index_title" placeholder="{commerce_name}" class="{{_local.errors?.['seo.meta_shop_index_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_shop_index_title']}}" class="form-error">{{_local.errors?.['seo.meta_shop_index_title']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}</p>
         </div>
         <div data-ref="field_shop_index_description" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
-          <textarea name="seo.meta_shop_index_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.shop_index_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_shop_index_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"/>
+          <textarea name="seo.meta_shop_index_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.shop_index_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_shop_index_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_shop_index_description']}}" class="form-error">{{_local.errors?.['seo.meta_shop_index_description']?.[0] ?? ''}}</span>
         </div>
       </div>
@@ -81,19 +81,19 @@
             <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.provide_pages</label>
             <div class="stack-tight">
               <label class="flex-center gap-2 cursor-pointer">
-                <input type="checkbox" name="seo.seo_category" class="checkbox" :checked="true"/>
+                <input type="checkbox" name="seo.seo_category" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
                 <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.category</span>
               </label>
               <label class="flex-center gap-2 cursor-pointer">
-                <input type="checkbox" name="seo.seo_search_result" class="checkbox" :checked="true"/>
+                <input type="checkbox" name="seo.seo_search_result" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
                 <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.search_result</span>
               </label>
               <label class="flex-center gap-2 cursor-pointer">
-                <input type="checkbox" name="seo.seo_product_detail" class="checkbox" :checked="true"/>
+                <input type="checkbox" name="seo.seo_product_detail" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
                 <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.product_detail</span>
               </label>
               <label class="flex-center gap-2 cursor-pointer">
-                <input type="checkbox" name="seo.seo_shop_index" class="checkbox" :checked="true"/>
+                <input type="checkbox" name="seo.seo_shop_index" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
                 <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.shop_index</span>
               </label>
             </div>
@@ -109,7 +109,8 @@
                 <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.current_cache_size:</span>
                 <span class="text-heading">{{seoStats?.data?.size_formatted ?? '-'}}</span>
               </div>
-              <button type="button" class="btn btn-danger">
+              <!-- 캐시 비우기는 설정 수정 권한의 일이다(서버 settings.update) — 읽기 전용이면 확인 창을 열지 않게 잠근다. -->
+              <button data-ref="seo_clear_cache_button" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <open-modal target="modal_clear_seo_cache"/>
                 </on>

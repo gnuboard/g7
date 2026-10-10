@@ -142,7 +142,12 @@
             "fallback": {
                 "data": []
             },
-            "comment": "확장 경고(코어 비호환·복구 가능 등). 유일한 `background` 소스다 — 첫 그림을 막지 않는다.\n       각 경고는 자기 처리 엔드포인트를 응답에 담아 오므로, 아래 버튼은 그 값을 그대로 호출한다."
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "확장 경고(코어 비호환·복구 가능 등). 유일한 `background` 소스다 — 첫 그림을 막지 않는다.\n       각 경고는 자기 처리 엔드포인트와 그 엔드포인트를 부를 수 있는지(abilities.can_recover·can_dismiss)를\n       응답에 담아 오므로, 아래 버튼은 그 값으로 잠그고 주소를 그대로 호출한다. 시스템 알림 권한이 없으면\n       403 이 정상이라 토스트 없이 빈 목록으로 둔다(경고 블록도 같은 권한으로 숨겨진다)."
         },
         {
             "id": "dashboard_recent_notifications",
@@ -463,6 +468,16 @@
                                                 "text": "{{alert.time ?? ''}}"
                                             },
                                             {
+                                                "id": "top_alert_permission_hint_{{$idx}}",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(!!alert.recover_endpoint && alert.abilities?.can_recover !== true) || (!!alert.extension_type && !!alert.identifier && alert.abilities?.can_dismiss !== true)}}",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:admin.dashboard.alert_action_no_permission"
+                                            },
+                                            {
                                                 "id": "top_alert_actions_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
@@ -511,7 +526,8 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
                                                         },
                                                         "children": [
                                                             {
@@ -610,8 +626,9 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded",
-                                                            "aria-label": "$t:extensions.alerts.dismiss_action"
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "aria-label": "$t:extensions.alerts.dismiss_action",
+                                                            "disabled": "{{alert.abilities?.can_dismiss !== true}}"
                                                         },
                                                         "children": [
                                                             {
@@ -1797,6 +1814,16 @@
                                                                 "text": "{{alert.time ?? ''}}"
                                                             },
                                                             {
+                                                                "id": "alert_permission_hint_{{$idx}}",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{(!!alert.recover_endpoint && alert.abilities?.can_recover !== true) || (!!alert.extension_type && !!alert.identifier && alert.abilities?.can_dismiss !== true)}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:admin.dashboard.alert_action_no_permission"
+                                                            },
+                                                            {
                                                                 "id": "alert_actions_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Div",
@@ -1845,7 +1872,8 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1944,8 +1972,9 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded",
-                                                                            "aria-label": "$t:extensions.alerts.dismiss_action"
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                            "aria-label": "$t:extensions.alerts.dismiss_action",
+                                                                            "disabled": "{{alert.abilities?.can_dismiss !== true}}"
                                                                         },
                                                                         "children": [
                                                                             {

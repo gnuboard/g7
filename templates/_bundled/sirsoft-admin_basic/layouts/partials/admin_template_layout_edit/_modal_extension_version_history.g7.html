@@ -23,7 +23,7 @@
             <span class="font-medium text-gray-900 dark:text-white">{{version.created_at}}</span>
             <span data-if="{{idx === 0}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:admin.templates.modals.extension_version_history.latest</span>
           </div>
-          <button data-if="{{idx !== 0}}" type="button" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoringExtension}}">
+          <button data-if="{{idx !== 0}}" type="button" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoringExtension || current_extension?.data?.abilities?.can_update !== true}}">
             <on type="click">
               <!-- 되돌리는 동안 판본 카드들을 흐리게 덮어 두 번 누르는 것을 막는다(버튼 잠금과 같은 값을 본다). -->
               <sequence>

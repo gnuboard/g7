@@ -6,6 +6,8 @@ return [
     'cannot_modify_super_admin' => 'You do not have permission to modify a super admin account or role.',
     'cannot_grant_unheld_permission' => 'You cannot grant permissions you do not hold or a broader scope than your own.',
     'cannot_modify_protected_role' => 'You do not have permission to modify a system or extension-owned role.',
+    'cannot_delete_self' => 'You cannot delete your own account from the admin screen. Withdraw from My Page instead.',
+    'role_active_state_locked' => 'The administrator role cannot be turned off. Turning it off would revoke the admin permissions of every operator.',
 
     'circular_reference' => 'Layout circular reference detected: :trace',
     'max_depth_exceeded' => 'Layout nesting depth exceeds maximum allowed depth (:max).',

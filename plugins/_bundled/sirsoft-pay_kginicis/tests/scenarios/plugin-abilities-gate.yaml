@@ -1,0 +1,20 @@
+feature: sirsoft-pay_kginicis 화면 abilities 게이트 — 화면 잠금을 서버 권한과 맞춘다 (7.1.0 abilities 게이트 plugins·G04·R1)
+
+description: |
+  관리자 주문 상세 결제 주입·설정 화면·업로드 관리의 쓰기 컨트롤을 응답 abilities(호스트 주문 can_update·can_execute_refund, 플러그인 API 판정)로 잠근다.
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/plugin-abilities-gate.test.ts
+
+axes:
+  case:
+    - order_update_denied
+    - refund_retry_without_execute_refund
+    - cbt_product_without_create
+    - bank_code_by_server
+
+effects:
+  - payment_injection_write_locked
+  - refund_retry_requires_execute_refund
+  - cbt_product_button_locked
+  - bank_code_not_gated_by_is_admin

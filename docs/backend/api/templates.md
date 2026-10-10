@@ -215,6 +215,7 @@ HTTP/1.1 200
 
 **설명** 설치/미설치 템플릿을 모두 포함해 목록을 조회합니다(TemplateService::getPaginatedTemplates). `search`(이름·식별자·설명·벤더 OR 검색), `filters`(AND 조건), `status`, `type`, `include_hidden` 필터와 페이지네이션을 지원하며, 응답에는 현재 사용자의 install/activate/uninstall 수행 가능 여부(`abilities`)가 함께 담깁니다. `core.templates.read` 권한이 필요합니다.
 
+**목록 권한 값(7.1.0)** 응답 `abilities` 는 컬렉션 권한 맵(`can_install`·`can_activate`·`can_uninstall`)에 더해 카드 「언어팩 관리」 이동 가능 여부 `can_view_language_packs`(= `core.language_packs.read`)를 싣는다. 검색·필터 결과가 0건이어도 항상 싣는다. 템플릿은 `can_edit_layouts`(= `core.templates.layouts.edit`)도 싣는다.
 
 ### POST /api/admin/templates/activate
 <!-- @generated:start:api.admin.templates.activate -->
@@ -610,6 +611,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 
 **설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). 설치 직후 템플릿은 비활성이라 그 템플릿 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 로 반환되고, 템플릿을 켤 때 함께 켜집니다. `core.templates.install` 권한이 필요합니다.
 
+**동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
 
 ### POST /api/admin/templates/install-from-file
 <!-- @generated:start:api.admin.templates.install-from-file -->
@@ -94976,6 +94978,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 
 **설명** 특정 템플릿의 상세 정보를 조회합니다(TemplateService::getTemplateInfo). 목록보다 상세한 필드(toDetailArray)와 함께 지원 언어팩 정보를 주입해 반환하며, 템플릿이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
+**권한 값(7.1.0)** 상세 응답에도 행 목록과 같은 `abilities` 가 실린다 — 상세 창이 목록 행을 담던 전역을 이 응답으로 덮어써도 권한 값이 남는다.
 
 ### GET /api/admin/templates/{templateName}/check-modified-layouts
 <!-- @generated:start:api.admin.templates.check-modified-layouts -->
@@ -95519,6 +95522,7 @@ _단건 응답: `data` 객체의 필드._
 
 **설명** 템플릿 설치 cascade 프리뷰를 반환합니다. 의존 확장 목록과 동반 가능한 번들 언어팩을 미리 계산해(ExtensionInstallPreviewBuilder::build) 설치 확인 화면에서 사용합니다. `core.templates.install` 권한이 필요합니다.
 
+**항목별 권한(7.1.0)** `dependencies[]`·`language_packs[]` 의 각 항목에 `can_select`(불리언)가 실린다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지이며(판정은 설치 API 의 403 과 같다), false 면 `default_selected` 도 false 다.
 
 ### GET /api/admin/templates/{templateName}/layout-extensions
 <!-- @generated:start:api.admin.templates.layout-extensions.index -->

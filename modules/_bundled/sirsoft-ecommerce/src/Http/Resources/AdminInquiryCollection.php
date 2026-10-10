@@ -24,7 +24,10 @@ class AdminInquiryCollection extends BaseApiCollection
     protected function abilityMap(): array
     {
         return [
+            // 일괄 삭제·선택 — 삭제 라우트(`inquiries.delete`)와 같은 식별자
             'can_manage' => 'sirsoft-ecommerce.inquiries.delete',
+            // 답변 창의 [등록] — 답변 라우트(`inquiries.update`)와 같은 식별자 (7.1.0)
+            'can_reply' => 'sirsoft-ecommerce.inquiries.update',
         ];
     }
 

@@ -20,7 +20,9 @@
         "sortBy": "created_at_desc",
         "perPage": 10
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.orders.read"
+    ],
     "slots": {
         "content": [
             {

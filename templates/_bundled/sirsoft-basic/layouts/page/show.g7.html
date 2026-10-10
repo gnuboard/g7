@@ -12,6 +12,12 @@
   <!-- 문서 본문 — blocking 이라 이 응답 전에는 아무것도 그리지 않는다(문서 자체가 화면의 전부라 부분 노출이 뜻이 없다). 비로그인도 읽히지만 문서마다 공개 범위가 다를 수 있어 인증은 선택으로 보낸다. -->
   <data-source id="page" label_key="$t:editor.data_source.page" type="api" endpoint="/api/modules/sirsoft-page/pages/{{route?.slug}}" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="blocking">
     <fallback :data="null"/>
+    <!-- 없는 페이지 — 서버가 등록 권한을 errors.abilities.can_create 로 알려 [페이지 만들기] 를 그 권한자에게만 연다 -->
+    <error-handling>
+      <on-code code="404">
+        <set-state target="local" pageCanCreate="{{error?.errors?.abilities?.can_create === true}}"/>
+      </on-code>
+    </error-handling>
   </data-source>
   <permissions/>
   <slot name="content">
@@ -31,9 +37,9 @@
                 <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
                 {{page?.data?.title ?? ''}}
               </h1>
-              <span data-if="{{_global.currentUser?.is_admin}}" class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">v{{page?.data?.current_version ?? 1}}</span>
+              <span data-if="{{page?.data?.abilities?.can_update === true}}" class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">v{{page?.data?.current_version ?? 1}}</span>
             </div>
-            <a data-ref="page_admin_edit_button" data-if="{{_global.currentUser?.is_admin}}" href="/admin/pages/{{page?.data?.id}}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+            <a data-ref="page_admin_edit_button" data-if="{{page?.data?.abilities?.can_update === true}}" href="/admin/pages/{{page?.data?.id}}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
               <icon name="pencil" class="text-xs"/>
               <span>$t:user.page.admin_edit</span>
             </a>
@@ -87,7 +93,7 @@
               <icon name="house" class="text-sm"/>
               <span>$t:user.page.back_to_home</span>
             </button>
-            <a data-if="{{_global.currentUser?.is_admin}}" href="/admin/pages/create?slug={{route?.slug ?? ''}}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline">
+            <a data-ref="page_create_button" data-if="{{_local.pageCanCreate === true}}" href="/admin/pages/create?slug={{route?.slug ?? ''}}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline">
               <icon name="plus" class="text-sm"/>
               <span>$t:user.page.create_page</span>
             </a>

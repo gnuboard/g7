@@ -1475,7 +1475,8 @@
                                                             "text": "($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)"
                                                         },
                                                         {
-                                                            "comment": "비회원 조회 비밀번호 재설정 버튼",
+                                                            "comment": "비회원 조회 비밀번호 재설정 버튼 — 주문 수정 권한(can_update)으로 잠근다(형제 [메일 보내기]와 같은 키, 서버도 403).",
+                                                            "id": "order_reset_guest_password_button",
                                                             "type": "basic",
                                                             "name": "Button",
                                                             "actions": [
@@ -1487,7 +1488,8 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                                                "className": "ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             },
                                                             "children": [
                                                                 {
@@ -2007,6 +2009,7 @@
                                                             "type": "extension_point",
                                                             "name": "address_search_slot",
                                                             "props": {
+                                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}",
                                                                 "readOnlyFields": [
                                                                     "recipient_zipcode"
                                                                 ]

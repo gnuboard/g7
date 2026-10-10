@@ -179,6 +179,7 @@
     "no_content_preview": "Preview will appear when you enter content",
     "attachments": "Attachments",
     "attachments_desc": "Max {{maxFiles}} files, {{maxSize}}MB each",
+    "attachments_no_permission": "You do not have permission to upload attachments, so you cannot add or remove files.",
     "attachments_desc_one": "Max {{maxFiles}} file, {{maxSize}}MB",
     "attached_files": "Attached Files",
     "confirm_remove_attachment_title": "Delete Attachment",

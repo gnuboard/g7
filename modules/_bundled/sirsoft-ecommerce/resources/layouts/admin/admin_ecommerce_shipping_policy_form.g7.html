@@ -18,7 +18,7 @@
       </default>
     </error-handling>
     <field name="errorCondition">
-      <field name="if" value="{{response?.data?.abilities?.can_update !== true}}"/>
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
       <field name="errorCode" :value="403"/>
     </field>
   </data-source>
@@ -40,6 +40,14 @@
         </field>
       </field>
     </fallback>
+  </data-source>
+  <!-- 등록 모드에는 정책 응답이 없어 등록 권한(can_create)·수정 권한(can_update)을 알 곳이 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다.
+    회수지 저장(claim-settings PUT)과 API 연결 시험은 수정 권한의 일이라, 등록 권한만 있는 운영자가 정책은 만들고 회수지는 403 으로 남는 부분 실패를 막는다.
+    폼 전체의 읽기 전용 계산값(`isReadOnly`)도 등록·복사 진입에서는 이 응답의 can_create 를 본다 — 등록 권한 없이 주소로 들어와도 입력칸과 [저장]이 함께 잠긴다(수정 화면과 같은 기준).
+    조회 권한이 없어 실패하면 폴백(null)으로 떨어져 잠긴 쪽으로 판정한다. -->
+  <data-source id="policy_abilities" label_key="$t:sirsoft-ecommerce.editor.data_source.policy_abilities" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies" method="GET" if="{{!route.id}}" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params :per_page="10"/>
+    <fallback :data="null"/>
   </data-source>
   <!-- 배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다 -->
   <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking"/>
@@ -99,7 +107,8 @@
   <computed name="rangeUnitLabel">{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'range_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'range_weight' || p === 'range_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'range_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'range_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}</computed>
   <computed name="perUnitLabel">{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'per_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'per_weight' || p === 'per_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'per_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'per_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}</computed>
   <computed name="activeCountryCode">{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}</computed>
-  <computed name="isReadOnly">{{!!route.id &amp;&amp; policy?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="isReadOnly">{{route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_create !== true}}</computed>
+  <computed name="lacksUpdate">{{!!route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>sirsoft-ecommerce.shipping-policies.read</permission>
   </permissions>
@@ -170,7 +179,7 @@
             </on>
             <span>$t:common.list</span>
           </button>
-          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (route.id &amp;&amp; policy?.data?.abilities?.can_update !== true)}}" class="btn btn-primary flex-center gap-1.5">
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="btn btn-primary flex-center gap-1.5">
             <on type="click">
               <!-- 저장 — 등록/수정 구분은 `route.id` 유무 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받아 채울 필요가 없고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
               <sequence>

@@ -5,12 +5,17 @@
   <data-source id="settings" label_key="$t:sirsoft-pay_kginicis.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
   <!-- 가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다 -->
   <data-source id="vbank_info" label_key="$t:sirsoft-pay_kginicis.editor.data_source.vbank_info" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/vbank-notify-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="vbankInfo"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="pay-kginicis-tone-warning">$t:sirsoft-pay_kginicis.plugin_read_only</span>
+      </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" id="kginicis_settings_validation_error" role="alert" aria-live="assertive" :tabIndex="-1" class="alert-danger scroll-mt-32">
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
@@ -29,7 +34,7 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.test_mode</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.test_mode_hint</p>
             </div>
-            <toggle data-type="composite" name="is_test_mode"/>
+            <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
@@ -56,7 +61,7 @@
             <div class="lg:col-span-2">
               <div class="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-kginicis-focus-group">
                 <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SIR</span>
-                <input type="text" name="live_mid" placeholder="shoptest" class="text-primary flex-1 px-3 py-2 bg-white dark:bg-gray-700 font-mono text-sm outline-none border-0"/>
+                <input type="text" name="live_mid" placeholder="shoptest" class="text-primary flex-1 px-3 py-2 bg-white dark:bg-gray-700 font-mono text-sm outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
               <p class="mt-1.5 text-tertiary">$t:sirsoft-pay_kginicis.settings.live_mid_example</p>
             </div>
@@ -68,7 +73,7 @@
             </div>
             <div class="lg:col-span-2">
               <div class="relative">
-                <input type="{{_local._show_live_sign_key ? 'text' : 'password'}}" name="live_sign_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
+                <input type="{{_local._show_live_sign_key ? 'text' : 'password'}}" name="live_sign_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_sign_key}}">
                   <on type="click">
                     <!-- 상점 sign key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
@@ -87,7 +92,7 @@
             </div>
             <div class="lg:col-span-2">
               <div class="relative">
-                <input type="{{_local._show_live_iniapi_key ? 'text' : 'password'}}" name="live_iniapi_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
+                <input type="{{_local._show_live_iniapi_key ? 'text' : 'password'}}" name="live_iniapi_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_key}}">
                   <on type="click">
                     <!-- INIAPI key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
@@ -106,7 +111,7 @@
             </div>
             <div class="lg:col-span-2">
               <div class="relative">
-                <input type="{{_local._show_live_iniapi_iv ? 'text' : 'password'}}" name="live_iniapi_iv" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
+                <input type="{{_local._show_live_iniapi_iv ? 'text' : 'password'}}" name="live_iniapi_iv" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_iv}}">
                   <on type="click">
                     <!-- INIAPI IV 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
@@ -125,7 +130,7 @@
             </div>
             <div class="lg:col-span-2">
               <div class="relative">
-                <input type="{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}" name="live_mobile_hash_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
+                <input type="{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}" name="live_mobile_hash_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_mobile_hash_key}}">
                   <on type="click">
                     <!-- 모바일 hash key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
@@ -150,35 +155,35 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_allow_with_other_pg</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_allow_with_other_pg_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_allow_with_other_pg"/>
+            <toggle data-type="composite" name="easy_pay_allow_with_other_pg" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_naverpay</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_naverpay_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_naverpay"/>
+            <toggle data-type="composite" name="easy_pay_naverpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_samsung_pay</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_samsung_pay_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_samsung_pay"/>
+            <toggle data-type="composite" name="easy_pay_samsung_pay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_lpay</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_lpay_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_lpay"/>
+            <toggle data-type="composite" name="easy_pay_lpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_kakaopay</label>
               <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_kginicis.settings.easy_pay_kakaopay_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_kakaopay"/>
+            <toggle data-type="composite" name="easy_pay_kakaopay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
@@ -191,7 +196,7 @@
             <label class="form-label">$t:sirsoft-pay_kginicis.settings.use_credit_point</label>
             <p class="form-hint">$t:sirsoft-pay_kginicis.settings.use_credit_point_hint</p>
           </div>
-          <toggle data-type="composite" name="use_credit_point"/>
+          <toggle data-type="composite" name="use_credit_point" disabled="{{_computed.isPluginReadOnly}}"/>
         </div>
       </div>
       <div data-ref="japan_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -205,7 +210,7 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.japan_enabled</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.japan_enabled_hint</p>
             </div>
-            <toggle data-type="composite" name="japan_enabled"/>
+            <toggle data-type="composite" name="japan_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div data-ref="japan_fields" data-if="{{_local.form &amp;&amp; _local.form.japan_enabled}}" class="space-y-6 pt-4 border-t border-gray-100 dark:border-gray-700">
             <div data-ref="field_japan_restrict_jpy_payment_methods" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 pay-kginicis-panel-muted p-4">
@@ -213,7 +218,7 @@
                 <label class="block text-body font-medium">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods</label>
                 <p class="text-tertiary mt-1">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods_hint</p>
               </div>
-              <toggle data-type="composite" name="japan_restrict_jpy_payment_methods"/>
+              <toggle data-type="composite" name="japan_restrict_jpy_payment_methods" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
             <div data-ref="cbt_test_helper_card" class="rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4">
               <div class="flex-start gap-3 mb-3">
@@ -224,7 +229,7 @@
                 </div>
               </div>
               <div class="flex-center flex-wrap gap-2">
-                <button type="button" disabled="{{_local.cbtTestProductCreating}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="button" disabled="{{_computed.isPluginReadOnly || vbank_info?.data?.abilities?.can_create_cbt_test_product !== true || (_local.cbtTestProductCreating)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <on type="click">
                     <!-- CBT 테스트 상품 생성 — 진행 플래그를 세우고 직전 결과·오류를 함께 지운 뒤 호출한다 -->
                     <sequence>
@@ -349,7 +354,7 @@
                 <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_mid_hint</p>
               </div>
               <div class="lg:col-span-2">
-                <input type="text" name="live_japan_mid" placeholder="" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
+                <input type="text" name="live_japan_mid" placeholder="" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
             </div>
             <div data-ref="field_live_japan_cbt_key" class="grid-3col-responsive">
@@ -358,7 +363,7 @@
                 <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_cbt_key_hint</p>
               </div>
               <div class="lg:col-span-2">
-                <input type="password" name="live_japan_sign_key" placeholder="••••••••••••••••" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
+                <input type="password" name="live_japan_sign_key" placeholder="••••••••••••••••" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
             </div>
             <div data-ref="jppg_merchant_info" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 p-4 space-y-4">
@@ -369,35 +374,35 @@
               <div class="grid-2col-responsive">
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name</label>
-                  <input type="text" name="japan_merchant_name" placeholder="サンプルストア" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="text" name="japan_merchant_name" placeholder="サンプルストア" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name_kana</label>
-                  <input type="text" name="japan_merchant_name_kana" placeholder="サンプルストア" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="text" name="japan_merchant_name_kana" placeholder="サンプルストア" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name_alphabet</label>
-                  <input type="text" name="japan_merchant_name_alphabet" placeholder="Sample Store" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="text" name="japan_merchant_name_alphabet" placeholder="Sample Store" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name_short</label>
-                  <input type="text" name="japan_merchant_name_short" placeholder="サンプル" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="text" name="japan_merchant_name_short" placeholder="サンプル" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_name</label>
-                  <input type="text" name="japan_contact_name" placeholder="サポート窓口" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="text" name="japan_contact_name" placeholder="サポート窓口" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_email</label>
-                  <input type="email" name="japan_contact_email" placeholder="support@example.com" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="email" name="japan_contact_email" placeholder="support@example.com" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_phone</label>
-                  <input type="text" name="japan_contact_phone" placeholder="0120-123-456" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="text" name="japan_contact_phone" placeholder="0120-123-456" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_opening_hours</label>
-                  <input type="text" name="japan_contact_opening_hours" placeholder="10:00-18:00" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+                  <input type="text" name="japan_contact_opening_hours" placeholder="10:00-18:00" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 </div>
               </div>
             </div>
@@ -415,7 +420,7 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.use_escrow</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.use_escrow_hint</p>
             </div>
-            <toggle data-type="composite" name="use_escrow"/>
+            <toggle data-type="composite" name="use_escrow" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
@@ -430,7 +435,7 @@
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.redirect_success_url_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
@@ -439,7 +444,7 @@
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.redirect_fail_url_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
+              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
@@ -455,7 +460,7 @@
           <div>
             <p class="text-label mb-2">$t:sirsoft-pay_kginicis.settings.vbank_notify_hint</p>
             <div class="flex-center gap-2">
-              <input type="text" :readOnly="true" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono"/>
+              <input type="text" :readOnly="true" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
               <button class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
                 <on type="click">
                   <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
@@ -479,7 +484,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다 -->
             <sequence>

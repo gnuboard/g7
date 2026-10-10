@@ -182,7 +182,7 @@
                                                         "min": "0",
                                                         "step": "100",
                                                         "placeholder": "0",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -239,7 +239,7 @@
                                                         "min": "0",
                                                         "step": "100",
                                                         "placeholder": "0",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -308,7 +308,7 @@
                                         "min": "0",
                                         "step": "100",
                                         "placeholder": "0",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -365,7 +365,7 @@
                                         "min": "0",
                                         "step": "100",
                                         "placeholder": "0",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -525,7 +525,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
                                 },
@@ -546,7 +546,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 }
@@ -599,7 +599,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
                                 },
@@ -620,7 +620,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 }
@@ -673,7 +673,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale"
                                 },
@@ -694,7 +694,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out"
                                 },
@@ -715,7 +715,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended"
                                 },
@@ -736,7 +736,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon"
                                 }
@@ -789,7 +789,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale"
                                 },
@@ -810,7 +810,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out"
                                 },
@@ -831,7 +831,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended"
                                 },
@@ -852,7 +852,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon"
                                 }
@@ -905,7 +905,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible"
                                 },
@@ -926,7 +926,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden"
                                 }
@@ -979,7 +979,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible"
                                 },
@@ -1000,7 +1000,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden"
                                 }

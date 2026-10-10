@@ -305,7 +305,7 @@
     <div data-ref="bulk_actions_area" class="flex-between flex-wrap gap-4 mb-4">
       <div data-ref="bulk_actions_left" class="flex-center gap-3">
         <span class="text-label">$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}</span>
-        <select name="bulk_status" class="w-32" placeholder="$t:admin.schedules.bulk.status_change" value="" disabled="{{!_global.selectedScheduleIds?.length}}">
+        <select name="bulk_status" class="w-32" placeholder="$t:admin.schedules.bulk.status_change" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
           <options>
             <option value="active">$t:admin.schedules.status.active</option>
             <option value="inactive">$t:admin.schedules.status.inactive</option>
@@ -315,7 +315,7 @@
             <set-state target="global" bulkStatusAction="{{$event.target.value}}"/>
           </on>
         </select>
-        <select name="bulk_action" class="w-32" placeholder="$t:admin.schedules.bulk.action_run" value="" disabled="{{!_global.selectedScheduleIds?.length}}">
+        <select name="bulk_action" class="w-32" placeholder="$t:admin.schedules.bulk.action_run" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_run !== true}}">
           <options>
             <option value="run">$t:admin.schedules.actions.run</option>
           </options>
@@ -324,7 +324,7 @@
             <set-state target="global" bulkAction="{{$event.target.value}}"/>
           </on>
         </select>
-        <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length}}">
+        <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
           <on type="click">
             <!-- handler:'if' 는 미등록 핸들러이고 액션 레벨 'condition' 도 엔진이 무시한다. 등록된 conditions 핸들러 형태로 표기. -->
             <conditions>
@@ -380,7 +380,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+    <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true}}" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
       <column field="name" header="$t:admin.schedules.columns.name" :sortable="false">
         <cell>
           <div>
@@ -429,7 +429,7 @@
       </column>
       <column field="is_active" header="$t:admin.schedules.columns.status" :sortable="false">
         <cell>
-          <toggle data-type="composite" checked="{{row.is_active}}" size="sm" ariaLabel="{{row.name}}">
+          <toggle data-type="composite" checked="{{row.is_active}}" disabled="{{row.abilities?.can_update !== true}}" size="sm" ariaLabel="{{row.name}}">
             <on type="change">
               <!-- 줄 하나만 바꾸는데도 **일괄 변경 창구를 그대로 쓴다** — 그래서 대상 목록에 이 줄 하나만 담아 보낸다(단건 전용 창구를 따로 두지 않았다). -->
               <api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH">
@@ -439,6 +439,8 @@
                 </success>
                 <fail>
                   <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.status_update_failed'}}"/>
+                  <!-- 실패하면 목록을 다시 받아 스위치를 서버 값으로 되돌린다(바뀐 채로 남지 않게). -->
+                  <refetch-data-source dataSourceId="schedules"/>
                 </fail>
                 <field name="body">
                   <field name="ids">

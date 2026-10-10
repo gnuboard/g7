@@ -6,6 +6,8 @@ return [
     'cannot_modify_super_admin' => '슈퍼 관리자 계정 또는 역할은 수정할 권한이 없습니다.',
     'cannot_grant_unheld_permission' => '본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.',
     'cannot_modify_protected_role' => '시스템 또는 확장이 소유한 역할은 수정할 권한이 없습니다.',
+    'cannot_delete_self' => '본인 계정은 관리자 화면에서 삭제할 수 없습니다. 탈퇴는 마이페이지에서 진행하세요.',
+    'role_active_state_locked' => '최고관리자 역할은 사용 여부를 바꿀 수 없습니다. 끄면 모든 운영자의 관리 권한이 회수됩니다.',
 
     'circular_reference' => '레이아웃 순환 참조 감지: :trace',
     'max_depth_exceeded' => '레이아웃 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',

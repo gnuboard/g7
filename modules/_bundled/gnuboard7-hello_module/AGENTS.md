@@ -148,6 +148,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | 검증 로직을 `MemoService` 에 넣기 | `MemoRequest` (FormRequest) | 샘플이 잘못된 본을 보이면 그것을 따라 한 모듈이 전부 같은 형태가 된다 |
 | `MemoService` 가 `MemoRepository` 구체 클래스를 타입힌트 | `MemoRepositoryInterface` | 위와 같은 이유 — 샘플은 규약의 본보기다 |
 | 훅 발행 없이 Service 안에서 로그·알림을 직접 수행 | 훅 발행 + 리스너 | 부가 작업이 Service 에 쌓이면 그 Service 를 재사용할 수 없다 |
+| 쓰기 버튼·폼을 권한과 무관하게 열어 두고 서버 403 에만 기대기 | 응답 `abilities` 로 `disabled`·읽기 전용 ([docs/frontend.md](docs/frontend.md#권한-게이트-abilities)) | 사용자가 다 입력한 뒤에야 거절된다. 샘플이 이 형태를 보여야 복제한 모듈도 따른다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -156,9 +157,9 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
-| Vitest | 3개 | — |
+| Vitest | 4개 | — |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

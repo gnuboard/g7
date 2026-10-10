@@ -51,7 +51,7 @@
     </div>
     <div data-ref="view_footer" class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
       <div class="flex-center gap-3">
-        <button disabled="{{_global.selectedItem?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="common_info_copy_button" disabled="{{_global.selectedItem?.abilities?.can_create !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <open-modal target="copy_confirm_modal"/>
           </on>

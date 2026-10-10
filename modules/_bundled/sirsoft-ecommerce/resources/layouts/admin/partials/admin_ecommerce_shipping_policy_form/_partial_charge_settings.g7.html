@@ -124,7 +124,7 @@
                   <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ?? ''}}</span>
                 </td>
                 <td>
-                  <button data-if="{{policy?.data?.abilities?.can_update === true}}" type="button" class="btn-icon text-error" aria-label="$t:common.delete">
+                  <button data-if="{{!_computed.isReadOnly}}" type="button" class="btn-icon text-error" aria-label="$t:common.delete">
                     <on type="click">
                       <!-- 구간 줄 삭제 — 지운 뒤 남은 줄들의 번호가 밀리므로 화면이 아니라 핸들러가 배열을 다시 만든다. -->
                       <action handler="sirsoft-ecommerce.removeRangeTier" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}"/>
@@ -259,7 +259,8 @@
           </div>
         </div>
         <div data-ref="field_api_test_call" class="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
-          <button type="button" class="btn btn-secondary btn-sm" disabled="{{_computed.isReadOnly || !_computed.activeCountrySetting?.api_endpoint || _global.apiTestLoading}}">
+          <!-- 연결 시험은 서버가 수정 권한(shipping-policies.update)으로 받는다 — 등록 모드에서도 그 권한이 없으면 잠근다. -->
+          <button data-ref="api_test_call_button" type="button" class="btn btn-secondary btn-sm" disabled="{{_computed.isReadOnly || _computed.lacksUpdate || !_computed.activeCountrySetting?.api_endpoint || _global.apiTestLoading}}">
             <on type="click">
               <!-- 연결 시험 — 지금 화면의 설정 그대로 한 번 불러 본다. 인자를 받지 않는 것은 핸들러가 활성 나라 설정을 직접 읽기 때문이고, 저장 전에도 눌러 볼 수 있다. -->
               <action handler="sirsoft-ecommerce.testShippingApi"/>

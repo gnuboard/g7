@@ -1,0 +1,29 @@
+feature: 나이스페이먼츠 관리자 가상계좌 환불 — PG 취소 후 주문 반영과 사전 차단
+
+description: |
+  관리자 가상계좌 환불(POST /api/plugins/sirsoft-pay_nicepayments/admin/vbank-refund)은 입금된 가상계좌 결제를
+  환불 계좌로 돌려주며 PG 취소와 주문 취소를 함께 한다.
+  - PG 취소가 성공하면 주문·결제를 취소 상태로 바꾸고 취소 금액·환불 기록·결제 메타(vbank_refund_status)를 남긴다
+  - 환불 금액이 결제 금액과 다르면 PG 취소 전에 422 로 거절한다
+  - 「환불 실행」 권한(sirsoft-ecommerce.claims.execute-refund)이 있어야 한다 — 주문 수정 권한만으로는 403 (제품 결정 R1, 7.1.0)
+  - 환불 계좌 형식 위반과 배열 주입은 VbankRefundRequest 가 422 로 차단하고 PG 취소 API 를 부르지 않는다
+
+  기존 회귀 테스트(AdminVbankRefundControllerTest)의 소유권을 7.1.0 abilities 게이트 작업 중 시험 파일을 고치며 사후 등재했다.
+
+axes:
+  case:
+    - valid_refund
+    - amount_mismatch
+    - missing_execute_refund_permission
+    - malformed_account_fields
+    - array_injection
+
+effects:
+  - vbank_refund_cancels_order_and_records_refund_after_pg_cancel
+  - vbank_refund_amount_mismatch_returns_422_without_pg_cancel
+  - vbank_refund_without_execute_refund_permission_returns_403
+  - vbank_refund_malformed_account_fields_return_422_without_pg_cancel
+  - vbank_refund_array_input_returns_422
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/AdminVbankRefundControllerTest.php

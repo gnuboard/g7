@@ -256,6 +256,7 @@
                     },
                     "children": [
                         {
+                            "id": "common_info_copy_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -266,7 +267,7 @@
                                 }
                             ],
                             "props": {
-                                "disabled": "{{_global.selectedItem?.abilities?.can_update !== true}}",
+                                "disabled": "{{_global.selectedItem?.abilities?.can_create !== true}}",
                                 "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.common_info.detail.copy"

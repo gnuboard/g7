@@ -73,6 +73,8 @@ effects:
   # 리포트 수신 설정
   - report_url_endpoint_returns_absolute_url_from_app_url
   - report_url_endpoint_requires_authentication
+  # 설정 화면이 알림톡 템플릿 쓰기 버튼을 잠그는 근거 — 응답 abilities.can_manage_messaging 이 messaging.manage 권한을 따른다(7.1.0 abilities 게이트)
+  - report_url_reports_messaging_manage_ability
   - report_section_shows_readonly_url_with_copy_button
   # 저장
   - save_button_disabled_without_changes

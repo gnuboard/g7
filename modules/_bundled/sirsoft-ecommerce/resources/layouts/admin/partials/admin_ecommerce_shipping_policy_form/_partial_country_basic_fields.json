@@ -235,7 +235,7 @@
                     "id": "country_remove_area",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(_local.form?.country_settings ?? []).length > 1 && policy?.data?.abilities?.can_update === true}}",
+                    "if": "{{(_local.form?.country_settings ?? []).length > 1 && !_computed.isReadOnly}}",
                     "props": {
                         "className": "flex justify-end border-t border-gray-100 dark:border-gray-700"
                     },

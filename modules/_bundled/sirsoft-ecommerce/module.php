@@ -247,6 +247,21 @@ class Module extends AbstractModule
                             ],
                             'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
                         ],
+                        // 주문 행을 지우는 권한 — 관리자 주문 삭제 API 와 개인정보 보유기간 「삭제」 방식 직권 실행이 요구한다.
+                        // 되돌릴 수 없는 파기라 기본은 admin 역할에만 준다(7.1.0). 기존 설치본은 업데이트 때 선언형 동기화가
+                        // 붙이고, 업그레이드 스텝(1.3.0 · GrantOrderDeletePermissionToAdmin)이 한 번 더 확인한다.
+                        [
+                            'action' => 'delete',
+                            'name' => [
+                                'ko' => '주문 삭제',
+                                'en' => 'Delete Order',
+                            ],
+                            'description' => [
+                                'ko' => '주문 삭제 및 개인정보 보유기간 「삭제」 방식 직권 실행',
+                                'en' => 'Delete orders and run the privacy retention "delete" mode manually',
+                            ],
+                            'roles' => ['admin'],
+                        ],
                     ],
                 ],
                 // 클레임(교환/반품/환불) 관리 권한

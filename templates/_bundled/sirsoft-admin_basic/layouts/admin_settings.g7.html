@@ -285,7 +285,7 @@
     <field name="policyIsNew" :value="true"/>
     <field name="policyIsSaving" :value="false"/>
   </init-local>
-  <computed name="isReadOnly">{{!!_global.settingsAbilities &amp;&amp; !(_global.settingsAbilities?.can_update ?? false)}}</computed>
+  <computed name="isReadOnly">{{_global.settingsAbilities?.can_update !== true}}</computed>
   <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
   <computed name="errorsWithoutIpRules">{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) =&gt; !k.startsWith('security.ip_restriction_rules')); return rest.length &gt; 0 ? Object.fromEntries(rest) : null; })()}}</computed>
   <computed name="ipRestrictionEnabled">{{!!_local.form?.security?.ip_restriction_enabled &amp;&amp; _local.form?.security?.ip_restriction_enabled !== '0' &amp;&amp; _local.form?.security?.ip_restriction_enabled !== 'false'}}</computed>
@@ -346,7 +346,7 @@
           <icon name="refresh" class="text-xl"/>
         </button>
       </page-header>
-      <div data-ref="readonly_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
+      <div data-ref="readonly_banner" data-if="{{!!_global.settingsAbilities &amp;&amp; _global.settingsAbilities.can_update !== true}}" class="alert-warning">
         <div class="flex-center gap-3">
           <icon name="lock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft">$t:admin.settings.readonly_notice</p>

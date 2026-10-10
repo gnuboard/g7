@@ -38,6 +38,8 @@ effects:
   - lookup_denied_as_not_found
   - response_uses_common_envelope
   - vbank_bank_code_returned
+  # 주문 조회 권한이 없는 일반 회원에게는 은행코드를 싣지 않는다 — 화면 숨김이 아니라 응답에서 뺀다(7.1.0 abilities 게이트)
+  - vbank_bank_code_withheld_from_member
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/UserReceiptControllerTest.php

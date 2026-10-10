@@ -848,7 +848,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-outline text-sm disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
                                 {
@@ -913,7 +913,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                    "if": "{{!_computed.isReadOnly}}",
                                                     "actions": [
                                                         {
                                                             "comment": "고른 분류 하나 떼기",
@@ -1073,7 +1073,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                    "if": "{{!_computed.isReadOnly}}",
                                     "actions": [
                                         {
                                             "comment": "브랜드 비우기 — 비우면 아래 고르개가 다시 선다",
@@ -1133,7 +1133,7 @@
                                         "name": "brand_id",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.brand",
                                         "options": "{{(brands?.data?.data ?? brands?.data ?? []).map(b => ({ value: b.id, label: $localized(b.name) }))}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 }
                             ]
@@ -1210,10 +1210,11 @@
                                         "name": "product_code",
                                         "className": "{{_local.errors?.product_code ? 'input input-error flex-1' : 'input flex-1'}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.product_code",
-                                        "disabled": "{{!!route.itemCode || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                        "disabled": "{{!!route.itemCode || _computed.isReadOnly}}"
                                     }
                                 },
                                 {
+                                    "id": "generate_product_code_button",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{!route.itemCode}}",
@@ -1225,7 +1226,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-outline whitespace-nowrap"
+                                        "className": "btn btn-outline whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.buttons.generate_code"
                                 }
@@ -1286,7 +1288,7 @@
                                         "maxLength": 200,
                                         "required": true,
                                         "error": "{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 }
                             ]

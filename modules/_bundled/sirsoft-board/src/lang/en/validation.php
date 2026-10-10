@@ -858,4 +858,10 @@ return [
         'attachment_ids' => 'Attachments',
         'password' => 'Password',
     ],
+
+    // Identity policy tab validation messages
+    'identity_policy' => [
+        'target_not_owned' => 'Board identity policies can only target board points. Hook and custom scopes must start with "sirsoft-board.", and the route scope must start with "api.modules.sirsoft-board.".',
+        'nothing_to_update' => 'There is nothing to update.',
+    ],
 ];

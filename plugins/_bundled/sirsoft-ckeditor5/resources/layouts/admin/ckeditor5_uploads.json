@@ -194,7 +194,8 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-secondary"
+                                            "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{ckeditor5Uploads?.data?.abilities?.can_open_settings !== true}}"
                                         },
                                         "children": [
                                             {
@@ -474,7 +475,7 @@
                         "id": "bulk_action_bar",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{(_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}",
+                        "if": "{{ckeditor5Uploads?.data?.abilities?.can_delete === true && (_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}",
                         "props": {
                             "className": "flex-between mb-4 p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
                         },
@@ -594,7 +595,7 @@
                             "sortField": "{{query.sort_by || 'created_at'}}",
                             "sortDirection": "{{query.sort_order || 'desc'}}",
                             "idField": "id",
-                            "selectable": true,
+                            "selectable": "{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}",
                             "selectionScope": "page",
                             "selectedIds": "{{_global.selectedIds_ckeditor5_uploads || []}}",
                             "emptyMessage": "$t:sirsoft-ckeditor5.admin.uploads.empty",
@@ -604,7 +605,8 @@
                                     "id": "delete",
                                     "label": "$t:sirsoft-ckeditor5.admin.uploads.delete.button",
                                     "iconName": "trash",
-                                    "variant": "danger"
+                                    "variant": "danger",
+                                    "disabled": "{{ckeditor5Uploads?.data?.abilities?.can_delete !== true}}"
                                 }
                             ],
                             "columns": [

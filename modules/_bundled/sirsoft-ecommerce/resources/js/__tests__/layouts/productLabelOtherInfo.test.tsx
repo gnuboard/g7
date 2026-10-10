@@ -37,13 +37,18 @@ function findNode(node: any, pred: (n: any) => boolean): any {
 }
 
 describe('A31 — 기타정보 라벨 CRUD', () => {
+    /**
+     * @scenario mode=create, permission=can_update_true
+     * @effects add_button_opens_create_modal, permission_guards_buttons
+     */
     it('labels_header 에 "+ 라벨 추가" 버튼(editingLabelId=null + openModal)이 존재', () => {
         const addBtn = findNode(otherInfo, (n) => n.id === 'label_add_button');
         expect(addBtn).toBeTruthy();
         expect(addBtn.text).toContain('labels.add');
 
-        // 권한 가드
-        expect(addBtn.if).toContain('can_update');
+        // 권한 가드 — 폼 읽기 전용(수정 진입은 상품 수정 권한, 등록·복사 진입은 등록 권한) + 라벨 등록 권한
+        expect(addBtn.if).toContain('!_computed.isReadOnly');
+        expect(addBtn.if).toContain('product_labels?.data?.abilities?.can_create === true');
 
         const seq = actionsOf(addBtn)[0];
         expect(seq.handler).toBe('sequence');
@@ -55,6 +60,10 @@ describe('A31 — 기타정보 라벨 CRUD', () => {
         expect(openModal.target).toBe('modal_label_form');
     });
 
+    /**
+     * @scenario unassign=unassign_affordance
+     * @effects unassign_affordance_separated
+     */
     it('미리보기에 "할당 해제" 어포던스가 분리됨 (modal_label_uncheck_confirm)', () => {
         const unassignBtn = findNode(otherInfo, (n) => n.id === 'label_unassign_button');
         expect(unassignBtn).toBeTruthy();
@@ -67,6 +76,10 @@ describe('A31 — 기타정보 라벨 CRUD', () => {
         expect(openModal.target).toBe('modal_label_uncheck_confirm');
     });
 
+    /**
+     * @scenario unassign=delete_original
+     * @effects delete_label_db_original
+     */
     it('"라벨 삭제"는 DB 원본 삭제(modal_label_delete_confirm)로 용어 구분됨', () => {
         const s = flat(otherInfo);
         // 삭제 버튼은 labels.delete + labelToDeleteId + delete_confirm 모달
@@ -75,6 +88,10 @@ describe('A31 — 기타정보 라벨 CRUD', () => {
         expect(s).toContain('modal_label_delete_confirm');
     });
 
+    /**
+     * @scenario mode=edit
+     * @effects modal_title_branches
+     */
     it('모달 제목이 editingLabelId 유무로 생성/수정 분기', () => {
         const title = (labelFormModal as any).props.title;
         expect(title).toContain('_global.editingLabelId');

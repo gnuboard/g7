@@ -271,7 +271,7 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Button",
-                                                                    "if": "{{policy?.data?.abilities?.can_update === true}}",
+                                                                    "if": "{{!_computed.isReadOnly}}",
                                                                     "actions": [
                                                                         {
                                                                             "comment": "줄 삭제(좁은 화면 카드) — 넓은 화면 표에도 같은 버튼이 한 벌 더 있다.",
@@ -611,7 +611,7 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Button",
-                                                                            "if": "{{policy?.data?.abilities?.can_update === true}}",
+                                                                            "if": "{{!_computed.isReadOnly}}",
                                                                             "actions": [
                                                                                 {
                                                                                     "comment": "줄 삭제(넓은 화면 표) — 위 카드 판에도 같은 버튼이 있다.",

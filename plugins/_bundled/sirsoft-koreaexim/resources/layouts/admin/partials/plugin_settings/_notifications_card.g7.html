@@ -2,6 +2,7 @@
 <!-- 실패 알림 카드 — 이 플러그인 소유 알림 정의마다 발송 채널(복수)을 고르고, 켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다 -->
 <div class="admin-card mb-4">
   <h3 class="card-title">$t:sirsoft-koreaexim.notifications</h3>
+  <p data-ref="koreaexim_notifications_forbidden" data-if="{{_local.koreaeximNotificationsForbidden === true}}" class="form-hint">$t:sirsoft-koreaexim.notifications_forbidden</p>
   <div data-each="def, defIdx in {{koreaeximNotificationDefinitions?.data?.data ?? []}}" data-ref="koreaexim_notification_definition_{{defIdx}}">
     <p class="text-heading">{{$localized(def.name)}}</p>
 

@@ -224,6 +224,7 @@
                                                 "comment": "끌어서 순서를 바꾼다. 손잡이를 따로 두는 것은 행 안의 입력·토글을 누를 때\n                끌기가 시작되지 않게 하기 위해서다(형제 화면 배송유형과 같은 방식).",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{!_computed.isReadOnly}}",
                                                 "props": {
                                                     "data-testid": "reaction-type-drag-{{row.code}}",
                                                     "data-drag-handle": true,
@@ -523,6 +524,7 @@
                                     "comment": "끌어 놓은 결과를 배열 순서로 반영하고 자리 번호(display_order)를 다시 매긴다 —\n              순서 값이 배열 순서와 어긋나면 저장 뒤 화면과 회원 화면의 차례가 달라진다.",
                                     "event": "onSortEnd",
                                     "handler": "setState",
+                                    "if": "{{!_computed.isReadOnly}}",
                                     "params": {
                                         "target": "local",
                                         "form.basic_defaults.reaction_types": "{{$sortedItems.map((r, i) => ({...r, display_order: i}))}}",

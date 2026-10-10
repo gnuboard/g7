@@ -29,7 +29,7 @@
           <div class="grid-2col">
             <div class="form-group">
               <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.list_price</label>
-              <input name="list_price" type="number" class="{{_local.errors?.list_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <input name="list_price" type="number" class="{{_local.errors?.list_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <action handler="sirsoft-ecommerce.validatePriceRelation"/>
                 </on>
@@ -38,7 +38,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.selling_price</label>
-              <input name="selling_price" type="number" class="{{_local.errors?.selling_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <input name="selling_price" type="number" class="{{_local.errors?.selling_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 판매가를 바꾸면 옵션마다 걸어 둔 추가금을 다시 계산한다 — 옵션 값은 판매가에 얹는 차액이라 기준이 움직이면 최종가가 어긋난다. 정가와의 앞뒤 관계(정가 ≥ 판매가)도 함께 본다 -->
                   <sequence>
@@ -57,7 +57,7 @@
         <responsive on="desktop" data-if="{{false}}"/>
         <div class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.list_price</label>
-          <input name="list_price" type="number" class="{{_local.errors?.list_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <input name="list_price" type="number" class="{{_local.errors?.list_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <action handler="sirsoft-ecommerce.validatePriceRelation"/>
             </on>
@@ -66,7 +66,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.selling_price</label>
-          <input name="selling_price" type="number" class="{{_local.errors?.selling_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <input name="selling_price" type="number" class="{{_local.errors?.selling_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 좁은 화면 판매가 — 위와 같다 -->
               <sequence>
@@ -98,14 +98,14 @@
         <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.tax_status</label>
         <div class="btn-group">
           <!-- 과세 상품 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.tax_status="taxable"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.tax.taxable
           </button>
           <!-- 면세 상품 — 부가세 계산과 세금계산서 발행이 갈린다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.tax_status="tax_free"/>
             </on>
@@ -118,14 +118,14 @@
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.tax_status</label>
         <div class="btn-group">
           <!-- 과세 상품 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.tax_status="taxable"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.tax.taxable
           </button>
           <!-- 면세 상품 — 부가세 계산과 세금계산서 발행이 갈린다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.tax_status="tax_free"/>
             </on>
@@ -138,28 +138,28 @@
         <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.sales_status</label>
         <div class="btn-group">
           <!-- 판매중 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="on_sale"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.sales_status.on_sale
           </button>
           <!-- 품절 — 재고와 별개로 운영자가 직접 세우는 표시다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="sold_out"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.sales_status.sold_out
           </button>
           <!-- 판매중지 — 상품 화면은 열리되 살 수 없다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="suspended"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.sales_status.suspended
           </button>
           <!-- 판매예정 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="coming_soon"/>
             </on>
@@ -172,28 +172,28 @@
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.sales_status</label>
         <div class="btn-group flex-wrap">
           <!-- 판매중 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="on_sale"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.sales_status.on_sale
           </button>
           <!-- 품절 — 재고와 별개로 운영자가 직접 세우는 표시다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="sold_out"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.sales_status.sold_out
           </button>
           <!-- 판매중지 — 상품 화면은 열리되 살 수 없다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="suspended"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.sales_status.suspended
           </button>
           <!-- 판매예정 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.sales_status="coming_soon"/>
             </on>
@@ -206,14 +206,14 @@
         <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.display_status</label>
         <div class="btn-group">
           <!-- 진열 — 목록·검색에 노출된다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.display_status="visible"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.display_status.visible
           </button>
           <!-- 미진열 — 목록에서 빠지지만 주소를 알면 열린다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.display_status="hidden"/>
             </on>
@@ -226,14 +226,14 @@
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.display_status</label>
         <div class="btn-group">
           <!-- 진열 — 목록·검색에 노출된다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.display_status="visible"/>
             </on>
             $t:sirsoft-ecommerce.admin.product.display_status.visible
           </button>
           <!-- 미진열 — 목록에서 빠지지만 주소를 알면 열린다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <set-state target="local" form.display_status="hidden"/>
             </on>

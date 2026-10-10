@@ -19,7 +19,9 @@
     <field name="selectAll" :value="false"/>
     <field name="bulkStatus" value=""/>
   </init-local>
-  <permissions/>
+  <permissions>
+    <permission>sirsoft-ecommerce.promotion-coupon.read</permission>
+  </permissions>
   <slot name="content">
     <div data-ref="discount_code_content" class="admin-page-content">
       <responsive on="portable" class="admin-page-content-compact"/>

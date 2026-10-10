@@ -93,6 +93,7 @@ effects:
   - admin_product_inquiry_requires_read_permission
   - admin_product_inquiry_returns_pagination_and_abilities
   - admin_product_inquiry_read_only_cannot_manage
+  - admin_product_inquiry_exposes_reply_and_delete_abilities
   - admin_product_inquiry_filters_by_user_uuid
   - admin_product_inquiry_unknown_uuid_returns_empty
   - admin_product_inquiry_search_field_branches

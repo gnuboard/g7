@@ -285,7 +285,8 @@
                                         "issueHistoryFilterUser": null,
                                         "issueHistoryCoupon": {
                                             "id": "{{$args[1].id}}",
-                                            "name": "{{$args[1].localized_name}}"
+                                            "name": "{{$args[1].localized_name}}",
+                                            "can_update": "{{$args[1].abilities?.can_update === true}}"
                                         }
                                     }
                                 },
@@ -421,9 +422,22 @@
                         "width": "200px",
                         "cellChildren": [
                             {
+                                "comment": "수정 화면은 쿠폰 수정 권한이 있어야 열린다 — 권한이 없으면 링크 대신 이름만 보인다(행 「수정」과 같은 키).",
+                                "id": "coupon_name_text",
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.abilities?.can_update !== true}}",
+                                "props": {
+                                    "className": "font-medium text-gray-900 dark:text-gray-100"
+                                },
+                                "text": "{{row.localized_name}}"
+                            },
+                            {
                                 "comment": "쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다",
+                                "id": "coupon_name_link",
                                 "type": "basic",
                                 "name": "A",
+                                "if": "{{row.abilities?.can_update === true}}",
                                 "actions": [
                                     {
                                         "type": "click",
@@ -507,7 +521,8 @@
                                                     "issueHistoryFilterUser": null,
                                                     "issueHistoryCoupon": {
                                                         "id": "{{row.id}}",
-                                                        "name": "{{row.localized_name}}"
+                                                        "name": "{{row.localized_name}}",
+                                                        "can_update": "{{row.abilities?.can_update === true}}"
                                                     }
                                                 }
                                             },

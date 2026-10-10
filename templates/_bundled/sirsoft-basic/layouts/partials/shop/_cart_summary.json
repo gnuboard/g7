@@ -600,7 +600,17 @@
             "text": "$t:shop.shippability.blocks_order"
         },
         {
+            "type": "basic",
+            "name": "P",
+            "if": "{{cartItems.data?.abilities?.can_order === false}}",
+            "props": {
+                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+            },
+            "text": "$t:shop.order_permission_denied"
+        },
+        {
             "comment": "주문하기 — 먼저 화면을 잠그고(중복 클릭 차단) 임시 주문을 만든다. 비로그인이면 곧바로 주문서로\n         가지 않고 로그인을 거치는데, 임시 주문은 cart_key 로 남아 있어 돌아와도 그 주문서가 이어진다",
+            "id": "cart_order_button",
             "type": "basic",
             "name": "Button",
             "actions": [
@@ -712,7 +722,7 @@
             ],
             "props": {
                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                "disabled": "{{_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true}}"
+                "disabled": "{{(_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true) || cartItems.data?.abilities?.can_order !== true}}"
             },
             "children": [
                 {

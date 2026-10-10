@@ -93,7 +93,7 @@
             </button>
           </div>
           <multilingual-tab-panel data-type="composite" data-ref="fields_tab_panel" variant="underline" class="">
-            <dynamic-field-list data-type="composite" data-ref="fields_editor" name="fields" items="{{_local.form.fields ?? []}}" addLabel="$t:sirsoft-ecommerce.admin.product_notice_template.form.add_field" :enableDrag="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" :minItems="1" emptyMessage="$t:sirsoft-ecommerce.admin.product_notice_template.form.empty_fields" errors="{{_local.errors}}">
+            <dynamic-field-list data-type="composite" data-ref="fields_editor" name="fields" items="{{_local.form.fields ?? []}}" addLabel="$t:sirsoft-ecommerce.admin.product_notice_template.form.add_field" :enableDrag="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" readOnly="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" :minItems="1" emptyMessage="$t:sirsoft-ecommerce.admin.product_notice_template.form.empty_fields" errors="{{_local.errors}}">
               <prop name="columns">
                 <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product_notice_template.fields.name" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.field_name_placeholder"/>
                 <item key="content" type="multilingual" label="$t:sirsoft-ecommerce.admin.product_notice_template.fields.content" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.field_content_placeholder"/>

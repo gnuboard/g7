@@ -6,6 +6,7 @@ use App\Enums\PermissionType;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Models\User;
 use App\Support\Query\PaginationLimits;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -1127,6 +1128,14 @@ class PostController extends PublicBaseController
      */
     private function attachComments(Request $request, Post $post, Board $board, string $slug, int $id): void
     {
+        // 댓글 열람 권한(comments.read)이 없으면 댓글을 싣지 않는다 — 화면은 can_read_comments 로 가렸지만 응답에는
+        // 원문이 그대로 실렸다. 전량·comment_page 두 경로 모두 여기서 막는다.
+        if (! $this->checkBoardPermission($slug, 'comments.read', PermissionType::User)) {
+            $post->setRelation('comments', new Collection);
+
+            return;
+        }
+
         // manager 권한 체크 (삭제 게시글/댓글 포함 여부 결정)
         $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
 

@@ -7,6 +7,7 @@ use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ModuleOperationException;
 use App\Extension\Layout\LayoutSyncSummary;
 use App\Extension\Vendor\VendorMode;
+use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
@@ -81,12 +82,18 @@ class ModuleController extends AdminBaseController
             );
 
             // ModuleCollection 변환 (전체 모듈 목록 반환 시에만)
+            $collection = new ModuleCollection(collect($responseData['data'] ?? []));
             if (! empty($responseData['data'])) {
-                $collection = new ModuleCollection(collect($responseData['data']));
                 $responseData['data'] = $collection->toArray($request)['data'];
                 $responseData['meta'] = $collection->with($request)['meta'];
-                $responseData['abilities'] = $collection->resolveCollectionAbilities($request);
             }
+            // 권한은 결과 건수와 무관하다 — 0건(검색·필터 결과 없음)에도 실어야 머리말의 「수동 설치」·
+            // 「업데이트 확인」이 권한자에게 잠기지 않는다(플러그인·템플릿 목록과 같은 계약).
+            $responseData['abilities'] = $collection->resolveCollectionAbilities($request) + [
+                // 카드 「언어팩 관리」는 다른 화면(언어팩)으로 가는 이동이라 그 화면의 조회 권한을 따로 싣는다 —
+                // 목록 리소스의 abilityMap 에 섞으면 능력 플래그가 서로 다른 리소스를 가리키게 된다.
+                'can_view_language_packs' => PermissionHelper::check('core.language_packs.read', $request->user()),
+            ];
 
             return $this->success('module.fetch_success', $responseData);
         } catch (\Exception $e) {
@@ -207,6 +214,18 @@ class ModuleController extends AdminBaseController
             $vendorMode = VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
+
+            // 동반 설치 항목마다 그 종류의 설치·활성화 권한을 먼저 확인한다 (설치 창 can_select 와 같은 판정)
+            $denied = $this->findUnauthorizedCascadeSelection(
+                $validated['dependencies'] ?? [],
+                $validated['language_packs'] ?? []
+            );
+            if ($denied !== null) {
+                return $this->forbidden('extensions.errors.cascade_permission_denied', [
+                    'type' => __('extensions.cascade_types.'.$denied['type']),
+                    'identifier' => $denied['identifier'],
+                ]);
+            }
 
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             $this->installSelectedDependencies($validated['dependencies'] ?? []);

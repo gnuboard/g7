@@ -2284,7 +2284,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-outline"
+                                        "className": "btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.action.save_preset"
                                 }
@@ -2388,7 +2389,8 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-outline flex-1"
+                                "className": "btn btn-outline flex-1 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.action.save_preset"
                         }

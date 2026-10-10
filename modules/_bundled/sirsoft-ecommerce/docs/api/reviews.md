@@ -22,6 +22,7 @@
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.reviews.index`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductReviewController@index`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.reviews.read`
+- **권한 메모(1.3.0)**: 응답 최상위 `abilities.can_update`·`abilities.can_delete`(= `reviews.update`·`reviews.delete`) — 일괄 상태 변경·행 선택 잠금 키.
 
 **요청 파라미터**
 

@@ -20,7 +20,7 @@
             <span class="text-required">*</span>
           </label>
           <!-- 상품코드 — 운영자가 정하는 대표 코드. 등록에서만 열려 있다 -->
-          <input type="text" name="product_code" class="input" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder" disabled="{{!!route?.itemCode || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+          <input type="text" name="product_code" class="input" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder" disabled="{{!!route?.itemCode || _computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
             </on>
@@ -29,7 +29,7 @@
         <div data-ref="field_sku" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.sku</label>
           <!-- SKU — 창고·물류에서 쓰는 재고 단위 코드 -->
-          <input type="text" name="sku" class="{{_local.errors?.sku ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.sku" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <input type="text" name="sku" class="{{_local.errors?.sku ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.sku" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
             </on>
@@ -39,7 +39,7 @@
         <div data-ref="field_barcode" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.label</label>
           <!-- 바코드 — 매장 스캔용. 상품마다 고유해야 해서 복사 시 따라오지 않는다 -->
-          <input type="text" name="barcode" class="{{_local.errors?.barcode ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <input type="text" name="barcode" class="{{_local.errors?.barcode ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
             </on>
@@ -49,7 +49,7 @@
         <div data-ref="field_hs_code" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.label</label>
           <!-- HS코드 — 해외배송 통관 신고에 쓴다 -->
-          <input type="text" name="hs_code" class="{{_local.errors?.hs_code ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <input type="text" name="hs_code" class="{{_local.errors?.hs_code ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
             </on>

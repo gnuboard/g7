@@ -50,7 +50,7 @@ _단건 응답: `data` 객체의 필드._
 | seo | object | `{"meta_boards_title":"{site_name}","meta_boards_descripti…` | SEO 메타 태그 설정 카테고리. 게시판 목록/개별 게시판/글 상세 페이지의 메타 제목·설명 템플릿과 각 페이지의 SEO 생성 활성화 여부(seo_boards, seo_board, seo_post_detail)를 포함합니다. |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":0…` | 알림 채널 설정 카테고리. 각 채널(mail, database 등)의 식별자, 활성화 여부(is_active), 정렬 순서(sort_order)를 담은 channels 배열을 포함합니다. |
 | report_permissions | object | `{"view_roles":["admin","manager"],"manage_roles":["admin"]}` | 신고 관리 권한 역할. 신고 내역을 조회할 수 있는 역할(view_roles)과 신고를 처리·관리할 수 있는 역할(manage_roles)의 식별자 배열이며, 설정값이 아닌 DB 권한 데이터로 관리됩니다. |
-| abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+| abilities | object | `{"can_update":true,"can_bulk_apply":true,"can_manage_board_types":true,"can_clear_seo_cache":true}` | 현재 사용자가 할 수 있는 작업 — `can_update`(settings.update), `can_bulk_apply`(settings.update + boards.update, 일괄 적용 라우트와 같은 두 권한), `can_manage_board_types`(boards.create, 게시판 유형 쓰기 라우트), `can_clear_seo_cache`(core.settings.update, 코어 SEO 캐시 초기화) |
 | _meta | object | `{"limits":{"per_page_min":5,"per_page_max":100,"min_title…` | 편집 UI 보조 메타데이터. `limits`에 `config('sirsoft-board.limits')` 기반 입력 제한값(페이지당 글 수·답글/댓글 깊이의 최소·최대 등)이 담겨 프론트 입력 검증 범위로 사용됩니다. |
 
 **응답 예시**
@@ -348,7 +348,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 모듈의 전체 환경설정을 조회합니다. `auth:sanctum` 인증과 `sirsoft-board.settings.read` 권한이 필요합니다. 기본값(basic_defaults)/신고정책(report_policy)/스팸·보안(spam_security)/표시(display)/SEO/알림(notifications) 등 모든 카테고리 설정과 신고 권한 역할(report_permissions)을 함께 반환하며, 현재 사용자의 수정 가능 여부(abilities)와 입력 제한값(`_meta.limits`, `config('sirsoft-board.limits')`)을 포함합니다.
+**설명** 게시판 모듈의 전체 환경설정을 조회합니다. `auth:sanctum` 인증과 `sirsoft-board.settings.read` 권한이 필요합니다. 기본값(basic_defaults)/신고정책(report_policy)/스팸·보안(spam_security)/표시(display)/SEO/알림(notifications) 등 모든 카테고리 설정과 신고 권한 역할(report_permissions)을 함께 반환하며, 현재 사용자의 수정 가능 여부(abilities)와 입력 제한값(`_meta.limits`, `config('sirsoft-board.limits')`)을 포함합니다. abilities 의 `can_bulk_apply`·`can_manage_board_types`·`can_clear_seo_cache` 는 화면이 일괄 적용 영역·게시판 유형 관리·SEO 캐시 초기화를 잠그는 근거입니다(7.1.0).
 
 
 ### PUT /api/modules/sirsoft-board/admin/settings
@@ -799,7 +799,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.admin.settings.bulk-apply -->
 - **라우트명**: `api.modules.sirsoft-board.admin.settings.bulk-apply`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\BoardSettingsController@bulkApply`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.settings.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.settings.update|sirsoft-board.boards.update` (둘 다 필요)
 
 **요청 파라미터**
 
@@ -898,14 +898,14 @@ _단건 응답: `data` 객체의 필드. 성공(전체 적용 완료) 시와 중
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`, `sirsoft-board.boards.update`) 중 하나라도 없는 경우 |
 | 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — 적용할 기본 권한이 대상 게시판의 역할 매핑을 바꾸는데 요청자가 그 게시판 권한을 전체 범위로 갖지 않은 경우. 전체 변경이 되돌려지며 `rolled_back` 200 응답이 아니라 403 으로 끝난다 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `fields` 누락/빈 배열, 허용되지 않은 필드명, `apply_all=false` 인데 `board_ids` 미지정, 존재하지 않는 `board_ids` 항목 등 |
 | 500 | Internal Server Error | 일괄 적용 처리 중 롤백 예외 외의 오류가 발생한 경우 (`messages.settings.bulk_apply_failed`) |
 
 <!-- @generated:end -->
 
-**설명** 환경설정의 기본값을 기존 게시판들에 일괄 적용합니다. `auth:sanctum` 인증과 `sirsoft-board.settings.update` 권한이 필요합니다. `fields`(적용할 필드, 최소 1개)와 `apply_all`(전체 적용 여부)을 받으며, `apply_all`이 false이면 `board_ids`로 대상을 지정하고 `override_values`로 값을 재정의할 수 있습니다. 적용 도중 실패하면 전체가 롤백되며, 이 경우에도 HTTP 200으로 `rolled_back: true`와 실패 지점 정보를 반환하여 프론트에서 안내 처리합니다.
+**설명** 환경설정의 기본값을 기존 게시판들에 일괄 적용합니다. `auth:sanctum` 인증과 `sirsoft-board.settings.update` 권한이 필요합니다. `fields`(적용할 필드, 최소 1개)와 `apply_all`(전체 적용 여부)을 받으며, `apply_all`이 false이면 `board_ids`로 대상을 지정하고 `override_values`로 값을 재정의할 수 있습니다. 적용 도중 실패하면 전체가 롤백되며, 이 경우에도 HTTP 200으로 `rolled_back: true`와 실패 지점 정보를 반환하여 프론트에서 안내 처리합니다. 7.1.0 부터 기존 게시판 설정을 덮어쓰는 작업이라 게시판 수정 권한(`sirsoft-board.boards.update`)도 함께 요구합니다.
 
 
 ### GET /api/modules/sirsoft-board/admin/settings/privacy-retention-preview

@@ -512,6 +512,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.show`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@show`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.read`
+- **권한 메모(1.3.0)**: 응답 `abilities.can_execute_refund`(= `sirsoft-ecommerce.claims.execute-refund`) — 취소 창 「환불까지 한 번에 처리」와 결제 플러그인 [환불 재시도]를 잠그는 키. 기존 `can_update` 는 그대로.
 
 **요청 파라미터**
 
@@ -832,6 +833,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.cancel`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@cancelOrder`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
+- **권한 메모(1.3.0)**: `auto_advance_refund=true` 이면 환불 실행 권한(`sirsoft-ecommerce.claims.execute-refund`)도 요구한다. 없으면 403(`messages.claims.auto_refund_forbidden`)이고 신청서를 만들지 않는다.
 
 **요청 파라미터**
 
@@ -1351,7 +1353,8 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.orders.estimate-refund -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.estimate-refund`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@estimateRefund`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.create`
+- **권한 메모(1.3.0)**: 취소·환불 접수 창 전용이라 접수(`cancel-refund`)와 같은 `sirsoft-ecommerce.claims.create` 로 판정한다(종전 `orders.update`).
 
 **요청 파라미터**
 
@@ -1469,14 +1472,14 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.create`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 환불 예상금액 계산 중 오류 (`환불 예상금액 계산에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 주문(`order`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 화면에서 "환불 예정 금액"을 관리자에게 미리 보여주는 용도입니다.
+**설명** 관리자가 특정 주문(`order`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.claims.create` 권한이 필요하며, `Admin\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 화면에서 "환불 예정 금액"을 관리자에게 미리 보여주는 용도입니다.
 
 교환·반품·환불 신청으로 **클레임 코스에 들어간 상품**이 `items` 에 섞이면 `422` 입니다 — 미리보기와 실행(`DELETE /admin/orders/{order}`)이 같은 가드를 쓰므로 "미리보기는 되는데 실행만 막히는" 비대칭이 없습니다. 사유는 `errors.detail` 에 실립니다(`claim_option_in_course` / `claim_quantity_locked` — 관리자 전용 면의 조치 근거).
 
@@ -3494,6 +3497,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claimable-options`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@claimableOptions`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.read`
+- **권한 메모(1.3.0)**: 응답 `abilities.can_cancel`(= `user-orders.cancel`)·`abilities.can_request`(= `user-claims.request`) — 신청 버튼 잠금 키. 즉시 취소 분기(`refund_branch=auto`) 상품은 `can_cancel` 도 필요하다.
 
 **요청 파라미터**
 
@@ -3973,6 +3977,7 @@ Content-Type: application/json
 - **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.refund-requests.store`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@storeRefund`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+- **권한 메모(1.3.0)**: 선택 상품이 즉시 취소 분기(`auto`)면 `sirsoft-ecommerce.user-orders.cancel` 도 요구한다. 없으면 403(`messages.claims.instant_cancel_forbidden`).
 
 **요청 파라미터**
 

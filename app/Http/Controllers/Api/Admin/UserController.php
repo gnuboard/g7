@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\CannotDeleteSelfException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\PermissionEscalationException;
@@ -191,6 +192,8 @@ class UserController extends AdminBaseController
             }
         } catch (CannotDeleteSuperAdminException $e) {
             return $this->error('exceptions.cannot_delete_super_admin', 422);
+        } catch (CannotDeleteSelfException $e) {
+            return $this->error('exceptions.cannot_delete_self', 422);
         } catch (ValidationException $e) {
             // UserService 가 던진 ValidationException 의 general[0] 에는 이미 `:error` 가
             // 치환된 완성 메시지(예: "사용자 삭제에 실패했습니다: <상세 사유>")가 들어있다.

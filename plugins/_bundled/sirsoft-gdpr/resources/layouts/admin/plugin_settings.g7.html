@@ -7,6 +7,11 @@
       <field name="_merge" value="deep"/>
       <field name="form" value="settings"/>
     </init-local>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다 -->
   <data-source id="gdprAnnualNoticePreview" label_key="$t:sirsoft-gdpr.editor.data_source.gdprAnnualNoticePreview" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/annual-notice/preview" method="GET" :auto_fetch="true" :auth_required="true">
@@ -82,6 +87,7 @@
     </error-handling>
   </data-source>
   <computed name="isNotificationReadOnly">{{gdprNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="isPluginReadOnly">{{gdprSettings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
   </permissions>
@@ -102,6 +108,10 @@
           <!-- 제목 wrapper — 게시판 설정(page_header_wrapper)과 동일하게 별도 className 없음. panel-header-row(border-b 포함) 를 쓰면 탭 위에 불필요한 구분선이 하나 더 생긴다. -->
           <div data-ref="header_top_row">
             <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-gdpr.settings.title" description="$t:sirsoft-gdpr.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+            <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!gdprSettings?.data}}" role="status" class="alert-warning mt-6">
+              <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+              <span class="text-warning-soft">$t:sirsoft-gdpr.plugin_read_only</span>
+            </div>
           </div>
           <!-- 상단 탭 스크롤 — settings_main_content(p-4 sm:p-6 lg:p-8) 안 카드들과 좌우 정렬을 맞추기 위해 header_content 패딩을 그대로 물려받는다(자체 좌우 패딩 없음). 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신. -->
           <tab-navigation-scroll data-type="composite" data-ref="settings_tab_navigation" class="flex gap-1" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
@@ -143,7 +153,7 @@
                 <p class="form-hint">$t:sirsoft-gdpr.settings.fields.legal_entity_name.hint</p>
               </div>
               <div class="lg:col-span-2">
-                <input type="text" name="legal_entity_name" placeholder="$t:sirsoft-gdpr.settings.fields.legal_entity_name.placeholder" class="{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
+                <input type="text" name="legal_entity_name" placeholder="$t:sirsoft-gdpr.settings.fields.legal_entity_name.placeholder" class="{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
                 <span data-if="{{_local.errors?.['legal_entity_name']}}" class="form-error">{{_local.errors?.['legal_entity_name']?.[0] ?? ''}}</span>
               </div>
@@ -154,7 +164,7 @@
                 <p class="form-hint">$t:sirsoft-gdpr.settings.fields.data_storage_location.hint</p>
               </div>
               <div class="lg:col-span-2">
-                <input type="text" name="data_storage_location" placeholder="$t:sirsoft-gdpr.settings.fields.data_storage_location.placeholder" class="{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
+                <input type="text" name="data_storage_location" placeholder="$t:sirsoft-gdpr.settings.fields.data_storage_location.placeholder" class="{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
                 <span data-if="{{_local.errors?.['data_storage_location']}}" class="form-error">{{_local.errors?.['data_storage_location']?.[0] ?? ''}}</span>
               </div>
@@ -166,7 +176,7 @@
               </div>
               <div class="lg:col-span-2">
                 <!-- 처리방침 주소 — 운영자가 직접 입력 (/ 로 시작하는 사이트 경로 또는 https:// 주소). 형식 검증은 서버 FormRequest 가 한다. -->
-                <input type="text" name="privacy_policy_url" placeholder="$t:sirsoft-gdpr.settings.fields.privacy_policy_url.placeholder" class="{{_local.errors?.['privacy_policy_url'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
+                <input type="text" name="privacy_policy_url" placeholder="$t:sirsoft-gdpr.settings.fields.privacy_policy_url.placeholder" class="{{_local.errors?.['privacy_policy_url'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
                 <span data-if="{{_local.errors?.['privacy_policy_url']}}" class="form-error">{{_local.errors?.['privacy_policy_url']?.[0] ?? ''}}</span>
               </div>
@@ -191,7 +201,7 @@
                 <p class="form-hint">$t:sirsoft-gdpr.settings.fields.banner_enabled.hint</p>
               </div>
               <div class="lg:col-span-1 flex justify-end">
-                <toggle data-type="composite" name="banner_enabled"/>
+                <toggle data-type="composite" name="banner_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
             </div>
             <div data-ref="field_banner_position" class="grid-3col-responsive">
@@ -200,7 +210,7 @@
                 <p class="form-hint">$t:sirsoft-gdpr.settings.fields.banner_position.hint</p>
               </div>
               <div class="lg:col-span-2">
-                <select name="banner_position" class="w-full">
+                <select name="banner_position" class="w-full" disabled="{{_computed.isPluginReadOnly}}">
                   <options>
                     <option value="bottom_bar">$t:sirsoft-gdpr.settings.fields.banner_position.option_bottom_bar</option>
                     <option value="bottom_left_popup">$t:sirsoft-gdpr.settings.fields.banner_position.option_bottom_left_popup</option>
@@ -258,7 +268,7 @@
                     <!-- 액션 영역 — 새 버전 발행 (publish modal 진입) + 이력 토글 -->
                     <div class="flex-center gap-2 flex-shrink-0">
                       <!-- 새 버전 발행 버튼 — publish modal 열기 -->
-                      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 border border-gray-900 dark:border-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 border border-gray-900 dark:border-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" disabled="{{_computed.isPluginReadOnly}}">
                         <on type="click">
                           <open-modal target="policy_version_publish_modal"/>
                         </on>
@@ -444,9 +454,9 @@
                     <label class="form-label">{{$localized(category?.label) || category?.key || ''}} ({{category?.key ?? ''}})</label>
                   </div>
                   <!-- 도메인 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열 추출. options: 카탈로그 추천 (자동완성) -->
-                  <tag-input data-type="composite" value="{{_local.form?.blocked_domains?.[category.key] ?? []}}" options="{{((gdprSettings?.data?.default_blocked_domains_preview?.[category.key]) ?? []).map(d => ({ value: d, label: d }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_no_options">
+                  <tag-input data-type="composite" value="{{_local.form?.blocked_domains?.[category.key] ?? []}}" options="{{((gdprSettings?.data?.default_blocked_domains_preview?.[category.key]) ?? []).map(d => ({ value: d, label: d }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_no_options" disabled="{{_computed.isPluginReadOnly}}">
                     <on type="change">
-                      <set-state target="local" form.blocked_domains="{{({...(_local.form?.blocked_domains ?? {}), [category.key]: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
+                      <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.blocked_domains="{{({...(_local.form?.blocked_domains ?? {}), [category.key]: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                     </on>
                   </tag-input>
                   <!-- 카테고리 내 첫 잘못된 도메인의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출됨. -->
@@ -512,9 +522,9 @@
                   <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_hint</p>
                 </div>
                 <!-- 항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성) -->
-                <tag-input data-type="composite" data-ref="necessary_storage_input_localStorage" value="{{_local.form?.necessary_storage_allowlist?.localStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.localStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
+                <tag-input data-type="composite" data-ref="necessary_storage_input_localStorage" value="{{_local.form?.necessary_storage_allowlist?.localStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.localStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options" disabled="{{_computed.isPluginReadOnly}}">
                   <on type="change">
-                    <set-state target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), localStorage: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), localStorage: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                   </on>
                 </tag-input>
                 <!-- 스코프 내 첫 잘못된 항목의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출된다. -->
@@ -552,9 +562,9 @@
                   <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_hint</p>
                 </div>
                 <!-- 항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성) -->
-                <tag-input data-type="composite" data-ref="necessary_storage_input_sessionStorage" value="{{_local.form?.necessary_storage_allowlist?.sessionStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.sessionStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
+                <tag-input data-type="composite" data-ref="necessary_storage_input_sessionStorage" value="{{_local.form?.necessary_storage_allowlist?.sessionStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.sessionStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options" disabled="{{_computed.isPluginReadOnly}}">
                   <on type="change">
-                    <set-state target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), sessionStorage: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), sessionStorage: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                   </on>
                 </tag-input>
                 <!-- 스코프 내 첫 잘못된 항목의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출된다. -->
@@ -592,9 +602,9 @@
                   <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_hint</p>
                 </div>
                 <!-- 항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성) -->
-                <tag-input data-type="composite" data-ref="necessary_storage_input_cookie" value="{{_local.form?.necessary_storage_allowlist?.cookie ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.cookie) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
+                <tag-input data-type="composite" data-ref="necessary_storage_input_cookie" value="{{_local.form?.necessary_storage_allowlist?.cookie ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.cookie) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options" disabled="{{_computed.isPluginReadOnly}}">
                   <on type="change">
-                    <set-state target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), cookie: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), cookie: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                   </on>
                 </tag-input>
                 <!-- 스코프 내 첫 잘못된 항목의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출된다. -->
@@ -613,7 +623,7 @@
             <p class="alert-warning">$t:sirsoft-gdpr.annual_notice.policy_hint</p>
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.enabled</label>
-              <toggle data-type="composite" name="annual_notice.enabled"/>
+              <toggle data-type="composite" name="annual_notice.enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
             <!-- 조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).
                  건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).
@@ -677,7 +687,7 @@
                  조건식은 느슨한 참 판정(저장값이 '0'·'1' 문자열일 수 있음, 보안 탭 scope 선례와 동일). -->
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.channels</label>
-              <tag-input data-type="composite" data-ref="annual_notice_channels" value="{{_local.form?.annual_notice?.channels ?? []}}" :creatable="false" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}">
+              <tag-input data-type="composite" data-ref="annual_notice_channels" value="{{_local.form?.annual_notice?.channels ?? []}}" :creatable="false" disabled="{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}">
                 <prop name="options">
                   <item value="mail" label="$t:sirsoft-gdpr.annual_notice.mail"/>
                   <item value="database" label="$t:sirsoft-gdpr.annual_notice.database"/>
@@ -685,24 +695,24 @@
                 <on type="change">
                   <!-- 고른 채널 배열을 폼에 넣고 변경 표시를 세운다. 변경 표시가 서 있는 동안 시험 발송·지금 실행이 잠기므로
                        (둘 다 저장된 설정으로 보낸다) 채널을 바꾸면 저장부터 하게 된다. -->
-                  <set-state target="local" form.annual_notice.channels="{{$event?.target?.value ?? []}}" :hasChanges="true"/>
+                  <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.annual_notice.channels="{{$event?.target?.value ?? []}}" :hasChanges="true"/>
                 </on>
               </tag-input>
               <span data-if="{{_local.errors?.['annual_notice.channels']}}" class="form-error">{{_local.errors?.['annual_notice.channels']?.[0]}}</span>
             </div>
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.batch_size</label>
-              <input type="number" name="annual_notice.batch_size" min="{{gdprSettings?.data?.annual_notice_limits?.min}}" max="{{gdprSettings?.data?.annual_notice_limits?.max}}" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"/>
+              <input type="number" name="annual_notice.batch_size" min="{{gdprSettings?.data?.annual_notice_limits?.min}}" max="{{gdprSettings?.data?.annual_notice_limits?.max}}" disabled="{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}"/>
               <span data-if="{{_local.errors?.['annual_notice.batch_size']}}" class="form-error">{{_local.errors?.['annual_notice.batch_size']?.[0]}}</span>
             </div>
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.introduction</label>
-              <multilingual-input data-type="composite" name="annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"/>
+              <multilingual-input data-type="composite" name="annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}"/>
               <!-- 서문 오류는 언어별 키(annual_notice.introduction.ko 등)로 온다 — 첫 오류를 칸 아래에 보인다(상단 알림·토스트에만 나오던 것, M1-O4). -->
               <span data-if="{{!!_local.errors &amp;&amp; Object.keys(_local.errors).some((key) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))}}" class="form-error">{{_local.errors ? Object.entries(_local.errors).find(([key]) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))?.[1]?.[0] : ''}}</span>
             </div>
             <div class="flex flex-wrap gap-3">
-              <button data-ref="annual_notice_test" type="button" class="btn btn-primary" disabled="{{_local.hasChanges || _local.noticeSending}}">
+              <button data-ref="annual_notice_test" type="button" class="btn btn-primary" disabled="{{_computed.isPluginReadOnly || (_local.hasChanges || _local.noticeSending)}}">
                 <on type="click">
                   <!-- 본인 시험 발송 — 저장된 설정으로 지금 로그인한 관리자에게 통지 하나를 큐에 접수한다. 누르는 동안 버튼을 잠가
                        중복 접수를 막고, 성공·실패 어느 쪽이든 잠금을 푼다. 실제 채널별 결과는 통지 이력 화면에서 본다. -->
@@ -877,7 +887,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="footer_save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
+        <button data-ref="footer_save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5 text-sm">
           <on type="click">
             <!-- 설정 저장. 실패 안내는 서버가 준 검증 오류의 첫 항목을 그대로 쓴다 — 어느 항목이 왜 막혔는지 알려 주지 않으면 운영자가 같은 저장을 반복하게 된다 -->
             <sequence>

@@ -198,6 +198,12 @@ class PostController extends AdminBaseController
         try {
             $validated = $request->validated();
 
+            // 공지 지정은 게시판 관리 권한(admin.manage) 보유자만 — 화면은 체크박스를 잠그지만 본문에 직접 넣으면
+            // 공지가 등록됐다. 사용자 경로의 canSetNotice 와 같은 서버 판정이다
+            if (! empty($validated['is_notice']) && ! $this->checkBoardPermission($slug, 'admin.manage')) {
+                return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
+            }
+
             // 작성자 정보 및 IP 주소 자동 설정
             $validated['user_id'] = Auth::id();
             $validated['ip_address'] = $request->ip();
@@ -262,6 +268,13 @@ class PostController extends AdminBaseController
             if ($response = $this->authorizePostModification($slug, $post->user_id)) {
                 return $response;
             }
+        }
+
+        // 공지 여부를 바꾸는 요청은 게시판 관리 권한(admin.manage)만 — 같은 값이 다시 오는 평소 저장은 막지 않는다
+        if (array_key_exists('is_notice', $request->validated())
+            && (bool) $request->validated()['is_notice'] !== (bool) $post->is_notice
+            && ! $this->checkBoardPermission($slug, 'admin.manage')) {
+            return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
         }
 
         try {
@@ -564,6 +577,8 @@ class PostController extends AdminBaseController
 
                 $metaData['author'] = $postData['author'] ?? null;
                 $metaData['created_at'] = $postData['created_at'] ?? null;
+                // 저장(PUT)과 같은 판정 — 남의 글(또는 비회원 글)을 관리 권한 없이 열면 폼을 읽기 전용으로 잠그는 근거
+                $metaData['can_modify'] = $this->authorizePostModification($slug, $post->user_id) === null;
                 $metaData['attachments'] = $postData['attachments'] ?? [];
 
                 // 수정 시 원글 정보가 있으면 포함

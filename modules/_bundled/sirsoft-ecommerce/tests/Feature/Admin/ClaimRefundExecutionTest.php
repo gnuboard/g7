@@ -70,6 +70,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             'sirsoft-ecommerce.claims.update-amounts',
             'sirsoft-ecommerce.claims.execute-refund',
             'sirsoft-ecommerce.orders.update',
+            // 취소 창 예상금액 조회는 접수(claims.create) 축이다 (7.1.0).
+            'sirsoft-ecommerce.claims.create',
         ]);
     }
 

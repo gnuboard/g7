@@ -170,7 +170,8 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{schedules?.data?.abilities?.can_create !== true}}"
                                 },
                                 "children": [
                                     {

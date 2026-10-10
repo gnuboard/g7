@@ -39,9 +39,21 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "healthForbidden": true
+                    }
+                }
+            },
             "comment": "연동 상태 점검 결과 — 설정이 실제로 동작하는지 저장 전에 확인시켜 준다"
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -69,7 +81,45 @@
                         }
                     },
                     {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "pay-nhnkcp-tone-warning"
+                                },
+                                "text": "$t:sirsoft-pay_nhnkcp.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
                         "comment": "시스템 점검 — PC 결제(CLI 바이너리)와 모바일 결제(SOAP 확장) 사전조건 진단",
+                        "id": "health_check_forbidden",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{_local.healthForbidden === true}}",
+                        "props": {
+                            "className": "mt-6 form-hint"
+                        },
+                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.forbidden"
+                    },
+                    {
                         "id": "health_check_card",
                         "type": "basic",
                         "name": "Div",
@@ -574,7 +624,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "is_test_mode"
+                                                    "name": "is_test_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -727,7 +778,8 @@
                                                                     "type": "text",
                                                                     "name": "live_site_cd",
                                                                     "placeholder": "xxxxxx",
-                                                                    "className": "flex-1 font-mono outline-none border-0"
+                                                                    "className": "flex-1 font-mono outline-none border-0",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -791,7 +843,8 @@
                                                             "type": "password",
                                                             "name": "live_site_key",
                                                             "placeholder": "••••••••••••••••",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent font-mono"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -876,7 +929,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_allow_with_other_pg"
+                                                    "name": "easy_pay_allow_with_other_pg",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -900,7 +954,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_payco"
+                                                    "name": "easy_pay_payco",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -938,7 +993,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_naverpay"
+                                                    "name": "easy_pay_naverpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -976,7 +1032,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_naverpay_point"
+                                                    "name": "easy_pay_naverpay_point",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1014,7 +1071,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_kakaopay"
+                                                    "name": "easy_pay_kakaopay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1052,7 +1110,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_applepay"
+                                                    "name": "easy_pay_applepay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1140,7 +1199,8 @@
                                                             "type": "text",
                                                             "name": "redirect_success_url",
                                                             "placeholder": "/shop/orders/{orderId}/complete",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1194,7 +1254,8 @@
                                                             "type": "text",
                                                             "name": "redirect_fail_url",
                                                             "placeholder": "/shop/checkout",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1301,7 +1362,8 @@
                                                                     "min": "1",
                                                                     "max": "7",
                                                                     "placeholder": "3",
-                                                                    "className": "w-24 dark:focus:ring-blue-400 focus:border-transparent"
+                                                                    "className": "w-24 dark:focus:ring-blue-400 focus:border-transparent",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -1423,7 +1485,8 @@
                                                                     "readOnly": true,
                                                                     "value": "{{health.data.summary.cancel_server_ip.address ?? ''}}",
                                                                     "placeholder": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_unavailable",
-                                                                    "className": "input-readonly flex-1 font-mono"
+                                                                    "className": "input-readonly flex-1 font-mono",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -1593,7 +1656,8 @@
                                                     "type": "text",
                                                     "readOnly": true,
                                                     "value": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'}}",
-                                                    "className": "input-readonly flex-1 font-mono"
+                                                    "className": "input-readonly flex-1 font-mono",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             },
                                             {
@@ -1736,7 +1800,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "use_escrow"
+                                                    "name": "use_escrow",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1788,7 +1853,8 @@
                                                             "type": "text",
                                                             "name": "escrow_test_site_cd",
                                                             "placeholder": "T0007",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1871,7 +1937,8 @@
                                                     "type": "text",
                                                     "readOnly": true,
                                                     "value": "{{_local.vbankInfo?.escrow_common_notify_url ?? '/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'}}",
-                                                    "className": "input-readonly flex-1 font-mono"
+                                                    "className": "input-readonly flex-1 font-mono",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             },
                                             {
@@ -2027,7 +2094,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "children": [

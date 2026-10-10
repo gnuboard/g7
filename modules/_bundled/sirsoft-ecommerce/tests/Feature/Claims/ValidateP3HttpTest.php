@@ -270,7 +270,7 @@ class ValidateP3HttpTest extends ModuleTestCase
      */
     public function test_admin_cancel_message_reports_cancellation_when_completed(): void
     {
-        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update', 'sirsoft-ecommerce.claims.execute-refund']);
         $order = $this->paidClaimOrder();
 
         $this->actingAs($admin)->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->id}/cancel", [

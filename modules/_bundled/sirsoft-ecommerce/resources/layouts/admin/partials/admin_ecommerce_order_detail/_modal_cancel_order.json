@@ -851,11 +851,11 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex items-start gap-2 cursor-pointer select-none"
+                                "className": "flex items-start gap-2 select-none {{order.data?.abilities?.can_execute_refund === true ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}}"
                             },
                             "children": [
                                 {
-                                    "comment": "이번 취소에 한해 환불 단계를 자동으로 밀지 고르는 표식이다 — 체크만으로는 서버에 아무것도 가지 않고, [주문 취소] 실행 요청에 실려 가서야 효력이 생긴다.",
+                                    "comment": "이번 취소에 한해 환불 단계를 자동으로 밀지 고르는 표식이다 — 체크만으로는 서버에 아무것도 가지 않고, [주문 취소] 실행 요청에 실려 가서야 효력이 생긴다. PG 환불까지 가므로 환불 실행 권한(can_execute_refund)이 없으면 꺼진 채 잠근다 — 서버도 같은 권한으로 403 을 낸다.",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -871,7 +871,8 @@
                                     "props": {
                                         "id": "cancel_auto_advance_refund_checkbox",
                                         "type": "checkbox",
-                                        "checked": "{{_local.autoAdvanceRefund === true}}",
+                                        "checked": "{{_local.autoAdvanceRefund === true && order.data?.abilities?.can_execute_refund === true}}",
+                                        "disabled": "{{order.data?.abilities?.can_execute_refund !== true}}",
                                         "className": "checkbox mt-0.5"
                                     }
                                 },
@@ -897,6 +898,16 @@
                                                 "className": "text-xs text-gray-500 dark:text-gray-400 block mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_hint"
+                                        },
+                                        {
+                                            "id": "cancel_auto_advance_refund_no_permission",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{order.data?.abilities?.can_execute_refund !== true}}",
+                                            "props": {
+                                                "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_no_permission"
                                         },
                                         {
                                             "comment": "정지 수단 안내 (P16) — 체크박스는 그대로 두되, 이 주문의 결제수단이 자동 승인 목록 밖이면 체크해도 환불신청에서 멈춘다는 것을 미리 알린다. 판정은 서버가 준 auto_approves_refund 하나를 읽는다 — 레이아웃에서 목록을 다시 비교하면 설정 변경·플러그인 추가 때 안내와 실제 전이가 갈린다.",
@@ -2113,7 +2124,7 @@
                                 "cancelItems": "{{_local.cancelItems}}",
                                 "cancelReason": "{{_local.cancelReason ?? ''}}",
                                 "cancelReasonDetail": "{{_local.cancelReasonDetail ?? ''}}",
-                                "autoAdvanceRefund": "{{_local.autoAdvanceRefund === true}}",
+                                "autoAdvanceRefund": "{{_local.autoAdvanceRefund === true && order.data?.abilities?.can_execute_refund === true}}",
                                 "refundPriority": "{{_local.refundPriority ?? 'pg_first'}}",
                                 "canViewClaims": "{{orderClaims?.data?.unavailable !== true}}"
                             }

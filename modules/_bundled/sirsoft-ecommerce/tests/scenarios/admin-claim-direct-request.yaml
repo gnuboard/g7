@@ -65,6 +65,7 @@ effects:
   - admin_request_submit_requires_reason
   - admin_request_submit_blocks_duplicate
   - admin_request_submit_posts_to_type_endpoint
+  - admin_request_submit_omits_approval_without_permission
   - admin_return_request_carries_refund_priority_and_prefilled_bank
   - admin_request_preview_amounts_are_formatted_in_order_currency
   - admin_request_submit_opens_new_claim_and_refetches_order

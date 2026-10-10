@@ -457,6 +457,7 @@
                                                 {
                                                     "handler": "apiCall",
                                                     "target": "/api/user/notifications/read-batch",
+                                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
                                                     "auth_required": true,
                                                     "params": {
                                                         "method": "POST",
@@ -494,6 +495,7 @@
                                                 {
                                                     "handler": "apiCall",
                                                     "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
                                                     "auth_required": true,
                                                     "params": {
                                                         "method": "PATCH"
@@ -522,6 +524,7 @@
                                                 {
                                                     "handler": "apiCall",
                                                     "target": "/api/user/notifications/read-all",
+                                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
                                                     "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
@@ -596,6 +599,7 @@
                                             "event": "onDelete",
                                             "handler": "apiCall",
                                             "target": "/api/user/notifications/{{$args[0].id}}",
+                                            "if": "{{notifications?.data?.abilities?.can_delete === true}}",
                                             "auth_required": true,
                                             "params": {
                                                 "method": "DELETE"
@@ -631,9 +635,11 @@
                                             }
                                         },
                                         {
+                                            "comment": "「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부)",
                                             "event": "onDeleteAll",
                                             "handler": "openModal",
-                                            "target": "notification_delete_all_confirm_modal"
+                                            "target": "notification_delete_all_confirm_modal",
+                                            "if": "{{notifications?.data?.abilities?.can_delete === true}}"
                                         },
                                         {
                                             "comment": "더 보기 — 다음 페이지를 받아 기존 목록 뒤에 이어 붙인다(refetch 로 받으면 앞 페이지가 날아간다). 실패해도 로딩 표시는 반드시 내린다.",
@@ -699,6 +705,8 @@
                                         "deleteAllText": "$t:mypage.notifications.delete_all",
                                         "unreadOnlyText": "$t:mypage.notifications.unread_only",
                                         "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
+                                        "canUpdate": "{{notifications?.data?.abilities?.can_update === true}}",
+                                        "canDelete": "{{notifications?.data?.abilities?.can_delete === true}}",
                                         "dropdownAlign": "right"
                                     }
                                 },
@@ -2030,6 +2038,7 @@
                                 {
                                     "handler": "apiCall",
                                     "target": "/api/user/notifications/read-batch",
+                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
                                     "auth_required": true,
                                     "params": {
                                         "method": "POST",
@@ -2087,6 +2096,7 @@
                                 {
                                     "handler": "apiCall",
                                     "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
                                     "auth_required": true,
                                     "params": {
                                         "method": "PATCH"
@@ -2122,6 +2132,7 @@
                                 {
                                     "handler": "apiCall",
                                     "target": "/api/user/notifications/read-all",
+                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
                                     "auth_required": true,
                                     "params": {
                                         "method": "POST"
@@ -2196,6 +2207,7 @@
                             "event": "onNotificationDelete",
                             "handler": "apiCall",
                             "target": "/api/user/notifications/{{$args[0].id}}",
+                            "if": "{{notifications?.data?.abilities?.can_delete === true}}",
                             "auth_required": true,
                             "params": {
                                 "method": "DELETE"
@@ -2231,9 +2243,11 @@
                             }
                         },
                         {
+                            "comment": "「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부)",
                             "event": "onNotificationDeleteAll",
                             "handler": "openModal",
-                            "target": "notification_delete_all_confirm_modal"
+                            "target": "notification_delete_all_confirm_modal",
+                            "if": "{{notifications?.data?.abilities?.can_delete === true}}"
                         },
                         {
                             "comment": "데스크톱 더 보기 — 다음 페이지를 이어 붙인다. 모바일과 달리 현재 미읽음 필터를 질의에 함께 실어 필터가 걸린 목록에서도 같은 조건으로 이어진다.",
@@ -2306,7 +2320,9 @@
                         "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                         "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
                         "notificationLoading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
-                        "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}"
+                        "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
+                        "notificationCanUpdate": "{{notifications?.data?.abilities?.can_update === true}}",
+                        "notificationCanDelete": "{{notifications?.data?.abilities?.can_delete === true}}"
                     }
                 },
                 {

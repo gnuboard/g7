@@ -78,7 +78,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('order_by')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('order_by')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -172,7 +173,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('order_direction')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('order_direction')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -258,7 +260,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('per_page')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('per_page')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -355,7 +358,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('per_page_mobile')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('per_page_mobile')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {

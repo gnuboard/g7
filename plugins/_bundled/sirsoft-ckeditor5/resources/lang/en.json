@@ -112,5 +112,6 @@
             "step4": "Changes take effect immediately after saving. No page refresh is required.",
             "step5": "When deactivated, editors revert to the default HtmlEditor and content display reverts to the default HtmlContent."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

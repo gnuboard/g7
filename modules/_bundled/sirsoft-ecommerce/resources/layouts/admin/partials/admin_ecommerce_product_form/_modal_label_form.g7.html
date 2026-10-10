@@ -56,7 +56,7 @@
           </on>
           $t:sirsoft-ecommerce.common.cancel
         </button>
-        <button type="button" class="btn btn-primary" disabled="{{_global.isSavingLabel || !_global.labelFormData?.name?.ko}}">
+        <button data-ref="label_form_save" type="button" class="btn btn-primary" disabled="{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.saveLabelSettings"/>
           </on>

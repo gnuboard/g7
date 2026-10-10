@@ -242,7 +242,7 @@
             "id": "boardIdentityPolicies",
             "label_key": "$t:sirsoft-board.editor.data_source.boardIdentityPolicies",
             "type": "api",
-            "endpoint": "/api/admin/identity/policies",
+            "endpoint": "/api/modules/sirsoft-board/admin/identity-policies",
             "method": "GET",
             "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
             "auto_fetch": true,
@@ -261,7 +261,17 @@
                     "meta": {}
                 }
             },
-            "comment": "본인인증 정책 목록 — 코어 표를 게시판 몫(`source_identifier`)으로 좁혀 받는다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다"
+            "errorHandling": {
+                "comment": "조회 권한이 없으면(403) 표지를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 「등록된 정책 없음」으로 보인다.\n         다시 성공하면 computed 가 abilities 를 먼저 본다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "identityPoliciesLoadError": "forbidden"
+                    }
+                }
+            },
+            "comment": "본인인증 정책 목록 — 코어 표에서 게시판 몫(`source_identifier`)만 게시판 모듈 경로로 받는다. 이 경로는 게시판 권한\n       (`identity.policies.read`, 쓰기·abilities 는 `.update`)으로 동작한다 — 코어 경로는 코어 권한을 요구해 게시판 권한이 아무 효과가 없었다.\n       서버가 출처를 게시판으로 고정하므로 `source_identifier` 는 표지일 뿐이다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다"
         },
         {
             "id": "boardIdentityPurposes",
@@ -281,7 +291,7 @@
             "id": "identityProviders",
             "label_key": "$t:sirsoft-board.editor.data_source.identityProviders",
             "type": "api",
-            "endpoint": "/api/admin/identity/providers",
+            "endpoint": "/api/identity/providers",
             "method": "GET",
             "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
             "auto_fetch": true,
@@ -289,7 +299,7 @@
             "fallback": {
                 "data": []
             },
-            "comment": "설치된 본인인증 제공자 — 정책에 어느 수단을 붙일지 고를 때 쓴다. 하나도 없으면 정책을 만들어도 실제로 인증을 걸 수단이 없다"
+            "comment": "설치된 본인인증 제공자 — 정책에 어느 수단을 붙일지 고를 때 쓴다. 하나도 없으면 정책을 만들어도 실제로 인증을 걸 수단이 없다.\n       권한이 필요 없는 공개 목록에서 받는다(폼은 id·이름만 쓴다) — 코어 관리자 목록은 코어 권한을 요구해, 게시판 권한만 가진 운영자의 선택지가 비었다"
         }
     ],
     "initLocal": {
@@ -317,10 +327,15 @@
     },
     "computed": {
         "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",
+        "canBulkApply": "{{settings?.data?.abilities?.can_bulk_apply === true}}",
+        "canManageBoardTypes": "{{settings?.data?.abilities?.can_manage_board_types === true}}",
+        "canClearSeoCache": "{{settings?.data?.abilities?.can_clear_seo_cache === true}}",
         "bulkMembersLocked": "{{boards_list?.data?.abilities?.can_update !== true}}",
         "bulkMembersNoPermission": "{{boards_list?.data?.abilities ? boards_list.data.abilities.can_update !== true : _local.bulkMembersBoardsError === 'forbidden'}}",
         "bulkMembersLoadFailed": "{{!boards_list?.data?.abilities && _local.bulkMembersBoardsError === 'failed'}}",
         "isNotificationReadOnly": "{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}",
+        "identityPoliciesNoReadPermission": "{{!boardIdentityPolicies?.data?.abilities && _local.identityPoliciesLoadError === 'forbidden'}}",
+        "isIdentityPolicyReadOnly": "{{boardIdentityPolicies?.data?.abilities?.can_update !== true}}",
         "boardOptions": "{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}",
         "adminPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}",
         "userPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.'))}}",

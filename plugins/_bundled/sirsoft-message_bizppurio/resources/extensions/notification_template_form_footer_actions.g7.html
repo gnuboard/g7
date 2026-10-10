@@ -2,6 +2,9 @@
 <extension extension-point="notification_template_form_footer_actions" priority="320">
   <div data-ref="bizppurio_tpl_footer_actions" data-if="{{extensionPointProps.channel === 'alimtalk'}}" class="flex gap-2">
     <button data-if="{{(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) &amp;&amp; ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '') &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" type="button" class="text-sm px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
+<permissions>
+<permission>sirsoft-message_bizppurio.messaging.manage</permission>
+</permissions>
       <on type="click">
         <!-- 저장 후 검수 신청 — 행이 없으면 생성, 초안/반려면 갱신한 뒤 그 id 로 검수를 신청한다. 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿도 함께 저장한다. 저장 중이거나 다른 알림 종류의 모달 상태면 무시한다. -->
         <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false) &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
@@ -89,6 +92,9 @@
       $t:sirsoft-message_bizppurio.template.form.btn_save_request
     </button>
     <button type="button" class="flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
+<permissions>
+<permission>sirsoft-message_bizppurio.messaging.manage</permission>
+</permissions>
       <on type="click">
         <!-- 저장만(검수 신청 없음) — 생성 / 갱신 / 발송 설정만(본문이 없거나 내용이 잠긴 상태) 세 갈래 중 하나가 성립한다. 생성·갱신은 draft 표시를 실어 쓰다 만 알림톡 내용(카테고리·템플릿명 등 미입력)도 초안으로 남긴다 — 「알림 템플릿 관리」 탭 작성 창의 「저장」과 같은 규약이고, 빠진 필수값은 [저장 후 검수 신청]에서 서버가 항목별로 돌려준다. 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿도 함께 저장한다. -->
         <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false) &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">

@@ -539,10 +539,12 @@
                                                             }
                                                         },
                                                         {
+                                                            "comment": "주입된 [주소 검색] 버튼도 읽기 전용이면 잠근다 — 확장점은 호스트 상태를 모르므로 disabled 로 넘긴다.",
                                                             "id": "address_search_slot",
                                                             "type": "extension_point",
                                                             "name": "address_search_slot",
                                                             "props": {
+                                                                "disabled": "{{_computed.isReadOnly}}",
                                                                 "readOnlyFields": [
                                                                     "basic_info.zipcode",
                                                                     "basic_info.base_address"

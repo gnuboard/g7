@@ -10,13 +10,78 @@
     "if": "{{(_global.activeBoardSettingsTab || query.tab) === 'identity_policies'}}",
     "children": [
         {
-            "id": "page_root",
+            "comment": "본인인증 정책 조회 권한(`sirsoft-board.identity.policies.read`)이 없으면 목록이 403 이다 — 탭 내용 대신 이유를 보인다",
+            "id": "identity_policies_no_permission",
             "type": "basic",
             "name": "Div",
+            "if": "{{_computed.identityPoliciesNoReadPermission}}",
             "props": {
                 "className": "admin-card"
             },
             "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "lock",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-board.admin.settings.identity.no_read_permission"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "page_root",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_computed.identityPoliciesNoReadPermission}}",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "comment": "수정 권한(`sirsoft-board.identity.policies.update`)이 없으면 읽기 전용이다 — 추가·토글·편집은 잠기고 삭제는 숨는다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다",
+                    "id": "identity_policies_read_only_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{boardIdentityPolicies?.data?.abilities?.can_update === false}}",
+                    "props": {
+                        "className": "alert-warning mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "lock",
+                                "size": "lg",
+                                "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.identity.read_only_notice"
+                        }
+                    ]
+                },
                 {
                     "type": "basic",
                     "name": "Div",
@@ -573,7 +638,7 @@
                                                                             "comment": "표 판(넓은 화면)에서 정책을 바로 켜고 끈다. 실패해도 목록을 다시 읽는 이유는 화면의 토글이 이미 뒤집혀 있기 때문이다 — 서버 값으로 되돌려야 거짓 상태가 남지 않는다",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
-                                                                            "target": "/api/admin/identity/policies/{{policy.id}}",
+                                                                            "target": "/api/modules/sirsoft-board/admin/identity-policies/{{policy.id}}",
                                                                             "auth_required": true,
                                                                             "params": {
                                                                                 "method": "PUT",
@@ -907,7 +972,7 @@
                                                             "comment": "좁은 화면 카드 판의 같은 토글 — 표 판과 짝이고 동작은 같다",
                                                             "type": "change",
                                                             "handler": "apiCall",
-                                                            "target": "/api/admin/identity/policies/{{policy.id}}",
+                                                            "target": "/api/modules/sirsoft-board/admin/identity-policies/{{policy.id}}",
                                                             "auth_required": true,
                                                             "params": {
                                                                 "method": "PUT",

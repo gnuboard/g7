@@ -28,7 +28,7 @@
 | `POST /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/escrow-delivery` | `...admin.orders.escrow-delivery.register` | `sirsoft-ecommerce.orders.update` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/settings/test-mode-status` | `...admin.settings.test-mode-status` | `sirsoft-ecommerce.settings.read` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url` | `...admin.vbank.notify.url` | `sirsoft-ecommerce.settings.read` |
-| `GET /api/plugins/sirsoft-pay_nhnkcp/admin/health` | `...admin.health` | `sirsoft-ecommerce.settings.read` |
+| `GET /api/plugins/sirsoft-pay_nhnkcp/admin/health` | `...admin.health` | `sirsoft-ecommerce.settings.read` 또는 `core.plugins.update` (OR) |
 
 `admin/vbank-notify-url` 이 돌려주는 `url`(가상계좌 입금통보)·`escrow_common_notify_url`(에스크로 공통통보)은 운영자가 KCP 상점관리자에 등록할 주소라, 관리자가 접속한 주소(요청 Host)가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만든다.
 
@@ -72,7 +72,7 @@
 
 `GET .../admin/health`
 
-설정 화면의 시스템 점검 카드가 부르는 경로다. CLI 바이너리·`pub.key`·WSDL 등 결제에 필요한 파일이 플러그인 `bin` 디렉토리에 있고 실행 가능한지 확인한다. 응답은 공통 성공 형식이며 `message` 에 점검 완료 안내(`sirsoft-pay_nhnkcp::messages.health.checked`, 요청 언어로 번역)가 실린다.
+설정 화면의 시스템 점검 카드가 부르는 경로다(7.1.0 부터 플러그인 설정 수정 권한으로도 읽는다). CLI 실행 권한 자동 복구(chmod)는 플러그인 설정 수정 권한(`core.plugins.update`)이 있을 때만 하고, 그 밖에는 진단과 조치 안내만 돌려준다. CLI 바이너리·`pub.key`·WSDL 등 결제에 필요한 파일이 플러그인 `bin` 디렉토리에 있고 실행 가능한지 확인한다. 응답은 공통 성공 형식이며 `message` 에 점검 완료 안내(`sirsoft-pay_nhnkcp::messages.health.checked`, 요청 언어로 번역)가 실린다.
 
 | 필드 | 타입 | 설명 |
 | --- | --- | --- |

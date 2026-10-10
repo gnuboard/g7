@@ -229,7 +229,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 | 카테고리 | 이름 | 액션 | 라우트 키 |
 |---|---|---|---|
 | `products` | 상품 관리 | `read`, `create`, `update`, `delete` | `product` |
-| `orders` | 주문 관리 | `read`, `update` | `order` |
+| `orders` | 주문 관리 | `read`, `update`, `delete` | `order` |
 | `claims` | 취소/반품/교환 관리 | `read`, `update-status`, `create`, `update-amounts`, `execute-refund` | `order` |
 | `categories` | 카테고리 관리 | `read`, `create`, `update`, `delete` | - |
 | `brands` | 브랜드 관리 | `read`, `create`, `update`, `delete` | `brand` |
@@ -309,8 +309,14 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 권한 표에는 있는데 메뉴가 없는 것들(`dashboard` · `identity.policies` · `product-labels` 등)은
 독립 메뉴가 아니라 다른 화면 안에 들어 있기 때문입니다 — 대시보드는 코어 관리자 첫 화면에
-레이아웃 조각으로 주입되고, 본인인증 정책은 코어 IDV 설정 화면에서 함께 다뤄지며, 상품 라벨은
+레이아웃 조각으로 주입되고, 본인인증 정책은 쇼핑몰 환경설정의 「본인인증 정책」 탭에서 다뤄지며, 상품 라벨은
 상품 관리 화면 안에 있습니다.
+
+「본인인증 정책」 탭은 7.1.0 부터 `identity.policies.read`(조회)·`identity.policies.update`(추가·수정·삭제) 권한으로
+동작합니다. 탭은 이커머스 경로(`/api/modules/sirsoft-ecommerce/admin/identity-policies`)를 쓰고, 그 경로는 코어 정책 표에서
+이커머스 몫(`source_identifier = sirsoft-ecommerce`)만 다룹니다. 조회 권한이 없으면 탭에 「권한 없음」 안내가, 수정 권한이
+없으면 읽기 전용 안내가 뜨고 추가·켜고 끄기·편집·삭제가 잠깁니다. 두 권한은 기본 관리자 역할(`admin`)에 기본으로 주어집니다.
+코어 관리자 환경설정의 본인인증 정책 화면은 코어 권한(`core.admin.identity.policies.*`)으로 모든 출처의 정책을 다룹니다.
 
 주문 관리 직후에 '취소/반품/교환 관리'(`admin/ecommerce/claims`) 메뉴가 붙습니다 — `claims`
 그룹의 조회 권한과 짝입니다.

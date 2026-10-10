@@ -96,7 +96,8 @@ describe.each([
         expect(handlerMap.downloadAttachment).toBe(downloadAttachmentHandler);
 
         const params = (clickAction?.params ?? {}) as Record<string, unknown>;
-        expect(params.url).toContain('download_url');
+        // 관리자 화면은 관리자 다운로드 라우트(admin.attachments.download)로 받는다 — 7.1.0 abilities 게이트 board-admin-b #7
+        expect(params.url).toContain('/attachments/download/');
         expect(params.filename).toContain('original_filename');
     });
 

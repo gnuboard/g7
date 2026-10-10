@@ -1,5 +1,6 @@
 <?php
 
+use App\Helpers\PermissionHelper;
 use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtConnectivityCheckController;
@@ -65,6 +66,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
                 // 운영자가 PG 관리자에 등록할 주소 — 접속한 주소가 아니라 사이트 주소로 안내한다.
                 'url' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/vbank-notify'),
                 'mobile_url' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify'),
+                // 설정 화면의 [CBT 테스트 상품 만들기]를 잠그는 근거 — 그 API(cbt-test-product)와 같은 권한
+                'abilities' => [
+                    'can_create_cbt_test_product' => PermissionHelper::check('sirsoft-ecommerce.products.create', auth()->user()),
+                ],
             ],
         ]);
     })->middleware('permission:admin,sirsoft-ecommerce.settings.read')
@@ -92,8 +97,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/orders/{orderNumber}/cbt-reconciliation', [AdminCbtReconciliationController::class, 'show'])
         ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.cbt-reconciliation.show');
+    // 환불 재시도는 PG 환불을 다시 보낸다 — 「환불 실행」 권한
     Route::post('/orders/{orderNumber}/cbt-reconciliation/refund-retry', [AdminCbtReconciliationController::class, 'retryRefund'])
-        ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+        ->middleware('permission:admin,sirsoft-ecommerce.claims.execute-refund')
         ->name('orders.cbt-reconciliation.refund-retry');
 
     Route::get('/orders/{orderNumber}/cbt-cvs', [AdminCbtCvsOperationsController::class, 'show'])
@@ -105,8 +111,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::post('/orders/{orderNumber}/cbt-cvs/expire', [AdminCbtCvsOperationsController::class, 'expire'])
         ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
         ->name('orders.cbt-cvs.expire');
+    // 재확인은 결제 기록에 재확인 시각·결과를 쓴다 — 조회가 아니라 주문 수정 권한
     Route::post('/orders/{orderNumber}/cbt-cvs/recheck', [AdminCbtCvsOperationsController::class, 'recheck'])
-        ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
+        ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
         ->name('orders.cbt-cvs.recheck');
 
     // 에스크로 배송등록
@@ -129,7 +136,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
 
     // CBT 호스트 연결 진단 — 서버 egress IP + devcbt.inicis.com / cbt.inicis.com 의 TCP 443 도달성
     // (devcbt 는 KG 이니시스 측 IP 화이트리스트 등록 필요)
+    // 플러그인 설정 화면의 버튼이라 화면 권한(core.plugins.update)으로도 쓴다(OR)
     Route::get('/cbt-connectivity-check', [AdminCbtConnectivityCheckController::class, 'check'])
-        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read|core.plugins.update,false')
         ->name('cbt.connectivity.check');
 });

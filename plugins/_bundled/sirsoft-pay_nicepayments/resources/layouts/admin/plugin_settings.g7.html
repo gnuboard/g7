@@ -5,12 +5,17 @@
   <data-source id="settings" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
   <!-- 가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다 -->
   <data-source id="vbank_info" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.vbank_info" type="api" endpoint="/api/plugins/sirsoft-pay_nicepayments/admin/vbank-notify-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="vbankInfo"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nicepayments.settings.title" description="$t:sirsoft-pay_nicepayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="pay-nicepayments-tone-warning">$t:sirsoft-pay_nicepayments.plugin_read_only</span>
+      </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
@@ -29,7 +34,7 @@
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.test_mode</label>
               <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.test_mode_hint</p>
             </div>
-            <toggle data-type="composite" name="is_test_mode"/>
+            <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
@@ -55,7 +60,7 @@
             <div class="lg:col-span-2">
               <div class="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-nicepayments-focus-group">
                 <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SR</span>
-                <input type="text" name="live_mid" placeholder="paytestm" class="flex-1 font-mono outline-none border-0"/>
+                <input type="text" name="live_mid" placeholder="paytestm" class="flex-1 font-mono outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
               <p class="mt-1.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.live_mid_example</p>
             </div>
@@ -66,7 +71,7 @@
               <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.live_merchant_key_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="password" name="live_merchant_key" placeholder="live_key_..." class="dark:focus:ring-blue-400 focus:border-transparent font-mono"/>
+              <input type="password" name="live_merchant_key" placeholder="live_key_..." class="dark:focus:ring-blue-400 focus:border-transparent font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
@@ -82,7 +87,7 @@
               <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_success_url_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="dark:focus:ring-blue-400 focus:border-transparent"/>
+              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
@@ -91,7 +96,7 @@
               <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_fail_url_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="dark:focus:ring-blue-400 focus:border-transparent"/>
+              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
@@ -106,7 +111,7 @@
         <div class="p-6">
           <p class="text-label mb-3">$t:sirsoft-pay_nicepayments.settings.vbank_notify_hint</p>
           <div class="flex-center gap-2">
-            <input type="text" :readOnly="true" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono"/>
+            <input type="text" :readOnly="true" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             <button class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
               <on type="click">
                 <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
@@ -128,7 +133,7 @@
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.use_escrow</label>
               <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.use_escrow_hint</p>
             </div>
-            <toggle data-type="composite" name="use_escrow"/>
+            <toggle data-type="composite" name="use_escrow" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
@@ -143,45 +148,45 @@
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg</label>
               <p class="mt-0.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_allow_with_other_pg"/>
+            <toggle data-type="composite" name="easy_pay_allow_with_other_pg" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay</label>
               <p class="mt-0.5 text-xs text-green-600 dark:text-green-400">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_naverpay"/>
+            <toggle data-type="composite" name="easy_pay_naverpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_kakaopay</label>
-            <toggle data-type="composite" name="easy_pay_kakaopay"/>
+            <toggle data-type="composite" name="easy_pay_kakaopay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_samsungpay</label>
-            <toggle data-type="composite" name="easy_pay_samsungpay"/>
+            <toggle data-type="composite" name="easy_pay_samsungpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay</label>
               <p class="mt-0.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay_hint</p>
             </div>
-            <toggle data-type="composite" name="easy_pay_applepay"/>
+            <toggle data-type="composite" name="easy_pay_applepay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_payco</label>
-            <toggle data-type="composite" name="easy_pay_payco"/>
+            <toggle data-type="composite" name="easy_pay_payco" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_skpay</label>
-            <toggle data-type="composite" name="easy_pay_skpay"/>
+            <toggle data-type="composite" name="easy_pay_skpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_ssgpay</label>
-            <toggle data-type="composite" name="easy_pay_ssgpay"/>
+            <toggle data-type="composite" name="easy_pay_ssgpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_lpay</label>
-            <toggle data-type="composite" name="easy_pay_lpay"/>
+            <toggle data-type="composite" name="easy_pay_lpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
@@ -192,7 +197,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다 -->
             <sequence>

@@ -32,7 +32,9 @@
         "selectedProducts": [],
         "selectedCategories": []
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.promotion-coupon.create"
+    ],
     "slots": {
         "content": [
             {

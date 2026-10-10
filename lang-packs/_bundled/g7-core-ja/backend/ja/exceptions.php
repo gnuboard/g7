@@ -5,6 +5,8 @@ return [
     'cannot_modify_super_admin' => 'スーパー管理者のアカウントまたはロールを変更する権限がありません。',
     'cannot_grant_unheld_permission' => '自身が保有していない権限、または自身より広い範囲の権限は付与できません。',
     'cannot_modify_protected_role' => 'システムまたは拡張機能が所有するロールを変更する権限がありません。',
+    'cannot_delete_self' => '自分のアカウントは管理者画面から削除できません。退会はマイページで行ってください。',
+    'role_active_state_locked' => '最高管理者ロールは使用可否を変更できません。無効にするとすべての運営者の管理権限が回収されます。',
     'circular_reference' => 'レイアウト循環参照を検出しました: :trace',
     'max_depth_exceeded' => 'レイアウトネストの深さが最大許容深度(:max)を超過しました。',
     'template_file_copy_failed' => 'テンプレートファイルのコピーに失敗しました: :source → :destination',

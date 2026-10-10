@@ -1571,11 +1571,11 @@ describe('shippingPolicyFormLayouts', () => {
             const toolbar = findById(extraFeeTemplateModal, 'toolbar_section');
             const json = JSON.stringify(toolbar);
             // 추가 버튼: isReadOnly OR 추가
-            expect(json).toContain('$parent._computed.isReadOnly');
+            expect(json).toContain('$parent._computed?.isReadOnly !== false');
             // 선택 삭제 버튼: isTemplateDeleting || isReadOnly
-            expect(json).toContain('_global.isTemplateDeleting || $parent._computed.isReadOnly');
+            expect(json).toContain('_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false');
             // 전체 내보내기 버튼
-            expect(json).toContain('"disabled":"{{$parent._computed.isReadOnly}}"');
+            expect(json).toContain('"disabled":"{{$parent._computed?.isReadOnly !== false}}"');
             // disabled 스타일 클래스
             expect(json).toContain('disabled:opacity-50');
             expect(json).toContain('disabled:cursor-not-allowed');
@@ -1602,7 +1602,7 @@ describe('shippingPolicyFormLayouts', () => {
             // 전체선택 + 개별선택 최소 2개
             expect(allCheckboxes.length).toBeGreaterThanOrEqual(2);
             allCheckboxes.forEach((cb, idx) => {
-                expect(cb.props.disabled).toContain('$parent._computed.isReadOnly');
+                expect(cb.props.disabled).toContain('$parent._computed?.isReadOnly !== false');
             });
         });
 
@@ -1615,7 +1615,7 @@ describe('shippingPolicyFormLayouts', () => {
             const newRow = findById(extraFeeTemplateModal, 'new_template_row');
             const json = JSON.stringify(newRow);
             // 3개 Input 필드에 disabled 추가
-            const disabledCount = (json.match(/\$parent\._computed\.isReadOnly/g) || []).length;
+            const disabledCount = (json.match(/\$parent\._computed\?\.isReadOnly !== false/g) || []).length;
             // zipcode, region, fee Input + 저장 버튼 = 최소 4개소
             expect(disabledCount).toBeGreaterThanOrEqual(4);
         });
@@ -1627,8 +1627,8 @@ describe('shippingPolicyFormLayouts', () => {
          */
         it('편집모드 Input/Toggle/버튼에 $parent._computed.isReadOnly disabled', () => {
             const json = JSON.stringify(extraFeeTemplateModal);
-            // 전체 모달에서 isReadOnly 참조 총 개수 (17개소)
-            const totalCount = (json.match(/\$parent\._computed\.isReadOnly/g) || []).length;
+            // 전체 모달에서 isReadOnly 참조 총 개수 (17개소) — 부모 값을 모르면 잠긴 쪽(`!== false`)
+            const totalCount = (json.match(/\$parent\._computed\?\.isReadOnly !== false/g) || []).length;
             expect(totalCount).toBeGreaterThanOrEqual(17);
         });
 

@@ -112,6 +112,10 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 | `targetFields` (없으면 설정 `target_fields`) | 우편번호·주소·시도·시군구를 **어느 칸에** 쓸지. 사이트·화면마다 다르므로 코드에 고정하지 않는다 |
 | `callbackAction` | 주소가 확정되면 기본 필드 기록 **대신** 실행할 레이아웃 액션(주소 값을 받아 직접 씀). 배송비 재계산·배송 가능 지역 판정처럼 기록과 후속 동작을 함께 해야 할 때 |
 
+확장점을 여는 화면은 `disabled` prop 으로 읽기 전용 상태를 넘길 수 있습니다. 조각은 그 값이 `true` 이면 [주소 검색] 버튼을
+잠급니다 — 확장점은 호스트 화면의 수정 권한을 모르므로, 읽기 전용 폼에서 버튼만 살아 남지 않게 호스트가 알려 줘야 합니다
+(이커머스 설정 기본정보 `_computed.isReadOnly`, 관리자 주문 상세 배송지 `order.abilities.can_update !== true`).
+
 레이아웃 조각 하나(`ecommerce-address-search.g7.html`)가 이 플러그인의 UI 전부입니다. 파일
 이름에 `ecommerce` 가 붙어 있지만 **확장점 이름(`address_search_slot`)으로 매칭**되므로,
 그 확장점을 여는 화면이면 어디든 붙습니다 — 이커머스 전용이 아닙니다.

@@ -170,5 +170,6 @@
             "sdk_load_failed": "Could not load the NicePayments SDK. Please try again later.",
             "request_failed": "An error occurred during payment. Please try again later."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

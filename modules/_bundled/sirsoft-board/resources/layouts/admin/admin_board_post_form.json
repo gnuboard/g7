@@ -83,7 +83,7 @@
         "uploadingFiles": []
     },
     "computed": {
-        "isReadOnly": "{{!!route?.id && !!form_meta?.data && form_meta?.data?.board?.user_abilities?.can_write !== true}}"
+        "isReadOnly": "{{!!route?.id && !!form_meta?.data && (form_meta?.data?.board?.user_abilities?.can_write !== true || form_meta?.data?.can_modify !== true)}}"
     },
     "permissions": [
         "sirsoft-board.boards.read"

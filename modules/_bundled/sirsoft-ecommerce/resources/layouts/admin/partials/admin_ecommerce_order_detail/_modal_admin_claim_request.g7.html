@@ -171,9 +171,9 @@
         <p data-if="{{!!_global.adminClaimRequest?.previewError}}" class="text-xs text-red-600 dark:text-red-400">{{_global.adminClaimRequest?.previewError}}</p>
         <p data-if="{{(_global.adminClaimRequest?.reasonCode ?? '') === ''}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.preview_needs_reason</p>
       </div>
-      <!-- 「접수와 함께 승인」(D6) — 기본 켜짐. 추가결제가 필요한 건은 승인 대신 결제대기로 간다. -->
-      <label data-ref="acr_009_approve" class="flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-        <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{_global.adminClaimRequest?.approve !== false}}">
+      <!-- 「접수와 함께 승인」(D6) — 기본 켜짐. 추가결제가 필요한 건은 승인 대신 결제대기로 간다. 승인은 상태 변경 권한(claims.update-status)의 일이라, 그 권한이 없으면 꺼진 채 잠그고 제출에도 싣지 않는다(서버도 403). -->
+      <label data-ref="acr_009_approve" class="flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 {{claimRequestContext?.data?.abilities?.can_update_status === true ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}}">
+        <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{_global.adminClaimRequest?.approve !== false &amp;&amp; claimRequestContext?.data?.abilities?.can_update_status === true}}" disabled="{{claimRequestContext?.data?.abilities?.can_update_status !== true}}">
           <on type="change">
             <!-- 접수와 동시에 승인까지 할지 — 기본은 승인 -->
             <action handler="sirsoft-ecommerce.setAdminClaimRequestField" field="approve" value="{{$event.target.checked}}"/>
@@ -181,6 +181,7 @@
         </checkbox>
         <span>$t:sirsoft-ecommerce.admin.order.claim_request.approve</span>
       </label>
+      <p data-ref="acr_009_approve_no_permission" data-if="{{claimRequestContext?.data?.abilities?.can_update_status !== true}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.claim_request.approve_no_permission</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.customer_notice</p>
       <div class="flex justify-end gap-2 pt-2">
         <button data-ref="acr_010_cancel" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -196,7 +197,7 @@
         <button data-ref="acr_011_submit" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}">
           <on type="click">
             <!-- 직권 신청서를 제출한다 — 입력값은 창을 여는 핸들러가 채운 _global.adminClaimRequest 에서 모은다 -->
-            <action handler="sirsoft-ecommerce.submitAdminClaimRequest">
+            <action handler="sirsoft-ecommerce.submitAdminClaimRequest" canApprove="{{claimRequestContext?.data?.abilities?.can_update_status === true}}">
               <fail>
                 <!-- 실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다. -->
                 <suppress/>

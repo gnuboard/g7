@@ -14,7 +14,9 @@
     <field name="perPage" :value="10"/>
     <field name="expandedRows" :value="[]"/>
   </init-local>
-  <permissions/>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
   <slot name="content">
     <div data-ref="payment_failure_history_content" class="admin-page-content">
       <div data-ref="page_header" class="flex-start justify-between mb-6">

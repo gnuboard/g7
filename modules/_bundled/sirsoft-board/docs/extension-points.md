@@ -9,7 +9,7 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:173` |
+| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:181` |
 | `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:608` |
 | `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:977` |
 | `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:227` 외 1곳 |

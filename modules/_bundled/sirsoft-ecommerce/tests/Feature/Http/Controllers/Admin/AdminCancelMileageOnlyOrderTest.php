@@ -38,6 +38,8 @@ class AdminCancelMileageOnlyOrderTest extends ModuleTestCase
         $this->admin = $this->createAdminUser([
             'sirsoft-ecommerce.orders.read',
             'sirsoft-ecommerce.orders.update',
+            // 「환불까지 한 번에」 는 환불 실행 권한이 필요하다 (7.1.0).
+            'sirsoft-ecommerce.claims.execute-refund',
         ]);
     }
 

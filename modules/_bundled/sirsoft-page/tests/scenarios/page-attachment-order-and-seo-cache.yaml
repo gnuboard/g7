@@ -83,6 +83,17 @@ effects:
   - attachment_size_or_ext_rejection_shows_error_toast
   - attachment_count_exceeded_shows_error_toast_and_truncates
   - valid_attachment_upload_shows_no_error_toast
+  # 첨부 서비스 기본 동작(업로드·임시 연결·삭제·순서·조회) — PageAttachmentServiceTest 가 테스트별로 검증한다
+  - page_attachment_upload_creates_row_for_page
+  - page_attachment_upload_with_temp_key_creates_temp_row
+  - page_attachment_upload_increments_order
+  - page_attachment_image_upload_stores_dimensions_in_meta
+  - temp_attachments_linked_to_page_on_save
+  - page_attachment_delete_hard_deletes_row
+  - page_attachment_reorder_updates_orders
+  - page_attachment_lookup_by_hash_returns_row
+  - page_attachment_lookup_by_unknown_hash_returns_null
+  - page_attachment_list_by_page_id_returns_rows
 
 test_files:
   - modules/_bundled/sirsoft-page/tests/Unit/Services/PageAttachmentServiceTest.php

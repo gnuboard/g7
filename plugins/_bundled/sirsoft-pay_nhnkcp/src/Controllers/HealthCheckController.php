@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -372,8 +374,21 @@ class HealthCheckController extends AdminBaseController
             ];
         }
 
-        // 자동 복구: chmod +x 시도
         $beforeMode = substr(sprintf('%o', fileperms($path)), -4);
+
+        // 조회 요청이 서버 파일 권한을 바꾸므로 자동 복구는 플러그인 설정 수정 권한자만 — 그 밖에는 진단만 하고 조치를 안내한다
+        if (! PermissionHelper::check('core.plugins.update', Auth::user())) {
+            return [
+                'id' => $id,
+                'category' => 'pc',
+                'label' => $label,
+                'status' => self::STATUS_ERROR,
+                'detail' => $this->t('cli.not_executable_no_permission', ['before' => $beforeMode]),
+                'remediation' => $this->t('cli.not_executable_remediation', ['path' => $path]),
+            ];
+        }
+
+        // 자동 복구: chmod +x 시도
         $chmodOk = @chmod($path, 0755);
 
         if ($chmodOk && is_executable($path)) {

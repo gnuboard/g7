@@ -45,7 +45,7 @@ export interface Tab {
  * @returns 보여 줄 탭 목록
  */
 const filterVisibleTabs = (tabs: Tab[] | undefined): Tab[] =>
-  (tabs ?? []).filter((tab) => !Object.prototype.hasOwnProperty.call(tab, 'if') || Boolean(tab.if));
+  (tabs ?? []).filter((tab) => tab != null && (!Object.prototype.hasOwnProperty.call(tab, 'if') || Boolean(tab.if)));
 
 /**
  * TabNavigationScroll Props

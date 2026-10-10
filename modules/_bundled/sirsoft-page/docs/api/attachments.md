@@ -21,7 +21,7 @@
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.upload -->
 - **라우트명**: `api.modules.sirsoft-page.admin.attachments.upload`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController@upload`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create|sirsoft-page.pages.update,false` (OR)
 
 **요청 파라미터**
 
@@ -114,7 +114,7 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 
 <!-- @generated:end -->
 
-**설명** 페이지 첨부파일을 업로드합니다. `file`(필수)과 함께 이미 저장된 페이지에 귀속시키려면 `page_id`, 아직 저장 전이면 `temp_key`(임시 귀속 후 페이지 저장 시 `store`/`update` 의 `temp_key` 로 확정)를 보냅니다. `collection` 으로 첨부 그룹을 구분합니다. 응답은 FileUploader 컴포넌트 규약(`data.data`)에 맞춰 `PageAttachmentResource` 를 201 로 반환합니다. 권한은 `pages.create` 를 요구합니다.
+**설명** 페이지 첨부파일을 업로드합니다. `file`(필수)과 함께 이미 저장된 페이지에 귀속시키려면 `page_id`, 아직 저장 전이면 `temp_key`(임시 귀속 후 페이지 저장 시 `store`/`update` 의 `temp_key` 로 확정)를 보냅니다. `collection` 으로 첨부 그룹을 구분합니다. 응답은 FileUploader 컴포넌트 규약(`data.data`)에 맞춰 `PageAttachmentResource` 를 201 로 반환합니다. 권한은 `pages.create` 를 요구합니다. 7.1.0 부터 등록·수정 권한 중 하나만 있어도 됩니다. `page_id` 를 붙이면 그 페이지의 수정 권한과 담당 범위(스코프)를 서비스가 다시 확인하고, 밖이면 403(`auth.scope_denied`)입니다.
 
 업로드 정책(최대 개수 · 최대 용량 · 허용 형식)은 모듈 환경설정 `attachment.*` 가 SSoT 입니다. 용량은 `attachment.max_size_mb`(MB), 형식은 `attachment.allowed_types`(MIME 목록)로 판정하며, 형식 목록을 비우면 형식을 제한하지 않습니다(설정 키 자체가 없으면 모듈 기본 목록으로 폴백). 개수는 `attachment.max_count` 를 기준으로 **직접 업로드 · 임시 업로드(`temp_key`) 연결 · 이미 연결된 첨부** 를 합산해 판정하며, 초과 시 `422`(`errors.code = attachment_limit_exceeded`)를 반환하며, 안내 문구(`message`)는 허용 개수와 시도한 개수를 담아 응답 시점의 언어로 만들어집니다. 이 판정은 업로드 엔드포인트뿐 아니라 페이지 생성·수정 저장 시점에도 동일하게 적용됩니다. `max_count` 가 0 이면 개수를 제한하지 않습니다.
 
@@ -216,7 +216,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.destroy -->
 - **라우트명**: `api.modules.sirsoft-page.admin.attachments.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController@destroy`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create|sirsoft-page.pages.update,false` (OR)
 
 **요청 파라미터**
 
@@ -258,6 +258,6 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 <!-- @generated:end -->
 
-**설명** 첨부파일을 삭제합니다. `{id}` 는 첨부파일 ID 입니다(라우트-모델 바인딩이 아닌 `int $id`). `PageAttachmentService::deleteAttachment()` 가 DB 레코드와 실제 저장 파일을 함께 정리합니다. 미존재 시 404 를 반환합니다. 부모 페이지가 액터의 담당 범위 밖이면 403(`auth.scope_denied`)이고, 아직 페이지에 연결되지 않은 임시 첨부(`page_id` 없음)는 올린 관리자만 지울 수 있어 다른 관리자에게는 같은 403 을 돌려줍니다(작성 화면에서 저장이 검증 오류로 실패한 뒤 이미 올라간 첨부를 빼는 경로). 권한은 `pages.update` 를 요구합니다.
+**설명** 첨부파일을 삭제합니다. `{id}` 는 첨부파일 ID 입니다(라우트-모델 바인딩이 아닌 `int $id`). `PageAttachmentService::deleteAttachment()` 가 DB 레코드와 실제 저장 파일을 함께 정리합니다. 미존재 시 404 를 반환합니다. 부모 페이지가 액터의 담당 범위 밖이면 403(`auth.scope_denied`)이고, 아직 페이지에 연결되지 않은 임시 첨부(`page_id` 없음)는 올린 관리자만 지울 수 있어 다른 관리자에게는 같은 403 을 돌려줍니다(작성 화면에서 저장이 검증 오류로 실패한 뒤 이미 올라간 첨부를 빼는 경로). 권한은 `pages.update` 를 요구합니다. 7.1.0 부터 라우트는 등록·수정 권한 중 하나로 열고, 서비스가 갈라 판정합니다 — 아직 연결되지 않은 임시 첨부는 올린 사람만, 페이지에 연결된 첨부는 수정 권한 + 부모 페이지 스코프.
 
 

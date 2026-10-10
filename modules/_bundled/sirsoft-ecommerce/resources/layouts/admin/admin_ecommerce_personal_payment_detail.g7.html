@@ -7,7 +7,9 @@
     <field name="logPerPage" :value="10"/>
     <field name="logExpanded" :value="true"/>
   </init-local>
-  <permissions/>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
   <slot name="content">
     <div data-ref="personal_payment_detail_content" class="admin-page-content">
       <responsive on="portable" class="admin-page-content-compact"/>

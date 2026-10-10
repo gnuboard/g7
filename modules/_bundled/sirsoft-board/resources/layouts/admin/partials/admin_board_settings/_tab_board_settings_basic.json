@@ -130,7 +130,8 @@
                                                                     "props": {
                                                                         "type": "checkbox",
                                                                         "className": "checkbox flex-shrink-0",
-                                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('type')}}"
+                                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('type')}}",
+                                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                                     }
                                                                 },
                                                                 {
@@ -191,8 +192,9 @@
                                                                 "type": "button",
                                                                 "variant": "ghost",
                                                                 "size": "sm",
-                                                                "className": "inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600",
-                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                                "className": "inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "title": "{{_computed.canManageBoardTypes ? '' : '$t:sirsoft-board.admin.settings.board_types_no_permission'}}",
+                                                                "disabled": "{{!_computed.canManageBoardTypes}}"
                                                             },
                                                             "children": [
                                                                 {
@@ -275,7 +277,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -365,7 +368,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -441,7 +445,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_report')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_report')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -517,7 +522,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_scrap')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_scrap')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -593,7 +599,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {
@@ -799,7 +806,8 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "className": "checkbox-aligned",
-                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction')}}"
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
                                                     }
                                                 },
                                                 {

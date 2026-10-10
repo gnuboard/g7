@@ -30,12 +30,14 @@ class ExtensionInstallPreviewBuilder
      * @param  PluginService  $pluginService  플러그인 서비스
      * @param  TemplateService  $templateService  템플릿 서비스
      * @param  LanguagePackService  $languagePackService  언어팩 서비스
+     * @param  CascadeInstallAuthorizer  $authorizer  동반 설치 항목별 권한 판정
      */
     public function __construct(
         private readonly ModuleService $moduleService,
         private readonly PluginService $pluginService,
         private readonly TemplateService $templateService,
         private readonly LanguagePackService $languagePackService,
+        private readonly CascadeInstallAuthorizer $authorizer,
     ) {}
 
     /**
@@ -101,7 +103,9 @@ class ExtensionInstallPreviewBuilder
      *
      * `DependencyEnricher` 가 생산하는 enriched 항목(identifier/name/type/required_version/
      * installed_version/is_active/is_met) 를 받아 `is_installed`, `default_selected`,
-     * `available` 필드를 추가합니다.
+     * `available` 필드를 추가합니다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지는
+     * `can_select` 로 싣고, 권한이 없으면 기본 선택에서 뺀다 — 설치 창이 체크박스를 잠그고
+     * 설치 API 도 같은 판정으로 403 을 낸다.
      *
      * @param  array<int, array<string, mixed>>  $enriched  enriched 의존성 목록
      * @return array<int, array<string, mixed>> cascade 선택용 의존성 메타 목록
@@ -112,6 +116,7 @@ class ExtensionInstallPreviewBuilder
         foreach ($enriched as $dep) {
             $isInstalled = ! empty($dep['installed_version']);
             $isMet = (bool) ($dep['is_met'] ?? false);
+            $canSelect = $this->authorizer->canSelectDependency((string) ($dep['type'] ?? 'module'), $isInstalled);
 
             $result[] = [
                 'type' => $dep['type'] ?? 'module',
@@ -125,7 +130,9 @@ class ExtensionInstallPreviewBuilder
                 // 미충족 의존성만 cascade 후보 — 충족 의존성은 추가 설치 불필요
                 'available' => ! $isMet,
                 // 미충족 + 미설치 항목은 기본 선택 (체크리스트 prefill)
-                'default_selected' => ! $isMet && ! $isInstalled,
+                'default_selected' => ! $isMet && ! $isInstalled && $canSelect,
+                // 이 항목을 함께 설치·활성화할 권한 (미설치=install+activate, 설치됨=activate)
+                'can_select' => $canSelect,
             ];
         }
 
@@ -152,6 +159,8 @@ class ExtensionInstallPreviewBuilder
         }
 
         $allUninstalled = $this->languagePackService->getUninstalledBundledPacks([]);
+        // 언어팩은 설치 후 자동 활성화까지 하므로 설치·관리 권한을 함께 본다.
+        $canSelectPack = $this->authorizer->canSelectLanguagePack();
 
         $depIndex = [];
         $metIndex = [];
@@ -192,7 +201,8 @@ class ExtensionInstallPreviewBuilder
                 // 어느 확장의 언어팩인지 — 창이 「종속: …」 배지로 보인다(충족된 의존 확장의 언어팩도 구분되게).
                 'target_identifier' => $packTarget,
                 'available' => true,
-                'default_selected' => true,
+                'default_selected' => $canSelectPack,
+                'can_select' => $canSelectPack,
                 'icon_url' => $pack->icon_url,
                 'icon_source' => $pack->icon_source ?? 'none',
             ];

@@ -4,6 +4,9 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Privacy;
 
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
+use App\Extension\ModuleManager;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use App\Privacy\PrivacyRetentionManager;
 use App\Services\ModuleSettingsService;
@@ -574,5 +577,50 @@ class OrderRetentionHandlerTest extends ModuleTestCase
 
         $this->fakeRetentionSettings(['privacy_retention.enabled' => false, 'privacy_retention.mode' => 'delete']);
         $this->assertContains('sirsoft-ecommerce.orders.delete', app(OrderRetentionHandler::class)->runPermissions(), '주문을 지우는 방식은 주문 삭제 권한까지 요구한다');
+    }
+
+    /**
+     * 삭제 방식의 직권 실행이 **실제로 실행 가능**하다 — 요구하는 주문 삭제 권한이 모듈에 정의돼 있고
+     * 기본 관리자 역할(admin)에 부여돼 있어, admin 역할 관리자는 실행 버튼이 열린다(7.1.0 R4).
+     *
+     * 예전 단언은 요구 목록에 권한 이름이 들어 있는지만 봤다. 테스트 헬퍼가 없는 권한을 만들어 붙여 주므로
+     * 모듈에 정의가 없어도 통과했고, 실제 사이트에서는 아무도 실행할 수 없었다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario order_state=confirmed, toggle=off, mode=delete
+     *
+     * @effects order_delete_mode_manual_run_is_runnable_by_the_admin_role
+     */
+    #[Test]
+    public function delete_mode_manual_run_is_runnable_by_the_default_admin_role(): void
+    {
+        $this->fakeRetentionSettings(['privacy_retention.enabled' => false, 'privacy_retention.mode' => 'delete']);
+        $handler = app(OrderRetentionHandler::class);
+
+        $this->assertContains('sirsoft-ecommerce.orders.delete', $handler->runPermissions());
+
+        // 설치·업데이트가 하는 선언형 동기화(권한 생성 + 역할 할당)를 그대로 돌린다 — 테스트 시더는 모듈 권한을 만들지 않는다.
+        $manager = app(ModuleManager::class);
+        $module = $manager->getModule('sirsoft-ecommerce');
+        foreach (['createModulePermissions', 'assignPermissionsToRoles'] as $step) {
+            $method = new \ReflectionMethod($manager, $step);
+            $method->setAccessible(true);
+            $method->invoke($manager, $module);
+        }
+
+        $permission = Permission::where('identifier', 'sirsoft-ecommerce.orders.delete')->first();
+        $this->assertNotNull($permission, '주문 삭제 권한이 모듈 권한 정의에 없다 — 삭제 방식 직권 실행은 아무도 할 수 없다');
+
+        $adminRole = Role::where('identifier', 'admin')->first();
+        $this->assertTrue($adminRole->permissions()->whereKey($permission->id)->exists(), '주문 삭제 권한은 admin 역할에 기본 부여된다');
+
+        $admin = User::factory()->create();
+        $admin->roles()->attach($adminRole->id);
+
+        $this->assertTrue(app(PrivacyRetentionManager::class)->canRun($handler, $admin->fresh()), 'admin 역할 관리자는 삭제 방식 직권 실행을 할 수 있다');
+
+        $updaterOnly = $this->createAdminUser(['sirsoft-ecommerce.settings.update', 'sirsoft-ecommerce.orders.update']);
+        $this->assertFalse(app(PrivacyRetentionManager::class)->canRun($handler, $updaterOnly), '주문 삭제 권한이 없으면 삭제 방식 직권 실행은 막힌다');
     }
 }

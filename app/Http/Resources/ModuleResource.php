@@ -139,6 +139,8 @@ class ModuleResource extends BaseApiResource
             'updated_at' => $this->getValue('updated_at')
                 ? TimezoneHelper::toUserDateTimeString(Carbon::parse($this->getValue('updated_at')))
                 : null,
+            // 상세 창이 목록 행(abilities 포함)을 담던 전역을 이 응답으로 덮어쓰므로 권한 메타도 함께 싣는다.
+            ...$this->resourceMeta(request()),
         ];
     }
 

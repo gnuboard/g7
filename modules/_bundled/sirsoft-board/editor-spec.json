@@ -1549,7 +1549,10 @@
             }
           },
           "abilities": {
-            "can_update": true
+            "can_update": true,
+            "can_bulk_apply": true,
+            "can_clear_seo_cache": true,
+            "can_manage_board_types": true
           }
         }
       },
@@ -1641,7 +1644,9 @@
             "per_page": 20
           },
           "abilities": {
-            "can_create": true
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
           }
         }
       },

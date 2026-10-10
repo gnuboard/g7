@@ -26,6 +26,13 @@ class LayoutService
     use ClearsTemplateCaches;
 
     /**
+     * 컴포넌트 권한 필터가 내려가지 않는 노드 키 — 동작·데이터 정의라 컴포넌트를 담지 않는다.
+     *
+     * @var array<int, string>
+     */
+    private const NON_COMPONENT_KEYS = ['actions', 'params', 'data_sources', 'errorHandling', 'lifecycle', 'init_actions', 'computed', 'meta'];
+
+    /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
      *
      * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 저장소
@@ -1894,6 +1901,13 @@ class LayoutService
         $filtered = [];
 
         foreach ($components as $component) {
+            // 컴포넌트 모양이 아닌 원소는 그대로 둔다(평가할 permissions 가 없다)
+            if (! is_array($component)) {
+                $filtered[] = $component;
+
+                continue;
+            }
+
             // permissions 속성 확인
             $permissions = $component['permissions'] ?? [];
 
@@ -1907,15 +1921,71 @@ class LayoutService
                 unset($component['permissions']);
             }
 
-            // children 재귀 필터링
-            if (! empty($component['children'])) {
-                $component['children'] = $this->filterComponentTree($component['children'], $user);
-            }
-
-            $filtered[] = $component;
+            // children 과 props 안에 든 컴포넌트 목록(DataGrid cellChildren·expandChildren 등)까지 재귀 필터링
+            $filtered[] = $this->filterNestedComponentLists($component, $user);
         }
 
         return $filtered;
+    }
+
+    /**
+     * 노드 안의 모든 컴포넌트 목록에 권한 필터를 적용합니다.
+     *
+     * 컴포넌트는 `children` 에만 있지 않다 — DataGrid 열의 `cellChildren`, 노드의 `expandChildren`·
+     * `subRowChildren`·`footerCardChildren`, 모달의 `children` 처럼 props·노드 키 아래에도 놓인다.
+     * 그 자리의 `permissions` 가 평가도 제거도 되지 않으면 무권한자에게 컴포넌트와 권한 식별자가 그대로
+     * 나간다. 키 이름을 열거하지 않고, 원소가 모두 컴포넌트 모양(type·name 문자열)인 목록이면
+     * 컴포넌트 트리로 걸러 새 키가 생겨도 빠지지 않게 한다.
+     *
+     * @param  array<string, mixed>  $node  노드(컴포넌트·모달·props 하위 배열)
+     * @param  User|null  $user  현재 사용자
+     * @param  int  $depth  재귀 깊이 (비정상 입력 방어)
+     * @return array<string, mixed> 필터링된 노드
+     */
+    private function filterNestedComponentLists(array $node, ?User $user, int $depth = 0): array
+    {
+        if ($depth > 32) {
+            return $node;
+        }
+
+        foreach ($node as $key => $value) {
+            // 액션·데이터 소스 같은 동작 정의 안에는 컴포넌트가 없다 — 그 안의 데이터 필드(`permissions` 등)를
+            // 권한 구조로 오인해 걸러내지 않도록 내려가지 않는다.
+            if (! is_array($value) || $value === [] || in_array($key, self::NON_COMPONENT_KEYS, true)) {
+                continue;
+            }
+
+            // `children` 목록은 원소 모양과 상관없이 늘 컴포넌트 트리로 거른다 — 모양이 다른 원소 하나가
+            // 섞였다고 형제 컴포넌트의 permissions 가 평가되지 않으면 무권한자에게 그대로 나간다.
+            $isChildrenList = $key === 'children' && array_is_list($value);
+
+            $node[$key] = $isChildrenList || $this->isComponentList($value)
+                ? $this->filterComponentTree($value, $user)
+                : $this->filterNestedComponentLists($value, $user, $depth + 1);
+        }
+
+        return $node;
+    }
+
+    /**
+     * 배열이 컴포넌트 목록(원소가 모두 type·name 문자열을 가진 배열)인지 판정합니다.
+     *
+     * @param  array<int|string, mixed>  $list  검사할 배열
+     * @return bool 컴포넌트 목록이면 true
+     */
+    private function isComponentList(array $list): bool
+    {
+        if (! array_is_list($list)) {
+            return false;
+        }
+
+        foreach ($list as $item) {
+            if (! is_array($item) || ! is_string($item['type'] ?? null) || ! is_string($item['name'] ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1944,12 +2014,9 @@ class LayoutService
                 unset($modal['permissions']);
             }
 
-            // 모달 내부 컴포넌트 필터링
-            if (! empty($modal['components'])) {
-                $modal['components'] = $this->filterComponentTree($modal['components'], $user);
-            }
-
-            $filtered[] = $modal;
+            // 모달 내부 컴포넌트 필터링 — 번들 모달은 `children` 을 쓰고 옛 형태는 `components` 를 쓴다.
+            // 두 형태와 props 안 컴포넌트 목록을 같은 규칙으로 거른다.
+            $filtered[] = $this->filterNestedComponentLists($modal, $user);
         }
 
         return $filtered;

@@ -21,7 +21,10 @@
           "rate_decimal_places": 6,
           "lookback_days": 7,
           "history_retention_days": 365,
-          "notify_on_failure": true
+          "notify_on_failure": true,
+          "abilities": {
+            "can_update": true
+          }
         }
       },
       "koreaeximStatus": {

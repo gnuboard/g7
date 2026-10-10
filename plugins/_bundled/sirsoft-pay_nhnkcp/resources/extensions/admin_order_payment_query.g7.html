@@ -69,7 +69,7 @@
       <div class="space-y-2">
         <div class="flex items-center gap-2">
           <label class="text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_label</label>
-          <input type="text" placeholder="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono">
+          <input type="text" placeholder="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono" disabled="{{order?.data?.abilities?.can_update !== true}}">
             <on type="change">
               <!-- 에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다 -->
               <set-state target="local" _ked_deli_numb="{{$event.target.value}}"/>
@@ -78,7 +78,7 @@
         </div>
         <div class="flex items-center gap-2">
           <label class="text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_label</label>
-          <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+          <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" disabled="{{order?.data?.abilities?.can_update !== true}}">
             <on type="change">
               <!-- 택배사 — KCP 가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다) -->
               <set-state target="local" _ked_deli_corp="{{$event.target.value}}"/>
@@ -99,7 +99,7 @@
           </select>
         </div>
         <div class="flex justify-end">
-          <button disabled="{{_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === ''}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === '')}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <!-- 에스크로 배송 등록 — 위에서 입력한 송장번호·택배사 코드를 보내고, 끝나면 등록 상태를 다시 받는다 -->
               <sequence>

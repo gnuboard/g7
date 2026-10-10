@@ -454,6 +454,23 @@ describe('좌측 파일 트리', () => {
     const props = findComponent(layoutEditJson, (n) => n.name === 'FileTreePicker').props;
 
     expect(String(props.canManage)).toContain('can_update');
+
+    // 고른 갈래의 권한만 본다 — 저장 버튼·읽기 전용 판정과 같은 기준. 다른 갈래에 남아 있는
+    // 이전 응답의 권한으로 파일 조작이 열리면 안 된다.
+    const evaluateCanManage = (kind: 'layout' | 'extension', layoutCan: boolean, extensionCan: boolean) => {
+      const body = String(props.canManage).trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+      // eslint-disable-next-line no-new-func
+      return new Function('_global', 'current_layout', 'current_extension', `return (${body});`)(
+        { selectedNodeKind: kind },
+        { data: { abilities: { can_update: layoutCan } } },
+        { data: { abilities: { can_update: extensionCan } } },
+      );
+    };
+
+    expect(evaluateCanManage('layout', true, false)).toBe(true);
+    expect(evaluateCanManage('layout', false, true)).toBe(false);
+    expect(evaluateCanManage('extension', false, true)).toBe(true);
+    expect(evaluateCanManage('extension', true, false)).toBe(false);
   });
 
   /** @effects extension_select_sets_selected_node_kind */

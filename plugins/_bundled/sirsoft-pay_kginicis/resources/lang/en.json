@@ -338,5 +338,6 @@
         "error": {
             "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

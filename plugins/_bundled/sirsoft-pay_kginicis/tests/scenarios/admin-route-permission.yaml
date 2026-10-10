@@ -1,0 +1,22 @@
+feature: KG이니시스 관리자 연동 경로의 이커머스 세부 권한
+
+description: |
+  `admin` 미들웨어는 관리자 여부만 판정하므로, 업무 권한이 없는 제한 관리자도 플러그인의 관리자
+  경로에 도달한다. KG이니시스 관리자 경로(주문 조회·조작, CBT 대사·편의점, 에스크로 배송, 테스트 상품,
+  가상계좌 통보 주소, 연결 진단)는 각 업무에 맞는 이커머스 세부 권한을 라우트에 직접 선언해야 한다.
+  - 조회 경로는 sirsoft-ecommerce.orders.read, 결제 기록을 쓰는 경로는 orders.update
+  - CBT 환불 재시도는 PG 환불을 다시 보내므로 claims.execute-refund (제품 결정 R1, 7.1.0)
+  - 연결 진단은 플러그인 설정 화면의 버튼이라 settings.read 또는 core.plugins.update (7.1.0 abilities 게이트 N5)
+
+  기존 회귀 테스트(AdminRoutePermissionTest)의 소유권을 7.1.0 abilities 게이트 작업 중 시험 파일을 고치며 사후 등재했다.
+  옛 KG 전용 현금영수증 발행 경로 제거(legacy_kg_cash_receipt_route_removed)는
+  sirsoft-tosspayments 의 cash-receipt-provider-refund-integrity.yaml 이 소유한다.
+
+axes:
+  route_group: [admin_financial_routes]
+
+effects:
+  - admin_financial_routes_declare_ecommerce_permission_middleware
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/AdminRoutePermissionTest.php

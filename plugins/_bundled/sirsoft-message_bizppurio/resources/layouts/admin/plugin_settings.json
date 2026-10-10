@@ -28,7 +28,6 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "reportInfo",
-            "if": "{{(query.tab ?? 'connection') === 'connection'}}",
             "comment": "리포트(발송 결과 webhook) 수신 주소 — 서버가 현재 사이트 주소로 만든 값을 그대로 보여 준다. 연결 탭에서만 받는다(if)."
         },
         {
@@ -97,6 +96,10 @@
             "comment": "작성 모달 발신프로필 참고 셀렉트(kapi profile/use 위임). 모달 열 때만 조회. 실패는 suppress + fallback."
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
+        "isMessagingReadOnly": "{{settings?.data?.abilities?.can_update !== true || report_url?.data?.abilities?.can_manage_messaging !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -129,6 +132,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:sirsoft-message_bizppurio.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "settings_tabs",
@@ -578,7 +609,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "is_test_mode"
+                                                            "name": "is_test_mode",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -725,7 +757,8 @@
                                                                     "type": "text",
                                                                     "name": "bizppurio_id",
                                                                     "autoComplete": "off",
-                                                                    "className": "{{_local.errors?.bizppurio_id ? 'input border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input'}}"
+                                                                    "className": "{{_local.errors?.bizppurio_id ? 'input border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -790,7 +823,8 @@
                                                                     "name": "password",
                                                                     "autoComplete": "new-password",
                                                                     "placeholder": "••••••••",
-                                                                    "className": "{{_local.errors?.password ? 'input font-mono border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input font-mono'}}"
+                                                                    "className": "{{_local.errors?.password ? 'input font-mono border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input font-mono'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -919,7 +953,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "disabled": "{{_local.tokenChecking}}",
+                                                                    "disabled": "{{_computed.isMessagingReadOnly || (_local.tokenChecking)}}",
                                                                     "className": "btn btn-outline btn-sm flex-center gap-1.5"
                                                                 },
                                                                 "children": [
@@ -1007,7 +1041,8 @@
                                                                     "name": "api_key",
                                                                     "autoComplete": "new-password",
                                                                     "placeholder": "••••••••",
-                                                                    "className": "{{_local.errors?.api_key ? 'input font-mono border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input font-mono'}}"
+                                                                    "className": "{{_local.errors?.api_key ? 'input font-mono border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input font-mono'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -1115,7 +1150,8 @@
                                                                     "type": "text",
                                                                     "name": "sender_number",
                                                                     "autoComplete": "off",
-                                                                    "className": "{{_local.errors?.sender_number ? 'input border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input'}}"
+                                                                    "className": "{{_local.errors?.sender_number ? 'input border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -1180,7 +1216,8 @@
                                                                     "name": "sender_key",
                                                                     "autoComplete": "new-password",
                                                                     "placeholder": "••••••••",
-                                                                    "className": "{{_local.errors?.sender_key ? 'input font-mono border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input font-mono'}}"
+                                                                    "className": "{{_local.errors?.sender_key ? 'input font-mono border-red-500 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' : 'input font-mono'}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -1277,7 +1314,8 @@
                                                                     "type": "text",
                                                                     "readOnly": true,
                                                                     "value": "{{report_url?.data?.url ?? '/api/plugins/sirsoft-message_bizppurio/webhook'}}",
-                                                                    "className": "input-readonly flex-1 font-mono"
+                                                                    "className": "input-readonly flex-1 font-mono",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -1456,7 +1494,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                            "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                             "className": "btn btn-primary flex-center gap-1.5"
                                         },
                                         "children": [
@@ -1496,6 +1534,34 @@
                             "className": "mt-6"
                         },
                         "children": [
+                            {
+                                "id": "messaging_read_only_banner",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!_computed.isPluginReadOnly && _computed.isMessagingReadOnly && !!report_url?.data}}",
+                                "props": {
+                                    "role": "status",
+                                    "className": "alert-warning mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "lock",
+                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-warning-soft"
+                                        },
+                                        "text": "$t:sirsoft-message_bizppurio.messaging_read_only"
+                                    }
+                                ]
+                            },
                             {
                                 "id": "templates_readiness",
                                 "type": "basic",
@@ -2343,7 +2409,7 @@
                                                                                         "props": {
                                                                                             "type": "button",
                                                                                             "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal",
-                                                                                            "disabled": "{{_global.bz_row_busy ?? false}}"
+                                                                                            "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_row_busy ?? false)}}"
                                                                                         },
                                                                                         "text": "$t:sirsoft-message_bizppurio.template.row.btn_request"
                                                                                     },
@@ -2392,7 +2458,8 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
+                                                                                            "disabled": "{{_computed.isMessagingReadOnly}}"
                                                                                         },
                                                                                         "text": "$t:sirsoft-message_bizppurio.template.row.btn_cancel_request"
                                                                                     },
@@ -2441,7 +2508,8 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal"
+                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal",
+                                                                                            "disabled": "{{_computed.isMessagingReadOnly}}"
                                                                                         },
                                                                                         "text": "$t:sirsoft-message_bizppurio.template.row.btn_release"
                                                                                     },
@@ -2490,7 +2558,8 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                                                            "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
+                                                                                            "disabled": "{{_computed.isMessagingReadOnly}}"
                                                                                         },
                                                                                         "text": "$t:sirsoft-message_bizppurio.template.row.btn_refresh"
                                                                                     },
@@ -2849,7 +2918,8 @@
                                             "props": {
                                                 "className": "w-full text-sm",
                                                 "value": "{{_global.bz_tpl_modal?.sender_profile ?? ''}}",
-                                                "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.sender_profile_placeholder')}, ...((bizppurioProfiles?.data?.profiles ?? []).map(pr => ({value: pr.senderKey ?? '', label: (pr.name ?? pr.senderKey ?? '')})))]}}"
+                                                "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.sender_profile_placeholder')}, ...((bizppurioProfiles?.data?.profiles ?? []).map(pr => ({value: pr.senderKey ?? '', label: (pr.name ?? pr.senderKey ?? '')})))]}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         },
                                         {
@@ -2891,7 +2961,8 @@
                                             "props": {
                                                 "className": "w-full text-sm",
                                                 "value": "{{_global.bz_tpl_modal?.content?.categoryCode ?? ''}}",
-                                                "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.category_placeholder')}, ...((bizppurioCategories?.data?.categories ?? []).map(cat => ({value: cat.code ?? '', label: ((cat.groupName ? cat.groupName + ' › ' : '') + (cat.name ?? cat.code ?? ''))})))]}}"
+                                                "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.category_placeholder')}, ...((bizppurioCategories?.data?.categories ?? []).map(cat => ({value: cat.code ?? '', label: ((cat.groupName ? cat.groupName + ' › ' : '') + (cat.name ?? cat.code ?? ''))})))]}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         }
                                     ]
@@ -2928,7 +2999,8 @@
                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
                                         "value": "{{_global.bz_tpl_modal?.content.templateName ?? ''}}",
                                         "name": "bz_template_name",
-                                        "maxLength": 200
+                                        "maxLength": 200,
+                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                     }
                                 }
                             ]
@@ -2969,7 +3041,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'BA' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'BA' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.BA"
                                         },
@@ -2989,7 +3062,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'EX' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'EX' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.EX"
                                         },
@@ -3009,7 +3083,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'AD' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'AD' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.AD"
                                         },
@@ -3029,7 +3104,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'MI' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'MI' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.MI"
                                         }
@@ -3073,7 +3149,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'NONE' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'NONE' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.NONE"
                                         },
@@ -3093,7 +3170,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'TEXT' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'TEXT' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.TEXT"
                                         },
@@ -3113,7 +3191,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'IMAGE' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'IMAGE' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.IMAGE"
                                         },
@@ -3133,7 +3212,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'ITEM_LIST' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}"
+                                                "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'ITEM_LIST' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.ITEM_LIST"
                                         }
@@ -3177,7 +3257,8 @@
                                             ],
                                             "props": {
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
-                                                "value": "{{_global.bz_tpl_modal?.content.templateTitle ?? ''}}"
+                                                "value": "{{_global.bz_tpl_modal?.content.templateTitle ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         }
                                     ]
@@ -3210,7 +3291,8 @@
                                             ],
                                             "props": {
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
-                                                "value": "{{_global.bz_tpl_modal?.content.templateSubtitle ?? ''}}"
+                                                "value": "{{_global.bz_tpl_modal?.content.templateSubtitle ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         }
                                     ]
@@ -3252,7 +3334,8 @@
                                     "props": {
                                         "type": "file",
                                         "accept": ".jpg,.jpeg,.png",
-                                        "className": "block w-full text-xs text-gray-600 dark:text-gray-300"
+                                        "className": "block w-full text-xs text-gray-600 dark:text-gray-300",
+                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                     }
                                 },
                                 {
@@ -3332,7 +3415,8 @@
                                             "props": {
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.hl_title",
-                                                "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.title ?? ''}}"
+                                                "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.title ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         },
                                         {
@@ -3352,7 +3436,8 @@
                                             "props": {
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.hl_description",
-                                                "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.description ?? ''}}"
+                                                "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.description ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         }
                                     ]
@@ -3375,7 +3460,8 @@
                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.hl_image_url",
                                         "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.imageUrl ?? ''}}",
-                                        "maxLength": 500
+                                        "maxLength": 500,
+                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                     }
                                 },
                                 {
@@ -3410,7 +3496,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
-                                                "disabled": "{{(_global.bz_tpl_modal?.content?.templateItem?.list ?? []).length >= 10}}"
+                                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_tpl_modal?.content?.templateItem?.list ?? []).length >= 10}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.item_add"
                                         }
@@ -3454,7 +3540,8 @@
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "maxLength": 6,
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_title",
-                                                "value": "{{itm.title ?? ''}}"
+                                                "value": "{{itm.title ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         },
                                         {
@@ -3475,7 +3562,8 @@
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "maxLength": 23,
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_description",
-                                                "value": "{{itm.description ?? ''}}"
+                                                "value": "{{itm.description ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         },
                                         {
@@ -3495,7 +3583,8 @@
                                             "props": {
                                                 "type": "button",
                                                 "aria-label": "$t:sirsoft-message_bizppurio.template.form.btn_remove_item",
-                                                "className": "p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                                                "className": "p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "children": [
                                                 {
@@ -3543,7 +3632,8 @@
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "maxLength": 6,
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_title",
-                                                "value": "{{_global.bz_tpl_modal?.content?.templateItem?.summary?.title ?? ''}}"
+                                                "value": "{{_global.bz_tpl_modal?.content?.templateItem?.summary?.title ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         },
                                         {
@@ -3564,7 +3654,8 @@
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "maxLength": 14,
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.summary_description",
-                                                "value": "{{_global.bz_tpl_modal?.content?.templateItem?.summary?.description ?? ''}}"
+                                                "value": "{{_global.bz_tpl_modal?.content?.templateItem?.summary?.description ?? ''}}",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             }
                                         }
                                     ]
@@ -3619,7 +3710,8 @@
                                         "rows": 6,
                                         "maxLength": 1000,
                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 font-mono",
-                                        "value": "{{_global.bz_tpl_modal?.content?.templateContent ?? ''}}"
+                                        "value": "{{_global.bz_tpl_modal?.content?.templateContent ?? ''}}",
+                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                     }
                                 }
                             ]
@@ -3669,7 +3761,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs font-mono px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:border-teal-400"
+                                                "className": "text-xs font-mono px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:border-teal-400",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "{{'#{' + (v.key ?? '') + '}'}}"
                                         }
@@ -3707,7 +3800,8 @@
                                     "props": {
                                         "rows": 2,
                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
-                                        "value": "{{_global.bz_tpl_modal?.content?.templateExtra ?? ''}}"
+                                        "value": "{{_global.bz_tpl_modal?.content?.templateExtra ?? ''}}",
+                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                     }
                                 }
                             ]
@@ -3741,7 +3835,8 @@
                                     "props": {
                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
                                         "value": "{{_global.bz_tpl_modal?.content.templateHeader ?? ''}}",
-                                        "maxLength": 16
+                                        "maxLength": 16,
+                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                     }
                                 },
                                 {
@@ -3793,7 +3888,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
-                                                "disabled": "{{(_global.bz_tpl_modal?.content?.buttons ?? []).length >= 5}}"
+                                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_tpl_modal?.content?.buttons ?? []).length >= 5}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.button_add"
                                         }
@@ -3836,7 +3931,8 @@
                                                         "className": "w-40 text-xs",
                                                         "aria-label": "$t:sirsoft-message_bizppurio.template.form.button_link_type|index={{buttonsIdx + 1}}",
                                                         "value": "{{buttonsItem.linkType ?? 'WL'}}",
-                                                        "options": "{{['WL','AL','DS','BK','MD','AC','BC','BT','P1','P2','P3','TN','MP'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}"
+                                                        "options": "{{['WL','AL','DS','BK','MD','AC','BC','BT','P1','P2','P3','TN','MP'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -3856,7 +3952,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.button_name",
-                                                        "value": "{{buttonsItem.name ?? ''}}"
+                                                        "value": "{{buttonsItem.name ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -3876,7 +3973,8 @@
                                                     "props": {
                                                         "type": "button",
                                                         "aria-label": "$t:sirsoft-message_bizppurio.template.form.btn_remove_button",
-                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     },
                                                     "children": [
                                                         {
@@ -3916,7 +4014,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_mo",
-                                                        "value": "{{buttonsItem.linkMo ?? ''}}"
+                                                        "value": "{{buttonsItem.linkMo ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -3937,7 +4036,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_pc",
-                                                        "value": "{{buttonsItem.linkPc ?? ''}}"
+                                                        "value": "{{buttonsItem.linkPc ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -3958,7 +4058,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_and",
-                                                        "value": "{{buttonsItem.linkAnd ?? ''}}"
+                                                        "value": "{{buttonsItem.linkAnd ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -3979,7 +4080,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_ios",
-                                                        "value": "{{buttonsItem.linkIos ?? ''}}"
+                                                        "value": "{{buttonsItem.linkIos ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4000,7 +4102,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.tel_number",
-                                                        "value": "{{buttonsItem.telNumber ?? ''}}"
+                                                        "value": "{{buttonsItem.telNumber ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4021,7 +4124,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.plugin_id",
-                                                        "value": "{{buttonsItem.pluginId ?? ''}}"
+                                                        "value": "{{buttonsItem.pluginId ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 }
                                             ]
@@ -4069,7 +4173,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
-                                                "disabled": "{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).length >= 10}}"
+                                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_tpl_modal?.content?.quickReplies ?? []).length >= 10}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.quick_reply_add"
                                         }
@@ -4112,7 +4216,8 @@
                                                         "className": "w-40 text-xs",
                                                         "aria-label": "$t:sirsoft-message_bizppurio.template.form.quick_reply_link_type|index={{quickRepliesIdx + 1}}",
                                                         "value": "{{quickRepliesItem.linkType ?? 'WL'}}",
-                                                        "options": "{{['WL','AL','BK','MD','BC','BT'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}"
+                                                        "options": "{{['WL','AL','BK','MD','BC','BT'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4132,7 +4237,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.button_name",
-                                                        "value": "{{quickRepliesItem.name ?? ''}}"
+                                                        "value": "{{quickRepliesItem.name ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4152,7 +4258,8 @@
                                                     "props": {
                                                         "type": "button",
                                                         "aria-label": "$t:sirsoft-message_bizppurio.template.form.btn_remove_quick_reply",
-                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     },
                                                     "children": [
                                                         {
@@ -4192,7 +4299,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_mo",
-                                                        "value": "{{quickRepliesItem.linkMo ?? ''}}"
+                                                        "value": "{{quickRepliesItem.linkMo ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4213,7 +4321,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_pc",
-                                                        "value": "{{quickRepliesItem.linkPc ?? ''}}"
+                                                        "value": "{{quickRepliesItem.linkPc ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4234,7 +4343,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_and",
-                                                        "value": "{{quickRepliesItem.linkAnd ?? ''}}"
+                                                        "value": "{{quickRepliesItem.linkAnd ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4255,7 +4365,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_ios",
-                                                        "value": "{{quickRepliesItem.linkIos ?? ''}}"
+                                                        "value": "{{quickRepliesItem.linkIos ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4276,7 +4387,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.tel_number",
-                                                        "value": "{{quickRepliesItem.telNumber ?? ''}}"
+                                                        "value": "{{quickRepliesItem.telNumber ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -4297,7 +4409,8 @@
                                                     "props": {
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.plugin_id",
-                                                        "value": "{{quickRepliesItem.pluginId ?? ''}}"
+                                                        "value": "{{quickRepliesItem.pluginId ?? ''}}",
+                                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                                     }
                                                 }
                                             ]
@@ -4357,7 +4470,8 @@
                                         "maxLength": 500,
                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.request_comment_placeholder",
-                                        "value": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                                        "value": "{{_global.bz_tpl_modal?.request_comment ?? ''}}",
+                                        "disabled": "{{_computed.isMessagingReadOnly}}"
                                     }
                                 },
                                 {
@@ -4471,7 +4585,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50",
-                                "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false)}}"
+                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
                         },
@@ -4549,7 +4663,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50",
-                                "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false)}}"
+                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
                         },
@@ -4647,7 +4761,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "text-sm px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 disabled:opacity-50",
-                                "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false)}}"
+                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request"
                         },
@@ -4744,7 +4858,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "text-sm px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 disabled:opacity-50",
-                                "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false)}}"
+                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request"
                         }
@@ -4835,7 +4949,8 @@
                                 "rows": 4,
                                 "maxLength": 2000,
                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
-                                "value": "{{_global.bz_sms_modal?.body?.[_global.bz_sms_modal?.editLang ?? $locale] ?? ''}}"
+                                "value": "{{_global.bz_sms_modal?.body?.[_global.bz_sms_modal?.editLang ?? $locale] ?? ''}}",
+                                "disabled": "{{_computed.isMessagingReadOnly}}"
                             }
                         },
                         {
@@ -4883,7 +4998,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs font-mono px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:border-teal-400"
+                                                "className": "text-xs font-mono px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:border-teal-400",
+                                                "disabled": "{{_computed.isMessagingReadOnly}}"
                                             },
                                             "text": "{{'#{' + (v.key ?? '') + '}'}}"
                                         }
@@ -4992,7 +5108,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "text-sm px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 disabled:opacity-50",
-                                "disabled": "{{_global.bz_sms_modal?.isSaving ?? false}}"
+                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_sms_modal?.isSaving ?? false)}}"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.sms.btn_save"
                         }
@@ -5135,7 +5251,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "text-sm px-4 py-2 rounded-md bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 disabled:opacity-50",
-                                "disabled": "{{_global.bz_cancel_approval?.isSaving ?? false}}"
+                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_cancel_approval?.isSaving ?? false)}}"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.cancel_approval.btn_confirm"
                         }
@@ -5337,7 +5453,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "text-sm px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50",
-                                "disabled": "{{_global.bz_delete_modal?.isSaving ?? false}}"
+                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_delete_modal?.isSaving ?? false)}}"
                             },
                             "text": "$t:sirsoft-message_bizppurio.manage.delete.btn_confirm"
                         }

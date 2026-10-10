@@ -18,7 +18,9 @@
             "banner_2": false
         }
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.settings.read"
+    ],
     "slots": {
         "content": [
             {

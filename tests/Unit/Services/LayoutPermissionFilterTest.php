@@ -663,4 +663,121 @@ class LayoutPermissionFilterTest extends TestCase
         $this->assertEquals('first', $result['components'][0]['id']);
         $this->assertEquals('last', $result['components'][1]['id']);
     }
+
+    /**
+     * 실제 모달 형태(`children`)의 자식 컴포넌트 permissions 도 걸러지고 속성이 지워진다 (G25 #9).
+     *
+     * 번들 모달은 `components` 가 아니라 `children` 을 쓴다. 이전 필터는 `components` 만 재귀해서
+     * 모달 자식의 permissions 가 평가도 제거도 되지 않고 클라이언트로 나갔다.
+     *
+     * @scenario case=modal_children_filter
+     *
+     * @effects layout_modal_children_filtered_by_permission
+     *
+     * @return void 반환값 없음
+     */
+    public function test_modal_children_are_filtered(): void
+    {
+        $layout = [
+            'components' => [],
+            'modals' => [
+                [
+                    'id' => 'children_modal',
+                    'type' => 'composite',
+                    'name' => 'Modal',
+                    'children' => [
+                        ['type' => 'basic', 'name' => 'Span', 'text' => '공개'],
+                        ['type' => 'basic', 'name' => 'Button', 'id' => 'secret', 'permissions' => ['core.dashboard.edit']],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
+
+        $children = $result['modals'][0]['children'];
+        $this->assertCount(1, $children);
+        $this->assertSame('공개', $children[0]['text']);
+    }
+
+    /**
+     * `children` 에 컴포넌트 모양이 아닌 원소가 섞여도 형제 컴포넌트의 permissions 는 걸러진다.
+     *
+     * 원소가 모두 type·name 을 가진 목록만 컴포넌트 트리로 보면, 모양이 다른 원소 하나 때문에 같은
+     * 목록의 권한 컴포넌트가 평가도 제거도 되지 않고 무권한자에게 나간다.
+     *
+     * @scenario case=modal_children_filter
+     *
+     * @effects layout_children_with_non_component_entry_still_filtered
+     *
+     * @return void 반환값 없음
+     */
+    public function test_children_with_non_component_entry_are_still_filtered(): void
+    {
+        $layout = [
+            'components' => [
+                [
+                    'type' => 'layout',
+                    'name' => 'Container',
+                    'children' => [
+                        ['type' => 'basic', 'text' => '이름 없는 원소'],
+                        ['type' => 'basic', 'name' => 'Button', 'id' => 'secret', 'permissions' => ['core.dashboard.edit']],
+                        ['type' => 'basic', 'name' => 'Span', 'id' => 'open'],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
+
+        $ids = array_column($result['components'][0]['children'], 'id');
+        $this->assertNotContains('secret', $ids);
+        $this->assertContains('open', $ids);
+        $this->assertCount(2, $result['components'][0]['children']);
+    }
+
+    /**
+     * 표 셀(`props.columns[].cellChildren`)·노드의 `expandChildren` 안 컴포넌트 permissions 도 걸러진다 (G25 #10).
+     *
+     * @scenario case=props_embedded_children_filter
+     *
+     * @effects layout_props_embedded_children_filtered_by_permission
+     *
+     * @return void 반환값 없음
+     */
+    public function test_props_embedded_component_lists_are_filtered(): void
+    {
+        $layout = [
+            'components' => [
+                [
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            [
+                                'field' => 'name',
+                                'cellChildren' => [
+                                    ['type' => 'basic', 'name' => 'Span', 'text' => '이름'],
+                                    ['type' => 'basic', 'name' => 'Button', 'id' => 'cell_secret', 'permissions' => ['core.dashboard.edit']],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'expandChildren' => [
+                        ['type' => 'basic', 'name' => 'Button', 'id' => 'expand_secret', 'permissions' => ['core.dashboard.edit']],
+                        ['type' => 'basic', 'name' => 'Span', 'text' => '펼침'],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
+        $grid = $result['components'][0];
+
+        $this->assertCount(1, $grid['props']['columns'][0]['cellChildren']);
+        $this->assertSame('이름', $grid['props']['columns'][0]['cellChildren'][0]['text']);
+        $this->assertCount(1, $grid['expandChildren']);
+        $this->assertSame('펼침', $grid['expandChildren'][0]['text']);
+        $this->assertStringNotContainsString('core.dashboard.edit', json_encode($result));
+    }
 }

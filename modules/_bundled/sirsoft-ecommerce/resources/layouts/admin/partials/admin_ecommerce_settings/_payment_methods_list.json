@@ -31,9 +31,11 @@
         },
         "children": [
             {
+                "comment": "드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다).",
+                "id": "payment_method_drag_handle_list",
                 "type": "basic",
                 "name": "Div",
-                "if": "{{!$method._orphaned}}",
+                "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                 "props": {
                     "data-drag-handle": true,
                     "className": "cursor-grab text-gray-400 dark:text-gray-500"

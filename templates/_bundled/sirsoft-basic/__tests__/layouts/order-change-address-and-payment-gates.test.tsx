@@ -119,7 +119,8 @@ describe('주문서 결제수단 0건 — 안내와 결제하기 잠금', () => 
     const payButton = findAll(summaryJson, (n) => n.name === 'Button' && typeof n.props?.disabled === 'string' && n.props.disabled.includes('intl_postal_code'))[0];
     const scope = (methods: any[]) => ({
       _local: { shipping: { country_code: 'KR', zipcode: '12345', recipient_name: 'a', recipient_phone: '010' }, isSubmittingOrder: false },
-      checkoutData: { data: { has_unshippable_items: false } },
+      // 주문 권한이 있는 회원 기준 — 권한 잠금은 checkout-pay-button-order-permission 테스트가 따로 본다
+      checkoutData: { data: { has_unshippable_items: false, abilities: { can_order: true } } },
       paymentSettings: settings(methods),
       _global: {},
       _computed: computedFor(settings(methods), {}, { data: { has_unshippable_items: false } }),

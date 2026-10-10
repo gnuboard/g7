@@ -12,7 +12,7 @@
           <div data-ref="field_use_reply" class="">
             <div class="flex-center gap-4">
               <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reply')}}">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reply')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「답변글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"/>
@@ -29,7 +29,7 @@
           <div data-ref="field_max_reply_depth" class="">
             <div class="flex-center gap-4">
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth')}}">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「답변글을 몇 단까지 이어 붙일지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"/>
@@ -49,7 +49,7 @@
           <div data-ref="field_reply_delete_policy" class="">
             <div class="flex-center gap-4">
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy')}}">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 이 항목을 일괄 적용 대상에 넣고 뺀다. 배열에서 빼고 다시 넣는 식이라 같은 값이 두 번 들어가지 않는다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'reply_delete_policy') : [...(_local.bulkApplyFields ?? []), 'reply_delete_policy']}}"/>

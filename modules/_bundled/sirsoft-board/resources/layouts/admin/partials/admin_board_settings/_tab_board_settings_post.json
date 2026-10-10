@@ -82,7 +82,8 @@
                                                             "props": {
                                                                 "type": "checkbox",
                                                                 "className": "checkbox-aligned",
-                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}"
+                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}",
+                                                                "disabled": "{{!_computed.canBulkApply}}"
                                                             }
                                                         },
                                                         {
@@ -179,7 +180,8 @@
                                                             "props": {
                                                                 "type": "checkbox",
                                                                 "className": "checkbox-aligned",
-                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}"
+                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}",
+                                                                "disabled": "{{!_computed.canBulkApply}}"
                                                             }
                                                         },
                                                         {
@@ -276,7 +278,8 @@
                                                             "props": {
                                                                 "type": "checkbox",
                                                                 "className": "checkbox-aligned",
-                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}"
+                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}",
+                                                                "disabled": "{{!_computed.canBulkApply}}"
                                                             }
                                                         },
                                                         {
@@ -373,7 +376,8 @@
                                                             "props": {
                                                                 "type": "checkbox",
                                                                 "className": "checkbox-aligned",
-                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}"
+                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}",
+                                                                "disabled": "{{!_computed.canBulkApply}}"
                                                             }
                                                         },
                                                         {
@@ -470,7 +474,8 @@
                                                             "props": {
                                                                 "type": "checkbox",
                                                                 "className": "checkbox-aligned",
-                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}"
+                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}",
+                                                                "disabled": "{{!_computed.canBulkApply}}"
                                                             }
                                                         },
                                                         {
@@ -548,7 +553,8 @@
                                                             "props": {
                                                                 "type": "checkbox",
                                                                 "className": "checkbox-aligned",
-                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}"
+                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}",
+                                                                "disabled": "{{!_computed.canBulkApply}}"
                                                             }
                                                         },
                                                         {

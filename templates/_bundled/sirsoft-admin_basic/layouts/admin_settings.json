@@ -563,7 +563,7 @@
         "policyIsSaving": false
     },
     "computed": {
-        "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}",
+        "isReadOnly": "{{_global.settingsAbilities?.can_update !== true}}",
         "envLocked": "{{_local.form?._meta?.env_locked ?? null}}",
         "errorsWithoutIpRules": "{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) => !k.startsWith('security.ip_restriction_rules')); return rest.length > 0 ? Object.fromEntries(rest) : null; })()}}",
         "ipRestrictionEnabled": "{{!!_local.form?.security?.ip_restriction_enabled && _local.form?.security?.ip_restriction_enabled !== '0' && _local.form?.security?.ip_restriction_enabled !== 'false'}}"
@@ -702,7 +702,7 @@
                         "id": "readonly_banner",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_computed.isReadOnly}}",
+                        "if": "{{!!_global.settingsAbilities && _global.settingsAbilities.can_update !== true}}",
                         "props": {
                             "className": "alert-warning"
                         },

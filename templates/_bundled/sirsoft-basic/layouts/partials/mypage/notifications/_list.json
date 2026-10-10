@@ -171,8 +171,10 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors",
-                                        "type": "button"
+                                        "className": "text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "type": "button",
+                                        "disabled": "{{userNotifications?.data?.abilities?.can_update !== true}}",
+                                        "title": "{{userNotifications?.data?.abilities?.can_update === true ? '' : '$t:mypage.notifications.no_permission'}}"
                                     },
                                     "text": "$t:mypage.notifications.mark_all_read"
                                 },
@@ -188,8 +190,10 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors",
-                                        "type": "button"
+                                        "className": "text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "type": "button",
+                                        "disabled": "{{userNotifications?.data?.abilities?.can_delete !== true}}",
+                                        "title": "{{userNotifications?.data?.abilities?.can_delete === true ? '' : '$t:mypage.notifications.no_permission'}}"
                                     },
                                     "text": "$t:mypage.notifications.delete_all"
                                 }
@@ -229,7 +233,7 @@
                                         {
                                             "handler": "apiCall",
                                             "target": "/api/user/notifications/{{notification.id}}/read",
-                                            "if": "{{!notification.read_at}}",
+                                            "if": "{{!notification.read_at && userNotifications?.data?.abilities?.can_update === true}}",
                                             "auth_required": true,
                                             "params": {
                                                 "method": "PATCH"
@@ -421,9 +425,10 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.delete",
-                                                                "title": "$t:common.delete",
-                                                                "className": "flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
-                                                                "type": "button"
+                                                                "title": "{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}",
+                                                                "className": "flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "type": "button",
+                                                                "disabled": "{{userNotifications?.data?.abilities?.can_delete !== true}}"
                                                             },
                                                             "children": [
                                                                 {

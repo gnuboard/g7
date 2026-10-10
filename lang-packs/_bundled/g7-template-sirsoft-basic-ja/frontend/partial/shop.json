@@ -631,5 +631,6 @@
     "page_title": "非会員クレーム申請",
     "page_description": "非会員注文の交換·返品·キャンセル·返金を申請します。",
     "edit_page_title": "非会員申請内容編集"
-  }
+  },
+  "order_permission_denied": "注文権限がないため注文できません。販売者にお問い合わせください。"
 }

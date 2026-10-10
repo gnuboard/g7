@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
@@ -12,6 +14,12 @@ use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
  */
 class ProductReviewResource extends BaseApiResource
 {
+    /** 능력 → 권한 식별자 (행·목록 공용 — 라우트 reviews.update / reviews.delete 와 같다) */
+    private const ABILITY_MAP = [
+        'can_update' => 'sirsoft-ecommerce.reviews.update',
+        'can_delete' => 'sirsoft-ecommerce.reviews.delete',
+    ];
+
     /**
      * 리소스를 배열로 변환
      *
@@ -139,9 +147,33 @@ class ProductReviewResource extends BaseApiResource
      */
     protected function abilityMap(): array
     {
-        return [
-            'can_update' => 'sirsoft-ecommerce.reviews.update',
-            'can_delete' => 'sirsoft-ecommerce.reviews.delete',
-        ];
+        return self::ABILITY_MAP;
+    }
+
+    /**
+     * 소유자 필드명을 반환합니다. (응답의 `is_owner` — 화면이 본인 리뷰에만 수정·삭제를 붙이는 근거)
+     *
+     * @return string|null 소유자 필드명
+     */
+    protected function ownerField(): ?string
+    {
+        return 'user_id';
+    }
+
+    /**
+     * 관리자 리뷰 목록 수준 능력 맵을 반환합니다. (행 능력과 같은 식별자)
+     *
+     * @param  User|null  $user  현재 사용자
+     * @return array<string, bool> 능력 불리언 맵
+     */
+    public static function collectionAbilities(?User $user): array
+    {
+        $abilities = [];
+
+        foreach (self::ABILITY_MAP as $key => $identifier) {
+            $abilities[$key] = PermissionHelper::check($identifier, $user);
+        }
+
+        return $abilities;
     }
 }

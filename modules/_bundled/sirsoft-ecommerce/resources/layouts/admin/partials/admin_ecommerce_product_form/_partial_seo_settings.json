@@ -105,7 +105,7 @@
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_title",
                                         "maxLength": 70,
                                         "error": "{{_local.errors?.meta_title?.[0] ?? _local.errors?.['meta_title.ko']?.[0] ?? ''}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -180,7 +180,7 @@
                                             ],
                                             "props": {
                                                 "checked": "{{_local.form.seo_sync_title}}",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -240,7 +240,7 @@
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_description",
                                         "maxLength": 160,
                                         "error": "{{_local.errors?.meta_description?.[0] ?? _local.errors?.['meta_description.ko']?.[0] ?? ''}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -298,7 +298,7 @@
                                             ],
                                             "props": {
                                                 "checked": "{{_local.form.seo_sync_description}}",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -351,7 +351,7 @@
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_keywords",
                                         "maxItems": 10,
                                         "creatable": true,
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -391,7 +391,7 @@
                             ],
                             "props": {
                                 "checked": "{{_local.form.use_main_image_for_og ?? true}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                "disabled": "{{_computed.isReadOnly}}"
                             }
                         },
                         {

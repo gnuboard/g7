@@ -88,6 +88,12 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
+`identity.policies` 는 환경설정 「본인인증 정책」 탭의 권한입니다(7.1.0~) — 조회(`read`)가 없으면 탭에 「권한 없음」 안내가,
+수정(`update`)이 없으면 읽기 전용 안내가 뜨고 추가·켜고 끄기·편집·삭제가 잠깁니다. 탭은 게시판 경로
+(`/api/modules/sirsoft-board/admin/identity-policies`)를 쓰고, 그 경로는 같은 권한으로 403 을 내며 코어 정책 표에서
+게시판 몫(`source_identifier = sirsoft-board`)만 다룹니다. 두 권한은 기본 관리자 역할(`admin`)에 기본으로 주어집니다.
+코어 관리자 환경설정의 본인인증 정책 화면은 코어 권한(`core.admin.identity.policies.*`)으로 모든 출처의 정책을 다룹니다.
+
 위 표는 **모듈 레벨** 권한(게시판 관리 자체를 다루는 관리자 권한)만 보여줍니다. 게시판 하나를
 만들면 그 게시판 전용 권한이 `config/board.php` 의 `board_permission_definitions` 템플릿을
 기반으로 추가 생성됩니다(admin.posts.read/write, posts.read-secret 등 — 게시판마다 독립적인

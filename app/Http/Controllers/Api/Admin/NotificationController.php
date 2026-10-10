@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Notification\NotificationBatchReadRequest;
 use App\Http\Requests\Notification\NotificationIndexRequest;
@@ -21,6 +22,11 @@ use Illuminate\Support\Facades\Log;
  */
 class NotificationController extends AdminBaseController
 {
+    /**
+     * 알림 서비스를 주입받습니다.
+     *
+     * @param  NotificationService  $notificationService  알림 조회·읽음·삭제 서비스
+     */
     public function __construct(
         private readonly NotificationService $notificationService,
     ) {
@@ -43,10 +49,15 @@ class NotificationController extends AdminBaseController
 
             $notifications = $this->notificationService->getNotifications($user, $filters, $perPage);
 
-            return $this->success(
-                __('notification.user.list_success'),
-                new UserNotificationCollection($notifications)
-            );
+            // 컬렉션은 회원 알림함과 공용이라 회원 알림 권한으로 abilities 를 싣는다. 관리자 헤더 알림 센터는
+            // 관리자 알림 라우트(core.notifications.update/delete)와 같은 판정이어야 하므로 여기서 덮어쓴다.
+            $payload = (new UserNotificationCollection($notifications))->resolve($request);
+            $payload['abilities'] = [
+                'can_update' => PermissionHelper::check('core.notifications.update', $user),
+                'can_delete' => PermissionHelper::check('core.notifications.delete', $user),
+            ];
+
+            return $this->success(__('notification.user.list_success'), $payload);
         } catch (\Exception $e) {
             Log::error('관리자 알림 목록 조회 실패', ['error' => $e->getMessage()]);
 

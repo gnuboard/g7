@@ -24,6 +24,8 @@ export interface ActionMenuItem {
   divider?: boolean;
   /** 행 데이터의 필드 경로로 disabled 여부를 결정 (값이 falsy면 disabled) */
   disabledField?: string;
+  /** 잠긴 항목에 보일 안내 문구 — 항목 안 보조 줄과 title 로 「왜 잠겼는지」를 알린다(잠기지 않으면 숨김) */
+  disabledReason?: string;
   /** 조건부 표시 (false면 아이템 숨김, 엔진이 표현식 평가 후 boolean 전달) */
   if?: boolean;
 }
@@ -116,7 +118,11 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   /** 키보드로 연 메뉴인지 — 그때만 첫 항목으로 초점을 옮긴다(마우스 동작은 종전과 같다). */
   const openedByKeyboardRef = useRef(false);
 
-  const visibleItems = items.filter((item) => item.if !== false);
+  // 행 값으로 풀어야 하는 disabledField 가 그대로 남아 있으면(행 해석기 밖에서 쓰인 경우) 잠근다 —
+  // 무시하고 열어 두면 권한 게이트가 조용히 사라진다(DataGrid 는 해석한 뒤 이 키를 지워서 넘긴다).
+  const visibleItems = items
+    .filter((item) => item.if !== false)
+    .map((item) => (item.disabledField ? { ...item, disabled: true } : item));
 
   /**
    * 메뉴 안에서 고를 수 있는 항목 요소 목록을 돌려줍니다(구분선·잠긴 항목 제외).
@@ -371,13 +377,19 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                 tabIndex={-1}
                 disabled={item.disabled}
                 aria-disabled={item.disabled || undefined}
+                title={item.disabled && item.disabledReason ? item.disabledReason : undefined}
                 onClick={() => handleItemClick(item)}
                 className={`w-full text-left flex items-center gap-3 px-4 py-3 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${stateClasses}`}
               >
                 {item.iconName && (
                   <Icon name={item.iconName} className="w-4 h-4" />
                 )}
-                <span className="text-sm font-medium">{item.label}</span>
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium">{item.label}</span>
+                  {item.disabled && item.disabledReason && (
+                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400">{item.disabledReason}</span>
+                  )}
+                </span>
               </button>
             );
           })}

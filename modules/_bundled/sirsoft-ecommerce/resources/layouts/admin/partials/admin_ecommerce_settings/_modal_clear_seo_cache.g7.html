@@ -22,7 +22,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-if="{{$parent._local.isClearingCache !== true}}" type="button" class="btn btn-danger">
+        <button data-ref="seo_clear_cache_confirm" data-if="{{$parent._local.isClearingCache !== true}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed?.isReadOnly !== false}}">
           <on type="click">
             <!-- 캐시 비우기. 성공·실패 어느 쪽이든 처리중 표시를 먼저 내린다 — 실패하면 창을 열어 둔 채 다시 시도할 수 있어야 한다 -->
             <sequence>

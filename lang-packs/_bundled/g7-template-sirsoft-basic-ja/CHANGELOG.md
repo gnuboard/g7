@@ -17,6 +17,7 @@
 - 수량 칸·+/- 버튼, 모바일 메뉴 닫기 버튼, 페이지 전환·로딩 표시의 읽기 이름(`common.quantity`·`common.quantity_decrease`·`common.quantity_increase`·`common.close_menu`·`common.page_transitioning`·`common.page_loading`)의 일본어 번역을 추가했습니다.
 - 장바구니 상품 줄 삭제 버튼의 읽기 이름(`shop.cart.delete_item` — 「상품 삭제」)의 일본어 번역을 추가했습니다.
 - 리뷰 별점 단추 이름과 파일 고르개(파일 선택) 문구의 일본어 번역을 추가했습니다.
+- 알림 읽음·삭제 권한 없음 안내의 일본어 번역을 추가했습니다.
 
 #### 로그인·회원
 - 본인인증 메일 링크를 연 화면(본인 확인 결과 안내)의 일본어 문구를 추가했습니다.
@@ -83,6 +84,7 @@
 - 회원 주문·클레임 상세의 「마일리지로 환불」 금액과 유효기간 안내 문구(「マイレージで返金」·「マイレージで付与」)를 추가했습니다.
 - 회원 클레임 상세의 「교환 차액 환급」 줄 문구를 추가했습니다.
 - 회원·비회원 신청서 상세의 「환불 진행」 칸 문구(`claim.detail.linked_title`·`linked_source`·`linked_empty`)를 추가했습니다.
+- 7.1.0 권한 정비에 맞춘 안내 문구의 일본어 번역을 추가했습니다 — 신청 권한이 없거나 주문 취소 권한이 없을 때 취소·반품·교환 신청 화면의 안내(`claim.apply.no_request_permission`·`no_cancel_permission`)와 주문 권한이 없을 때의 주문 거절 안내(`shop.order_permission_denied`)입니다. 없으면 일본어 화면에서 이 안내가 한국어로 보입니다.
 
 #### 홈·레이아웃 편집기
 - 레이아웃 편집기 「화면 상태」 고르개의 게시판 상태 이름 2건(「답글 펼침」·「검증 실패」, `editor.state.*`)을 일본어로 번역했습니다.

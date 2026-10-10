@@ -32,6 +32,7 @@
 | [board-types.md](board-types.md) | `board-types` | 4 |
 | [boards.md](boards.md) | `boards` | 37 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
+| [identity-policies.md](identity-policies.md) | `identity-policies` | 4 |
 | [my-comments.md](my-comments.md) | `my-comments` | 1 |
 | [reaction.md](reaction.md) | `reaction` | 3 |
 | [reaction-types.md](reaction-types.md) | `reaction-types` | 3 |

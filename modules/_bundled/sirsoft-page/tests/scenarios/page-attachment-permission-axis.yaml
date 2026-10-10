@@ -1,0 +1,23 @@
+feature: 페이지 슬러그 확인·첨부 업로드·임시 첨부 삭제의 권한 축 (7.1.0 abilities 게이트 page-hello #2·#3·#4·N1)
+
+description: |
+  - 슬러그 확인·첨부 업로드는 등록 화면과 수정 화면이 함께 쓰므로 등록·수정 어느 권한으로도(OR) 연다.
+  - 첨부 삭제 라우트도 OR — 임시 첨부는 올린 사람만, 연결 첨부는 수정 권한 + 부모 페이지 스코프를 서비스가 판정한다.
+  - 업로드에 page_id 를 붙이면 그 페이지의 수정 권한·스코프를 서비스가 다시 본다(등록 권한만으로, 또는 담당 밖 페이지에 첨부를 더할 수 없다).
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentPermissionAxisTest.php
+
+axes:
+  case:
+    - check_slug_update_only
+    - upload_update_only
+    - temp_delete_create_only
+    - upload_page_id_create_only
+    - upload_page_id_out_of_scope
+
+effects:
+  - check_slug_allowed_by_create_or_update
+  - upload_allowed_by_create_or_update
+  - temp_delete_allowed_for_uploader
+  - upload_page_id_requires_update_scope

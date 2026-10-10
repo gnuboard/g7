@@ -66,6 +66,7 @@
 - 레이아웃 편집기 회원 수정 화면의 상태 이름 「退会の確認」(`editor.state.withdraw_confirm`)를 추가했습니다. 탈퇴 확인 창을 편집기에서 미리 보는 상태입니다.
 - 역할 목록의 보호 역할 안내(`admin.roles.protected_roles_hint`)만 「役割」 로 쓰던 용어를 다른 역할 화면 문구와 같은 「ロール」 로 맞췄습니다.
 - 회원 알림함 관리 화면의 일본어 번역 50건을 추가했습니다. 목록 제목과 설명, 읽음/안읽음 필터와 검색 대상(수신자·제목·본문), 표 머리글, 알림 상세 펼침의 본문·링크·종류 라벨, 삭제와 일괄 삭제 확인 모달이 일본어로 표시됩니다. 회원 상세의 알림 탭(전체·안읽음 건수, 알림함으로 이동)도 함께 번역했습니다.
+- 7.1.0 권한 정비에 맞춘 안내 문구의 일본어 번역을 추가했습니다 — 대시보드 경고 처리 권한 없음(`admin.dashboard.alert_action_no_permission`), 회원 목록 삭제 단추가 꺼진 사유(`admin.users.actions.delete_disabled_reason`), 모듈·플러그인·템플릿 설치 창에서 함께 설치할 항목의 「権限なし」 표시와 안내(`admin.{modules,plugins,templates}.modals.cascade_no_permission`·`cascade_no_permission_hint`), 최고관리자 역할 사용 여부 잠금 안내(`admin.roles.form.is_active_locked_hint`), 편집기 데이터 소스 이름 「会員登録権限の確認」(`editor.data_source.user_check`)입니다.
 
 #### 알림
 - 상한에 걸린 총 건수 표시(`admin.member_notification.total_at_least`·`admin.notification_log.total_at_least`·`admin.identity.logs.total_at_least`·`admin.users.total_at_least` 「合計{{count}}件以上」)와 알림 템플릿 수신자 칩 빼기 단추 이름(`admin.settings.notification_definitions.recipients.remove_selected`)의 일본어 번역을 추가했습니다.
@@ -137,6 +138,7 @@
 - 메뉴 편집의 역할 안내(`admin.menus.form.roles_hint`)를 「선택하지 않으면 모든 역할이 접근」 에서 「관리자 역할은 항상 포함」(「管理者ロールは常に含まれます」)으로 바꿨고, 더 이상 쓰지 않는 「すべてのロール」(`admin.menus.info.all_roles`)를 지우고 「ロール未指定」(`admin.menus.info.no_roles`)를 추가했습니다 — 메뉴 역할 저장 시 관리자 역할이 항상 남도록 바뀐 동작에 맞췄습니다.
 - 레이아웃 편집 화면 설명(`admin.templates.layout_edit.description`·`page_description`)을 「JSONファイルを編集して…」에서 「画面マークアップ（.g7.html）を編集して…」로 고쳤습니다 — 코드 편집기가 마크업을 열고 저장하며 JSON 은 읽기 전용 산출물이 된 동작에 맞췄습니다.
 - 확장 관리 > 플러그인 정보 창 「훅」·「필터」 칸의 설명과 빈 상태 문구(`admin.plugins.modals.hooks_description`·`no_hooks`·`filters_description`·`no_filters`)를 「다른 확장에 제공하는 훅」 뜻에 맞춰 고쳐 번역했습니다.
+- 역할 수정 화면의 사용 여부 안내(`admin.roles.form.is_active_hint`)를 「끄면 이 역할로 받은 권한이 즉시 회수되고 새 사용자에게 할당할 수 없다」는 뜻으로 고쳐 번역했습니다 — 역할을 끄면 그 역할의 권한이 바로 빠지도록 바뀐 동작에 맞췄습니다.
 
 ### Removed
 

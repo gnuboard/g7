@@ -17,7 +17,9 @@
  * 컨텍스트에 싣지만 이 하네스는 싣지 않는다. 카드의 흐림·잠금이 전부 그 값에 달려 있어 값이
  * 없으면 버튼이 **늘 disabled** 라 클릭 검증이 조용히 통과한다. 그래서 레이아웃이 선언한 그
  * 식(`admin_settings.json` 의 computed)을 같은 바인딩 엔진으로 직접 계산해 싣는다 — 식 자체는
- * 여전히 레이아웃이 정본이다. ⓑ `_local` 변경은 곧바로 다시 그려지지만 `_global` 변경은
+ * 여전히 레이아웃이 정본이다. 그 식 중 `isReadOnly` 는 설정 응답의 `abilities.can_update` 가
+ * `true` 일 때만 풀리므로(응답 전·권한 없음은 잠금 — fail-closed) 수정 권한이 있는 관리자로
+ * `_global.settingsAbilities` 를 싣고 계산한다. ⓑ `_local` 변경은 곧바로 다시 그려지지만 `_global` 변경은
  * 다음 렌더에 반영되므로, 전역을 보는 단언 앞에는 `rerender()` 를 둔다.
  *
  * @scenario master_toggle=on, master_toggle=off, surface=admin_shell, admin_list=excludes_client, admin_list=contains_client, rule=disabled, rule=blocks_client, rule=none, rule=allows_client, ip_source=forwarded_untrusted
@@ -40,6 +42,12 @@ import adminKo from '../../lang/partial/ko/admin.json';
 type Json = Record<string, any>;
 
 const CLIENT_IP = '203.0.113.24';
+
+/**
+ * 설정 조회 응답이 실어 온 abilities — 수정 권한이 있는 관리자. `admin_settings` 의 `isReadOnly` 는
+ * 이 값의 `can_update === true` 일 때만 풀린다(응답 전에는 잠금).
+ */
+const SETTINGS_ABILITIES = { can_update: true };
 
 const TestDiv: React.FC<any> = ({ id, className, children }) => (
   <div id={id} className={className}>
@@ -220,7 +228,7 @@ function buildCardLayout(): Json {
  */
 function computedFor(form: Json): Json {
   const engine = new DataBindingEngine();
-  const context = { _local: { form }, _global: {} };
+  const context = { _local: { form }, _global: { settingsAbilities: SETTINGS_ABILITIES } };
   const computed = (adminSettings as Json).computed as Record<string, string>;
 
   return Object.fromEntries(
@@ -242,7 +250,7 @@ async function renderCard(form: Json, proxy: Json = { status: 'ok', client_ip: C
   const testUtils = createLayoutTest(buildCardLayout() as any, {
     componentRegistry: setupRegistry(),
     translations: { admin: adminKo },
-    initialState: { _local: { form } },
+    initialState: { _local: { form }, _global: { settingsAbilities: SETTINGS_ABILITIES } },
     initialData: { trustedProxy: { data: proxy }, _computed: computedFor(form) },
   });
   await testUtils.render();

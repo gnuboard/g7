@@ -326,6 +326,7 @@ class User extends Authenticatable implements HasLocalePreference
      * 보유 권한 부여 내역을 반환합니다 (인스턴스 캐시).
      *
      * 역할 → 권한을 한 번만 적재하고, 이후 판정은 전부 이 배열에서 이루어집니다.
+     * 사용 여부(is_active)가 꺼진 역할의 권한은 넣지 않습니다.
      *
      * @return array<string, array<int, array{type: string|null, scope_type: string|null}>> 권한 식별자 ⇒ 부여 내역
      */
@@ -346,6 +347,12 @@ class User extends Authenticatable implements HasLocalePreference
             : $this->roles()->with('permissions')->get();
 
         foreach ($roles as $role) {
+            // 사용 여부를 끈 역할의 권한은 즉시 회수된다(제품 결정 2026-10-09). 역할 자체는 회원에게
+            // 남아 있어 다시 켜면 권한이 돌아온다. 이 배열이 hasPermission·isAdmin·scope 판정의 단일 원천이다.
+            if (! $role->is_active) {
+                continue;
+            }
+
             foreach ($role->permissions as $permission) {
                 $grants[$permission->identifier][] = [
                     'type' => $this->enumValue($permission->type),
@@ -522,7 +529,7 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 특정 메뉴에 대한 권한을 가지고 있는지 확인합니다.
      *
-     * role_menus 피벗 테이블을 통해 역할 기반 권한을 확인합니다.
+     * role_menus 피벗 테이블을 통해 역할 기반 권한을 확인합니다. 사용 여부를 끈 역할은 제외합니다.
      *
      * @param  int  $menuId  메뉴 ID
      * @param  MenuPermissionType|string  $permissionType  권한 유형 (read, write, delete)
@@ -536,6 +543,7 @@ class User extends Authenticatable implements HasLocalePreference
 
         // 역할 기반 권한 확인 (role_menus 피벗 테이블)
         return $this->roles()
+            ->where('roles.is_active', true)
             ->whereHas('menus', function ($query) use ($menuId, $type) {
                 $query->where('menus.id', $menuId)
                     ->wherePivot('permission_type', $type);
@@ -546,7 +554,7 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 특정 slug의 메뉴에 대한 접근 권한을 가지고 있는지 확인합니다.
      *
-     * role_menus 피벗 테이블을 통해 역할 기반 메뉴 접근 권한을 확인합니다.
+     * role_menus 피벗 테이블을 통해 역할 기반 메뉴 접근 권한을 확인합니다. 사용 여부를 끈 역할은 제외합니다.
      *
      * @param  string  $slug  메뉴 slug (예: 'admin-users')
      * @param  MenuPermissionType|string  $permissionType  권한 유형 (read, write, delete)
@@ -559,6 +567,7 @@ class User extends Authenticatable implements HasLocalePreference
             : $permissionType;
 
         return $this->roles()
+            ->where('roles.is_active', true)
             ->whereHas('menus', function ($query) use ($slug, $type) {
                 $query->where('menus.slug', $slug)
                     ->where('role_menus.permission_type', $type);

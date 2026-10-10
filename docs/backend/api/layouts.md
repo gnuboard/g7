@@ -222,6 +222,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 **설명** 편집 중인 레이아웃을 미리보기 토큰(UUID)으로 조회해 JSON으로 서빙합니다. 토큰으로 대상 레이아웃을 찾은 뒤 상속 병합과 확장(extension) 적용까지 마친 결과를 반환하며, 토큰이 유효하지 않으면 404를 반환합니다. 인증 미들웨어가 적용되지만 실질적 보안 메커니즘은 토큰 자체이며, 레이아웃 편집기에서 저장 전 변경분을 실제 렌더링으로 확인하는 용도입니다.
 
+**권한 필터(7.1.0)** 미리보기 응답도 공개 서빙과 같이 컴포넌트 `permissions` 를 요청자 기준으로 걸러 내고 속성을 지운다. 모달 `children`·DataGrid 셀(`cellChildren` 등) 안의 컴포넌트도 같은 규칙으로 걸러진다.
 
 ### GET /api/layouts/{templateIdentifier}/{layoutName}
 <!-- @generated:start:api.public.layouts.serve.extensionless -->

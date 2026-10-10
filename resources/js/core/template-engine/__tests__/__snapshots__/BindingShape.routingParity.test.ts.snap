@@ -79,7 +79,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
     "canonical": null,
     "greedy": "_global.shopBase}}/reorder/{{order.data.id ?? ''",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.json :: slots.content.0.children.0.children.1.children.8.children.1.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.json :: slots.content.0.children.0.children.1.children.10.children.1.actions.0.params.path",
     ],
     "value": "{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}",
   },

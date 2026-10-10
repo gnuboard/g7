@@ -23,7 +23,9 @@
         "selectAll": false,
         "bulkStatus": ""
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.promotion-coupon.read"
+    ],
     "slots": {
         "content": [
             {

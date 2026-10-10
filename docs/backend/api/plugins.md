@@ -214,6 +214,7 @@ HTTP/1.1 200
 
 **설명** 설치된 플러그인과 미설치 플러그인을 모두 포함한 전체 플러그인 목록을 페이지네이션으로 조회합니다. `search` 는 이름·식별자·설명·벤더에 대한 OR 검색이고 `filters` 는 AND 조건으로 적용됩니다. `core.plugins.read` 권한이 필요하며, 응답의 `abilities` 는 현재 사용자의 install/activate/uninstall 권한 보유 여부를 담습니다. 관리자 플러그인 관리 화면의 목록 그리드를 구성하는 기본 엔드포인트입니다.
 
+**목록 권한 값(7.1.0)** 응답 `abilities` 는 컬렉션 권한 맵(`can_install`·`can_activate`·`can_uninstall`)에 더해 카드 「언어팩 관리」 이동 가능 여부 `can_view_language_packs`(= `core.language_packs.read`)를 싣는다. 검색·필터 결과가 0건이어도 항상 싣는다. 플러그인은 설정 화면 저장 권한 `can_update`(= `core.plugins.update`)도 싣는다 — 행 `abilities.can_update` 가 카드 「설정」 메뉴를 잠근다.
 
 ### POST /api/admin/plugins/activate
 <!-- @generated:start:api.admin.plugins.activate -->
@@ -620,6 +621,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 
 **설명** `_pending`·`_bundled` 대기소에 있는 플러그인을 활성 디렉토리로 설치합니다. `core.plugins.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담겨 반환됩니다. 설치 직후 플러그인은 비활성이라 그 플러그인 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 플러그인을 켤 때 함께 켜집니다.
 
+**동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
 
 ### POST /api/admin/plugins/install-from-file
 <!-- @generated:start:api.admin.plugins.install-from-file -->
@@ -1612,6 +1614,7 @@ HTTP/1.1 200
 
 설정 스키마(getSettingsSchema)에 `public_asset_disk` 키를 선언한 플러그인(예: `sirsoft-ckeditor5`)은 응답 `data` 에 공개 자산 디스크 카탈로그 `available_public_asset_disks` 가 함께 부착됩니다 — 각 항목은 `{id, label(로케일별 맵), provider?}` 구조입니다. 설정 화면이 코어 환경설정 API(`core.settings.read`)를 따로 조회하지 않고 이 응답 하나로 선택지를 구성하게 하기 위한 것으로, 이 키는 저장 대상이 아니며 PUT 시 검증 whitelist 에서 걸러집니다.
 
+**권한 값(7.1.0)** 응답 `data.abilities.can_update` 는 현재 사용자가 설정을 저장할 수 있는지(`core.plugins.update`, 저장 라우트와 같은 식별자)다. 플러그인 설정 화면은 이 값이 true 가 아니면 읽기 전용으로 연다.
 
 ### PUT /api/admin/plugins/{identifier}/settings
 <!-- @generated:start:api.admin.plugins.settings.update -->
@@ -1674,6 +1677,7 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 
 **설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다. 설정 스키마에 `public_asset_disk` 키를 선언한 플러그인은 저장 응답에도 `available_public_asset_disks` 카탈로그가 재부착됩니다 (GET 응답과 동형 — 저장 직후 화면 폼 상태 갱신용).
 
+**권한 값(7.1.0)** 요청 본문의 `abilities` 키는 저장하지 않고 버린다(화면이 조회 응답을 그대로 되돌려 보내므로 섞여 온다). 저장 응답에도 `abilities.can_update` 가 실린다.
 
 ### GET /api/admin/plugins/{identifier}/settings/layout
 <!-- @generated:start:api.admin.plugins.settings.layout -->
@@ -1871,6 +1875,7 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 
 **설명** 특정 플러그인의 상세 정보를 조회합니다. `core.plugins.read` 권한이 필요합니다. 목록보다 자세한 `toDetailArray()` 형태를 반환하며, 이 플러그인이 지원하는 번들 언어팩 정보가 함께 주입됩니다. 플러그인을 찾을 수 없으면 404 를 반환합니다.
 
+**권한 값(7.1.0)** 상세 응답에도 행 목록과 같은 `abilities` 가 실린다 — 상세 창이 목록 행을 담던 전역을 이 응답으로 덮어써도 권한 값이 남는다.
 
 ### GET /api/admin/plugins/{pluginName}/check-modified-layouts
 <!-- @generated:start:api.admin.plugins.check-modified-layouts -->
@@ -2036,6 +2041,7 @@ _단건 응답: `data` 객체의 필드._
 
 **설명** 플러그인 설치 시 함께 처리될 cascade 후보(의존 확장 + 동반 가능한 번들 언어팩) 트리를 반환합니다. `core.plugins.install` 권한이 필요합니다. 설치 모달 오픈 시 호출되어 사용자가 함께 설치할 항목을 선택하도록 노출하며, ZIP 업로드 기반의 `manifest-preview` 와 달리 이미 알려진 식별자에 대한 GET 조회입니다.
 
+**항목별 권한(7.1.0)** `dependencies[]`·`language_packs[]` 의 각 항목에 `can_select`(불리언)가 실린다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지이며(판정은 설치 API 의 403 과 같다), false 면 `default_selected` 도 false 다.
 
 ### GET /api/admin/plugins/{pluginName}/uninstall-info
 <!-- @generated:start:api.admin.plugins.uninstall-info -->

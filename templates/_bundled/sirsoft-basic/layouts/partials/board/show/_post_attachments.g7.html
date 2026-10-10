@@ -42,7 +42,12 @@
       <!-- 첨부파일 카드 - 권한 없을 때 (클릭 시 토스트 표시) -->
       <div data-if="{{post?.data?.abilities?.can_download !== true}}" class="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer">
         <on type="click">
-          <toast type="warning" message="$t:board.attachments.download_no_permission"/>
+          <!-- 회원은 권한 없음 안내, 비회원은 로그인하면 받을 수 있는 게시판이 있어 로그인으로 안내한다 -->
+          <sequence>
+            <toast if="{{!!_global.currentUser?.uuid}}" type="warning" message="$t:board.attachments.download_no_permission"/>
+            <toast if="{{!_global.currentUser?.uuid}}" type="info" message="$t:board.login_required"/>
+            <action if="{{!_global.currentUser?.uuid}}" handler="redirectToLoginWithReturn"/>
+          </sequence>
         </on>
         <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
         <div data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">

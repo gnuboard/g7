@@ -164,7 +164,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "flex-center btn btn-sm btn-primary gap-1 disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{$parent._local.isAddingTemplate === true || $parent._computed.isReadOnly}}"
+                                        "disabled": "{{$parent._local.isAddingTemplate === true || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}"
                                     },
                                     "children": [
                                         {
@@ -271,7 +271,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "flex-center btn btn-sm btn-danger gap-1 disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}"
+                                        "disabled": "{{_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_delete !== true}}"
                                     },
                                     "children": [
                                         {
@@ -344,7 +344,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn btn-sm btn-outline disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_all"
                                 },
@@ -375,7 +375,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_selected"
                                 }
@@ -523,7 +523,7 @@
                                                                         "type": "checkbox",
                                                                         "checked": "{{(extra_fee_templates?.data?.data ?? []).length > 0 && ($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length}}",
                                                                         "className": "w-4 h-4 rounded",
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 }
                                                             ]
@@ -611,7 +611,7 @@
                                                                         "value": "{{$parent._local.templateForm.zipcode ?? ''}}",
                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.zipcode",
                                                                         "className": "{{$parent._local.templateFormErrors?.zipcode ? 'input input-error' : 'input'}}",
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 },
                                                                 {
@@ -653,7 +653,7 @@
                                                                         "value": "{{$parent._local.templateForm.region ?? ''}}",
                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region",
                                                                         "className": "{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}",
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 },
                                                                 {
@@ -693,7 +693,7 @@
                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee",
                                                                         "className": "{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}",
                                                                         "min": 0,
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 },
                                                                 {
@@ -826,7 +826,7 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
-                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}",
+                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}",
                                                                                 "aria-label": "$t:common.save"
                                                                             },
                                                                             "children": [
@@ -922,7 +922,7 @@
                                                                         "type": "checkbox",
                                                                         "checked": "{{($parent._local.selectedTemplateIds ?? []).includes(template.id)}}",
                                                                         "className": "w-4 h-4 rounded",
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 }
                                                             ]
@@ -961,7 +961,7 @@
                                                                         "type": "text",
                                                                         "value": "{{$parent._local.templateForm.zipcode ?? ''}}",
                                                                         "className": "{{$parent._local.templateFormErrors?.zipcode ? 'input input-error' : 'input'}}",
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 },
                                                                 {
@@ -1012,7 +1012,7 @@
                                                                         "type": "text",
                                                                         "value": "{{$parent._local.templateForm.region ?? ''}}",
                                                                         "className": "{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}",
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 },
                                                                 {
@@ -1061,7 +1061,7 @@
                                                                         "value": "{{$parent._local.templateForm.fee ?? 0}}",
                                                                         "className": "{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}",
                                                                         "min": 0,
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false}}"
                                                                     }
                                                                 },
                                                                 {
@@ -1118,7 +1118,7 @@
                                                                     "props": {
                                                                         "value": "{{$parent._local.templateForm.is_active ?? true}}",
                                                                         "name": "is_active",
-                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                        "disabled": "{{$parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}"
                                                                     }
                                                                 }
                                                             ]
@@ -1157,7 +1157,7 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                                "disabled": "{{$parent._computed.isReadOnly}}",
+                                                                                "disabled": "{{$parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}",
                                                                                 "aria-label": "$t:common.edit"
                                                                             },
                                                                             "children": [
@@ -1256,7 +1256,7 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                                "disabled": "{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}",
+                                                                                "disabled": "{{_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_delete !== true}}",
                                                                                 "aria-label": "$t:common.delete"
                                                                             },
                                                                             "children": [
@@ -1387,7 +1387,7 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
-                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}",
+                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}",
                                                                                 "aria-label": "$t:common.save"
                                                                             },
                                                                             "children": [

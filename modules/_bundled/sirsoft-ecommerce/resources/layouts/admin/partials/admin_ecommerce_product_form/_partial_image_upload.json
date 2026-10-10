@@ -177,7 +177,7 @@
                                 "enablePrimarySelection": true,
                                 "primaryFileId": "{{_local.form.thumbnail_hash}}",
                                 "uploadParams": "{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                "disabled": "{{_computed.isReadOnly}}",
                                 "imageCompression": {
                                     "maxSizeMB": 1,
                                     "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? 1200}}"

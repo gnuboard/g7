@@ -149,7 +149,8 @@
     },
     "asset_url_mode_drift_title": "アセットファイル配信方式がサーバー環境と異なります",
     "asset_url_mode_drift_description": "保存された方式では一部のアドレスがサーバーに遮断され、画面が表示されない可能性があります。訪問者画面はブラウザが自動的に補正しますが、検索エンジンボットには補正が適用されないため、環境設定で検出結果を保存してください。",
-    "asset_url_mode_drift_action": "環境設定 > 一般で確認する"
+    "asset_url_mode_drift_action": "環境設定 > 一般で確認する",
+    "alert_action_no_permission": "この警告を処理する権限がありません。権限のある管理者に依頼してください。"
   },
   "users": {
     "page_title": "ユーザー管理",
@@ -193,7 +194,8 @@
     "actions": {
       "view": "詳細を表示",
       "edit": "編集",
-      "delete": "削除"
+      "delete": "削除",
+      "delete_disabled_reason": "本人・最高管理者のアカウントであるか、削除する権限がありません。退会はマイページで行います。"
     },
     "selected_count": "{count}個選択されました",
     "bulk_activate": "有効化",
@@ -885,7 +887,9 @@
       "reactivate_language_packs_title": "言語パックを再有効化",
       "reactivate_language_packs_message": "このモジュールを無効にした際に一緒に無効になった言語パックです。再度有効にしますか?",
       "reactivate_language_packs_success": "言語パックを再度有効にしました。",
-      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。"
+      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。",
+      "cascade_no_permission": "権限なし",
+      "cascade_no_permission_hint": "権限のない項目は一緒にインストールできません。必要な場合は権限のある管理者に依頼してください。"
     },
     "tabs": {
       "file_upload": "ファイル アップロード",
@@ -1097,7 +1101,9 @@
       "reactivate_language_packs_title": "言語パックを再有効化",
       "reactivate_language_packs_message": "このプラグインを無効にした際に一緒に無効になった言語パックです。再度有効にしますか?",
       "reactivate_language_packs_success": "言語パックを再度有効にしました。",
-      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。"
+      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。",
+      "cascade_no_permission": "権限なし",
+      "cascade_no_permission_hint": "権限のない項目は一緒にインストールできません。必要な場合は権限のある管理者に依頼してください。"
     },
     "tabs": {
       "file_upload": "ファイルアップロード",
@@ -1274,7 +1280,7 @@
       "description": "説明",
       "description_placeholder": "ロールについての説明を入力してください",
       "is_active": "ロール有効化",
-      "is_active_hint": "無効化されたロールは新しいユーザーに割り当てることはできません",
+      "is_active_hint": "オフにすると、このロールで付与された権限は直ちに回収され、新しいユーザーに割り当てることもできなくなります。",
       "permissions_section": "権限設定",
       "permissions_selected_suffix": "個選択されました",
       "permissions_hint": "このロールに付与する権限を選択してください。グループをクリックして展開または折りたたむことができます。",
@@ -1290,7 +1296,8 @@
       "password_expiry_inherit": "サイト設定に従う",
       "password_expiry_apply": "適用",
       "password_expiry_exempt": "除外",
-      "password_expiry_hint": "このロールを持つ会員に適用するかを決めます。会員個別の設定が優先され、1人の会員のロール同士で「適用」と「除外」が異なる場合は「適用」に従います。"
+      "password_expiry_hint": "このロールを持つ会員に適用するかを決めます。会員個別の設定が優先され、1人の会員のロール同士で「適用」と「除外」が異なる場合は「適用」に従います。",
+      "is_active_locked_hint": "最高管理者ロールは無効にできません。無効にするとすべての運営者の管理権限が回収されます。"
     },
     "modals": {
       "delete_title": "ロール削除",
@@ -2686,7 +2693,9 @@
       "reactivate_language_packs_title": "言語パックを再有効化",
       "reactivate_language_packs_message": "このテンプレートを無効にした際に一緒に無効になった言語パックです。再度有効にしますか?",
       "reactivate_language_packs_success": "言語パックを再度有効にしました。",
-      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。"
+      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。",
+      "cascade_no_permission": "権限なし",
+      "cascade_no_permission_hint": "権限のない項目は一緒にインストールできません。必要な場合は権限のある管理者に依頼してください。"
     },
     "tabs_install": {
       "file_upload": "ファイルアップロード",

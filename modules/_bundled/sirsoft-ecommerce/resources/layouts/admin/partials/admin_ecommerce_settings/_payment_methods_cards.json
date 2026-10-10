@@ -45,9 +45,11 @@
                         },
                         "children": [
                             {
+                                "comment": "드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다).",
+                                "id": "payment_method_drag_handle_card",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{!$method._orphaned}}",
+                                "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                                 "props": {
                                     "data-drag-handle": true,
                                     "className": "cursor-grab text-gray-400 dark:text-gray-500"
@@ -118,6 +120,7 @@
                         },
                         "children": [
                             {
+                                "comment": "고객이 고를 수 없는 수단(customer_selectable === false)은 목록 표와 같이 잠근다 — 켜도 주문 생성이 422 로 거절된다.",
                                 "type": "composite",
                                 "name": "Toggle",
                                 "if": "{{!$method._orphaned}}",
@@ -135,7 +138,7 @@
                                 ],
                                 "props": {
                                     "value": "{{$method.is_active}}",
-                                    "disabled": "{{_computed.isReadOnly || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
+                                    "disabled": "{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
                                 }
                             },
                             {

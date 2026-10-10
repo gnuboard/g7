@@ -539,13 +539,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->middleware('permission:admin,core.dashboard.read')
             ->name('api.admin.dashboard.stats');
         Route::get('resources', [AdminDashboardController::class, 'resources'])
-            ->middleware('permission:admin,core.dashboard.read')
+            ->middleware('permission:admin,core.dashboard.resources')
             ->name('api.admin.dashboard.resources');
         Route::get('activities', [AdminDashboardController::class, 'activities'])
             ->middleware('permission:admin,core.dashboard.activities')
             ->name('api.admin.dashboard.activities');
         Route::get('alerts', [AdminDashboardController::class, 'alerts'])
-            ->middleware('permission:admin,core.dashboard.read')
+            ->middleware('permission:admin,core.dashboard.alerts')
             ->name('api.admin.dashboard.alerts');
         Route::get('recent-notifications', [AdminDashboardController::class, 'recentNotifications'])
             ->middleware('permission:admin,core.notification-logs.read')
@@ -670,16 +670,18 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
     // 확장 호환성 복구/조회/dismiss (코어 버전 비호환 자동 비활성화 → 원클릭 복구)
     Route::prefix('extensions')->group(function () {
+        // 조회는 세 종류 중 하나의 활성화 권한이면 열리고, 컨트롤러가 권한 없는 종류를 비운다.
         Route::get('auto-deactivated', [AdminExtensionRecoveryController::class, 'autoDeactivated'])
-            ->middleware('permission:admin,core.plugins.activate')
+            ->middleware('permission:admin,core.plugins.activate|core.modules.activate|core.templates.activate,false')
             ->name('api.admin.extensions.auto-deactivated');
+        // 복구·닫기는 그 확장 종류의 활성화 권한(core.{type}s.activate)을 요구한다.
         Route::post('{type}/{identifier}/recover', [AdminExtensionRecoveryController::class, 'recover'])
             ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.plugins.activate')
+            ->middleware('permission:admin,core.{type}s.activate')
             ->name('api.admin.extensions.recover');
         Route::post('{type}/{identifier}/dismiss', [AdminExtensionRecoveryController::class, 'dismiss'])
             ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.plugins.activate')
+            ->middleware('permission:admin,core.{type}s.activate')
             ->name('api.admin.extensions.dismiss');
 
         // 사용자 추가 에셋(`custom/`) 관리 — 모듈·플러그인·템플릿 공통.
@@ -772,8 +774,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
     // 코어 업데이트
     Route::prefix('core-update')->group(function () {
+        // 확인은 버전 정보를 읽기만 한다 — 정보 탭을 볼 수 있는 조회 권한으로 연다(제품 결정 2026-10-09).
         Route::post('check', [AdminCoreUpdateController::class, 'checkForUpdates'])
-            ->middleware('permission:admin,core.settings.update')
+            ->middleware('permission:admin,core.settings.read')
             ->name('api.admin.core-update.check');
         Route::get('changelog', [AdminCoreUpdateController::class, 'changelog'])
             ->middleware('permission:admin,core.settings.read')

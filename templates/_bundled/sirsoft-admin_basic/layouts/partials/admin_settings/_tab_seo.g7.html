@@ -32,7 +32,7 @@
             <span class="text-heading">$t:admin.settings.seo.generator_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.generator_enabled_desc</p>
           </div>
-          <toggle data-type="composite" name="seo.generator_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.generator_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
         </div>
         <div data-ref="field_generator_content" class="{{_local.form?.seo?.generator_enabled ? '' : 'opacity-50'}}">
           <label class="form-label">$t:admin.settings.seo.generator_content</label>
@@ -130,18 +130,18 @@
             <span class="text-heading">$t:admin.settings.seo.bot_detection_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.bot_detection_enabled_desc</p>
           </div>
-          <toggle data-type="composite" name="seo.bot_detection_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.bot_detection_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
         </div>
         <div data-ref="toggle_bot_detection_library_enabled" class="flex-between {{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50'}}">
           <div>
             <span class="text-heading">$t:admin.settings.seo.bot_detection_library_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.bot_detection_library_enabled_desc</p>
           </div>
-          <toggle data-type="composite" name="seo.bot_detection_library_enabled" size="md" disabled="{{!_local.form?.seo?.bot_detection_enabled}}"/>
+          <toggle data-type="composite" name="seo.bot_detection_library_enabled" size="md" disabled="{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"/>
         </div>
         <div data-ref="field_bot_user_agents" class="{{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50 pointer-events-none'}}">
           <label class="form-label">$t:admin.settings.seo.bot_user_agents</label>
-          <tag-input data-type="composite" name="seo.bot_user_agents" :creatable="true" placeholder="$t:admin.settings.seo.bot_user_agents_placeholder" class="w-full" defaultVariant="blue" disabled="{{!_local.form?.seo?.bot_detection_enabled}}"/>
+          <tag-input data-type="composite" name="seo.bot_user_agents" :creatable="true" placeholder="$t:admin.settings.seo.bot_user_agents_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"/>
           <p class="form-hint">$t:admin.settings.seo.bot_user_agents_hint</p>
         </div>
       </div>
@@ -155,11 +155,11 @@
             <span class="text-heading">$t:admin.settings.seo.cache_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.cache_enabled_desc</p>
           </div>
-          <toggle data-type="composite" name="seo.cache_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.cache_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
         </div>
         <div data-ref="field_seo_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.cache_ttl</label>
-          <input type="number" name="seo.cache_ttl" min="{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}" placeholder="7200" class=""/>
+          <input type="number" name="seo.cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}" placeholder="7200" class=""/>
           <p class="form-hint">$t:admin.settings.seo.cache_ttl_hint</p>
         </div>
       </div>
@@ -173,11 +173,11 @@
             <span class="text-heading">$t:admin.settings.seo.sitemap_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.sitemap_enabled_desc</p>
           </div>
-          <toggle data-type="composite" name="seo.sitemap_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.sitemap_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
         </div>
         <div data-ref="field_sitemap_schedule">
           <label class="form-label">$t:admin.settings.seo.sitemap_schedule</label>
-          <select name="seo.sitemap_schedule" class="w-full">
+          <select name="seo.sitemap_schedule" disabled="{{_computed.isReadOnly}}" class="w-full">
             <options>
               <option value="hourly">$t:admin.settings.seo.sitemap_schedule_hourly</option>
               <option value="daily">$t:admin.settings.seo.sitemap_schedule_daily</option>
@@ -187,17 +187,17 @@
         </div>
         <div data-ref="field_sitemap_schedule_time" data-if="{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}">
           <label class="form-label">$t:admin.settings.seo.sitemap_schedule_time</label>
-          <input type="text" name="seo.sitemap_schedule_time" placeholder="02:00" class=""/>
+          <input type="text" name="seo.sitemap_schedule_time" disabled="{{_computed.isReadOnly}}" placeholder="02:00" class=""/>
           <p class="form-hint">$t:admin.settings.seo.sitemap_schedule_time_hint</p>
         </div>
         <div data-ref="field_sitemap_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.sitemap_cache_ttl</label>
-          <input type="number" name="seo.sitemap_cache_ttl" min="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}" placeholder="86400" class=""/>
+          <input type="number" name="seo.sitemap_cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}" placeholder="86400" class=""/>
           <p class="form-hint">$t:admin.settings.seo.sitemap_cache_ttl_hint</p>
         </div>
         <div data-ref="field_sitemap_urls_per_file">
           <label class="form-label">$t:admin.settings.seo.sitemap_urls_per_file</label>
-          <input type="number" name="seo.sitemap_urls_per_file" min="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}" placeholder="50000" class=""/>
+          <input type="number" name="seo.sitemap_urls_per_file" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}" placeholder="50000" class=""/>
           <p class="form-hint">$t:admin.settings.seo.sitemap_urls_per_file_hint</p>
         </div>
         <div data-ref="field_sitemap_gzip" class="flex-between">
@@ -205,14 +205,14 @@
             <span class="text-heading">$t:admin.settings.seo.sitemap_gzip</span>
             <p class="text-label-subtle">$t:admin.settings.seo.sitemap_gzip_desc</p>
           </div>
-          <toggle data-type="composite" name="seo.sitemap_gzip" size="md"/>
+          <toggle data-type="composite" name="seo.sitemap_gzip" disabled="{{_computed.isReadOnly}}" size="md"/>
         </div>
         <div data-ref="field_sitemap_hreflang_enabled" class="flex-between">
           <div>
             <span class="text-heading">$t:admin.settings.seo.sitemap_hreflang_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.sitemap_hreflang_enabled_desc</p>
           </div>
-          <toggle data-type="composite" name="seo.sitemap_hreflang_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.sitemap_hreflang_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
         </div>
         <div data-ref="sitemap_progress_block" data-if="{{['queued','running','writing','completed','failed'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
           <div class="flex items-center gap-2">

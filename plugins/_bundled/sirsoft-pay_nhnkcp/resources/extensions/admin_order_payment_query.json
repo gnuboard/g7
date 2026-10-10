@@ -534,7 +534,8 @@
                                             "props": {
                                                 "type": "text",
                                                 "placeholder": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_placeholder",
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
                                         }
                                     ]
@@ -569,7 +570,8 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             },
                                             "children": [
                                                 {
@@ -750,7 +752,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "disabled": "{{_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === ''}}",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === '')}}",
                                                 "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
                                             "children": [

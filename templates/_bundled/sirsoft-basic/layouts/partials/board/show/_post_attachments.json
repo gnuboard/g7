@@ -201,12 +201,31 @@
                     "if": "{{post?.data?.abilities?.can_download !== true}}",
                     "actions": [
                         {
+                            "comment": "회원은 권한 없음 안내, 비회원은 로그인하면 받을 수 있는 게시판이 있어 로그인으로 안내한다",
                             "type": "click",
-                            "handler": "toast",
-                            "params": {
-                                "type": "warning",
-                                "message": "$t:board.attachments.download_no_permission"
-                            }
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "toast",
+                                    "if": "{{!!_global.currentUser?.uuid}}",
+                                    "params": {
+                                        "type": "warning",
+                                        "message": "$t:board.attachments.download_no_permission"
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "if": "{{!_global.currentUser?.uuid}}",
+                                    "params": {
+                                        "type": "info",
+                                        "message": "$t:board.login_required"
+                                    }
+                                },
+                                {
+                                    "handler": "redirectToLoginWithReturn",
+                                    "if": "{{!_global.currentUser?.uuid}}"
+                                }
+                            ]
                         }
                     ],
                     "props": {

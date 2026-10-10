@@ -316,6 +316,7 @@
         "delete_all_confirm": "모든 알림을 삭제하시겠습니까?",
         "delete_all_success": "모든 알림이 삭제되었습니다.",
         "delete_all_failed": "알림 삭제에 실패했습니다.",
+        "no_permission": "알림을 읽음 처리하거나 삭제할 권한이 없습니다.",
         "all_deleted": "모든 알림이 삭제되었습니다.",
         "unread_only": "안 읽은 알림만",
         "new_notification_received": "새 알림이 도착했습니다.",

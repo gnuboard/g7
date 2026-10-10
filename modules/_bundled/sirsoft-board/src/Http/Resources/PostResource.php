@@ -900,7 +900,9 @@ class PostResource extends BaseApiResource
         // 유저 상세 화면에서만: 관리자 게시판 화면 진입 게이트(Admin 타입 admin.manage).
         // Admin 요청에서는 can_manage 가 이미 admin.manage 이므로 중복 노출 불필요.
         if (! $isAdminRequest) {
-            $abilities['can_access_admin'] = $this->checkPermissionByIdentifier("sirsoft-board.{$slug}.admin.manage");
+            // 관리자 게시판 화면의 레이아웃 권한(sirsoft-board.boards.read)도 있어야 링크가 열린다 — 관리 권한만으로는 눌러도 403
+            $abilities['can_access_admin'] = $this->checkPermissionByIdentifier("sirsoft-board.{$slug}.admin.manage")
+                && $this->checkModulePermission('boards', 'read');
         }
 
         return $abilities;

@@ -63,9 +63,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.test-mode-map');
 
-    // 가상계좌 입금 완료 건 환불 (환불 계좌 정보 필요)
+    // 가상계좌 입금 완료 건 환불 (환불 계좌 정보 필요) — PG 취소와 주문 취소까지 하므로 「환불 실행」 권한
     Route::post('/vbank-refund', [AdminVbankRefundController::class, 'refund'])
-        ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+        ->middleware('permission:admin,sirsoft-ecommerce.claims.execute-refund')
         ->name('vbank.refund');
 
     // 에스크로 결제 목록 조회

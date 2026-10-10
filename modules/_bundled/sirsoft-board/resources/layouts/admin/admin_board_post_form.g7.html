@@ -39,7 +39,7 @@
     <field name="errors" :value="null"/>
     <field name="uploadingFiles" :value="[]"/>
   </init-local>
-  <computed name="isReadOnly">{{!!route?.id &amp;&amp; !!form_meta?.data &amp;&amp; form_meta?.data?.board?.user_abilities?.can_write !== true}}</computed>
+  <computed name="isReadOnly">{{!!route?.id &amp;&amp; !!form_meta?.data &amp;&amp; (form_meta?.data?.board?.user_abilities?.can_write !== true || form_meta?.data?.can_modify !== true)}}</computed>
   <permissions>
     <permission>sirsoft-board.boards.read</permission>
   </permissions>

@@ -93,7 +93,7 @@
                                     "id": "label_add_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                    "if": "{{!_computed.isReadOnly && product_labels?.data?.abilities?.can_create === true}}",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -169,7 +169,7 @@
                                                 "checked": "{{(_local.form.label_assignments ?? []).some(a => a.label_id === label.id)}}",
                                                 "label": "{{$localized(label.name) + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.started_at ? ' (' + (_local.form.label_assignments ?? []).find(a => a.label_id === label.id).started_at.substring(5) + '~' + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.ended_at?.substring(5) ?? '') + ')' : '')}}",
                                                 "customColor": "{{label.color ?? '#3B82F6'}}",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }
                                     ]
@@ -280,9 +280,10 @@
                                             "children": [
                                                 {
                                                     "comment": "라벨 고치기 — 지금 값을 창 입력값으로 옮겨 담아 편집 모드로 연다",
+                                                    "id": "label_edit_button",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                    "if": "{{!_computed.isReadOnly && product_labels?.data?.abilities?.can_update === true}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -320,7 +321,7 @@
                                                     "id": "label_unassign_button",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{(!route.itemCode || product?.data?.abilities?.can_update === true) && (_local.form.label_assignments ?? []).some(a => a.label_id === _local.ui.lastClickedLabelId)}}",
+                                                    "if": "{{!_computed.isReadOnly && (_local.form.label_assignments ?? []).some(a => a.label_id === _local.ui.lastClickedLabelId)}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -348,9 +349,10 @@
                                                 },
                                                 {
                                                     "comment": "라벨 자체 지우기 — 이 라벨을 쓰는 다른 상품에서도 함께 떨어진다",
+                                                    "id": "label_delete_button",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                    "if": "{{!_computed.isReadOnly && product_labels?.data?.abilities?.can_delete === true}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -412,7 +414,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_7d"
                                                 },
@@ -432,7 +434,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_14d"
                                                 },
@@ -452,7 +454,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_30d"
                                                 },
@@ -472,7 +474,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_permanent"
                                                 }
@@ -513,7 +515,7 @@
                                                         "className": "input",
                                                         "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.started_at",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
                                                 {
@@ -544,7 +546,7 @@
                                                         "className": "input",
                                                         "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.ended_at",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }
                                             ]
@@ -597,7 +599,7 @@
                                         "type": "number",
                                         "min": 1,
                                         "className": "{{_local.errors?.min_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -663,7 +665,7 @@
                                         "type": "number",
                                         "min": 0,
                                         "className": "{{_local.errors?.max_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {
@@ -748,7 +750,7 @@
                                                 "checked": "{{(_local.form.purchase_restriction ?? 'none') === 'none'}}",
                                                 "autoBinding": false,
                                                 "className": "radio",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -791,7 +793,7 @@
                                                 "checked": "{{_local.form.purchase_restriction === 'restricted'}}",
                                                 "autoBinding": false,
                                                 "className": "radio",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
                                         {
@@ -853,7 +855,7 @@
                                         "value": "{{_local.form.allowed_roles ?? []}}",
                                         "isMulti": true,
                                         "isSearchable": true,
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
                                 {

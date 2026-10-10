@@ -282,6 +282,20 @@ class Role extends Model
     }
 
     /**
+     * 사용 여부(is_active)를 바꿀 수 없는 역할인지 판정합니다.
+     *
+     * 꺼진 역할의 권한은 판정에서 즉시 빠진다(User::permissionGrants). 최고관리자 역할(admin)을
+     * 끄면 최고관리자를 포함한 운영자 전원이 관리 화면을 잃으므로 누구도 끌 수 없다.
+     * 서비스 가드와 응답의 `is_active_locked`·`abilities.can_toggle_status` 가 이 한 곳을 읽는다.
+     *
+     * @return bool 사용 여부 변경 불가면 true
+     */
+    public function isActiveStateLocked(): bool
+    {
+        return $this->identifier === 'admin';
+    }
+
+    /**
      * 액터가 이 역할의 정보·권한·사용 여부를 바꿀 수 있는지 판정합니다.
      *
      * 보호된 역할(코어/확장 소유)은 슈퍼 관리자만 바꿀 수 있습니다. 인증 액터가 없으면

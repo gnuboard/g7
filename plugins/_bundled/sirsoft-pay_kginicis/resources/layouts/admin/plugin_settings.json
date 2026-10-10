@@ -32,6 +32,9 @@
             "comment": "가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다"
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -57,6 +60,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "pay-kginicis-tone-warning"
+                                },
+                                "text": "$t:sirsoft-pay_kginicis.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "validation_error",
@@ -174,7 +205,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "is_test_mode"
+                                                    "name": "is_test_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -335,7 +367,8 @@
                                                                     "type": "text",
                                                                     "name": "live_mid",
                                                                     "placeholder": "shoptest",
-                                                                    "className": "text-primary flex-1 px-3 py-2 bg-white dark:bg-gray-700 font-mono text-sm outline-none border-0"
+                                                                    "className": "text-primary flex-1 px-3 py-2 bg-white dark:bg-gray-700 font-mono text-sm outline-none border-0",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -406,7 +439,8 @@
                                                                     "type": "{{_local._show_live_sign_key ? 'text' : 'password'}}",
                                                                     "name": "live_sign_key",
                                                                     "placeholder": "••••••••••••••••",
-                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"
+                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -510,7 +544,8 @@
                                                                     "type": "{{_local._show_live_iniapi_key ? 'text' : 'password'}}",
                                                                     "name": "live_iniapi_key",
                                                                     "placeholder": "••••••••••••••••",
-                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"
+                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -614,7 +649,8 @@
                                                                     "type": "{{_local._show_live_iniapi_iv ? 'text' : 'password'}}",
                                                                     "name": "live_iniapi_iv",
                                                                     "placeholder": "••••••••••••••••",
-                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"
+                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -718,7 +754,8 @@
                                                                     "type": "{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}",
                                                                     "name": "live_mobile_hash_key",
                                                                     "placeholder": "••••••••••••••••",
-                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"
+                                                                    "className": "text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
@@ -846,7 +883,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_allow_with_other_pg"
+                                                    "name": "easy_pay_allow_with_other_pg",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -884,7 +922,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_naverpay"
+                                                    "name": "easy_pay_naverpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -922,7 +961,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_samsung_pay"
+                                                    "name": "easy_pay_samsung_pay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -960,7 +1000,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_lpay"
+                                                    "name": "easy_pay_lpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -998,7 +1039,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_kakaopay"
+                                                    "name": "easy_pay_kakaopay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1065,7 +1107,8 @@
                                         "type": "composite",
                                         "name": "Toggle",
                                         "props": {
-                                            "name": "use_credit_point"
+                                            "name": "use_credit_point",
+                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                         }
                                     }
                                 ]
@@ -1146,7 +1189,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "japan_enabled"
+                                                    "name": "japan_enabled",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1194,7 +1238,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "japan_restrict_jpy_payment_methods"
+                                                            "name": "japan_restrict_jpy_payment_methods",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1300,7 +1345,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "disabled": "{{_local.cbtTestProductCreating}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly || vbank_info?.data?.abilities?.can_create_cbt_test_product !== true || (_local.cbtTestProductCreating)}}",
                                                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 },
                                                                 "children": [
@@ -1948,7 +1993,8 @@
                                                                     "type": "text",
                                                                     "name": "live_japan_mid",
                                                                     "placeholder": "",
-                                                                    "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"
+                                                                    "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -2002,7 +2048,8 @@
                                                                     "type": "password",
                                                                     "name": "live_japan_sign_key",
                                                                     "placeholder": "••••••••••••••••",
-                                                                    "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"
+                                                                    "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -2065,7 +2112,8 @@
                                                                             "type": "text",
                                                                             "name": "japan_merchant_name",
                                                                             "placeholder": "サンプルストア",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2089,7 +2137,8 @@
                                                                             "type": "text",
                                                                             "name": "japan_merchant_name_kana",
                                                                             "placeholder": "サンプルストア",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2113,7 +2162,8 @@
                                                                             "type": "text",
                                                                             "name": "japan_merchant_name_alphabet",
                                                                             "placeholder": "Sample Store",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2137,7 +2187,8 @@
                                                                             "type": "text",
                                                                             "name": "japan_merchant_name_short",
                                                                             "placeholder": "サンプル",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2161,7 +2212,8 @@
                                                                             "type": "text",
                                                                             "name": "japan_contact_name",
                                                                             "placeholder": "サポート窓口",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2185,7 +2237,8 @@
                                                                             "type": "email",
                                                                             "name": "japan_contact_email",
                                                                             "placeholder": "support@example.com",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2209,7 +2262,8 @@
                                                                             "type": "text",
                                                                             "name": "japan_contact_phone",
                                                                             "placeholder": "0120-123-456",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2233,7 +2287,8 @@
                                                                             "type": "text",
                                                                             "name": "japan_contact_opening_hours",
                                                                             "placeholder": "10:00-18:00",
-                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2322,7 +2377,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "use_escrow"
+                                                    "name": "use_escrow",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -2410,7 +2466,8 @@
                                                             "type": "text",
                                                             "name": "redirect_success_url",
                                                             "placeholder": "/shop/orders/{orderId}/complete",
-                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -2464,7 +2521,8 @@
                                                             "type": "text",
                                                             "name": "redirect_fail_url",
                                                             "placeholder": "/shop/checkout",
-                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -2550,7 +2608,8 @@
                                                             "type": "text",
                                                             "readOnly": true,
                                                             "value": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}",
-                                                            "className": "input-readonly flex-1 font-mono"
+                                                            "className": "input-readonly flex-1 font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
                                                     {
@@ -2723,7 +2782,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "children": [

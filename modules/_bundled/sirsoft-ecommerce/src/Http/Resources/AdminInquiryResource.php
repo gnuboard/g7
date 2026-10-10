@@ -40,6 +40,24 @@ class AdminInquiryResource extends BaseApiResource
             'is_answered' => (bool) $this->is_answered,
             'answered_at' => $this->formatDateTimeStringForUser($this->answered_at),
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
+            // 행 동작 「답변」「삭제」 의 disabledField 근거 — 라우트 권한과 같은 식별자다.
+            ...$this->resourceMeta($request),
+        ];
+    }
+
+    /**
+     * 행 단위 능력(can_*) 매핑을 반환합니다.
+     *
+     * 답변 등록은 `inquiries.update`, 삭제는 `inquiries.delete` 라우트 권한이다. 목록 컬렉션의
+     * `can_manage`·`can_reply` 와 같은 식별자를 쓴다.
+     *
+     * @return array<string, string> 능력 매핑
+     */
+    protected function abilityMap(): array
+    {
+        return [
+            'can_reply' => 'sirsoft-ecommerce.inquiries.update',
+            'can_delete' => 'sirsoft-ecommerce.inquiries.delete',
         ];
     }
 

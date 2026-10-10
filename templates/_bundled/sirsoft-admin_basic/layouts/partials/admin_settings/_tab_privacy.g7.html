@@ -94,7 +94,7 @@
                     </on>
                     $t:admin.settings.privacy.targets.view
                   </button>
-                  <button data-ref="run_withdrawn" data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}">
+                  <button data-ref="run_withdrawn" data-if="{{!!privacyManualRuns?.data?.targets?.['retention:user-withdrawn']}}" type="button" class="btn btn-sm btn-outline" disabled="{{!privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || _local.hasChanges || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}">
                     <on type="click">
                       <!-- 탈퇴 잔여정보 파기 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 이 대상에는 대기기간이 없으므로
                            생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다. -->
@@ -170,7 +170,7 @@
                     </on>
                     $t:admin.settings.privacy.targets.view
                   </button>
-                  <button data-ref="run_dormant_stage_{{stage}}" data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}">
+                  <button data-ref="run_dormant_stage_{{stage}}" data-if="{{!!privacyManualRuns?.data?.targets?.['dormant:' + stage]}}" type="button" class="btn btn-sm btn-outline" disabled="{{!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run || _local.hasChanges || privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}">
                     <on type="click">
                       <!-- 휴면 단계 지금 실행 — 대기기간 생략을 이 단계가 지원하는지는 서버가 단계마다 알려 주는 값(`supports_skip_waiting`)으로
                            넣는다. 생략 선택은 늘 꺼진 채 시작하고, 창에서 켜면 건수를 다시 센다(안내를 받지 못한 회원까지 대상이 되므로). -->

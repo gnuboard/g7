@@ -217,6 +217,7 @@
                             "text": "$t:sirsoft-ecommerce.common.cancel"
                         },
                         {
+                            "id": "label_form_save",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -228,7 +229,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-primary",
-                                "disabled": "{{_global.isSavingLabel || !_global.labelFormData?.name?.ko}}"
+                                "disabled": "{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}"
                             },
                             "children": [
                                 {

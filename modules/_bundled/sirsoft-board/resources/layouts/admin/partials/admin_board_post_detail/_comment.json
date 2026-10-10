@@ -351,7 +351,7 @@
                                 "triggerLabel": "",
                                 "triggerIconName": "ellipsis-vertical",
                                 "position": "right",
-                                "items": "{{comment?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.detail.edit', iconName: 'pencil', disabled: !((comment?.is_author && comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}, ...((comment?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: comment?.abilities?.can_manage !== true}] : []), ...((comment?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((comment?.is_author && comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}]}}"
+                                "items": "{{comment?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.detail.edit', iconName: 'pencil', disabled: !(comment?.abilities?.can_write === true && (comment?.is_author || comment?.abilities?.can_manage === true))}, ...((comment?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: comment?.abilities?.can_manage !== true}] : []), ...((comment?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((comment?.is_author && comment?.abilities?.can_write === true) || comment?.abilities?.can_manage === true)}]}}"
                             }
                         }
                     ]
@@ -744,7 +744,7 @@
                             ],
                             "props": {
                                 "className": "px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.editSubmitting === true}}"
+                                "disabled": "{{_local.editSubmitting === true || !(comment?.abilities?.can_write === true && (comment?.is_author || comment?.abilities?.can_manage === true))}}"
                             },
                             "children": [
                                 {

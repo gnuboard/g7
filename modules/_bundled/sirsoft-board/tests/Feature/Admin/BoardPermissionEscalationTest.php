@@ -395,7 +395,8 @@ class BoardPermissionEscalationTest extends ModuleTestCase
      */
     public function test_delegate_cannot_self_grant_through_bulk_apply(): void
     {
-        [$delegate, $role] = $this->createDelegate(['sirsoft-board.settings.read', 'sirsoft-board.settings.update']);
+        // 일괄 적용 라우트는 환경설정 수정 + 게시판 수정 권한을 둘 다 요구한다(제품 결정 2026-10-09) — 라우트를 통과한 뒤 상한 검사에서 막히는지 본다
+        [$delegate, $role] = $this->createDelegate(['sirsoft-board.settings.read', 'sirsoft-board.settings.update', 'sirsoft-board.boards.update']);
         $manageBefore = $this->boardPermissionRoles('admin.manage');
         $this->storeDefaultBoardPermission('admin.manage', ['admin', $role->identifier]);
 
@@ -551,9 +552,13 @@ class BoardPermissionEscalationTest extends ModuleTestCase
         // 남긴 게시판(프로세스 첫 테스트는 migrate:fresh 로 트랜잭션이 끊겨 커밋된다)도 판정 대상이라,
         // 기본 ACL 에 기대면 실행 순서에 따라 결과가 달라진다.
         $adminRole = Role::where('identifier', 'admin')->firstOrFail();
+        // BoardTestCase 기반 테스트가 DB 로 직접 넣은 게시판은 권한 행이 없을 수 있어 없으면 만든다(실행 순서 무관)
         foreach (Board::all() as $existing) {
-            Permission::where('identifier', "sirsoft-board.{$existing->slug}.admin.manage")->firstOrFail()
-                ->roles()->syncWithoutDetaching([$adminRole->id]);
+            $identifier = "sirsoft-board.{$existing->slug}.admin.manage";
+            Permission::firstOrCreate(
+                ['identifier' => $identifier],
+                ['name' => ['ko' => $identifier, 'en' => $identifier], 'type' => 'admin']
+            )->roles()->syncWithoutDetaching([$adminRole->id]);
         }
 
         $staff = User::factory()->create(['status' => 'active']);

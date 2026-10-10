@@ -6,6 +6,11 @@ return [
         'plugin' => 'プラグイン',
         'template' => 'テンプレート',
     ],
+    'cascade_types' => [
+        'module' => 'モジュール',
+        'plugin' => 'プラグイン',
+        'language_pack' => '言語パック',
+    ],
     'errors' => [
         'state_contract_conflict' => "':name' 状態契約は :owner が所有しています。:extension は同じ名前を宣言できません。",
         'core_version_mismatch' => ':extension (:type)はグヌボード7コアバージョン :required 以上が必要です。(現在: :installed)',
@@ -18,6 +23,7 @@ return [
         'zip_missing_version' => 'ZIP内の :file マニフェストにversionフィールドがありません。',
         'not_found' => '拡張(:identifier)が見つかりません。',
         'cascade_dependency_failed' => '同梱インストール対象の :type (:identifier)のインストールに失敗しました: :message',
+        'cascade_permission_denied' => '同梱インストール対象の :type (:identifier)をインストールまたは有効化する権限がありません。',
         'invalid_type' => '無効な拡張タイプです。',
         'not_auto_deactivated' => 'この拡張はコアバージョン互換性の問題により自動無効化された状態ではありません。',
         'hidden_extension' => '内部用(非表示)拡張はユーザーに非公開です。',

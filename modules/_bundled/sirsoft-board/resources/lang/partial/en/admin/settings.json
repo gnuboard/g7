@@ -2,6 +2,7 @@
   "title": "Board Settings",
   "description": "Configure default settings for new boards and manage global board policies.",
   "read_only_message": "You have read-only access. Contact an administrator if you need to make changes.",
+  "board_types_no_permission": "You need the board create permission to manage board types.",
   "page_info": "Manage default settings applied when creating new boards. Check the checkbox next to each item to bulk-apply it to existing boards.",
   "validation_error": "Please check the input values.",
   "save_success": "Settings saved successfully.",
@@ -295,6 +296,7 @@
     "select_boards_hint": "Search and select the boards to apply this to below.",
     "select_boards_placeholder": "Select boards",
     "apply_button": "Bulk Apply",
+    "no_permission": "Bulk apply requires both the board settings update and board update permissions.",
     "no_fields_selected": "No items selected.",
     "no_boards_selected": "No boards selected.",
     "checked_fields_notice": "All settings will be saved, then only the checked items will be bulk applied.",
@@ -390,6 +392,7 @@
       "cache_management": "SEO Cache Management",
       "cache_description": "Manually clear the SEO cache for board pages. The cache is automatically cleared when settings are saved.",
       "clear_cache": "Clear SEO Cache",
+      "clear_cache_no_permission": "You need the site settings update permission to clear the SEO cache.",
       "clear_cache_success": "SEO cache has been cleared.",
       "clear_cache_error": "Failed to clear SEO cache."
     }
@@ -462,6 +465,8 @@
     "enable_success": "Policy enabled.",
     "disable_success": "Policy disabled.",
     "toggle_failed": "Failed to update policy state.",
+    "no_read_permission": "You do not have permission to view identity verification policies. The \"View board identity policies\" permission is required.",
+    "read_only_notice": "You do not have permission to change identity verification policies, so they are shown read-only. Adding, editing, or deleting policies requires the \"Update board identity policies\" permission.",
     "col": {
       "key": "Key",
       "scope": "Scope",

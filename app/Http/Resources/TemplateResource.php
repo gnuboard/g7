@@ -160,6 +160,8 @@ class TemplateResource extends BaseApiResource
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),
+            // 상세 창이 목록 행(abilities 포함)을 담던 전역을 이 응답으로 덮어쓰므로 권한 메타도 함께 싣는다.
+            ...$this->resourceMeta(request()),
         ];
     }
 

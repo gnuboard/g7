@@ -74,5 +74,6 @@
             "saving": "Saving...",
             "saved": "Authenticator app settings saved."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

@@ -256,6 +256,7 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "메뉴 추가 API 는 그 게시판의 수정 권한(boards.update)을 요구한다 — 고른 게시판 행의 abilities.can_update 가 true 일 때만 연다(행이 아직 없으면 잠금)",
                                                     "id": "inquiry_board_add_menu",
                                                     "type": "basic",
                                                     "name": "Button",
@@ -296,7 +297,9 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border border-blue-500 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border border-blue-500 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "title": "{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update === true ? '' : '$t:sirsoft-board.admin.ecommerce_settings.inquiry.add_to_admin_menu_no_permission'}}",
+                                                        "disabled": "{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update !== true}}"
                                                     },
                                                     "children": [
                                                         {

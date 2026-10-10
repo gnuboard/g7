@@ -216,7 +216,7 @@
             "id": "ecommerceIdentityPolicies",
             "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPolicies",
             "type": "api",
-            "endpoint": "/api/admin/identity/policies",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/identity-policies",
             "method": "GET",
             "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
             "auto_fetch": true,
@@ -236,7 +236,17 @@
                     "meta": {}
                 }
             },
-            "comment": "본인인증 탭에서만 — 코어 정책 목록에서 이 모듈이 소유한 것만 걸러 받고, 목록 검색·쪽수는 URL 쿼리를 그대로 넘긴다"
+            "errorHandling": {
+                "comment": "조회 권한이 없으면(403) 표지를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 「등록된 정책 없음」으로 보인다.\n         다시 성공하면 computed 가 abilities 를 먼저 본다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "identityPoliciesLoadError": "forbidden"
+                    }
+                }
+            },
+            "comment": "본인인증 탭에서만 — 코어 정책 표에서 이 모듈이 소유한 것만 이커머스 모듈 경로로 받고, 목록 검색·쪽수는 URL 쿼리를 그대로 넘긴다.\n       이 경로는 이커머스 권한(`identity.policies.read`, 쓰기·abilities 는 `.update`)으로 동작한다 — 코어 경로는 코어 권한을 요구해\n       이커머스 권한이 아무 효과가 없었다. 서버가 출처를 이커머스로 고정하므로 `source_identifier` 는 표지일 뿐이다"
         },
         {
             "id": "ecommerceIdentityPurposes",
@@ -256,7 +266,7 @@
             "id": "identityProviders",
             "label_key": "$t:sirsoft-ecommerce.editor.data_source.identityProviders",
             "type": "api",
-            "endpoint": "/api/admin/identity/providers",
+            "endpoint": "/api/identity/providers",
             "method": "GET",
             "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
             "auto_fetch": true,
@@ -264,7 +274,7 @@
             "fallback": {
                 "data": []
             },
-            "comment": "정책에 붙일 인증 제공자 선택지 — 설치·활성된 플러그인에 따라 달라진다"
+            "comment": "정책에 붙일 인증 제공자 선택지 — 설치·활성된 플러그인에 따라 달라진다. 권한이 필요 없는 공개 목록에서 받는다(폼은 id·이름만 쓴다) —\n       코어 관리자 목록은 코어 권한을 요구해, 이커머스 권한만 가진 운영자의 선택지가 비었다"
         }
     ],
     "initLocal": {
@@ -282,7 +292,9 @@
         "isReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
         "activeRateProvider": "{{settings?.data?.active_rate_provider ?? null}}",
         "managedRateCodes": "{{settings?.data?.active_rate_provider?.managed_codes ?? []}}",
-        "isNotificationReadOnly": "{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}"
+        "isNotificationReadOnly": "{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}",
+        "identityPoliciesNoReadPermission": "{{!ecommerceIdentityPolicies?.data?.abilities && _local.identityPoliciesLoadError === 'forbidden'}}",
+        "isIdentityPolicyReadOnly": "{{ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}"
     },
     "permissions": [
         "sirsoft-ecommerce.settings.read"

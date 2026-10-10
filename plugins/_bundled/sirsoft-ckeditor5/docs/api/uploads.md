@@ -118,7 +118,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 <!-- @generated:end -->
 
-**설명**
+**설명** 응답 `data.abilities` 의 `can_delete`(업로드 삭제 권한)·`can_open_settings`(플러그인 설정 수정 권한)는 화면이 행 선택·삭제와 [설정 열기]를 잠그는 근거입니다(7.1.0).
 
 에디터로 업로드된 이미지 목록을 관리 화면에 제공하는 엔드포인트다.
 

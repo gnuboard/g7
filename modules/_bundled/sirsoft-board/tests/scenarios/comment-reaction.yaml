@@ -56,6 +56,8 @@ effects:
   - guest_comment_react_returns_401
   # 응답·성능
   - post_detail_embeds_comment_reaction_counts_and_my_reaction
+  # 댓글 수를 늘려도 상세 응답의 쿼리 수가 그대로다 — 댓글마다 반응·권한 조회가 붙는 N+1 회귀를 잡는다
+  - post_detail_query_count_does_not_grow_with_comment_count
 
   # 화면(레이아웃 계약)
   - comment_reaction_group_requires_both_toggles

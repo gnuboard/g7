@@ -471,5 +471,6 @@
   "save_channels": "配信手段を保存",
   "cancel": "キャンセル",
   "channel_template_missing": "この手段のテンプレートがないため配信されません",
-  "notifications": "通知テンプレート"
+  "notifications": "通知テンプレート",
+  "plugin_read_only": "個人情報設定を変更する権限がないため、読み取り専用で表示されます。"
 }

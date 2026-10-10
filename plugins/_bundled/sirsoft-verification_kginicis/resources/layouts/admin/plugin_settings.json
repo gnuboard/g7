@@ -21,6 +21,9 @@
             "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -46,6 +49,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:sirsoft-verification_kginicis.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "info_panel",
@@ -205,7 +236,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "is_test_mode"
+                                                    "name": "is_test_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -359,7 +391,8 @@
                                                                     "name": "live_mid",
                                                                     "autoComplete": "one-time-code",
                                                                     "placeholder": "1234567",
-                                                                    "className": "flex-1 font-mono outline-none border-0"
+                                                                    "className": "flex-1 font-mono outline-none border-0",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -418,7 +451,8 @@
                                                             "name": "live_api_key",
                                                             "autoComplete": "new-password",
                                                             "placeholder": "••••••••••••••••",
-                                                            "className": "{{_local.errors?.live_api_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}"
+                                                            "className": "{{_local.errors?.live_api_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
                                                     {
@@ -527,6 +561,7 @@
                                                                         "comment": "중복 판정 기준을 DI 로 — 라벨을 눌러도 선택되도록 라디오가 아니라 라벨에 액션을 건다(라디오는 클릭을 통과시킨다)",
                                                                         "type": "click",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "hasChanges": true,
@@ -548,6 +583,7 @@
                                                                                 "comment": "키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
+                                                                                "if": "{{!_computed.isPluginReadOnly}}",
                                                                                 "params": {
                                                                                     "target": "local",
                                                                                     "hasChanges": true,
@@ -562,7 +598,8 @@
                                                                             "name": "duplicate_field",
                                                                             "value": "di",
                                                                             "checked": "{{(_local.form?.duplicate_field ?? 'di') === 'di'}}",
-                                                                            "className": "radio"
+                                                                            "className": "radio",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     },
                                                                     {
@@ -580,6 +617,7 @@
                                                                         "comment": "중복 판정 기준을 CI 로 — 위와 같은 이유로 라벨에 액션을 건다",
                                                                         "type": "click",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "hasChanges": true,
@@ -601,6 +639,7 @@
                                                                                 "comment": "키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
+                                                                                "if": "{{!_computed.isPluginReadOnly}}",
                                                                                 "params": {
                                                                                     "target": "local",
                                                                                     "hasChanges": true,
@@ -615,7 +654,8 @@
                                                                             "name": "duplicate_field",
                                                                             "value": "ci",
                                                                             "checked": "{{_local.form?.duplicate_field === 'ci'}}",
-                                                                            "className": "radio"
+                                                                            "className": "radio",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     },
                                                                     {
@@ -691,7 +731,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "duplicate_block_enabled"
+                                                            "name": "duplicate_block_enabled",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -807,7 +848,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "children": [

@@ -2,10 +2,12 @@
 
 namespace Plugins\Sirsoft\Gdpr\Http\Controllers\Admin;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Plugins\Sirsoft\Gdpr\Http\Requests\UpdateAdminSettingsRequest;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
@@ -70,6 +72,10 @@ class GdprAdminSettingsController extends AdminBaseController
             'annual_notice_limits' => ['min' => Plugin::ANNUAL_NOTICE_MIN, 'max' => Plugin::ANNUAL_NOTICE_MAX],
             'default_blocked_domains_preview' => Plugin::DEFAULT_BLOCKED_DOMAINS_CATALOG,
             'default_necessary_allowlist_preview' => Plugin::DEFAULT_NECESSARY_ALLOWLIST_CATALOG,
+            // 설정 화면이 입력·저장·시험 발송·새 버전 발행을 잠그는 근거 — 저장 라우트와 같은 권한(privacy.update)
+            'abilities' => [
+                'can_update' => PermissionHelper::check('sirsoft-gdpr.privacy.update', Auth::user()),
+            ],
         ]);
     }
 

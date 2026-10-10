@@ -27,7 +27,9 @@
     <field name="selectedProducts" :value="[]"/>
     <field name="selectedCategories" :value="[]"/>
   </init-local>
-  <permissions/>
+  <permissions>
+    <permission>sirsoft-ecommerce.promotion-coupon.create</permission>
+  </permissions>
   <slot name="content">
     <div data-ref="discount_code_create_content" class="admin-page-content">
       <responsive on="portable" class="admin-page-content-compact"/>

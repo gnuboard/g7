@@ -310,10 +310,10 @@
                             }
                         },
                         {
-                            "comment": "비밀글 잠금 오버레이",
+                            "comment": "비밀글 잠금 오버레이 — 원문을 열 수 있는 사람(작성자 본인·비밀글 열람·게시판 관리 권한)에게는 씌우지 않는다",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{post?.is_secret && !post?.abilities?.can_view}}",
+                            "if": "{{post?.is_secret && !(post?.is_author || posts?.data?.abilities?.can_read_secret || posts?.data?.abilities?.can_manage)}}",
                             "props": {
                                 "className": "absolute inset-0 bg-gray-900/50 dark:bg-gray-900/50 flex items-center justify-center z-10"
                             },

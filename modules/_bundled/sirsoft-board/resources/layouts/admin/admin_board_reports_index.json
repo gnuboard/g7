@@ -2006,7 +2006,7 @@
                             "serverCurrentPage": "{{reports?.data?.pagination?.current_page ?? 1}}",
                             "serverTotalPages": "{{reports?.data?.pagination?.last_page ?? null}}",
                             "serverHasMorePages": "{{reports?.data?.pagination?.has_more_pages ?? false}}",
-                            "selectable": true,
+                            "selectable": "{{reports?.data?.abilities?.can_manage === true}}",
                             "selectionScope": "page",
                             "selectedIds": "{{_global.selectedIds || []}}",
                             "idField": "id",

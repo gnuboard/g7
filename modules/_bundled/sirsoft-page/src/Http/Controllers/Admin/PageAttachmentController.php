@@ -63,6 +63,9 @@ class PageAttachmentController extends AdminBaseController
                 ['code' => 'attachment_limit_exceeded'],
                 $e->getMessageParams()
             );
+        } catch (AccessDeniedHttpException $e) {
+            // 대상 페이지의 수정 권한·스코프 밖 — 서버 오류가 아니라 권한 없음으로 안내한다
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.upload_failed', 500, $e->getMessage());
         }

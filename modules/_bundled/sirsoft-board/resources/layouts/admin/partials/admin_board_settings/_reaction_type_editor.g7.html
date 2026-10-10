@@ -63,7 +63,7 @@
             <td class="px-2 py-2 text-center">
               <!-- 끌어서 순서를 바꾼다. 손잡이를 따로 두는 것은 행 안의 입력·토글을 누를 때
                 끌기가 시작되지 않게 하기 위해서다(형제 화면 배송유형과 같은 방식). -->
-              <div data-testid="reaction-type-drag-{{row.code}}" :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+              <div data-testid="reaction-type-drag-{{row.code}}" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                 <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
               </div>
             </td>
@@ -141,7 +141,7 @@
           <on event="onSortEnd">
             <!-- 끌어 놓은 결과를 배열 순서로 반영하고 자리 번호(display_order)를 다시 매긴다 —
               순서 값이 배열 순서와 어긋나면 저장 뒤 화면과 회원 화면의 차례가 달라진다. -->
-            <set-state target="local" form.basic_defaults.reaction_types="{{$sortedItems.map((r, i) => ({...r, display_order: i}))}}" :hasChanges="true"/>
+            <set-state if="{{!_computed.isReadOnly}}" target="local" form.basic_defaults.reaction_types="{{$sortedItems.map((r, i) => ({...r, display_order: i}))}}" :hasChanges="true"/>
           </on>
         </tbody>
         <tbody>

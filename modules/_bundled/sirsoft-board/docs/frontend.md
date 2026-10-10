@@ -92,6 +92,8 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 
 환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="boardIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, blocking·initLocal)까지 다시 받아 고친 설정 값과 「변경 있음」을 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `boardIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-board-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 G2 실측).
 
+이 탭의 목록·켜고 끄기·추가·수정·삭제는 모듈 경로(`/api/modules/sirsoft-board/admin/identity-policies`)를 쓰고, 모듈 권한 `sirsoft-board.identity.policies.read`/`.update` 로 동작합니다(7.1.0~). 목록이 403 이면 데이터소스 `error_handling` 이 `_local.identityPoliciesLoadError='forbidden'` 을 남기고, computed `identityPoliciesNoReadPermission` 이 탭 내용 대신 「권한 없음」 안내(`identity_policies_no_permission`)를 띄웁니다. 수정 권한은 목록 응답 `abilities.can_update`·`can_delete` 로 읽어 읽기 전용 안내(`identity_policies_read_only_notice`)와 추가·토글·편집·삭제, 정책 창 [저장]·삭제 창 [삭제]를 잠급니다. 인증 제공자 선택지(`identityProviders`)는 권한이 필요 없는 공개 목록 `/api/identity/providers` 에서 받습니다. 잠금: `admin-board-identity-policy-gate.test.ts`.
+
 반복되는 카드·박스 목록은 **간격을 스스로 갖지 않습니다.** 좁은 화면 카드(`excel-card`)는 바깥 여백이 없고
 테두리 박스에 준 `p-3` 같은 안쪽 여백은 이웃과의 거리가 아니므로, 목록을 감싸는 쪽이 `stack-tight`(세로 gap)를
 주거나 카드가 `mb-3` 을 집니다 — 둘 다 없으면 테두리끼리 맞붙어 한 덩어리로 보입니다(반응 유형 카드, 알림

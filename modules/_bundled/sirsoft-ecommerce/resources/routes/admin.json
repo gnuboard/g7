@@ -5,7 +5,7 @@
       "path": "*/admin/ecommerce/products/create",
       "layout": "admin_ecommerce_product_form",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.product.create",
+      "permission": "sirsoft-ecommerce.products.create",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title_create",
         "breadcrumb": [
@@ -27,7 +27,7 @@
       "path": "*/admin/ecommerce/products/:itemCode/edit",
       "layout": "admin_ecommerce_product_form",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.product.update",
+      "permission": "sirsoft-ecommerce.products.update",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title_edit",
         "breadcrumb": [
@@ -49,7 +49,7 @@
       "path": "*/admin/ecommerce/brands",
       "layout": "admin_ecommerce_brand_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.brand.read",
+      "permission": "sirsoft-ecommerce.brands.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.brand.title"
       }
@@ -58,7 +58,7 @@
       "path": "*/admin/ecommerce/categories",
       "layout": "admin_ecommerce_category_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.category.read",
+      "permission": "sirsoft-ecommerce.categories.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.category.title"
       }
@@ -67,7 +67,7 @@
       "path": "*/admin/ecommerce/products",
       "layout": "admin_ecommerce_product_list",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.product.read",
+      "permission": "sirsoft-ecommerce.products.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title"
       }
@@ -94,7 +94,7 @@
       "path": "*/admin/ecommerce/manage-excel-download",
       "layout": "admin_ecommerce_excel_download_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.excel-download.read",
+      "permission": "sirsoft-ecommerce.orders.read",
       "comment": "엑셀 다운로드 미제공 - 진입 버튼 숨김 처리됨",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.excel_download.title"
@@ -104,7 +104,7 @@
       "path": "*/admin/ecommerce/payment-failure-history",
       "layout": "admin_ecommerce_payment_failure_history",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.order.read",
+      "permission": "sirsoft-ecommerce.orders.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.payment_failure_history.title"
       }
@@ -113,7 +113,7 @@
       "path": "*/admin/ecommerce/personal-payment",
       "layout": "admin_ecommerce_personal_payment",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.personal-payment.read",
+      "permission": "sirsoft-ecommerce.orders.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.personal_payment.title"
       }
@@ -122,7 +122,7 @@
       "path": "*/admin/ecommerce/personal-payment-create",
       "layout": "admin_ecommerce_personal_payment_create",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.personal-payment.create",
+      "permission": "sirsoft-ecommerce.orders.update",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.personal_payment_create.title"
       }
@@ -131,7 +131,7 @@
       "path": "*/admin/ecommerce/personal-payment/:id",
       "layout": "admin_ecommerce_personal_payment_detail",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.personal-payment.read",
+      "permission": "sirsoft-ecommerce.orders.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.personal_payment_detail.title"
       }
@@ -140,7 +140,7 @@
       "path": "*/admin/ecommerce/product-notices",
       "layout": "admin_ecommerce_product_notice_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.product-notice.read",
+      "permission": "sirsoft-ecommerce.product-notice-templates.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product_notice_template.title"
       }
@@ -149,7 +149,7 @@
       "path": "*/admin/ecommerce/common-info",
       "layout": "admin_ecommerce_product_common_info_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.common-info.read",
+      "permission": "sirsoft-ecommerce.product-common-infos.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.common_info.title"
       }
@@ -158,7 +158,7 @@
       "path": "*/admin/ecommerce/deposits",
       "layout": "admin_ecommerce_deposit_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.deposit.read",
+      "permission": "sirsoft-ecommerce.mileage.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.deposit.title"
       }
@@ -194,7 +194,7 @@
       "path": "*/admin/ecommerce/promotion-discount-codes",
       "layout": "admin_ecommerce_promotion_discount_code_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.promotion-discount-code.read",
+      "permission": "sirsoft-ecommerce.promotion-coupon.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.title"
       }
@@ -203,7 +203,7 @@
       "path": "*/admin/ecommerce/promotion-discount-code-create",
       "layout": "admin_ecommerce_promotion_discount_code_create",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.promotion-discount-code.create",
+      "permission": "sirsoft-ecommerce.promotion-coupon.create",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title"
       }
@@ -212,7 +212,7 @@
       "path": "*/admin/ecommerce/main-banners",
       "layout": "admin_ecommerce_main_banner_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.main-banner.read",
+      "permission": "sirsoft-ecommerce.settings.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.main_banner.title"
       }
@@ -221,7 +221,7 @@
       "path": "*/admin/ecommerce/orders",
       "layout": "admin_ecommerce_order_list",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.order.read",
+      "permission": "sirsoft-ecommerce.orders.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.order.title"
       }
@@ -230,7 +230,7 @@
       "path": "*/admin/ecommerce/orders/:orderNumber",
       "layout": "admin_ecommerce_order_detail",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.order.read",
+      "permission": "sirsoft-ecommerce.orders.read",
       "meta": {
         "title": "$t:sirsoft-ecommerce.admin.order.detail.title"
       }

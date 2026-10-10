@@ -42,6 +42,9 @@
             "comment": "현재 설정값. 채널 목록은 편집 창과 오가야 해서 화면 상태가 아니라 전역에 풀어 둔다"
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -67,6 +70,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:sirsoft-marketing.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "validation_error",
@@ -211,7 +242,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "marketing_consent_enabled"
+                                                            "name": "marketing_consent_enabled",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -265,7 +297,8 @@
                                                             "type": "text",
                                                             "name": "marketing_consent_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -331,7 +364,8 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors text-sm"
+                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         },
                                                         "children": [
                                                             {
@@ -522,6 +556,7 @@
                                                                                             },
                                                                                             {
                                                                                                 "handler": "setState",
+                                                                                                "if": "{{!_computed.isPluginReadOnly}}",
                                                                                                 "params": {
                                                                                                     "target": "local",
                                                                                                     "hasChanges": true
@@ -532,7 +567,8 @@
                                                                                 ],
                                                                                 "props": {
                                                                                     "checked": "{{channel.enabled}}",
-                                                                                    "size": "sm"
+                                                                                    "size": "sm",
+                                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                 }
                                                                             }
                                                                         ]
@@ -571,7 +607,8 @@
                                                                                     "aria-label": "$t:common.edit",
                                                                                     "title": "$t:common.edit",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
+                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                 },
                                                                                 "children": [
                                                                                     {
@@ -603,6 +640,7 @@
                                                                                             },
                                                                                             {
                                                                                                 "handler": "setState",
+                                                                                                "if": "{{!_computed.isPluginReadOnly}}",
                                                                                                 "params": {
                                                                                                     "target": "local",
                                                                                                     "hasChanges": true
@@ -615,7 +653,8 @@
                                                                                     "aria-label": "$t:common.delete",
                                                                                     "title": "$t:common.delete",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
+                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                 },
                                                                                 "children": [
                                                                                     {
@@ -720,7 +759,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "third_party_consent_enabled"
+                                                            "name": "third_party_consent_enabled",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -774,7 +814,8 @@
                                                             "type": "text",
                                                             "name": "third_party_consent_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -825,7 +866,8 @@
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "info_disclosure_enabled"
+                                                            "name": "info_disclosure_enabled",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -879,7 +921,8 @@
                                                             "type": "text",
                                                             "name": "info_disclosure_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1045,7 +1088,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "children": [
@@ -1128,7 +1171,8 @@
                                     ],
                                     "props": {
                                         "checked": "{{_global.editingChannel.enabled}}",
-                                        "onChange": ""
+                                        "onChange": "",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
                                     }
                                 }
                             ]
@@ -1164,7 +1208,8 @@
                                         "value": "{{_global.editingChannel.key ?? ''}}",
                                         "readOnly": "{{_global.editingChannel.is_system || _global.editingChannel._editing}}",
                                         "placeholder": "$t:sirsoft-marketing.settings.channel_modal.key_placeholder",
-                                        "className": "{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}"
+                                        "className": "{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
                                     }
                                 },
                                 {
@@ -1242,7 +1287,8 @@
                                                 "value": "{{_global.editingChannel.label ?? {ko: '', en: ''}}}",
                                                 "layout": "tabs",
                                                 "name": "channel_label",
-                                                "placeholder": "$t:sirsoft-marketing.settings.channel_modal.label_placeholder"
+                                                "placeholder": "$t:sirsoft-marketing.settings.channel_modal.label_placeholder",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
                                             }
                                         }
                                     ]
@@ -1289,7 +1335,8 @@
                                         "type": "text",
                                         "value": "{{_global.editingChannel.page_slug ?? ''}}",
                                         "placeholder": "$t:sirsoft-marketing.settings.channel_modal.page_slug_placeholder",
-                                        "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                                        "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
                                     }
                                 },
                                 {
@@ -1363,6 +1410,7 @@
                                                 },
                                                 {
                                                     "handler": "setState",
+                                                    "if": "{{!_computed.isPluginReadOnly}}",
                                                     "params": {
                                                         "target": "$parent._local",
                                                         "hasChanges": true
@@ -1378,7 +1426,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "disabled": "{{!(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
+                                "disabled": "{{_computed.isPluginReadOnly || !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
                                 "className": "btn btn-primary"
                             },
                             "children": [
@@ -1490,6 +1538,7 @@
                                                 },
                                                 {
                                                     "handler": "setState",
+                                                    "if": "{{!_computed.isPluginReadOnly}}",
                                                     "params": {
                                                         "target": "$parent._local",
                                                         "hasChanges": true,
@@ -1511,7 +1560,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-primary"
+                                        "className": "btn btn-primary",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
                                     },
                                     "children": [
                                         {

@@ -475,5 +475,6 @@
     "save_channels": "Save channels",
     "cancel": "Cancel",
     "channel_template_missing": "No template for this channel — nothing will be sent",
-    "notifications": "Notification templates"
+    "notifications": "Notification templates",
+    "plugin_read_only": "You do not have permission to change privacy settings, so they are shown read-only."
 }

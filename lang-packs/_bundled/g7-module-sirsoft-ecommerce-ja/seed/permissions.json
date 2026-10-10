@@ -35,6 +35,10 @@
     "name": "注文編集",
     "description": "注文ステータス変更"
   },
+  "sirsoft-ecommerce.orders.delete": {
+    "name": "注文削除",
+    "description": "注文削除および個人情報保有期間「削除」方式の職権実行"
+  },
   "sirsoft-ecommerce.categories": {
     "name": "カテゴリ管理",
     "description": "カテゴリ管理権限"

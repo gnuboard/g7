@@ -96,7 +96,7 @@
         "stepSearchResults": []
     },
     "computed": {
-        "isReadOnly": "{{!!route?.slug && !!boards?.data && boards?.data?.abilities?.can_update !== true}}"
+        "isReadOnly": "{{!!boards?.data && (route?.slug ? boards?.data?.abilities?.can_update !== true : boards?.data?.abilities?.can_create !== true)}}"
     },
     "permissions": [
         "sirsoft-board.boards.read"
@@ -154,7 +154,7 @@
                                 "props": {
                                     "className": "text-warning-soft"
                                 },
-                                "text": "$t:sirsoft-board.admin.form.read_only_message"
+                                "text": "{{route?.slug ? '$t:sirsoft-board.admin.form.read_only_message' : '$t:sirsoft-board.admin.form.create_read_only_message'}}"
                             }
                         ]
                     },

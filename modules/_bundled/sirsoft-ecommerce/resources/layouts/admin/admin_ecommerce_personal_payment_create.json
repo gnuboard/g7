@@ -22,7 +22,9 @@
             "memo": ""
         }
     },
-    "permissions": [],
+    "permissions": [
+        "sirsoft-ecommerce.orders.update"
+    ],
     "slots": {
         "content": [
             {

@@ -316,6 +316,7 @@
     "delete_all_confirm": "すべての通知を削除しますか?",
     "delete_all_success": "すべての通知が削除されました。",
     "delete_all_failed": "通知の削除に失敗しました。",
+    "no_permission": "通知を既読にしたり削除したりする権限がありません。",
     "all_deleted": "すべての通知が削除されました。",
     "unread_only": "未読の通知のみ",
     "new_notification_received": "新しい通知が届きました。",

@@ -570,6 +570,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.cart.query`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CartController@index`
 - **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근)
+- **권한 메모(1.3.0)**: 응답 `abilities.can_order`(= `sirsoft-ecommerce.user-orders.create`, 비회원은 guest 역할) — [주문하기] 잠금 키. 수량·옵션 변경 응답도 같은 키를 싣는다.
 
 **요청 파라미터**
 

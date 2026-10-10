@@ -32,6 +32,9 @@
             "comment": "가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다"
         }
     ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
     "permissions": [
         "core.plugins.update"
     ],
@@ -57,6 +60,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "pay-nicepayments-tone-warning"
+                                },
+                                "text": "$t:sirsoft-pay_nicepayments.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "validation_error",
@@ -171,7 +202,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "is_test_mode"
+                                                    "name": "is_test_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -324,7 +356,8 @@
                                                                     "type": "text",
                                                                     "name": "live_mid",
                                                                     "placeholder": "paytestm",
-                                                                    "className": "flex-1 font-mono outline-none border-0"
+                                                                    "className": "flex-1 font-mono outline-none border-0",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -388,7 +421,8 @@
                                                             "type": "password",
                                                             "name": "live_merchant_key",
                                                             "placeholder": "live_key_...",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent font-mono"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -478,7 +512,8 @@
                                                             "type": "text",
                                                             "name": "redirect_success_url",
                                                             "placeholder": "/shop/orders/{orderId}/complete",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -532,7 +567,8 @@
                                                             "type": "text",
                                                             "name": "redirect_fail_url",
                                                             "placeholder": "/shop/checkout",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -614,7 +650,8 @@
                                                     "type": "text",
                                                     "readOnly": true,
                                                     "value": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}",
-                                                    "className": "input-readonly flex-1 font-mono"
+                                                    "className": "input-readonly flex-1 font-mono",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             },
                                             {
@@ -716,7 +753,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "use_escrow"
+                                                    "name": "use_escrow",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -799,7 +837,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_allow_with_other_pg"
+                                                    "name": "easy_pay_allow_with_other_pg",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -837,7 +876,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_naverpay"
+                                                    "name": "easy_pay_naverpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -861,7 +901,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_kakaopay"
+                                                    "name": "easy_pay_kakaopay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -885,7 +926,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_samsungpay"
+                                                    "name": "easy_pay_samsungpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -923,7 +965,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_applepay"
+                                                    "name": "easy_pay_applepay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -947,7 +990,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_payco"
+                                                    "name": "easy_pay_payco",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -971,7 +1015,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_skpay"
+                                                    "name": "easy_pay_skpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -995,7 +1040,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_ssgpay"
+                                                    "name": "easy_pay_ssgpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1019,7 +1065,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_lpay"
+                                                    "name": "easy_pay_lpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1131,7 +1178,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "children": [
