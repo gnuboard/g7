@@ -21,7 +21,7 @@
         "email": "contact@sirsoft.com",
         "url": "https://sirsoft.com"
     },
-    "release_date": "2026-10-09",
+    "release_date": "2026-10-10",
     "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {},
