@@ -61,12 +61,12 @@
             <on type="click">
               <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}"/>
             </on>
-            <span class="border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all">{{report_detail?.data?.board?.name}}</span>
+            <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.board?.name}}</span>
             <icon name="arrow-up-right-from-square" class="text-xs"/>
           </span>
           <span data-if="{{!report_detail?.data?.board?.slug}}" class="inline-flex items-center gap-1.5 text-label-subtle">
             <span>{{report_detail?.data?.board?.name}}</span>
-            <span class="text-xs text-gray-400 dark:text-gray-500/80">($t:sirsoft-board.admin.reports.detail.board_deleted)</span>
+            <span class="text-xs board-muted-note">($t:sirsoft-board.admin.reports.detail.board_deleted)</span>
           </span>
         </div>
         <div data-ref="field_post_title" data-if="{{report_detail?.data?.target_type === 'comment'}}">
@@ -75,8 +75,8 @@
             <on type="click">
               <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"/>
             </on>
-            <span class="border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all">{{report_detail?.data?.post?.title}}</span>
-            <icon name="arrow-up-right-from-square" class="text-xs transform translate-x-0 group-hover:translate-x-0.5 transition-all"/>
+            <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.post?.title}}</span>
+            <icon name="arrow-up-right-from-square" class="text-xs board-external-icon transition-all"/>
           </span>
           <span data-if="{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}" class="text-primary text-sm">{{report_detail?.data?.post?.title}}</span>
         </div>
@@ -86,8 +86,8 @@
             <on type="click">
               <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"/>
             </on>
-            <span class="border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all">{{report_detail?.data?.post?.title}}</span>
-            <icon name="arrow-up-right-from-square" class="text-xs transform translate-x-0 group-hover:translate-x-0.5 transition-all"/>
+            <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.post?.title}}</span>
+            <icon name="arrow-up-right-from-square" class="text-xs board-external-icon transition-all"/>
           </span>
           <span data-if="{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}" class="text-primary text-sm">{{report_detail?.data?.post?.title}}</span>
         </div>

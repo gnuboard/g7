@@ -2,6 +2,7 @@
 
 namespace App\Extension;
 
+use App\Exceptions\ExtensionUpdateFailedException;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
@@ -17,6 +18,7 @@ use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
+use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
@@ -2895,20 +2897,24 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * 단일 템플릿의 업데이트 가능 여부를 확인합니다.
      *
-     * 일반 업데이트 우선순위 (GitHub 엄격 우선):
-     *   1. GitHub URL 존재 + API 조회 성공 → GitHub 결과만 신뢰
-     *      a. GitHub 버전 > 현재 → 'github' 소스 반환
-     *      b. GitHub 버전 ≤ 현재 → "업데이트 없음" 즉시 반환 (bundled 폴백 없음)
-     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망)
+     * 일반 업데이트 우선순위:
+     *   1. GitHub URL 존재 + API 조회 성공
+     *      a. 소스 미지정이고 번들 판이 GitHub 최신·현재보다 높음 → 'bundled' 소스 반환 (코어와 함께 배포된 번들이 호환 기준 —
+     *         확장 공개 릴리스가 코어 출시보다 늦을 때 「업데이트 없음」으로 끝나던 문제)
+     *      b. GitHub 버전 > 현재 → 'github' 소스 반환
+     *      c. 그 밖 → "업데이트 없음"
+     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망, `github` 지정이면 폴백하지 않음)
+     *   `bundled` 지정이면 GitHub 를 보지 않고 번들만 비교한다 (CLI `--source`).
      *
      * --force 업데이트 우선순위는 resolveForceUpdateSource() 참조 (번들 우선).
      *
      * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
      * @param  string  $identifier  템플릿 식별자
+     * @param  string|null  $source  소스 지정 (`bundled`·`github`, null 이면 자동 — GitHub·번들 중 높은 버전)
      * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null} 업데이트 확인 결과
      */
-    public function checkTemplateUpdate(string $identifier): array
+    public function checkTemplateUpdate(string $identifier, ?string $source = null): array
     {
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
@@ -2919,9 +2925,9 @@ class TemplateManager implements TemplateManagerInterface
         $template = $this->getTemplate($identifier);
         $activeRequiredCoreVersion = $template['g7_version'] ?? null;
 
-        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
+        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (번들 지정이면 건너뜀)
         $githubUrl = $template['github_url'] ?? ($record->github_url ?? null);
-        if ($githubUrl) {
+        if ($source !== 'bundled' && $githubUrl) {
             try {
                 $latestVersion = $this->fetchLatestVersion($githubUrl);
             } catch (\Throwable $e) {
@@ -2934,6 +2940,15 @@ class TemplateManager implements TemplateManagerInterface
             }
 
             if ($latestVersion !== null) {
+                // 소스를 지정하지 않았으면 코어와 함께 배포된 번들이 공개 최신보다 새 판일 때 번들을 후보로 본다 — 확장 공개
+                // 릴리스가 코어 출시보다 늦으면 GitHub 결과만 믿어 「업데이트 없음」으로 끝났다(W3 실측: 번들 1.1.0, 공개 1.0.4).
+                $bundled = $source === null ? $this->bundledTemplateUpdateCandidate($identifier, $activeRequiredCoreVersion) : null;
+                if ($bundled !== null
+                    && version_compare($bundled['version'], $latestVersion, '>')
+                    && version_compare($bundled['version'], $currentVersion, '>')) {
+                    return $this->buildTemplateUpdateResponse(true, 'bundled', $bundled['version'], $currentVersion, $bundled['required']);
+                }
+
                 if (version_compare($latestVersion, $currentVersion, '>')) {
                     return $this->buildTemplateUpdateResponse(
                         true, 'github', $latestVersion, $currentVersion, $activeRequiredCoreVersion
@@ -2948,6 +2963,11 @@ class TemplateManager implements TemplateManagerInterface
             Log::info('템플릿 업데이트 확인: GitHub 조회 실패로 bundled 폴백', [
                 'template' => $identifier,
             ]);
+        }
+
+        // github 지정 — 번들로 폴백하지 않는다(문서: GitHub 단독).
+        if ($source === 'github') {
+            return $this->buildTemplateUpdateResponse(false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion);
         }
 
         // 2. _bundled에서 업데이트 확인
@@ -2975,6 +2995,26 @@ class TemplateManager implements TemplateManagerInterface
         return $this->buildTemplateUpdateResponse(
             false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion
         );
+    }
+
+    /**
+     * 번들(`_bundled`) 판 템플릿의 버전과 코어 요구 버전을 돌려줍니다 — 번들에 없으면 null.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string|null  $activeRequiredCoreVersion  설치본의 코어 요구 버전 (번들 manifest 에 없을 때의 폴백)
+     * @return array{version: string, required: string|null}|null 번들 후보
+     */
+    private function bundledTemplateUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
+    {
+        $meta = $this->bundledTemplates[$identifier]
+            ?? (ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json')[$identifier] ?? null);
+        $version = is_array($meta) ? ($meta['version'] ?? null) : null;
+
+        if (! is_string($version) || $version === '') {
+            return null;
+        }
+
+        return ['version' => $version, 'required' => $this->resolveUpdateTargetRequiredCoreVersion('bundled', $meta, $activeRequiredCoreVersion)];
     }
 
     /**
@@ -3155,7 +3195,7 @@ class TemplateManager implements TemplateManagerInterface
      * 템플릿을 업데이트합니다.
      *
      * 프로세스: 백업 → updating 상태 → 파일 교체 → DB 갱신 →
-     * 레이아웃 갱신 → 상태 복원 → 백업 삭제
+     * 상태 복원 → 레이아웃 갱신 → 활성 확장 조각 재등록(활성 템플릿만) → 백업 삭제
      *
      * 파라미터 순서는 updateModule / updatePlugin 과 일치시켜 공통 prefix
      * (id, force, onProgress, ...) 를 공유한다. 템플릿은 upgrade step 이 없어
@@ -3399,6 +3439,17 @@ class TemplateManager implements TemplateManagerInterface
                 $refreshed = $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath);
                 $layoutSync = $refreshed['layout_sync'] ?? null;
                 $layoutWarnings = $refreshed['layout_warnings'] ?? [];
+
+                // 활성 모듈·플러그인의 조각을 새 판 템플릿에 다시 등록한다(keep — 운영자가 고친 조각은 보존).
+                // 번들 일괄 업데이트는 모듈 → 플러그인 → 템플릿 순서라, 플러그인이 조각을 등록할 때는 템플릿이 아직 옛 판이어서
+                // 새 확장점(예: 결제 플러그인의 주문 상세 슬롯)에 붙는 조각이 붙을 자리가 없어 건너뛰어졌다. 템플릿을 갱신한
+                // 지금 다시 등록해야 그 조각이 들어온다. 실패해도 파일·버전은 이미 새 판이라 업데이트는 되돌리지 않는다 —
+                // 다른 확장을 켜거나 갱신할 때 같은 재등록이 다시 돈다.
+                try {
+                    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($record->id);
+                } catch (\Throwable $e) {
+                    Log::error('템플릿 업데이트 뒤 확장 조각 재등록 실패', ['template' => $identifier, 'error' => $e->getMessage()]);
+                }
             } elseif ($backupPath !== null) {
                 // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
                 $this->layoutSynchronizer()->stashBaseForInactiveUpdate($backupPath, 'templates', $identifier);
@@ -3441,6 +3492,14 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_strategy' => $layoutStrategy,
             ]);
 
+            // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
+            // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.
+            $dependencyWarnings = DependencyVersionWarnings::afterUpdate(
+                'template',
+                $identifier,
+                $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json'
+            );
+
             $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
@@ -3448,10 +3507,11 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_strategy' => $layoutStrategy,
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
-                'message' => __('templates.update_success', [
+                'dependency_warnings' => $dependencyWarnings,
+                'message' => DependencyVersionWarnings::appendToMessage(__('templates.update_success', [
                     'template' => $identifier,
                     'version' => $toVersion,
-                ]),
+                ]), $dependencyWarnings),
             ];
 
         } catch (\Throwable $e) {
@@ -3459,6 +3519,9 @@ class TemplateManager implements TemplateManagerInterface
                 'template' => $identifier,
                 'error' => $e->getMessage(),
             ]);
+
+            // 실패 시점에 되돌릴 백업이 있었는지 — 백업을 지운 뒤(마무리 단계) 실패면 새 판이 남는다. 실패 안내가 실제 결과를 말하게 한다.
+            $hadBackup = $backupPath !== null;
 
             if ($backupPath) {
                 try {
@@ -3495,12 +3558,14 @@ class TemplateManager implements TemplateManagerInterface
                 // 원래 예외(아래 throw)가 진짜 원인이다 — bump 실패는 로그(트레이트)로 충분
             }
 
-            throw new \RuntimeException(
+            throw ExtensionUpdateFailedException::fromFailure(
                 __('templates.errors.update_failed', [
                     'template' => $identifier,
                     'error' => $e->getMessage(),
                 ]),
-                0,
+                $filesRestored,
+                $hadBackup,
+                $recordedColumns !== [],
                 $e
             );
         }

@@ -126,7 +126,7 @@ php artisan template:check-updates [identifier?]
 **기능**:
 
 - **전체 확인** (인수 없음): 설치된 모든 템플릿의 업데이트 가용 여부를 테이블로 출력
-  - 감지 우선순위: GitHub > `_bundled` (2단계, `_pending` 미참여)
+  - 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `_pending` 미참여
   - DB에 `update_available`, `latest_version`, `update_source` 갱신
 - **단일 확인** (인수 있음): 특정 템플릿의 업데이트 가용 여부 확인
   - `checkTemplateUpdate()`는 DB 갱신 안 함 → 커맨드에서 `updateByIdentifier()` 직접 호출
@@ -156,7 +156,7 @@ php artisan template:update [identifier] [--layout-strategy=overwrite] [--force]
 **옵션**:
 - `--layout-strategy=overwrite`: 레이아웃 전략 (`overwrite` = 전체 덮어쓰기 | `keep` = 운영자 수정본에 새 버전 3자 병합 + 결과 표)
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
-- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub > `_bundled` 우선순위, `bundled` = `_bundled` 단독, `github` = GitHub 단독)
+- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음))
 
 **수행 작업**:
 - 레이아웃 전략 검증 (`overwrite` | `keep` 외 FAILURE)

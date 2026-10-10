@@ -11,7 +11,10 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Plugins\Sirsoft\Tosspayments\Support\ShopRedirectUrl;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
@@ -21,6 +24,9 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * 결함: 결제 승인 응답의 `virtualAccount.dueDate` 는 오프셋이 붙은 한국 시각(`2026-05-21T23:59:59+09:00`)인데,
  *   `Carbon::parse()` 결과를 그대로 저장하면 datetime 캐스트가 시간대를 바꾸지 않고 한국 시각 숫자를 UTC 칸에 넣어
  *   기한이 9시간 늦게 저장됐다(화면 표시·만료 판정 모두 어긋남). KCP·KG·나이스의 같은 결함(S4-D5)과 같은 계열이다.
+ *
+ * 같은 발급 경로의 후속 처리(장바구니 정리)도 여기서 고정한다 — 다른 결제사 3종은 발급 저장 직후 이커머스 발급
+ * 후속 진입점을 부르는데 토스만 빠져 있었다.
  */
 class VirtualAccountDueDateTimezoneTest extends PluginTestCase
 {
@@ -135,5 +141,68 @@ class VirtualAccountDueDateTimezoneTest extends PluginTestCase
 
         $raw = DB::table('ecommerce_order_payments')->where('order_id', $order->id)->value('vbank_due_at');
         $this->assertSame('2026-05-21 14:59:59', (string) $raw);
+    }
+
+    /**
+     * 가상계좌 계좌가 발급되면 입금 전이라도 주문한 장바구니 항목을 정리한다 — KG·KCP·나이스와 같은 처리.
+     * 종전에는 입금이 확인될 때까지 주문을 마친 고객의 장바구니에 같은 상품이 그대로 보였다.
+     *
+     * @scenario payment_method=toss_virtual_account, use_escrow=off
+     *
+     * @effects vbank_issue_clears_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
+    public function test_virtual_account_issue_clears_ordered_cart_items(): void
+    {
+        $order = $this->createOrder();
+        $this->settings();
+        $paymentKey = 'pk_test_vbank_cart';
+
+        $product = Product::factory()->create();
+        $option = ProductOption::factory()->create(['product_id' => $product->id]);
+        $cart = Cart::create([
+            'user_id' => $order->user_id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 1,
+        ]);
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], ['cart_items' => [['cart_id' => $cart->id, 'quantity' => 1]]]),
+        ]);
+
+        // 하한 — 정리할 장바구니 행이 실제로 심어졌는지 먼저 확인한다.
+        $this->assertDatabaseHas('ecommerce_carts', ['id' => $cart->id]);
+
+        Http::fake([
+            'api.tosspayments.com/v1/payments/confirm' => Http::response([
+                'paymentKey' => $paymentKey,
+                'orderId' => $order->order_number,
+                'status' => 'WAITING_FOR_DEPOSIT',
+                'method' => '가상계좌',
+                'totalAmount' => 50000,
+                'secret' => 'wsec_cart',
+                'virtualAccount' => [
+                    'accountNumber' => '12345678901300',
+                    'bankCode' => '20',
+                    'bank' => '우리은행',
+                    'customerName' => '홍길동',
+                    'dueDate' => '2026-05-21T23:59:59+09:00',
+                    'useEscrow' => false,
+                ],
+            ], 200),
+        ]);
+
+        $this->get('/plugins/sirsoft-tosspayments/payment/success?'.http_build_query([
+            'paymentKey' => $paymentKey,
+            'orderId' => $order->order_number,
+            'amount' => 50000,
+        ]))->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $this->assertSame(
+            PaymentStatusEnum::WAITING_DEPOSIT->value,
+            DB::table('ecommerce_order_payments')->where('order_id', $order->id)->value('payment_status'),
+        );
+        $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
     }
 }

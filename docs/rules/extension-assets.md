@@ -49,8 +49,25 @@
 
 ### ① 코어 → 확장 동기화 (`g7_version`)
 
-- 트리거: 코어 공개 확장 표면(`app/Extension/Abstract*`, `HookManager`, `ExtensionManager`, `ModuleManager`, `PluginManager`, `TemplateManager`, `app/Contracts/Extension/**`, `app/Extension/Helpers/**`, `app/Repositories/Concerns/**`, `app/Seo/Contracts/**`, `app/ActivityLog/**` 공개 API, 루트 `CHANGELOG.md` 의 Added/Changed/Removed) 수정
+- 트리거: 코어 공개 확장 표면(`app/Extension/Abstract*`, `HookManager`, `ExtensionManager`, `ModuleManager`, `PluginManager`, `TemplateManager`, `app/Contracts/Extension/**`, `app/Extension/Helpers/**`, `app/Repositories/Concerns/**`, `app/Seo/Contracts/**`, `app/ActivityLog/**` 공개 API, 아래 [확장이 쓰는 코어 지원 클래스](#확장이-쓰는-코어-지원-클래스), 루트 `CHANGELOG.md` 의 Added/Changed/Removed) 수정
 - 조치: 영향 받는 번들 확장의 `g7_version` 상향 + 각 확장 CHANGELOG 에 변경 기재
+
+#### 확장이 쓰는 코어 지원 클래스
+
+확장이 직접 `use` 하는 코어 클래스는 위 디렉터리 밖에 있어도 공개 표면이다. 시그니처·반환 형식·동작을 바꾸면 위와 같이 `g7_version` 을 올리고 CHANGELOG 에 적는다. 확장이 새 코어 클래스를 쓰기 시작하면 이 표에 함께 올린다.
+
+| 영역 | 클래스(경로) | 쓰는 번들 확장 |
+| --- | --- | --- |
+| 개인정보 보존·휴면 | `app/Privacy/**`(`Contracts\PrivacyRetentionHandlerInterface`·`PrivacyManualRunnerInterface`, `DTO\PrivacyRetentionTarget`, `PrivacyRetentionManager`), `app/Http/Requests/Admin/PrivacyTargetListRequest.php`, `app/Http/Resources/PrivacyTargetCollection.php` | 게시판, 이커머스, gdpr |
+| 동의 | `app/Extension/Consent/**`(`ConsentManager`·`ConsentSnapshot`·`ConsentSubject`) | gdpr |
+| 알림 | `app/Services/NotificationRecipientCapability.php`, `app/Services/NotificationTemplateService.php`, `app/Notifications/DeliveryReport.php`, `app/Notifications/GuestNotifiable.php`, `app/Notifications/Identity/IdentityNotificationType.php`, `app/Contracts/Notifications/ChannelReadinessCheckerInterface.php` | 게시판, 이커머스, gdpr |
+| 회원 연락처 노출 | `app/Http/Resources/Traits/ExposesMemberContact.php` | 게시판, 이커머스 |
+| 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`, `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, koreaexim, 결제 4종, 본인인증 2종 |
+| 권한 | `app/Support/PermissionEscalationGuard.php`, `app/Exceptions/PermissionEscalationException.php`, `app/Support/GuestRoleResolver.php`, `app/Contracts/Repositories/PermissionRepositoryInterface.php` | 게시판 |
+| 첨부·본문 미디어 | `app/Helpers/InlineMediaPolicy.php`, `app/Rules/AttachmentFileContent.php`, `app/Services/AttachmentService.php`, `app/Contracts/Repositories/AttachmentRepositoryInterface.php`, `app/Enums/AttachmentSourceType.php`, `app/Exceptions/UnsafeStoragePathException.php` | 게시판, 이커머스, 페이지, ckeditor5 |
+| 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
+| SEO | `app/Seo/SeoRenderRequest.php` | 게시판 |
+| 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
 
 ### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
 

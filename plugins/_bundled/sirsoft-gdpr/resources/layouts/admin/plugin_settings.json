@@ -492,7 +492,7 @@
                                                                     "type": "text",
                                                                     "name": "legal_entity_name",
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.legal_entity_name.placeholder",
-                                                                    "className": "{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
+                                                                    "className": "{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
                                                                 }
                                                             },
                                                             {
@@ -556,7 +556,7 @@
                                                                     "type": "text",
                                                                     "name": "data_storage_location",
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.data_storage_location.placeholder",
-                                                                    "className": "{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
+                                                                    "className": "{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
                                                                 }
                                                             },
                                                             {
@@ -621,7 +621,7 @@
                                                                     "type": "text",
                                                                     "name": "privacy_policy_url",
                                                                     "placeholder": "$t:sirsoft-gdpr.settings.fields.privacy_policy_url.placeholder",
-                                                                    "className": "{{_local.errors?.['privacy_policy_url'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
+                                                                    "className": "{{_local.errors?.['privacy_policy_url'] ? 'input-error dark:focus:ring-red-400 gdpr-input-error-focus' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"
                                                                 }
                                                             },
                                                             {
@@ -1242,7 +1242,7 @@
                                                                                                         "type": "basic",
                                                                                                         "name": "Tr",
                                                                                                         "props": {
-                                                                                                            "className": "border-b border-gray-100 dark:border-gray-700/60 text-gray-700 dark:text-gray-200"
+                                                                                                            "className": "border-b border-gray-100 gdpr-row-divider text-gray-700 dark:text-gray-200"
                                                                                                         },
                                                                                                         "children": [
                                                                                                             {
@@ -1849,7 +1849,7 @@
                                                 "name": "Div",
                                                 "if": "{{!_local.form?.banner_enabled}}",
                                                 "props": {
-                                                    "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg p-4 flex-center gap-2"
+                                                    "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 gdpr-accent-info rounded-lg p-4 flex-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1887,7 +1887,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg p-4"
+                                                            "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 gdpr-accent-info rounded-lg p-4"
                                                         },
                                                         "children": [
                                                             {
@@ -1966,7 +1966,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-2 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2'}}"
+                                                                    "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-2 bg-red-50/30 gdpr-error-panel' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2'}}"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2114,7 +2114,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg p-4"
+                                                    "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 gdpr-accent-info rounded-lg p-4"
                                                 },
                                                 "children": [
                                                     {
@@ -2189,7 +2189,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.localStorage.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
+                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.localStorage.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 gdpr-error-panel' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
                                                         },
                                                         "children": [
                                                             {
@@ -2205,7 +2205,7 @@
                                                                         "props": {
                                                                             "name": "hard-drive",
                                                                             "size": "sm",
-                                                                            "className": "text-sky-600 dark:text-sky-400"
+                                                                            "className": "text-sky-600 gdpr-locked-icon"
                                                                         }
                                                                     },
                                                                     {
@@ -2302,7 +2302,7 @@
                                                                 "name": "Div",
                                                                 "if": "{{(gdprSettings?.data?.settings?.necessary_storage_provided?.localStorage ?? []).length > 0}}",
                                                                 "props": {
-                                                                    "className": "rounded-md bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-3 space-y-2"
+                                                                    "className": "rounded-md bg-sky-50 border border-sky-200 gdpr-locked-box p-3 space-y-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2318,14 +2318,14 @@
                                                                                 "props": {
                                                                                     "name": "puzzle-piece",
                                                                                     "size": "sm",
-                                                                                    "className": "text-sky-600 dark:text-sky-400"
+                                                                                    "className": "text-sky-600 gdpr-locked-icon"
                                                                                 }
                                                                             },
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-xs font-medium text-sky-700 dark:text-sky-300"
+                                                                                    "className": "text-xs font-medium text-sky-700 gdpr-locked-label"
                                                                                 },
                                                                                 "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_label"
                                                                             }
@@ -2348,7 +2348,7 @@
                                                                                     "index_var": "providedIdx"
                                                                                 },
                                                                                 "props": {
-                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 cursor-not-allowed"
+                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-700 gdpr-locked-chip cursor-not-allowed"
                                                                                 },
                                                                                 "text": "{{providedKey}}"
                                                                             }
@@ -2406,7 +2406,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.sessionStorage.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
+                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.sessionStorage.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 gdpr-error-panel' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
                                                         },
                                                         "children": [
                                                             {
@@ -2519,7 +2519,7 @@
                                                                 "name": "Div",
                                                                 "if": "{{(gdprSettings?.data?.settings?.necessary_storage_provided?.sessionStorage ?? []).length > 0}}",
                                                                 "props": {
-                                                                    "className": "rounded-md bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-3 space-y-2"
+                                                                    "className": "rounded-md bg-sky-50 border border-sky-200 gdpr-locked-box p-3 space-y-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2535,14 +2535,14 @@
                                                                                 "props": {
                                                                                     "name": "puzzle-piece",
                                                                                     "size": "sm",
-                                                                                    "className": "text-sky-600 dark:text-sky-400"
+                                                                                    "className": "text-sky-600 gdpr-locked-icon"
                                                                                 }
                                                                             },
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-xs font-medium text-sky-700 dark:text-sky-300"
+                                                                                    "className": "text-xs font-medium text-sky-700 gdpr-locked-label"
                                                                                 },
                                                                                 "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_label"
                                                                             }
@@ -2565,7 +2565,7 @@
                                                                                     "index_var": "providedIdx"
                                                                                 },
                                                                                 "props": {
-                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 cursor-not-allowed"
+                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-700 gdpr-locked-chip cursor-not-allowed"
                                                                                 },
                                                                                 "text": "{{providedKey}}"
                                                                             }
@@ -2623,7 +2623,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.cookie.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
+                                                            "className": "{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('necessary_storage_allowlist.cookie.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-3 bg-red-50/30 gdpr-error-panel' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3'}}"
                                                         },
                                                         "children": [
                                                             {
@@ -2736,7 +2736,7 @@
                                                                 "name": "Div",
                                                                 "if": "{{(gdprSettings?.data?.settings?.necessary_storage_provided?.cookie ?? []).length > 0}}",
                                                                 "props": {
-                                                                    "className": "rounded-md bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-3 space-y-2"
+                                                                    "className": "rounded-md bg-sky-50 border border-sky-200 gdpr-locked-box p-3 space-y-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2752,14 +2752,14 @@
                                                                                 "props": {
                                                                                     "name": "puzzle-piece",
                                                                                     "size": "sm",
-                                                                                    "className": "text-sky-600 dark:text-sky-400"
+                                                                                    "className": "text-sky-600 gdpr-locked-icon"
                                                                                 }
                                                                             },
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-xs font-medium text-sky-700 dark:text-sky-300"
+                                                                                    "className": "text-xs font-medium text-sky-700 gdpr-locked-label"
                                                                                 },
                                                                                 "text": "$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_label"
                                                                             }
@@ -2782,7 +2782,7 @@
                                                                                     "index_var": "providedIdx"
                                                                                 },
                                                                                 "props": {
-                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 cursor-not-allowed"
+                                                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-700 gdpr-locked-chip cursor-not-allowed"
                                                                                 },
                                                                                 "text": "{{providedKey}}"
                                                                             }

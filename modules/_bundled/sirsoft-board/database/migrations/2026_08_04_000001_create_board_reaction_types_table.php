@@ -15,6 +15,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 중단된 업데이트를 다시 실행해도 이미 만든 표에서 멈추지 않는다
+        if (Schema::hasTable('board_reaction_types')) {
+            return;
+        }
+
         Schema::create('board_reaction_types', function (Blueprint $table) {
             $table->id()->comment('반응 유형 ID');
             $table->string('code', 50)->unique()->comment('내부 식별자 (예: like, dislike)');

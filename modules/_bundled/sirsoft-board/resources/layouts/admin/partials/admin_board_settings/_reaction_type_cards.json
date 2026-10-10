@@ -100,7 +100,7 @@
                                     "props": {
                                         "data-testid": "reaction-type-up-m-{{row.code}}",
                                         "type": "button",
-                                        "className": "p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                                        "className": "p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed",
                                         "title": "$t:sirsoft-board.admin.settings.reaction_types.actions.move_up",
                                         "disabled": "{{_computed.isReadOnly || row._idx === 0}}"
                                     },
@@ -133,7 +133,7 @@
                                     "props": {
                                         "data-testid": "reaction-type-down-m-{{row.code}}",
                                         "type": "button",
-                                        "className": "p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                                        "className": "p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed",
                                         "title": "$t:sirsoft-board.admin.settings.reaction_types.actions.move_down",
                                         "disabled": "{{_computed.isReadOnly || row._idx === (_local.form?.basic_defaults?.reaction_types ?? []).length - 1}}"
                                     },

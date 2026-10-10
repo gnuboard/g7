@@ -1,0 +1,17 @@
+feature: 1.1.0 업그레이드 — 범위 밖 팝업 크기 설정을 기본값으로 보정
+
+description: |
+  1.0.x 는 팝업 너비·높이의 정수 여부만 검증해 범위 밖 값이 저장될 수 있었다. 1.1.0 의 100~2000 검증이 들어오면
+  그 사이트는 환경설정 화면에서 다른 항목을 저장할 때도 막힌다. 업그레이드 스텝이 범위 밖 값만 기본값(500·600)으로 되돌린다.
+
+axes:
+  stored: [out_of_range, in_range, non_numeric, missing_or_malformed]
+
+effects:
+  - out_of_range_popup_size_reset_to_default          # 범위 밖·숫자 아님 → 기본값
+  - in_range_popup_size_preserved                     # 범위 안·키 없음은 그대로
+  - popup_size_reset_is_idempotent                    # 재실행해도 같은 결과
+  - popup_size_reset_skips_missing_or_malformed_file  # 파일 없음·JSON 깨짐 skip
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/tests/Unit/Upgrades/ResetOutOfRangePopupSizeTest.php

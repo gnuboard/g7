@@ -84,7 +84,7 @@ URL prefix 가 `/plugins/{식별자}/` 로 고정되는 것에 주의합니다. 
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `gnuboard7-hello_module` | 모듈 | `>=0.1.0` | ✅ |
+| `gnuboard7-hello_module` | 모듈 | `>=0.2.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
@@ -92,7 +92,7 @@ URL prefix 가 `/plugins/{식별자}/` 로 고정되는 것에 주의합니다. 
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-`gnuboard7-hello_module` 에 의존합니다(`>=0.1.0`).
+`gnuboard7-hello_module` 에 의존합니다(`>=0.2.0`).
 
 **이 의존 선언 자체가 학습 포인트**입니다. 훅 구독은 상대가 없으면 발화하지 않을 뿐이라 보통은
 manifest 의존으로 올리지 않습니다 — "없으면 그 기능만 비는" 관계이기 때문입니다. 그런데 이

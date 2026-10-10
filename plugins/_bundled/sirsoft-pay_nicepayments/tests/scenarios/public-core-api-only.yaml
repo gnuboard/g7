@@ -11,7 +11,8 @@ description: |
   - 비회원 조회 토큰은 이커머스의 공개 상태 계약 `_global.guestOrderToken` 에서만 읽어 X-Guest-Order-Token 으로 싣는다.
   - 닫힘 보고는 플러그인 API 상대 경로로 보낸다 — client-config 의 close_report_url 은 #704 이후 웹 경로를 가리켜
     API 라우트에 닿지 않았다.
-  - 간편결제 선택 표시 감시는 G7Core.state.subscribe() 로 걸고, 재초기화 때 앞 구독을 풀고 다시 건다.
+  - 간편결제 선택 표시는 이커머스 결제수단 목록이 그린다 — 주입 대상이 없던 주문서 간편결제 조각과 한국어 문구 DOM 탐색·상태 구독
+    감시는 7.1.0 에서 걷어냈다(D-6).
 
 axes:
   concern:
@@ -20,7 +21,6 @@ axes:
     - close_report_member
     - close_report_guest
     - payment_method_selection
-    - state_subscription
     - payment_entry
     - pay_method_mapping
     - sign_data_member
@@ -33,8 +33,8 @@ effects:
   - close_report_via_core_api                       # 닫힘 보고는 G7Core.api + 플러그인 API 상대 경로
   - close_report_failure_is_swallowed               # 보고 실패는 예외로 흘리지 않음
   - selected_method_saved_unchanged                 # 고른 결제수단 ID 를 그대로 저장
-  - subscription_released_before_resubscribe        # 재초기화 시 앞 구독 해제 후 재구독
-  - easy_pay_highlight_cleared_on_core_method       # 코어 결제수단으로 바뀌면 간편결제 선택 표시 해제
+  - easy_pay_rendered_by_payment_method_catalog_only # 주입 대상 없던 주문서 간편결제 조각을 다시 두지 않음
+  - no_locale_dependent_dom_lookup                  # 결제수단 선택이 화면 문구로 DOM 을 찾지 않음
   - payment_entry_guarded                           # 입력·설정·서명 실패 시 결제 폼을 제출하지 않음
   - payment_method_from_action_argument_only        # 결제수단은 액션 인자로만 — 화면 상태·card 기본값 추측 없음
   - mobile_pay_method_mapped                        # 결제수단 → PayMethod·간편결제 지시 필드 매핑

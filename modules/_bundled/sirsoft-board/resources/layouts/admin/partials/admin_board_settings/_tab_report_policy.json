@@ -709,7 +709,7 @@
                                                                         "index_var": "tplIndex"
                                                                     },
                                                                     "props": {
-                                                                        "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40"
+                                                                        "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -933,7 +933,7 @@
                                                                         "index_var": "tplIndex"
                                                                     },
                                                                     "props": {
-                                                                        "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40"
+                                                                        "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row"
                                                                     },
                                                                     "children": [
                                                                         {

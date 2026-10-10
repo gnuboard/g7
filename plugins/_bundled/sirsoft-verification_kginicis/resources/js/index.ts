@@ -16,6 +16,9 @@
  * @since 1.0.0-beta.1
  */
 
+// 설정 화면 상태 유틸리티(접두 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
+
 const PLUGIN_IDENTIFIER = 'sirsoft-verification_kginicis';
 const PROVIDER_ID = 'inicis';
 const POPUP_FEATURES = 'width=400,height=640,scrollbars=yes,resizable=yes';

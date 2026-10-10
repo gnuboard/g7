@@ -212,7 +212,7 @@
       "method": {
         "credit_card": "クレジットカード",
         "bank_transfer": "銀行振込",
-        "virtual_account": "バーチャルアカウント"
+        "virtual_account": "仮想口座"
       },
       "account_info": "{{bank}} {{account}} ({{holder}})",
       "cancelled_amount": "キャンセル金額",

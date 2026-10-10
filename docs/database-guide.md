@@ -732,6 +732,8 @@ php artisan db:seed --class="Database\Seeders\Sample\DummyUserSeeder"
 php artisan module:seed sirsoft-ecommerce --class=Sample\\ProductSeeder
 ```
 
+설치가 끝난 사이트에서 `db:seed`(`--sample` 포함)를 다시 실행해도 관리자 시더(`AdminUserSeeder`)는 최고관리자가 이미 있거나 `INSTALLER_ADMIN_EMAIL`·`INSTALLER_ADMIN_PASSWORD` 환경변수가 없으면 안내만 하고 건너뛴다 — 기존 회원은 그대로 두고 나머지 설치·샘플 시더는 계속 실행된다. 첫 관리자 계정은 설치 마법사가 두 환경변수를 넣고 만든다.
+
 **패턴**:
 ```php
 <?php

@@ -203,7 +203,7 @@ php artisan module:check-updates [identifier?]
 **기능**:
 
 - **전체 확인** (인수 없음): 설치된 모든 모듈의 업데이트 가용 여부를 테이블로 출력
-  - 감지 우선순위: GitHub > `_bundled` (2단계, `_pending` 미참여)
+  - 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `_pending` 미참여
   - DB에 `update_available`, `latest_version`, `update_source` 갱신
 - **단일 확인** (인수 있음): 특정 모듈의 업데이트 가용 여부 확인
   - `checkModuleUpdate()`는 DB 갱신 안 함 → 커맨드에서 `updateByIdentifier()` 직접 호출
@@ -228,7 +228,7 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 
 **옵션**:
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
-- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub > `_bundled` 우선순위, `bundled` = `_bundled` 단독, `github` = GitHub 단독)
+- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음))
 - `--layout-strategy`: 운영자 수정 레이아웃·확장 조각 처리 (`overwrite` = 전체 덮어쓰기, `keep` = 고친 부분은 유지하고 손대지 않은 부분에 새 버전을 병합 — 결과 표 출력)
 - `--vendor-mode`: vendor 설치 방식 (`auto` 기본, `composer`, `bundled`)
 
@@ -551,7 +551,7 @@ POST /api/admin/modules/check-updates
 POST /api/admin/modules/{moduleName}/update
 ```
 
-- 감지 우선순위: GitHub > `_bundled` (2단계, `_pending` 미참여)
+- 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `_pending` 미참여
 - 상태 가드 확인 → 백업 → status: Updating → 파일 교체 → 마이그레이션 → 업그레이드 스텝 → 복원
 - 에러 발생 시 자동 롤백 (백업에서 복원)
 

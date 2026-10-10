@@ -1235,7 +1235,7 @@
                                                                     "href": "https://app.tosspayments.com/",
                                                                     "target": "_blank",
                                                                     "rel": "noopener noreferrer",
-                                                                    "className": "ml-1 underline font-medium hover:text-amber-900 dark:hover:text-amber-100"
+                                                                    "className": "ml-1 underline font-medium pay-tosspayments-link-warning"
                                                                 },
                                                                 "text": "$t:sirsoft-tosspayments.settings.escrow_shipping_info_link"
                                                             }

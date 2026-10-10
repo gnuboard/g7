@@ -85,6 +85,7 @@ effects:
   - toss_provider_registered_with_payment_handler
   - enabled_methods_exposed_with_core_mapping
   - vbank_account_stored_without_completing
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전) — KG·KCP·나이스와 같은 처리
   - vbank_secret_stored_for_webhook
   - is_escrow_snapshot_persisted
   - webhook_secret_verified

@@ -310,7 +310,7 @@ return [
                 'name' => ['ko' => '사용자 관리', 'en' => 'User Management'],
                 'description' => ['ko' => '사용자 관리 권한', 'en' => 'User management permissions'],
                 'category' => 'users',
-                'order' => 1,
+                'order' => 100,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.users.read', 'type' => 'admin', 'name' => ['ko' => '사용자 조회', 'en' => 'View Users'], 'description' => ['ko' => '사용자 목록 및 상세 정보를 조회할 수 있습니다.', 'en' => 'Can view user list and details.'], 'order' => 1, 'resource_route_key' => 'user', 'owner_key' => 'id'],
@@ -324,7 +324,7 @@ return [
                 'name' => ['ko' => '메뉴 관리', 'en' => 'Menu Management'],
                 'description' => ['ko' => '메뉴 관리 권한', 'en' => 'Menu management permissions'],
                 'category' => 'menus',
-                'order' => 2,
+                'order' => 200,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.menus.read', 'type' => 'admin', 'name' => ['ko' => '메뉴 조회', 'en' => 'View Menus'], 'description' => ['ko' => '메뉴 목록을 조회할 수 있습니다.', 'en' => 'Can view menu list.'], 'order' => 1, 'resource_route_key' => 'menu', 'owner_key' => 'created_by'],
@@ -338,7 +338,7 @@ return [
                 'name' => ['ko' => '모듈 관리', 'en' => 'Module Management'],
                 'description' => ['ko' => '모듈 관리 권한', 'en' => 'Module management permissions'],
                 'category' => 'modules',
-                'order' => 3,
+                'order' => 300,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.modules.read', 'type' => 'admin', 'name' => ['ko' => '모듈 조회', 'en' => 'View Modules'], 'description' => ['ko' => '모듈 목록을 조회할 수 있습니다.', 'en' => 'Can view module list.'], 'order' => 1],
@@ -352,7 +352,7 @@ return [
                 'name' => ['ko' => '플러그인 관리', 'en' => 'Plugin Management'],
                 'description' => ['ko' => '플러그인 관리 권한', 'en' => 'Plugin management permissions'],
                 'category' => 'plugins',
-                'order' => 4,
+                'order' => 400,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.plugins.read', 'type' => 'admin', 'name' => ['ko' => '플러그인 조회', 'en' => 'View Plugins'], 'description' => ['ko' => '플러그인 목록을 조회할 수 있습니다.', 'en' => 'Can view plugin list.'], 'order' => 1],
@@ -367,7 +367,7 @@ return [
                 'name' => ['ko' => '템플릿 관리', 'en' => 'Template Management'],
                 'description' => ['ko' => '템플릿 관리 권한', 'en' => 'Template management permissions'],
                 'category' => 'templates',
-                'order' => 5,
+                'order' => 500,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.templates.read', 'type' => 'admin', 'name' => ['ko' => '템플릿 조회', 'en' => 'View Templates'], 'description' => ['ko' => '템플릿 목록을 조회할 수 있습니다.', 'en' => 'Can view template list.'], 'order' => 1],
@@ -382,7 +382,7 @@ return [
                 'name' => ['ko' => '확장 공통', 'en' => 'Extension Common'],
                 'description' => ['ko' => '모듈·플러그인·템플릿에 공통으로 적용되는 권한', 'en' => 'Permissions that apply across modules, plugins and templates'],
                 'category' => 'extensions',
-                'order' => 5.5,
+                'order' => 550,
                 'type' => 'admin',
                 'permissions' => [
                     // 확장 타입을 가리지 않는 단일 권한이다. 타입별로 쪼개면 운영자가 셋을 모두
@@ -398,7 +398,7 @@ return [
                 'name' => ['ko' => '권한 관리', 'en' => 'Permission Management'],
                 'description' => ['ko' => '역할 및 권한 관리 권한', 'en' => 'Role and permission management permissions'],
                 'category' => 'permissions',
-                'order' => 6,
+                'order' => 600,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.permissions.read', 'type' => 'admin', 'name' => ['ko' => '권한 조회', 'en' => 'View Permissions'], 'description' => ['ko' => '역할 및 권한 목록을 조회할 수 있습니다.', 'en' => 'Can view roles and permissions.'], 'order' => 1],
@@ -412,7 +412,7 @@ return [
                 'name' => ['ko' => '알림 발송 이력', 'en' => 'Notification Logs'],
                 'description' => ['ko' => '알림 발송 이력 관리 권한', 'en' => 'Notification log management permissions'],
                 'category' => 'notification-logs',
-                'order' => 7,
+                'order' => 700,
                 'type' => 'admin',
                 'permissions' => [
                     // resource_route_key·owner_key 를 두지 않는다 — 소유 컬럼이 발신자·수신자 둘이라
@@ -429,7 +429,7 @@ return [
                 'name' => ['ko' => '회원 알림함', 'en' => 'Member Notifications'],
                 'description' => ['ko' => '전 회원 in-app 알림함 조회·삭제 권한', 'en' => 'View and delete member in-app notifications'],
                 'category' => 'member-notifications',
-                'order' => 7.7,
+                'order' => 770,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.member-notifications.read', 'type' => 'admin', 'name' => ['ko' => '회원 알림함 조회', 'en' => 'View Member Notifications'], 'description' => ['ko' => '전 회원이 받은 알림을 조회할 수 있습니다.', 'en' => 'Can view notifications received by all members.'], 'order' => 1],
@@ -441,7 +441,7 @@ return [
                 'name' => ['ko' => '알림 (관리자)', 'en' => 'Notifications (Admin)'],
                 'description' => ['ko' => '관리자용 알림 관리 권한 (관리자 화면에서 사용)', 'en' => 'Admin notification management permissions (used in admin UI)'],
                 'category' => 'notifications',
-                'order' => 7.5,
+                'order' => 750,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.notifications.read', 'type' => 'admin', 'name' => ['ko' => '알림 조회', 'en' => 'View Notifications'], 'description' => ['ko' => '알림 목록 및 읽지 않은 수를 조회할 수 있습니다.', 'en' => 'Can view notification list and unread count.'], 'order' => 1],
@@ -454,7 +454,7 @@ return [
                 'name' => ['ko' => '알림 (사용자)', 'en' => 'Notifications (User)'],
                 'description' => ['ko' => '사용자용 알림 권한 (사용자 화면에서 본인 알림 관리)', 'en' => 'User notification permissions (managing own notifications in user UI)'],
                 'category' => 'user-notifications',
-                'order' => 7.6,
+                'order' => 760,
                 'type' => 'user',
                 'permissions' => [
                     ['identifier' => 'core.user-notifications.read', 'type' => 'user', 'name' => ['ko' => '알림 조회', 'en' => 'View Notifications'], 'description' => ['ko' => '본인의 알림 목록 및 읽지 않은 수를 조회할 수 있습니다.', 'en' => 'Can view own notification list and unread count.'], 'order' => 1],
@@ -470,7 +470,7 @@ return [
                 'name' => ['ko' => '내 정보 (사용자)', 'en' => 'My Profile (User)'],
                 'description' => ['ko' => '사용자 화면에서 본인 정보를 조회·수정하는 권한', 'en' => 'Permissions to view and edit own profile in the user UI'],
                 'category' => 'profile',
-                'order' => 7.65,
+                'order' => 765,
                 'type' => 'user',
                 'permissions' => [
                     ['identifier' => 'core.profile.read', 'type' => 'user', 'name' => ['ko' => '내 정보 조회', 'en' => 'View My Profile'], 'description' => ['ko' => '본인 정보와 활동 기록을 조회할 수 있습니다. 계정이 비활성·차단 등 정상 상태가 아니어도 본인 정보 조회는 이 권한으로 허용됩니다.', 'en' => 'Can view own profile and activity history. Viewing own profile is allowed by this permission even when the account is not active (inactive, blocked, etc.).'], 'order' => 1],
@@ -482,7 +482,7 @@ return [
                 'name' => ['ko' => '본인인증 (사용자)', 'en' => 'Identity Verification (User)'],
                 'description' => ['ko' => '로그인 사용자의 본인인증 challenge 요청/검증/취소 권한', 'en' => 'Permissions for authenticated users to request/verify/cancel IDV challenges'],
                 'category' => 'identity',
-                'order' => 7.7,
+                'order' => 770,
                 'type' => 'user',
                 'permissions' => [
                     ['identifier' => 'core.identity.request', 'type' => 'user', 'name' => ['ko' => 'IDV 요청', 'en' => 'Request IDV Challenge'], 'description' => ['ko' => '본인인증 challenge 를 요청할 수 있습니다.', 'en' => 'Can request identity verification challenges.'], 'order' => 1],
@@ -495,7 +495,7 @@ return [
                 'name' => ['ko' => '본인인증 관리 (관리자)', 'en' => 'Identity Verification Management (Admin)'],
                 'description' => ['ko' => '관리자용 IDV 프로바이더/정책/로그 관리 권한', 'en' => 'Admin permissions for IDV providers, policies, and logs'],
                 'category' => 'identity',
-                'order' => 7.8,
+                'order' => 780,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.admin.identity.providers.read', 'type' => 'admin', 'name' => ['ko' => '프로바이더 설정 조회', 'en' => 'View IDV Providers'], 'description' => ['ko' => '본인인증 프로바이더 설정을 조회할 수 있습니다.', 'en' => 'Can view identity verification providers.'], 'order' => 1],
@@ -511,7 +511,7 @@ return [
                 'name' => ['ko' => '환경설정', 'en' => 'Settings'],
                 'description' => ['ko' => '시스템 환경설정 권한', 'en' => 'System settings permissions'],
                 'category' => 'settings',
-                'order' => 8,
+                'order' => 800,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.settings.read', 'type' => 'admin', 'name' => ['ko' => '설정 조회', 'en' => 'View Settings'], 'description' => ['ko' => '시스템 설정을 조회할 수 있습니다.', 'en' => 'Can view system settings.'], 'order' => 1],
@@ -523,7 +523,7 @@ return [
                 'name' => ['ko' => '대시보드', 'en' => 'Dashboard'],
                 'description' => ['ko' => '대시보드 접근 권한', 'en' => 'Dashboard access permissions'],
                 'category' => 'dashboard',
-                'order' => 9,
+                'order' => 900,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.dashboard.read', 'type' => 'admin', 'name' => ['ko' => '대시보드 조회', 'en' => 'View Dashboard'], 'description' => ['ko' => '대시보드 통계 및 정보를 조회할 수 있습니다.', 'en' => 'Can view dashboard statistics and information.'], 'order' => 1],
@@ -538,7 +538,7 @@ return [
                 'name' => ['ko' => '활동 로그', 'en' => 'Activity Logs'],
                 'description' => ['ko' => '활동 로그 조회 권한', 'en' => 'Activity log access permissions'],
                 'category' => 'activities',
-                'order' => 10,
+                'order' => 1000,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.activities.read', 'type' => 'admin', 'name' => ['ko' => '활동 로그 조회', 'en' => 'View Activity Logs'], 'description' => ['ko' => '활동 로그를 조회할 수 있습니다.', 'en' => 'Can view activity logs.'], 'order' => 1, 'resource_route_key' => 'activityLog', 'owner_key' => 'user_id'],
@@ -550,7 +550,7 @@ return [
                 'name' => ['ko' => '첨부파일 관리', 'en' => 'Attachment Management'],
                 'description' => ['ko' => '첨부파일 관리 권한', 'en' => 'Attachment management permissions'],
                 'category' => 'attachments',
-                'order' => 11,
+                'order' => 1100,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.attachments.create', 'type' => 'admin', 'name' => ['ko' => '첨부파일 업로드', 'en' => 'Upload Attachments'], 'description' => ['ko' => '첨부파일을 업로드할 수 있습니다.', 'en' => 'Can upload attachments.'], 'order' => 1],
@@ -563,7 +563,7 @@ return [
                 'name' => ['ko' => '스케줄 관리', 'en' => 'Schedule Management'],
                 'description' => ['ko' => '스케줄 작업 관리 권한', 'en' => 'Schedule task management permissions'],
                 'category' => 'schedules',
-                'order' => 12,
+                'order' => 1200,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.schedules.read', 'type' => 'admin', 'name' => ['ko' => '스케줄 조회', 'en' => 'View Schedules'], 'description' => ['ko' => '스케줄 목록 및 상세 정보를 조회할 수 있습니다.', 'en' => 'Can view schedule list and details.'], 'order' => 1],
@@ -578,7 +578,7 @@ return [
                 'name' => ['ko' => '언어팩 관리', 'en' => 'Language Pack Management'],
                 'description' => ['ko' => '언어팩 설치/제거/활성화 권한', 'en' => 'Language pack install/uninstall/activation permissions'],
                 'category' => 'language_packs',
-                'order' => 13,
+                'order' => 1300,
                 'type' => 'admin',
                 'permissions' => [
                     ['identifier' => 'core.language_packs.read', 'type' => 'admin', 'name' => ['ko' => '언어팩 조회', 'en' => 'View Language Packs'], 'description' => ['ko' => '설치된 언어팩 목록 및 상세 정보를 조회할 수 있습니다.', 'en' => 'Can view installed language pack list and details.'], 'order' => 1],
@@ -592,7 +592,7 @@ return [
                 'name' => ['ko' => '방문자 통계', 'en' => 'Analytics'],
                 'description' => ['ko' => '방문자 통계 권한', 'en' => 'Analytics permissions'],
                 'category' => 'analytics',
-                'order' => 14,
+                'order' => 1400,
                 'type' => 'admin',
                 // 조회(집계 숫자) · 설정(수집 방식·삭제) · 개인정보(방문자 원장) 세 단계로 나눈다.
                 // 통계를 보는 것과 개인 방문 기록을 들여다보는 것은 다른 권한이어야 한다.

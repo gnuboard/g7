@@ -8,7 +8,7 @@
       <div data-ref="language_settings_content" class="grid-2col-responsive">
         <div data-ref="field_default_currency" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_currency</label>
-          <select name="language_currency.default_currency" value="{{_local.form?.language_currency?.default_currency}}" options="{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}" class="{{_local.errors?.['language_currency.default_currency'] ? 'w-full select-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
+          <select name="language_currency.default_currency" value="{{_local.form?.language_currency?.default_currency}}" options="{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}" class="{{_local.errors?.['language_currency.default_currency'] ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['language_currency.default_currency']}}" class="form-error">{{_local.errors?.['language_currency.default_currency']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.currency_change_warning</p>
         </div>
@@ -17,7 +17,7 @@
     <div data-ref="exchange_settings_card" class="admin-card">
       <div data-ref="exchange_rate_provider_select" data-if="{{(settings?.data?.available_rate_providers ?? []).length > 0}}" class="form-group mb-4">
         <label class="form-label" htmlFor="exchange_rate_provider">$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label</label>
-        <select id="exchange_rate_provider" class="{{_local.errors?.['language_currency.rate_provider'] ? 'w-full select-error' : 'w-full'}}" name="language_currency.rate_provider" value="{{_local.form?.language_currency?.rate_provider ?? ''}}" options="{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual')}].concat((settings?.data?.available_rate_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}"/>
+        <select id="exchange_rate_provider" class="{{_local.errors?.['language_currency.rate_provider'] ? 'w-full input-error' : 'w-full'}}" name="language_currency.rate_provider" value="{{_local.form?.language_currency?.rate_provider ?? ''}}" options="{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual')}].concat((settings?.data?.available_rate_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{_local.errors?.['language_currency.rate_provider']}}" class="form-error">{{_local.errors?.['language_currency.rate_provider']?.[0] ?? ''}}</span>
       </div>
       <div data-ref="exchange_rate_provider_banner" data-if="{{_computed.activeRateProvider !== null}}" role="status" class="alert-info mb-4 flex flex-wrap items-center gap-2">

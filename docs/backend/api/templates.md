@@ -97725,7 +97725,7 @@ _단건 응답: `data` 객체의 필드._
 | type | string | `admin` | 템플릿 타입 (admin: 관리자용, user: 사용자용) |
 | locales | array | `["ko","en"]` | 활성 로케일 코드 배열 |
 | author | object | `{"name":"sirsoft","email":"contact@sirsoft.com","url":"ht…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
-| release_date | string | `2026-05-15` | 배포일 |
+| release_date | string | `2026-10-09` | 배포일 |
 | g7_version | string | `>=7.0.0` | 요구하는 코어 최소 버전 (manifest requires.g7_version) |
 | dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
 | assets | object | `{"css":["assets\/css\/main.css","assets\/css\/ui-system.c…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
@@ -97770,7 +97770,7 @@ HTTP/1.1 200
             "email": "contact@sirsoft.com",
             "url": "https://sirsoft.com"
         },
-        "release_date": "2026-05-15",
+        "release_date": "2026-10-09",
         "g7_version": ">=7.1.0",
         "dependencies": {
             "modules": [],

@@ -9,6 +9,7 @@ use App\Services\AttachmentService;
 use App\Support\SiteUrl;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
+use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
 use Modules\Sirsoft\Board\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
@@ -510,7 +511,8 @@ class Module extends AbstractModule
      * 모듈 설치 시 실행할 시더 목록 반환
      *
      * BoardTypeSeeder: 기본 게시판 유형(basic, gallery, card) 생성
-     * InstallSeeder: 기본 메일 템플릿 5종 생성
+     * BoardReactionTypeSeeder: 기본 반응 유형(추천·비추천) 생성 — 빠지면 새로 설치한 사이트의
+     *   게시판에 반응 버튼이 나오지 않는다(게시판 기본 설정의 사용할 반응 유형이 가리킬 행이 없다)
      *
      * 그 외 시더(DatabaseSeeder, BoardSampleSeeder, PostSampleSeeder, ReportSampleSeeder)는
      * 테스트용 더미 데이터 시더이므로 설치 시 실행하지 않습니다.
@@ -523,6 +525,7 @@ class Module extends AbstractModule
     {
         return [
             BoardTypeSeeder::class,
+            BoardReactionTypeSeeder::class,
         ];
     }
 

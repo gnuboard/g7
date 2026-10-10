@@ -12,6 +12,14 @@
       "database": {
         "subject": "個人情報利用内訳のお知らせ",
         "body": "{introduction_text} / {collection_summary} / {purpose} / {retention} / {notice_sections_text}"
+      },
+      "sms": {
+        "subject": "個人情報利用内訳のお知らせ",
+        "body": "{introduction_text} / {collection_summary} / {purpose} / {retention} / {notice_sections_text}"
+      },
+      "alimtalk": {
+        "subject": "個人情報利用内訳のお知らせ",
+        "body": "{introduction_text} / {collection_summary} / {purpose} / {retention} / {notice_sections_text}"
       }
     }
   }

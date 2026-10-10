@@ -71,6 +71,7 @@ effects:
   - module_row_search_hits_after_reference_check
   - legacy_row_rekeyed_to_file_key_and_edit_kept
   - legacy_and_new_key_rows_merge_by_operator_edit
+  - empty_object_content_survives_rekey_and_modification_check_matches_runtime
   - multi_candidate_legacy_row_resolved_by_hash_or_held
   - template_override_legacy_row_rekeyed
   - legacy_row_untouched_without_candidate_or_without_drift

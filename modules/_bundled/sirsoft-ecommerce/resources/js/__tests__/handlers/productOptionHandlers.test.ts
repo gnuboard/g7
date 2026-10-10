@@ -152,6 +152,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
     });
 
     describe('환율 계산 공식', () => {
+        /**
+         * @scenario case=c01
+         * @effects product_option_handlers_behavior
+         */
         it('올바른 공식 적용: (basePrice / 1000) * exchange_rate', () => {
             // 판매가 53000원 → USD: (53000 / 1000) * 0.85 = 45.05
             updateFormOptionFieldHandler(
@@ -178,6 +182,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
             expect(multiCurrency.EUR.price).toBe(41.34);
         });
 
+        /**
+         * @scenario case=c02
+         * @effects product_option_handlers_behavior
+         */
         it('이전 잘못된 공식(basePrice * exchange_rate) 사용하지 않음', () => {
             updateFormOptionFieldHandler(
                 {
@@ -197,6 +205,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
     });
 
     describe('데이터 구조 (백엔드 API 응답과 일치)', () => {
+        /**
+         * @scenario case=c03
+         * @effects product_option_handlers_behavior
+         */
         it('다중통화 가격은 { price: number } 객체로 저장됨', () => {
             updateFormOptionFieldHandler(
                 {
@@ -216,6 +228,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
             expect(typeof multiCurrency.JPY.price).toBe('number');
         });
 
+        /**
+         * @scenario case=c04
+         * @effects product_option_handlers_behavior
+         */
         it('flat number가 아닌 객체로 저장됨 (레이아웃의 .price 접근 호환)', () => {
             updateFormOptionFieldHandler(
                 {
@@ -234,6 +250,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
     });
 
     describe('환경설정 rounding_unit 적용', () => {
+        /**
+         * @scenario case=c05
+         * @effects product_option_handlers_behavior
+         */
         it('USD: rounding_unit 0.01 적용', () => {
             // 55000원 → USD: (55000 / 1000) * 0.85 = 46.75
             mockLocalState.form.options = [createMockOption({ selling_price: 55000 })];
@@ -251,6 +271,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
             expect(usdPrice).toBe(46.75);
         });
 
+        /**
+         * @scenario case=c06
+         * @effects product_option_handlers_behavior
+         */
         it('JPY: rounding_unit 1, method floor 적용', () => {
             // 53500원 → JPY: (53500 / 1000) * 115 = 6152.5 → floor → 6152
             mockLocalState.form.options = [createMockOption({ selling_price: 53500 })];
@@ -268,6 +292,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
             expect(jpyPrice).toBe(6152);
         });
 
+        /**
+         * @scenario case=c07
+         * @effects product_option_handlers_behavior
+         */
         it('CNY: rounding_unit 0.1, method round 적용', () => {
             // 51000원 → CNY: (51000 / 1000) * 5.8 = 295.8 → round(295.8/0.1)*0.1 = 295.8
             mockLocalState.form.options = [createMockOption({ selling_price: 51000 })];
@@ -284,6 +312,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
             expect(cnyPrice).toBe(295.8);
         });
 
+        /**
+         * @scenario case=c08
+         * @effects product_option_handlers_behavior
+         */
         it('EUR: rounding_unit 0.01, method ceil 적용', () => {
             // 51500원 → EUR: (51500 / 1000) * 0.78 = 40.17 → ceil(40.17/0.01)*0.01 = 40.17
             mockLocalState.form.options = [createMockOption({ selling_price: 51500 })];
@@ -302,6 +334,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
     });
 
     describe('환경설정 decimal_places 적용', () => {
+        /**
+         * @scenario case=c09
+         * @effects product_option_handlers_behavior
+         */
         it('JPY: decimal_places 0 → 소수점 없음', () => {
             updateFormOptionFieldHandler(
                 {
@@ -315,6 +351,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
             expect(Number.isInteger(jpyPrice)).toBe(true);
         });
 
+        /**
+         * @scenario case=c10
+         * @effects product_option_handlers_behavior
+         */
         it('USD: decimal_places 2 → 소수점 2자리', () => {
             updateFormOptionFieldHandler(
                 {
@@ -332,6 +372,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
     });
 
     describe('recalculateOptionPriceAdjustmentsHandler', () => {
+        /**
+         * @scenario case=c11
+         * @effects product_option_handlers_behavior
+         */
         it('상품 판매가 변경 시 모든 옵션의 다중통화 가격 재계산', () => {
             mockLocalState.form.options = [
                 createMockOption({ selling_price: 53000, price_adjustment: 0 }),
@@ -360,6 +404,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
             expect(options[1].multi_currency_selling_price.USD.price).toBe(50.15);
         });
 
+        /**
+         * @scenario case=c12
+         * @effects product_option_handlers_behavior
+         */
         it('재계산 결과가 { price: number } 객체 구조', () => {
             recalculateOptionPriceAdjustmentsHandler(
                 {
@@ -376,6 +424,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
     });
 
     describe('다통화 항상 자동 계산 (읽기전용 표시)', () => {
+        /**
+         * @scenario case=c13
+         * @effects product_option_handlers_behavior
+         */
         it('판매가 변경 시 다통화가 항상 환율 기준으로 재계산되고 formatted 를 포함한다', () => {
             mockLocalState.form.options[0].is_default = true;
             mockLocalState.form.options[0].multi_currency_selling_price = { USD: { price: 45.05 } };
@@ -397,6 +449,10 @@ describe('productOptionHandlers - 다중통화 계산', () => {
     });
 
     describe('판매가 0 또는 엣지 케이스', () => {
+        /**
+         * @scenario case=c14
+         * @effects product_option_handlers_behavior
+         */
         it('판매가 0원이면 모든 다중통화 가격도 0', () => {
             updateFormOptionFieldHandler(
                 {
@@ -430,6 +486,10 @@ describe('productOptionHandlers - 옵션 재고 합산', () => {
         delete (window as any).G7Core;
     });
 
+    /**
+     * @scenario case=c15
+     * @effects product_option_handlers_behavior
+     */
     it('has_options가 true일 때 stock_quantity 변경 시 합산 반영', () => {
         mockLocalState = {
             form: {
@@ -456,6 +516,10 @@ describe('productOptionHandlers - 옵션 재고 합산', () => {
         expect(mockLocalState.form.options[0].stock_quantity).toBe(20);
     });
 
+    /**
+     * @scenario case=c16
+     * @effects product_option_handlers_behavior
+     */
     it('has_options 미설정(등록 모드)에서도 stock_quantity 합산이 정상 동작해야 한다', () => {
         // 등록 모드: has_options 필드가 없음
         mockLocalState = {
@@ -495,6 +559,10 @@ describe('productOptionHandlers - 옵션 재고 합산', () => {
         expect(mockLocalState.form.stock_quantity).toBe(8);
     });
 
+    /**
+     * @scenario case=c17
+     * @effects product_option_handlers_behavior
+     */
     it('비활성 옵션은 재고 합산에서 제외해야 한다', () => {
         mockLocalState = {
             form: {
@@ -532,10 +600,7 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
     beforeEach(() => {
         (window as any).G7Core = {
             ...mockG7Core,
-            config: (key: string) => {
-                if (key === 'app.supported_locales') return ['ko', 'en'];
-                return undefined;
-            },
+            locale: { current: () => 'ko', supported: () => ['ko', 'en'] },
         };
         vi.clearAllMocks();
     });
@@ -544,6 +609,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
         delete (window as any).G7Core;
     });
 
+    /**
+     * @scenario case=c18
+     * @effects product_option_handlers_behavior
+     */
     it('옵션 행 추가 시 option_values가 배열 포맷으로 생성됨', () => {
         mockLocalState = {
             form: {
@@ -575,6 +644,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
         expect(newOption.option_values[1].value).toEqual({ ko: '', en: '' });
     });
 
+    /**
+     * @scenario case=c19
+     * @effects product_option_handlers_behavior
+     */
     it('옵션 행 추가 시 option_name 다국어 필드가 포함됨', () => {
         mockLocalState = {
             form: {
@@ -596,6 +669,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
         expect(newOption.option_name).toEqual({ ko: '', en: '' });
     });
 
+    /**
+     * @scenario case=c20
+     * @effects product_option_handlers_behavior
+     */
     it('첫 번째 옵션은 is_default=true로 설정됨', () => {
         mockLocalState = {
             form: {
@@ -612,6 +689,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
         expect(mockLocalState.form.options[0].is_default).toBe(true);
     });
 
+    /**
+     * @scenario case=c21
+     * @effects product_option_handlers_behavior
+     */
     it('두 번째 이후 옵션은 is_default=false로 설정됨', () => {
         mockLocalState = {
             form: {
@@ -629,6 +710,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
     });
 
     // 신규 등록 시 재고 기본값 1
+    /**
+     * @scenario case=c22
+     * @effects product_option_handlers_behavior
+     */
     it('등록 모드(params.isCreate=true)에서는 재고 기본값이 1이다', () => {
         mockLocalState = { form: { options: [], option_groups: [] } };
 
@@ -640,6 +725,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
         expect(mockLocalState.form.options[0].stock_quantity).toBe(1);
     });
 
+    /**
+     * @scenario case=c23
+     * @effects product_option_handlers_behavior
+     */
     it('isCreate가 문자열 "true"여도 재고 기본값은 1이다 (표현식 boolean 캐스팅 호환)', () => {
         mockLocalState = { form: { options: [], option_groups: [] } };
 
@@ -651,6 +740,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
         expect(mockLocalState.form.options[0].stock_quantity).toBe(1);
     });
 
+    /**
+     * @scenario case=c24
+     * @effects product_option_handlers_behavior
+     */
     it('수정 모드(isCreate 미전달)에서는 재고 기본값이 0이다 (기존 동작 유지)', () => {
         mockLocalState = { form: { options: [], option_groups: [] } };
 
@@ -663,6 +756,10 @@ describe('productOptionHandlers - addOptionRowHandler', () => {
     });
 
     // 행 추가 시 상품 재고 즉시 동기화
+    /**
+     * @scenario case=c25
+     * @effects product_option_handlers_behavior
+     */
     it('행 추가(등록) 시 상품 재고가 옵션 재고 합계로 즉시 동기화된다', () => {
         // 기존 옵션 1개(재고 1) + 새 행 1개(재고 1) → 상품 재고 2
         mockLocalState = {
@@ -710,6 +807,10 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
     });
 
     describe('recalcOptionsFromProductPrice (순수 함수)', () => {
+        /**
+         * @scenario case=c26
+         * @effects product_option_handlers_behavior
+         */
         it('옵션 selling_price = 상품가 + price_adjustment (가산액 유지)', () => {
             const result = recalcOptionsFromProductPrice(
                 mockLocalState.form.options as any,
@@ -722,6 +823,10 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
     });
 
     describe('역방향: 기본 옵션 판매가 변경', () => {
+        /**
+         * @scenario case=c27
+         * @effects product_option_handlers_behavior
+         */
         it('기본 옵션가 39000→35000 시 form.selling_price 동기화 + adj=0', () => {
             updateFormOptionFieldHandler(
                 { handler: 'x', params: { index: 0, field: 'selling_price', value: '35000' } },
@@ -732,6 +837,10 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
             expect(mockLocalState.form.options[0].selling_price).toBe(35000);
         });
 
+        /**
+         * @scenario case=c28
+         * @effects product_option_handlers_behavior
+         */
         it('기본 옵션가 변경 시 비기본 옵션 가산액 유지·재계산 (B1)', () => {
             updateFormOptionFieldHandler(
                 { handler: 'x', params: { index: 0, field: 'selling_price', value: '35000' } },
@@ -743,6 +852,10 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
     });
 
     describe('비기본 옵션 판매가 변경 (회귀)', () => {
+        /**
+         * @scenario case=c29
+         * @effects product_option_handlers_behavior
+         */
         it('비기본 옵션가 변경 시 상품 판매가 불변, adj 재계산', () => {
             updateFormOptionFieldHandler(
                 { handler: 'x', params: { index: 1, field: 'selling_price', value: '50000' } },
@@ -754,6 +867,10 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
     });
 
     describe('setDefaultOptionHandler - params.index 수용', () => {
+        /**
+         * @scenario case=c30
+         * @effects product_option_handlers_behavior
+         */
         it('레이아웃 params.index 로 기본옵션 변경 + 상품가 동기화', () => {
             setDefaultOptionHandler({ handler: 'x', params: { index: 1 } }, mockContext);
             expect(mockLocalState.form.options[1].is_default).toBe(true);
@@ -762,6 +879,10 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
             expect(mockLocalState.form.options[1].price_adjustment).toBe(0);
         });
 
+        /**
+         * @scenario case=c31
+         * @effects product_option_handlers_behavior
+         */
         it('optionCode 도 하위 호환으로 수용', () => {
             setDefaultOptionHandler({ handler: 'x', params: { optionCode: 'B' } }, mockContext);
             expect(mockLocalState.form.options[1].is_default).toBe(true);
@@ -769,6 +890,10 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
     });
 
     describe('정방향 (회귀)', () => {
+        /**
+         * @scenario case=c32
+         * @effects product_option_handlers_behavior
+         */
         it('상품 판매가 변경 시 모든 옵션 재계산 (가산액 유지)', () => {
             recalculateOptionPriceAdjustmentsHandler(
                 { handler: 'x', params: { newSellingPrice: 30000 } },

@@ -25,6 +25,7 @@ effects:
   - chunked_scan_covers_all_rows
   - variant_generator_left_and_logged
   - upgrade_is_idempotent
+  - empty_map_preserved_after_patch # 본문의 {} 가 [] 로 굳지 않는다(BU-3)
 
 scale:
   - { n: 100000, dataset: template_layouts, assert: [chunked_scan_bounded_memory, all_rows_patched_across_chunks] }

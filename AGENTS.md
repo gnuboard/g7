@@ -25,7 +25,7 @@
 
 ## 버전 동기화 의무
 
-코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`·`app/Extension/Helpers/**`·`app/Repositories/Concerns/**`·`app/Seo/Contracts/**`·`app/ActivityLog/**` 공개 API·루트 `CHANGELOG.md` Added/Changed/Removed)을 바꾸면 영향 번들 확장의 `g7_version` 을, 번들 확장의 공개 Service/Contract/Repository/Model/Route·훅·CHANGELOG 를 바꾸면 의존 확장의 `dependencies.{modules|plugins}` 를 함께 갱신하고, manifest 버전을 바꾸면 `package.json`·`composer.json` 도 같은 버전으로 맞춘다. 판정 순서·조치: [extension-assets.md](docs/rules/extension-assets.md#버전-동기화-의무).
+코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`·`app/Extension/Helpers/**`·`app/Repositories/Concerns/**`·`app/Seo/Contracts/**`·`app/ActivityLog/**` 공개 API·[확장이 쓰는 코어 지원 클래스](docs/rules/extension-assets.md#확장이-쓰는-코어-지원-클래스)·루트 `CHANGELOG.md` Added/Changed/Removed)을 바꾸면 영향 번들 확장의 `g7_version` 을, 번들 확장의 공개 Service/Contract/Repository/Model/Route·훅·CHANGELOG 를 바꾸면 의존 확장의 `dependencies.{modules|plugins}` 를 함께 갱신하고, manifest 버전을 바꾸면 `package.json`·`composer.json` 도 같은 버전으로 맞춘다. 판정 순서·조치: [extension-assets.md](docs/rules/extension-assets.md#버전-동기화-의무).
 
 ## 핵심 원칙
 

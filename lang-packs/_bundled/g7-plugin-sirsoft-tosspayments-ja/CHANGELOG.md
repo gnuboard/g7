@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.0.4] - 2026-09-07
+## [1.0.4] - 2026-10-09
 
 ### Added
 
@@ -13,6 +13,7 @@
 - 레이아웃 편집기에 쓰이는 입금통보 웹훅 URL 데이터 소스 이름(`editor.data_source.webhook_info`)의 일본어 번역을 추가했습니다.
 - 승인 금액을 확인하지 못해 결제를 자동 취소할 때 토스페이먼츠에 남기는 취소 사유(`errors.approval_verification_cancel_reason`)의 일본어 번역을 추가했습니다.
 - 설정 화면의 결제 후 이동 주소(성공·실패) 형식 오류 안내(`settings.redirect_url_format`)의 일본어 번역을 추가했습니다.
+- 주문 상세 가상계좌 입금 안내 문구(제목·은행·계좌번호·예금주·입금 금액·입금 기한·자동 취소 경고)를 일본어로 제공합니다.
 
 ### Changed
 

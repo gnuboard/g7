@@ -168,7 +168,7 @@ __('sirsoft-sample::messages.product_created');  // 정상 작동
   ['count' => number_format($n)])` 처럼 수는 2번째 인자로 고르고 표시값만 치환값으로 넘긴다.
 - 활동 로그는 저장된 `description_params` 로 나중에 번역한다. 수를 `count` 없이 다른 이름(`attempts`·`days` 등)으로만
   저장한 옛 행은 처음 나오는 수 치환값으로 고른다 — 새 기록은 `count` 를 함께 저장한다.
-- 프런트 규칙([data-binding-i18n.md 「수에 따른 단수·복수」](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1779))과
+- 프런트 규칙([data-binding-i18n.md 「수에 따른 단수·복수」](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787))과
   0·1·2·소수에서 같은 결과다. 음수 `-1` 만 다르다(서버는 복수) — 개수 메시지에는 음수를 넣지 않는다.
 
 ---
@@ -367,7 +367,7 @@ $t:sirsoft-sample.messages.save_success
 
 ### 수에 따른 단수·복수
 
-개수를 넣는 문구는 인자 이름을 `count` 로 넘기고, 영어처럼 단수·복수가 갈리는 언어 파일에 `키_one` 변형을 더한다(기본 키는 복수 꼴). ko·ja 는 변형이 필요 없다. 규칙 전문: [data-binding-i18n.md 「수에 따른 단수·복수」](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1779).
+개수를 넣는 문구는 인자 이름을 `count` 로 넘기고, 영어처럼 단수·복수가 갈리는 언어 파일에 `키_one` 변형을 더한다(기본 키는 복수 꼴). ko·ja 는 변형이 필요 없다. 규칙 전문: [data-binding-i18n.md 「수에 따른 단수·복수」](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787).
 
 ```json
 { "post_count": "{{count}} posts", "post_count_one": "{{count}} post" }

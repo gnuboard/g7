@@ -21,6 +21,9 @@ use App\Extension\AbstractUpgradeStep;
  * 처리방침 링크 설정을 슬러그(`privacy_policy_slug`, 페이지 모듈 주소 규칙 `/page/{slug}` 로 조합)에서
  * 운영자가 직접 적는 주소(`privacy_policy_url`)로 옮긴다. 기설치본이 보던 링크는 같은 경로로 이관한다.
  *
+ * 새 「개인정보 통지 이력」 메뉴에 개인정보 담당 역할을 붙인다 — 그 부여는 활성화 때만 일어나 업데이트로
+ * 올린 사이트에서는 담당자에게 메뉴가 보이지 않았다. 운영자가 뗀 역할은 다시 붙이지 않는다.
+ *
  * 모든 비즈니스 로직은 data/1.1.0/migrations/ 로 격리(AbstractUpgradeStep 규약).
  */
 class Upgrade_1_1_0 extends AbstractUpgradeStep {}

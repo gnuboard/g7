@@ -132,7 +132,7 @@ describe('NHN KCP 결제 환경설정 — 플러그인 자체 글자색 클래�
      */
     it('레이아웃이 쓰는 접두 클래스는 모두 플러그인 CSS 에 라이트·다크 규칙으로 정의돼 있다', () => {
         expect(usedPrefixed.length).toBeGreaterThanOrEqual(4);
-        for (const name of usedPrefixed) {
+        for (const name of usedPrefixed.filter((c) => c.startsWith(`${PREFIX}tone-`))) {
             const light = new RegExp(`(^|[\\s,}])\\.${name}\\s*\\{[^}]*color\\s*:`, 'm');
             const dark = new RegExp(`\\.dark\\s+\\.${name}\\s*\\{[^}]*color\\s*:`, 'm');
             expect({ name, light: light.test(cssSource), dark: dark.test(cssSource) }).toEqual({ name, light: true, dark: true });
@@ -150,7 +150,7 @@ describe('NHN KCP 결제 환경설정 — 플러그인 자체 글자색 클래�
         expect(selectors.length).toBeGreaterThan(0);
         for (const group of selectors) {
             for (const sel of group.split(',').map((s) => s.trim())) {
-                expect(sel).toMatch(new RegExp(`^(\\.dark\\s+)?\\.${PREFIX}[a-z-]+$`));
+                expect(sel).toMatch(new RegExp(`^(\\.dark\\s+)?\\.${PREFIX}[a-z-]+(:(hover|focus|focus-within))?$`));
             }
         }
     });

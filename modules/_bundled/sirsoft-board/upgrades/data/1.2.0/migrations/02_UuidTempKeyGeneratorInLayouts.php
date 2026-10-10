@@ -4,6 +4,7 @@ namespace App\Upgrades\Data\Ext\Modules\SirsoftBoard\V1_2_0\Migrations;
 
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\LayoutMarkup\EmptyMap;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -36,6 +37,9 @@ use Illuminate\Support\Facades\Schema;
  * ── 안전성 ───────────────────────────────────────────────────────────────────
  *
  *  - 멱등: 이미 `{{$uuid()}}` 인 값은 일치하지 않아 2회차 변경 0.
+ *  - 빈 map 보존: 본문을 코어 `EmptyMap::decodePreserving` 으로 읽어 다시 쓰므로 운영자가 고친 행의 `{}`
+ *    (요청 질의 `params.query`, 폼 초기값 등)가 `[]` 로 굳지 않는다. 원본 해시·크기는 코어와 같은 표준형
+ *    (빈 컨테이너를 `[]` 로 맞춘 JSON)으로 적는다.
  *  - 무변경 행 UPDATE 금지(변경 카운터 판정), `chunkById`(콜백이 content 를 바꾸므로 OFFSET 금지),
  *    soft delete 행 포함(복원 시 결함이 되살아나지 않게), 변경 행만 `lock_version` +1(업데이트 직전
  *    열어 둔 편집기의 stale 저장이 보정을 되돌리지 않게), `updated_by`·버전/미리보기 스냅샷 미개입.
@@ -115,7 +119,7 @@ class UuidTempKeyGeneratorInLayouts implements DataMigration
                     continue;
                 }
 
-                $decoded = json_decode($content, true);
+                $decoded = $this->decode($content);
                 if (! is_array($decoded)) {
                     continue;
                 }
@@ -137,9 +141,9 @@ class UuidTempKeyGeneratorInLayouts implements DataMigration
                 $storedHash = $hasHash ? $row->original_content_hash : null;
                 $wasUnedited = ! $storedHash || $storedHash === $this->contentHash($content);
                 if ($hasHash && $wasUnedited) {
-                    $update['original_content_hash'] = hash('sha256', $encoded);
+                    $update['original_content_hash'] = $this->contentHash($encoded);
                     if ($hasSize) {
-                        $update['original_content_size'] = strlen($encoded);
+                        $update['original_content_size'] = strlen($this->normalize($encoded));
                     }
                 } else {
                     $keptEdited++;
@@ -211,6 +215,36 @@ class UuidTempKeyGeneratorInLayouts implements DataMigration
      */
     private function contentHash(string $content): string
     {
-        return hash('sha256', (string) json_encode(json_decode($content, true), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return hash('sha256', $this->normalize($content));
+    }
+
+    /**
+     * 코어 레이아웃 해시의 표준형(빈 컨테이너를 `[]` 로 맞춘 JSON)을 만듭니다.
+     *
+     * @param  string  $content  JSON 문자열
+     * @return string 표준형 JSON
+     */
+    private function normalize(string $content): string
+    {
+        return (string) json_encode(json_decode($content, true), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * 저장된 JSON 을 연관 배열로 읽되 빈 map(`{}`) 자리는 보존합니다.
+     *
+     * `json_decode(…, true)` 로 읽어 다시 인코딩하면 운영자가 고친 행의 `{}` 가 `[]` 로 굳는다 — 화면은
+     * 키-값 자리를 배열로 받고, 요청 질의·본문으로 실리면 서버가 대상을 찾지 못한다. 코어 EmptyMap 표식으로
+     * 읽으면 `json_encode` 가 그 자리를 `{}` 로 낸다. 코어가 이 표식을 모르는 표면이면 종전 방식으로 읽는다.
+     *
+     * @param  string  $content  JSON 문자열
+     * @return mixed 디코드 결과 (빈 map 자리는 EmptyMap 표식)
+     */
+    private function decode(string $content): mixed
+    {
+        if (class_exists(EmptyMap::class) && method_exists(EmptyMap::class, 'decodePreserving')) {
+            return EmptyMap::decodePreserving($content);
+        }
+
+        return json_decode($content, true);
     }
 }

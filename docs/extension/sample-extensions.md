@@ -88,6 +88,8 @@
 
 Admin 템플릿의 최소 구성을 보여줍니다. `sirsoft-admin_basic` 의 전체 컴포넌트 세트 중 **꼭 필요한 Basic 8개** 와 에러 레이아웃 6종만 포함합니다.
 
+> **알려진 제한**: 이 템플릿은 번들 모듈·플러그인의 관리자 화면을 그리는 데 필요한 컴포넌트·공용 문구 키(`common.*`·`admin.*`)·스타일 클래스를 갖추지 않습니다. 활성화하면 그 화면들은 대부분 비거나 키 문자열로 보입니다 — 의도된 학습 범위입니다. 운영용 관리자 템플릿이 갖춰야 할 것은 [admin-template-contract.md](admin-template-contract.md) 를 봅니다.
+
 | 계층 | 예시 파일 | 역할 |
 |------|-----------|------|
 | Entry | `template.json` | type: admin, components 레지스트리, error_config |

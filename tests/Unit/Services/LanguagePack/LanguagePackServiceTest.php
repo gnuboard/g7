@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services\LanguagePack;
 
+use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
@@ -1031,6 +1032,155 @@ class LanguagePackServiceTest extends TestCase
                 $updated->status,
                 '비활성 팩이 업데이트만으로 활성 승격되면 안 된다'
             );
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 언어팩 업데이트 확인은 GitHub·번들 중 높은 버전을 후보로 보고, 실제 업데이트도 그 출처에서 받는다 (모듈·플러그인·템플릿과 같은 규칙).
+     *
+     * 종전에는 GitHub 응답의 버전 칸을 잘못 읽어 늘 번들로 폴백했고(`tag_name` — 헬퍼는 `version` 을 돌려준다), 실제 업데이트는
+     * GitHub URL 이 있으면 GitHub 에서 받아 확인 결과(번들 판)와 받는 판이 어긋났다.
+     *
+     * @scenario vector=install_from_bundled, actor_permission=install_and_manage
+     *
+     * @effects lang_pack_update_check_offers_higher_of_github_and_bundled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_check_offers_higher_of_github_and_bundled(): void
+    {
+        $identifier = 'lpsrc-core-ja';
+        $manifest = $this->coreJaManifest($identifier, 'lpsrc', '1.0.0') + ['github_url' => 'https://github.com/acme/lpsrc-core-ja'];
+        $bundledDir = $this->createBundledFixture($identifier, $manifest);
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: false);
+            $this->createBundledFixture($identifier, array_merge($manifest, ['version' => '1.0.2']));
+
+            // GitHub 응답 순서: 확인(1.0.1) → 업데이트 안의 재확인(1.0.1) → 두 번째 확인(1.0.5)
+            Http::fake(['api.github.com/*' => Http::sequence()
+                ->push(['tag_name' => 'v1.0.1', 'zipball_url' => 'https://example.test/zip'], 200)
+                ->push(['tag_name' => 'v1.0.1', 'zipball_url' => 'https://example.test/zip'], 200)
+                ->push(['tag_name' => 'v1.0.5', 'zipball_url' => 'https://example.test/zip'], 200)]);
+
+            // 공개 최신(1.0.1)이 번들(1.0.2)보다 옛 판 → 번들
+            $older = $this->service->checkUpdates($identifier)['details'][0] ?? [];
+            $this->assertSame('1.0.2', $older['latest'] ?? null, '번들이 더 새로운데 공개 판을 후보로 봤다');
+            $this->assertSame('bundled', $older['source'] ?? null);
+
+            $updated = $this->service->performUpdate($pack->fresh());
+            $this->assertSame('1.0.2', $updated->version, '확인 결과(번들)와 다른 출처에서 받으면 안 된다');
+
+            // 공개 최신(1.0.5)이 더 높으면 공개 판
+            $newer = $this->service->checkUpdates($identifier)['details'][0] ?? [];
+            $this->assertSame('1.0.5', $newer['latest'] ?? null);
+            $this->assertSame('github', $newer['source'] ?? null);
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 켜져 있는 팩을 업데이트하면 엔티티 번역 재적용(활성화 훅 경로)이 정확히 한 번 돈다 (W3 실측 — 클레임 사유 name.ja).
+     *
+     * 업데이트로 새 판 seed(예: 새 클레임 사유의 일본어 이름)가 들어와도 DB 행에 다시 병합되지 않으면 그 언어로 비어 보인다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=manage_only
+     *
+     * @effects update_of_an_active_pack_reapplies_entity_seed_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_perform_update_of_active_pack_reapplies_entity_seed_once(): void
+    {
+        $identifier = 'updseed-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updseed', '1.0.0'));
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: true);
+            $this->assertSame(LanguagePackStatus::Active->value, $pack->status);
+
+            $fired = 0;
+            HookManager::addAction('core.language_packs.activated', function () use (&$fired) {
+                $fired++;
+            });
+
+            $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updseed', '1.0.1'));
+            $updated = $this->service->performUpdate($pack->fresh(), force: true);
+
+            $this->assertSame(LanguagePackStatus::Active->value, $updated->status);
+            $this->assertSame(1, $fired, '켜져 있는 팩의 업데이트가 엔티티 번역 재적용(활성화 훅)을 정확히 한 번 거쳐야 한다');
+        } finally {
+            HookManager::clearAction('core.language_packs.activated');
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 꺼 둔 팩(inactive)은 업데이트 뒤에도 inactive 로 남는다 (7.1.0 출시 점검 U5-3).
+     *
+     * 재설치 경로가 상태를 installed 로 기록해, 대상 확장을 다시 켤 때 「함께 켤 언어팩」 목록(inactive 만 고른다)에서
+     * 빠져 꺼진 채 남았다. 7.1.0 은 ja 팩 20종을 한꺼번에 올려 일괄 업데이트 한 번에 영향이 넓다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=install_and_manage
+     *
+     * @effects update_of_a_deactivated_pack_keeps_inactive_status
+     *
+     * @return void 반환값 없음
+     */
+    public function test_perform_update_keeps_inactive_status(): void
+    {
+        $identifier = 'updoff-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updoff', '1.0.0'));
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: false);
+            $pack->update(['status' => LanguagePackStatus::Inactive->value]);
+
+            $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updoff', '1.0.1'));
+
+            $updated = $this->service->performUpdate($pack->fresh(), force: true);
+
+            $this->assertSame('1.0.1', $updated->version);
+            $this->assertSame(LanguagePackStatus::Inactive->value, $updated->status, '꺼 둔 팩이 업데이트 뒤 installed 로 바뀌면 대상 확장 재활성화 때 함께 켜지지 않는다');
+            $this->assertSame(LanguagePackStatus::Inactive->value, $updated->fresh()->status);
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 대상 확장이 켜지기를 기다리는 팩(awaiting_host)은 업데이트 뒤에도 그 표시를 지닌다 (7.1.0 출시 점검 U5-3).
+     *
+     * 표시가 지워지면 대상 확장을 켤 때 자동으로 함께 켜지지 않는다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=install_only
+     *
+     * @effects update_keeps_awaiting_host_reason
+     *
+     * @return void 반환값 없음
+     */
+    public function test_perform_update_keeps_awaiting_host_reason(): void
+    {
+        $identifier = 'updwait-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updwait', '1.0.0'));
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: false);
+            $pack->update(['deactivated_reason' => LanguagePackDeactivationReason::AwaitingHost->value]);
+
+            $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updwait', '1.0.1'));
+
+            $updated = $this->service->performUpdate($pack->fresh(), force: true);
+
+            $this->assertSame(LanguagePackStatus::Installed->value, $updated->status);
+            $this->assertSame(LanguagePackDeactivationReason::AwaitingHost->value, $updated->fresh()->deactivated_reason, '업데이트가 대기 표시를 지우면 대상 확장을 켤 때 함께 켜지지 않는다');
         } finally {
             File::deleteDirectory($bundledDir);
             File::deleteDirectory(base_path('lang-packs/'.$identifier));

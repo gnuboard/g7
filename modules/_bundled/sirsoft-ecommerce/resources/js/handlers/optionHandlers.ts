@@ -1,3 +1,4 @@
+// e2e:allow 7.1.0 출시 점검 D3-1 — 지원 언어 읽기를 코어 공개 API(locale.supported)로 교체. 단위 시험이 코어 API 모양 그대로 덮고, ja 기본 언어 화면 실측은 출시 리허설(W3) 브라우저 매트릭스에서 한다
 /**
  * 옵션 관련 핸들러
  *
@@ -15,13 +16,17 @@ const logger = ((window as any).G7Core?.createLogger?.('Ecom:Option')) ?? {
 };
 
 /**
- * 설정에서 지원되는 로케일 목록을 가져옵니다.
+ * 지원되는 로케일 목록을 가져옵니다.
+ *
+ * 코어 공개 API `G7Core.locale.supported()`(시스템 활성 언어팩) 를 쓴다 — 코어에 `G7Core.config()` 는 없어
+ * 예전 읽기는 늘 ko·en 으로 떨어졌고, 사이트 기본 언어가 ja 등이면 필수 칸을 잘못 골랐다(D3-1).
  *
  * @returns 지원되는 로케일 배열
  */
 function getSupportedLocales(): string[] {
     const G7Core = (window as any).G7Core;
-    return G7Core?.config?.('app.supported_locales') ?? ['ko', 'en'];
+    const supported = G7Core?.locale?.supported?.();
+    return Array.isArray(supported) && supported.length > 0 ? supported : ['ko', 'en'];
 }
 
 /**

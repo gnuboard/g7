@@ -409,19 +409,20 @@ class LanguagePackSeedInjector
     }
 
     /**
-     * `module.{id}.admin_menus.translations` 필터 — 모듈의 admin_menus 다국어 필드에
-     * 활성 모듈 언어팩의 menus seed 를 주입합니다.
+     * `{module|plugin}.{id}.admin_menus.translations` 필터 — 모듈·플러그인의 admin_menus 다국어 필드에
+     * 같은 범위 활성 언어팩의 menus seed 를 주입합니다.
      *
      * 메뉴는 children 으로 중첩되므로 재귀적으로 walk 합니다. 매칭은 `slug` 키 기준이며
      * seed 형식은 `{ slug: { name: 'ja translation' } }` 입니다.
      *
-     * @param  array<int, mixed>  $menus  module->getAdminMenus() 결과
-     * @param  string  $targetIdentifier  모듈 식별자
+     * @param  array<int, mixed>  $menus  getAdminMenus() 결과
+     * @param  string  $targetIdentifier  모듈·플러그인 식별자
+     * @param  string  $scope  팩 범위 (`module`·`plugin`, 기본 module — 종전 호출 호환)
      * @return array<int, mixed> locale 키가 보강된 메뉴 배열
      */
-    public function injectExtensionMenus(array $menus, string $targetIdentifier): array
+    public function injectExtensionMenus(array $menus, string $targetIdentifier, string $scope = 'module'): array
     {
-        $packs = $this->registry->getActivePacks(LanguagePackScope::Module->value)
+        $packs = $this->registry->getActivePacks($scope)
             ->filter(fn (LanguagePack $pack) => $pack->target_identifier === $targetIdentifier);
 
         foreach ($packs as $pack) {

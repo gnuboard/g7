@@ -456,7 +456,7 @@
                         $t:sirsoft-message_bizppurio.template.row.btn_view_reason
                       </button>
                       <!-- 라벨은 내용 유무로 갈린다 — 행 하단(row_footer)이 미작성 행에 '작성', 작성된 행에 '수정' 을 그리는 것과 같은 어휘. 상태 배지도 같은 has_content 분기를 쓴다(:1916). -->
-                      <button data-if="{{bzRow.status === 'draft' || bzRow.status === 'rejected'}}" type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30">
+                      <button data-if="{{bzRow.status === 'draft' || bzRow.status === 'rejected'}}" type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal">
                         <on type="click">
                           <sequence>
                             <set-state target="global">
@@ -535,7 +535,7 @@
                         </on>
                         $t:sirsoft-message_bizppurio.template.row.btn_edit_approved
                       </button>
-                      <button data-if="{{bzRow.status === 'draft' &amp;&amp; bzRow.has_content}}" type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30" disabled="{{_global.bz_row_busy ?? false}}">
+                      <button data-if="{{bzRow.status === 'draft' &amp;&amp; bzRow.has_content}}" type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal" disabled="{{_global.bz_row_busy ?? false}}">
                         <on type="click">
                           <!-- 검수 신청 — 행 busy 플래그가 켜져 있으면 무시해 이중 신청을 막고, 끝나면 목록을 다시 받는다. -->
                           <sequence if="{{!(_global.bz_row_busy ?? false)}}">
@@ -573,7 +573,7 @@
                         </on>
                         $t:sirsoft-message_bizppurio.template.row.btn_cancel_request
                       </button>
-                      <button data-if="{{bzRow.status === 'dormant'}}" type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30">
+                      <button data-if="{{bzRow.status === 'dormant'}}" type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-teal-300 text-teal-700 dark:text-teal-300 bizppurio-btn-teal">
                         <on type="click">
                           <!-- 휴면 해제 — 휴면(dormant) 템플릿을 다시 발송 가능 상태로 되돌린다. -->
                           <sequence>
@@ -681,7 +681,7 @@
     <!-- 알림톡 템플릿 작성/신청 모달(#597 §4.2, 3면+플러그인 관리 화면 공유). 값은 _global.bz_tpl_modal 에 담는다(모달 컨텍스트 분리). content 는 kapi 등록 페이로드 필드 그대로이며, 유형 전환 잔여 필드는 서버(FormRequest)가 정돈한다. 신규/기존 분기는 id 유무의 저장 버튼 if 2벌(POST/PUT)로 처리한다. -->
     <modal data-type="composite" data-ref="modal_bizppurio_template" title="$t:sirsoft-message_bizppurio.template.form.modal_title|name={{_global.bz_tpl_modal?.notification_name ?? ''}}" size="xl" :closeOnOverlayClick="false">
       <meta editor_label="$t:sirsoft-message_bizppurio.template.form.editor_label"/>
-      <div data-ref="bizppurio_tpl_modal_body" class="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+      <div data-ref="bizppurio_tpl_modal_body" class="space-y-4 bizppurio-scroll-panel overflow-y-auto pr-1">
         <div data-if="{{_global.bz_tpl_modal?.status === 'rejected' &amp;&amp; (_global.bz_tpl_modal?.inspection_detail ?? []).length > 0}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
           <div class="flex-center gap-2">
             <icon name="fas fa-circle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
@@ -1219,7 +1219,7 @@
     <modal data-type="composite" data-ref="modal_bizppurio_sms" title="$t:sirsoft-message_bizppurio.template.sms.modal_title|name={{_global.bz_sms_modal?.notification_name ?? ''}}" size="md" :closeOnOverlayClick="false">
       <meta editor_label="$t:sirsoft-message_bizppurio.template.sms.editor_label"/>
       <div class="space-y-3">
-        <p class="text-xs text-teal-700 dark:text-teal-300 p-3 rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800">$t:sirsoft-message_bizppurio.template.sms.hint</p>
+        <p class="text-xs text-teal-700 dark:text-teal-300 p-3 rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 bizppurio-notice-teal">$t:sirsoft-message_bizppurio.template.sms.hint</p>
         <!-- SMS 본문 언어 탭(§14.3). sms_body 는 로케일 맵이며 수신자 로케일로 발송된다 — 코어 알림 템플릿 편집 모달과 동일한 editLang 패턴. -->
         <div data-ref="bz_sms_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
           <button data-each="loc in {{$locales}}" type="button" class="{{(_global.bz_sms_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">

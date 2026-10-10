@@ -256,6 +256,8 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 
 `assets.css` 는 화면 HTML 이 링크할 템플릿 CSS 목록입니다. 사용자·관리자 화면과 검색엔진용 화면 모두 **선언했고 설치본에 파일이 있는** 경로만 링크하며(`dist/` 를 뗀 자산 주소, 예: `templates/_bundled/sirsoft-basic/dist/css/components.css` → `/api/templates/assets/{id}?file=css/components.css`), CSS 를 쓰지 않는 템플릿은 `"css": []` 로 두면 CSS 링크가 실리지 않습니다.
 
+> **7.1.0 부터 달라진 점(직접 만든 템플릿 확인)**: 7.0.x 까지는 `assets.css` 선언과 무관하게 화면이 늘 `?file=css/components.css` 를 링크했습니다. 7.1.0 부터는 선언한 파일만 링크하고, 선언이 없거나 비어 있으면 대신 넣어 주는 기본값이 없습니다. 직접 만든 템플릿이 `templates/{템플릿 식별자}/dist/css/components.css` 를 산출하면서 `assets.css` 에 적지 않았다면 7.1.0 으로 올린 뒤 그 CSS 가 화면에 실리지 않아 스타일이 빠집니다. `template.json` 의 `assets.css` 에 `"dist/css/components.css"` 처럼 산출 경로를 적고 템플릿을 다시 설치·업데이트하세요. 번들 템플릿은 CSS 를 산출하는 두 템플릿(`sirsoft-admin_basic`·`sirsoft-basic`)이 선언돼 있고 나머지는 CSS 산출물이 없어 조치가 필요 없습니다.
+
 ### 필수 필드
 
 | 필드 | 설명 |

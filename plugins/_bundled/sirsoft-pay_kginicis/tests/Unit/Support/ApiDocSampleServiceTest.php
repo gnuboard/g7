@@ -18,6 +18,8 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
  * KG 이니시스 결제 도메인 대표 샘플(에스크로 + CBT 편의점 메타를 담은 kginicis
  * 결제 주문 + 배송지)이 생성되고, orders/{orderNumber} 계열 GET 실측을 위한
  * 도메인별 path_params 맵이 반환되며, 재실행 시 멱등한지 검증한다.
+ *
+ * 시나리오 SSoT: tests/scenarios/api-doc-sample-seeder.yaml
  */
 class ApiDocSampleServiceTest extends PluginTestCase
 {
@@ -30,6 +32,8 @@ class ApiDocSampleServiceTest extends PluginTestCase
      * 실제 docgen 실행에서는 코어 ApiDocSampleService 가 먼저 실측 사용자
      * (apidoc-sample-user@example.com)를 시드하고, 그 뒤에 확장 시더가 병합된다.
      * 단위 테스트에서도 이 선행 조건(주문 소유자)을 만족시키기 위해 샘플 사용자를 만든다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -43,6 +47,12 @@ class ApiDocSampleServiceTest extends PluginTestCase
 
     /**
      * 시더가 계약을 구현한다.
+     *
+     * @scenario case=contract
+     *
+     * @effects sample_seeder_implements_contract
+     *
+     * @return void 반환값 없음
      */
     public function test_seeder_implements_contract(): void
     {
@@ -50,7 +60,13 @@ class ApiDocSampleServiceTest extends PluginTestCase
     }
 
     /**
-     * 시더가 kginicis 결제 도메인 대표 샘플을 멱등 생성한다.
+     * 시더가 kginicis 결제 도메인 대표 샘플을 생성한다 — 배송지는 이커머스 팩토리 계약으로, 무작위 칸 없이.
+     *
+     * @scenario case=seed
+     *
+     * @effects sample_order_payment_and_address_created, sample_address_is_deterministic
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_creates_kginicis_escrow_cbt_order(): void
     {
@@ -80,10 +96,28 @@ class ApiDocSampleServiceTest extends PluginTestCase
             ->where('address_type', 'shipping')
             ->exists();
         $this->assertTrue($hasShipping, '배송지가 생성되어야 한다');
+
+        // 배송지는 이커머스 팩토리 계약으로 만든다(D2-4) — 팩토리가 무작위로 채우는 칸은 비워 문서 샘플이 실행마다 같아야 한다.
+        $shipping = DB::table('ecommerce_order_addresses')
+            ->where('order_id', $order->id)
+            ->where('address_type', 'shipping')
+            ->first(['recipient_name', 'zipcode', 'orderer_locale', 'delivery_memo', 'delivery_memo_label', 'recipient_country_code']);
+        $this->assertSame('API 문서 샘플 수령인', $shipping->recipient_name);
+        $this->assertSame('06134', $shipping->zipcode);
+        $this->assertNull($shipping->orderer_locale, '주문자 언어가 무작위로 채워졌다');
+        $this->assertNull($shipping->delivery_memo, '배송 메모가 무작위로 채워졌다');
+        $this->assertNull($shipping->delivery_memo_label);
+        $this->assertNull($shipping->recipient_country_code);
     }
 
     /**
      * 시더가 orders/{orderNumber} 실측용 path_params 맵을 도메인 그룹별로 반환한다.
+     *
+     * @scenario case=seed
+     *
+     * @effects path_params_map_returned_per_domain
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_returns_path_params_map_for_order_domains(): void
     {
@@ -105,6 +139,12 @@ class ApiDocSampleServiceTest extends PluginTestCase
 
     /**
      * 시더는 멱등하다 — 재실행 시 중복 레코드를 만들지 않는다.
+     *
+     * @scenario case=rerun
+     *
+     * @effects sample_seed_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_is_idempotent(): void
     {
@@ -131,6 +171,12 @@ class ApiDocSampleServiceTest extends PluginTestCase
 
     /**
      * 샘플 사용자가 없으면(코어 샘플/기존 사용자 부재) 빈 맵을 반환한다.
+     *
+     * @scenario case=no_user
+     *
+     * @effects empty_map_without_user
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_returns_empty_map_when_no_user(): void
     {

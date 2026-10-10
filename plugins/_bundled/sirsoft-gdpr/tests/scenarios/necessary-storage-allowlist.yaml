@@ -55,6 +55,7 @@ effects:
   - upgrade_leaves_allowlist_untouched_when_opt_out_cookie_present
   - upgrade_removes_extension_owned_keys_seeded_by_1_0_4
   - upgrade_preserves_operator_items_when_removing_extension_keys
+  - upgrade_keeps_extension_keys_while_provider_is_older_than_hook   # 제공 확장이 옛 버전으로 설치돼 있으면 그 확장의 키는 남김(PU-5)
   - shipped_catalog_contains_no_extension_owned_keys
 
   # 확장 제공 계약 (GDPR 소유 필터 훅 — 확장이 자기 키를 제공)

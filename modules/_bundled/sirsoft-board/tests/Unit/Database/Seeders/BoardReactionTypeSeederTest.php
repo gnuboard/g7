@@ -60,7 +60,7 @@ class BoardReactionTypeSeederTest extends ModuleTestCase
         $this->assertSame(2, $dislike->display_order);
         $this->assertTrue($dislike->is_active);
         $this->assertSame(
-            ['ko' => '비추천', 'en' => 'Not Recommend', 'ja' => 'ひどい'],
+            ['ko' => '비추천', 'en' => 'Not Recommend', 'ja' => 'よくない'],
             $dislike->name
         );
     }

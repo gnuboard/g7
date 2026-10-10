@@ -14,7 +14,7 @@ use ReflectionClass;
 /**
  * 반응 유형 기본값 단일 원천(ReactionTypeDefaults) 검증.
  *
- * 같은 기본값이 시더와 1.0.3 업그레이드 백필에 두 벌로 정의돼 있어 한쪽만 고치면
+ * 같은 기본값이 시더와 1.0.3·1.2.0 업그레이드 백필에 따로 정의돼 있어 한쪽만 고치면
  * 신규 설치와 업그레이드 설치의 유형이 갈라졌다. 시더는 이 클래스를 읽고,
  * 백필 상수는 그 시점 값으로 동결한다 — 이 테스트가 둘의 드리프트를 감시한다.
  */
@@ -56,12 +56,46 @@ class ReactionTypeDefaultsTest extends ModuleTestCase
     #[Test]
     public function test_v1_0_3_backfill_snapshot_is_subset_of_defaults(): void
     {
+        $this->assertSnapshotIsSubsetOfDefaults(
+            '1.0.3/migrations/07_SeedReactionTypes.php',
+            'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftBoard\\V1_0_3\\Migrations\\SeedReactionTypes',
+        );
+    }
+
+    /**
+     * 동결된 1.2.0 반응 유형 시드 상수가 현행 단일 원천의 부분집합이다.
+     *
+     * 1.0.3 이상에서 출발하는 업데이트는 1.2.0 스텝이 유형을 채우므로 같은 드리프트 감시를 받는다.
+     *
+     * @scenario case=defaults_single_source_and_backfill_no_drift
+     *
+     * @effects backfill_snapshot_does_not_drift_from_defaults
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_v1_2_0_seed_snapshot_is_subset_of_defaults(): void
+    {
+        $this->assertSnapshotIsSubsetOfDefaults(
+            '1.2.0/migrations/06_SeedReactionTypes.php',
+            'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftBoard\\V1_2_0\\Migrations\\SeedReactionTypes',
+        );
+    }
+
+    /**
+     * 업그레이드 스텝의 DEFAULTS 상수가 현행 기본값과 어긋나지 않는지 확인합니다.
+     *
+     * @param  string  $relativePath  upgrades/data 아래 스텝 파일 경로
+     * @param  string  $stepClass  스텝 클래스 FQCN
+     * @return void 반환값 없음
+     */
+    private function assertSnapshotIsSubsetOfDefaults(string $relativePath, string $stepClass): void
+    {
         // 업그레이드 스텝은 PSR-4 오토로드 대상이 아니라 러너가 파일 경로로 싣는다 —
         // 리플렉션으로 상수를 읽으려면 이 테스트도 같은 방식으로 파일을 먼저 로드해야 한다.
-        $stepFile = __DIR__.'/../../../upgrades/data/1.0.3/migrations/07_SeedReactionTypes.php';
-        $stepClass = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftBoard\\V1_0_3\\Migrations\\SeedReactionTypes';
+        $stepFile = __DIR__.'/../../../upgrades/data/'.$relativePath;
 
-        $this->assertFileExists($stepFile, '1.0.3 반응 유형 백필 스텝 파일이 없습니다.');
+        $this->assertFileExists($stepFile, "반응 유형 백필 스텝 파일이 없습니다: {$relativePath}");
 
         if (! class_exists($stepClass, false)) {
             require_once $stepFile;

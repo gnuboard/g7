@@ -307,7 +307,7 @@ php artisan api:docgen --scope=plugin:sirsoft-gdpr
 # 전체
 php artisan api:docgen --scope=all
 
-# 생성 없이 누락/drift 만 리포트 (하네스가 소비)
+# 생성 없이 누락/drift 만 리포트 (자동 점검용)
 php artisan api:docgen --check
 
 # 이미 서술이 채워진 문서에 요청/응답 예시 블록만 in-place 삽입 (표·서술 불가침, 재생성 금지)

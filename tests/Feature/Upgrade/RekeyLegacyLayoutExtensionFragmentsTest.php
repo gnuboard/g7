@@ -302,6 +302,41 @@ class RekeyLegacyLayoutExtensionFragmentsTest extends TestCase
     }
 
     /**
+     * 빈 객체(`{}`)를 가진 본문은 그대로 남고, 수정 판정은 런타임 해시 정규화와 같다 (7.1.0 출시 점검 BU-3/U2-3 결함군 대조).
+     *
+     * 이 스텝은 본문을 다시 쓰지 않는다(키·삭제 표시만 바꾼다) — 그래서 `{}` 가 `[]` 로 바뀌는 소실이 없다. 수정 판정 해시는
+     * 런타임(`ComputesLayoutContentHash::normalizeContent`)처럼 배열 디코드 후 재인코드라, `{}` 를 가진 무수정 행이 「수정됨」으로
+     * 오판되면 안 된다.
+     *
+     * @scenario case=rekey_merge
+     *
+     * @effects empty_object_content_survives_rekey_and_modification_check_matches_runtime
+     *
+     * @return void 반환값 없음
+     */
+    public function test_empty_object_content_survives_and_is_judged_like_runtime(): void
+    {
+        $this->writeFragment($this->moduleDir, 'user-keep', ['extension_point' => 'slot_keep', 'components' => []]);
+        $this->writeFragment($this->moduleDir, 'user-dup', ['extension_point' => 'slot_dup', 'components' => []]);
+
+        $raw = '{"extension_point":"slot_keep","components":[{"type":"basic","name":"Form","props":{"body":{}}}]}';
+        $kept = $this->legacyRow('module', self::MODULE, 'extension_point', 'slot_keep', json_decode($raw, true), modified: false);
+        DB::table('template_layout_extensions')->where('id', $kept)->update(['content' => $raw]);
+
+        $rawDup = '{"extension_point":"slot_dup","params":{}}';
+        $plainLegacy = $this->legacyRow('module', self::MODULE, 'extension_point', 'slot_dup', json_decode($rawDup, true), modified: false);
+        DB::table('template_layout_extensions')->where('id', $plainLegacy)->update(['content' => $rawDup]);
+        $fileRow = $this->legacyRow('module', self::MODULE, 'extension_point', 'slot_dup', ['extension_point' => 'slot_dup'], modified: false, key: 'user-dup');
+
+        $this->run710();
+
+        $this->assertSame('user-keep', $this->row($kept)->fragment_key);
+        $this->assertSame($raw, $this->row($kept)->content, '재키잉이 본문을 다시 써 {} 를 잃으면 안 된다');
+        $this->assertNotNull($this->row($plainLegacy)->deleted_at, '{} 를 가진 무수정 옛 행을 수정본으로 오판했다');
+        $this->assertNull($this->row($fileRow)->deleted_at);
+    }
+
+    /**
      * 마이그레이션을 실행합니다.
      *
      * @return void 반환값 없음

@@ -8,7 +8,6 @@
 // 설정 화면 안내 글자색(접두 의미 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
 import '../css/main.css';
 import { handlerMap } from './handlers';
-import { initEasyPayWatcher } from './handlers/setPaymentMethod';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-pay_nicepayments';
 
@@ -59,7 +58,6 @@ function initPlugin(): void {
 
         if (count > 0) {
             logger.info(`${count} handler(s) registered`);
-            initEasyPayWatcher();
             return;
         }
 
@@ -72,8 +70,7 @@ function initPlugin(): void {
             if (result > 0) {
                 clearInterval(interval);
                 logger.info(`${result} handler(s) registered (after ${retries} retries)`);
-                initEasyPayWatcher();
-                return;
+                    return;
             }
 
             if (retries >= maxRetries) {

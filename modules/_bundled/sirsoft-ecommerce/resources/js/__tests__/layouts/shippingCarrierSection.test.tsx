@@ -1728,13 +1728,15 @@ describe('택배사 카드 validation 에러', () => {
      * @scenario section=carrier
      * @effects settings_carrier_card_shows_server_errors
      */
-    it('유형 Select에 _local.errors 기반 조건부 select-error 클래스가 적용된다', () => {
+    it('유형 Select에 _local.errors 기반 조건부 input-error 클래스가 적용된다', () => {
         const selects = findAllByName(allCardNodes, 'Select');
         const typeSelect = selects.find(
             (s: any) => s.props?.value?.includes('$carrier.type')
         );
         expect(typeSelect?.props?.className).toContain('_local.errors');
-        expect(typeSelect?.props?.className).toContain('select-error');
+        // 관리자 템플릿에 `select-error` 규칙은 없다 — 오류 테두리는 입력칸과 같은 `input-error` (7.1.0 출시 점검 D3-4)
+        expect(typeSelect?.props?.className).toContain('input-error');
+        expect(typeSelect?.props?.className).not.toContain('select-error');
     });
 
     /**

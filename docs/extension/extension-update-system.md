@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여)
+1. 업데이트 감지: GitHub·_bundled 중 높은 버전(같으면 GitHub, GitHub 실패 시 _bundled) — --source=bundled 는 GitHub 안 봄, github 는 _bundled 폴백 없음 (_pending 미참여)
 2. _bundled = Git 추적 선탑재 소스, _pending = 설치 시 임시 스테이징만
 3. 상태 가드: ExtensionStatusGuard.assertNotInProgress(ExtensionStatus, identifier)
 4. 업그레이드 콜백: upgrades/ 디렉토리에 Upgrade_X_Y_Z.php (UpgradeStepInterface 구현)
@@ -43,7 +43,7 @@
 | **용도** | 선탑재 확장 소스 (배포 포함) | 외부 다운로드/업로드 스테이징 |
 | **Git 추적** | O (추적됨) | X (`.gitignore` 제외) |
 | **수명** | 항상 존재 | 설치 완료 후 삭제 가능 |
-| **업데이트 감지** | **참여** (GitHub 다음 우선순위) | **미참여** |
+| **업데이트 감지** | **참여** (GitHub 공개 최신과 버전 비교 — 높은 쪽, 같으면 GitHub) | **미참여** |
 | **사용 시점** | 설치 + 업데이트 소스 | 설치 시 스테이징만 |
 | **디렉토리 구조** | `modules/_bundled/vendor-module/` | `modules/_pending/vendor-module/` |
 
@@ -90,11 +90,11 @@
 
 ### 소스 강제 경로 (sourceOverride)
 
-기본 2단계 우선순위(GitHub > _bundled)를 우회해 특정 소스 단독으로 업데이트를 실행하는 경로입니다.
+기본 판정(GitHub·`_bundled` 중 높은 버전)을 우회해 특정 소스 단독으로 업데이트를 실행하는 경로입니다.
 
 #### 감지
 
-- 일반: `Manager::checkAll{Type}ForUpdates()` — GitHub > _bundled 순으로 먼저 응답하는 소스 사용
+- 일반: `Manager::checkAll{Type}ForUpdates()` — GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`)을 업데이트 소스로 삼는다. 공개 릴리스가 코어 출시보다 늦어 GitHub 최신이 번들보다 낮을 때도 코어와 함께 배포된 번들 판이 후보로 잡힌다
 - 번들 강제: `CoreUpdateService::collectBundledExtensionUpdates()` — DB 현재 버전 vs `_bundled/{id}/{manifest}.json` 직접 비교
 
 #### 실행
@@ -105,7 +105,7 @@
 
 이유: GitHub 릴리즈가 `_bundled` 보다 구(舊) 버전이거나 일시적으로 API 가 실패해도 코어와 함께 배포된 `_bundled` 버전이 코어와의 호환성 보증 기준이 되어야 하기 때문. 반대로 GitHub 에서 핫픽스 태그를 먼저 받아야 하는 운영 상황에서는 `github` 강제가 필요합니다.
 
-`sourceOverride` 파라미터는 `updateModule` / `updatePlugin` / `updateTemplate` 의 마지막 파라미터이며, 지정하지 않으면 기존 GitHub > _bundled 우선순위가 그대로 적용됩니다.
+`sourceOverride` 파라미터는 `updateModule` / `updatePlugin` / `updateTemplate` 의 마지막 파라미터이며, 지정하지 않으면 위 기본 판정(GitHub·`_bundled` 중 높은 버전)이 적용됩니다.
 
 #### CLI 옵션
 
@@ -113,11 +113,13 @@
 
 | 값 | 동작 |
 | --- | --- |
-| `auto` (기본) | GitHub > _bundled 2단계 우선순위 |
+| `auto` (기본) | GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`) |
 | `bundled` | `_bundled` manifest 단독 사용 (GitHub 전면 우회) |
 | `github` | GitHub 단독 사용 (`_bundled` 폴백 차단) |
 
 사용 예: GitHub 에 임시 장애가 있거나 잘못된 태그가 퍼블리시되어 자동 경로가 실패할 때 `--source=bundled` 로 강제 설치, 반대로 긴급 핫픽스를 GitHub 태그로만 배포한 경우 `--source=github` 로 번들 폴백을 차단합니다.
+
+`module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. 스크립트나 `--no-interaction` 처럼 답할 수 없는 환경에서는 기본값(아니오)으로 **오류 없이 취소**되므로(종료 코드 0, 아무것도 바뀌지 않음) 자동 실행에는 `--force` 를 붙입니다. 단 `--force` 는 확인을 건너뛸 뿐 아니라 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 갱신할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
 
 #### 외부 ZIP 직접 지정 (`--zip`)
 

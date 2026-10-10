@@ -6,6 +6,8 @@
  * (현재 등록 핸들러: insertVariable, uploadTemplateImage — handlers/index.ts 참조.)
  */
 
+// 설정 화면 상태 유틸리티(접두 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 import { handlerMap } from './handlers';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-message_bizppurio';

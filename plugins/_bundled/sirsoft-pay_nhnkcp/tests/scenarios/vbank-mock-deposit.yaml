@@ -8,7 +8,7 @@ description: |
   주입 스크립트는 지웠다(#639). 다른 결제대행사 주문에는 정보가 와도 그리지 않는다.
 
 axes:
-  case: [owner_test_mode, owner_live_mode, other_member_test_mode, block_available, block_unavailable]
+  case: [owner_test_mode, owner_live_mode, other_member_test_mode, block_available, block_unavailable, guest_order_show]
 
 effects:
   - mock_info_returned_in_envelope
@@ -17,7 +17,9 @@ effects:
   - mock_block_text_translated
   - mock_block_only_for_own_pg
   - mock_info_requested_by_members_only
+  - guest_order_show_does_not_redirect_to_login   # 비회원 주문 상세에서 건너뛴 요청(401)이 로그인 이동을 부르지 않는다(7.1.0 리허설)
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/UserVbankMockDepositControllerTest.php
   - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/mypageMockDeposit.test.tsx
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/guestOrderShowNoLoginRedirect.test.ts

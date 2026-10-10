@@ -29,12 +29,20 @@ use Illuminate\Support\Collection;
  * 시더 몫이라 지우지도 만들지도 않는다. 확장 설치·활성화·설정 같은 코어 로그의 대상도 특정 식별자를
  * 적어 두지 않고 실제로 설치된 모듈·플러그인·템플릿에서 고른다(2026-09-28 결정).
  *
+ * 만든 로그에는 `properties.seeded_by='core:sample'` 표식을 달고, 다시 실행할 때는 그 표식 행만 지운다 — 표식 없는
+ * 실제 활동 로그(보관 대상)는 건드리지 않는다(게시판·이커머스 샘플 로그와 같은 방식).
+ *
  * 수동 실행: php artisan db:seed --class="Database\Seeders\Sample\ActivityLogSampleSeeder"
  */
 class ActivityLogSampleSeeder extends Seeder
 {
+    /** @var string 이 시더가 만든 로그의 표식 (properties.seeded_by) — 게시판·이커머스 샘플 로그와 같은 형식 */
+    public const SAMPLE_MARKER = 'core:sample';
+
     /**
      * 시더 실행
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -47,10 +55,11 @@ class ActivityLogSampleSeeder extends Seeder
 
         $this->command->info('활동 로그 샘플 시딩 시작...');
 
-        // 기존 코어 활동 로그 삭제 — 확장 로그는 설명 키가 `{확장}::` 네임스페이스라 그것만 남긴다.
-        $deleted = ActivityLog::where('description_key', 'not like', '%::%')->delete();
+        // 이전에 이 시더가 만든 샘플 로그만 지운다 — 표식 없는 실제 활동 로그(보관 대상)는 그대로 둔다. 종전에는 코어 활동 로그
+        // 전체를 지워, 설치가 끝난 사이트에서 --sample 을 돌리면 운영 기록이 사라졌다.
+        $deleted = ActivityLog::where('properties->seeded_by', self::SAMPLE_MARKER)->delete();
         if ($deleted > 0) {
-            $this->command->info("기존 코어 활동 로그 {$deleted}건 삭제.");
+            $this->command->info("기존 코어 샘플 활동 로그 {$deleted}건 삭제.");
         }
 
         $count = 0;
@@ -1129,7 +1138,7 @@ class ActivityLogSampleSeeder extends Seeder
             'user_id' => $admin->id,
             'loggable_type' => $loggableType,
             'loggable_id' => $loggableId,
-            'properties' => $properties,
+            'properties' => ($properties ?? []) + ['seeded_by' => self::SAMPLE_MARKER],
             'changes' => $changes,
             'ip_address' => fake()->ipv4(),
             'user_agent' => fake()->userAgent(),

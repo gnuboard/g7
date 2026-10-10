@@ -66,7 +66,7 @@
                                         "name": "language_currency.default_currency",
                                         "value": "{{_local.form?.language_currency?.default_currency}}",
                                         "options": "{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}",
-                                        "className": "{{_local.errors?.['language_currency.default_currency'] ? 'w-full select-error' : 'w-full'}}",
+                                        "className": "{{_local.errors?.['language_currency.default_currency'] ? 'w-full input-error' : 'w-full'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
@@ -124,7 +124,7 @@
                             "name": "Select",
                             "props": {
                                 "id": "exchange_rate_provider",
-                                "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'w-full select-error' : 'w-full'}}",
+                                "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'w-full input-error' : 'w-full'}}",
                                 "name": "language_currency.rate_provider",
                                 "value": "{{_local.form?.language_currency?.rate_provider ?? ''}}",
                                 "options": "{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual')}].concat((settings?.data?.available_rate_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",

@@ -2,6 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -14,6 +16,9 @@ use Illuminate\Support\Facades\Schema;
  *
  * `return_shipping_amount`·`mc_return_shipping_amount` 는 주문 생성이 0 을 쓰므로 남긴다.
  * 네 컬럼에는 인덱스·외래키가 없다(2026_04_01_000021 생성 마이그레이션). `down()` 은 같은 형으로 되살린다.
+ *
+ * 번들 코드는 이 네 칸을 쓴 적이 없지만 1.2.1 모델은 대량 할당을 허용했다 — 외부 확장이 값을 적어 두었을 수 있어
+ * 지우기 전에 값이 있는 행 수를 경고 로그로 남긴다(값 자체는 옮기지 않는다, 7.1.0 출시 점검 EU-8).
  */
 return new class extends Migration
 {
@@ -46,6 +51,19 @@ return new class extends Migration
 
         if ($existing === []) {
             return;
+        }
+
+        $filled = DB::table($table)->where(function ($query) use ($existing) {
+            foreach ($existing as $column) {
+                $query->orWhereNotNull($column);
+            }
+        })->count();
+
+        if ($filled > 0) {
+            Log::warning('[ecommerce] 주문 배송 행의 미사용 클레임 송장 컬럼을 지웁니다 — 값이 있던 행 '.$filled.'건', [
+                'table' => $table,
+                'columns' => $existing,
+            ]);
         }
 
         Schema::table($table, function (Blueprint $blueprint) use ($existing) {

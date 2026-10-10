@@ -81,7 +81,14 @@
         "receipt_label": "Receipt",
         "receipt_view": "View receipt",
         "cash_receipt_label": "Cash receipt",
-        "cash_receipt_view": "View cash receipt"
+        "cash_receipt_view": "View cash receipt",
+        "vbank_title": "Virtual Account Deposit Guide",
+        "vbank_bank": "Bank",
+        "vbank_account": "Account Number",
+        "vbank_holder": "Account Holder",
+        "vbank_amount": "Deposit Amount",
+        "vbank_due": "Deposit Deadline",
+        "vbank_notice": "Your order will be automatically cancelled if payment is not received by the deadline."
     },
     "admin": {
         "payment_panel_title": "TossPayments payment info",

@@ -128,6 +128,10 @@ class SeedClaimReasons implements DataMigration
      * 업그레이드한 일본어 상점에서만 기본 사유 이름이 한국어로 남는다. V-1 규약(Illuminate 파사드만)
      * 에 맞춰 활성 언어팩 디렉토리의 `lang-packs/{pack}/seed/claim_reasons.json` 을 직접 읽는다.
      *
+     * 번들 일괄 업데이트는 모듈을 먼저, 언어팩을 나중에 갱신한다. 그래서 이 스텝이 도는 시점의 활성 팩은 옛 판이라
+     * 1.3.0 에서 새로 생긴 사유 코드의 번역이 없다 — 활성 팩 seed 에 없는 코드는 같은 이름의 번들 팩
+     * (`lang-packs/_bundled/{pack}/seed/claim_reasons.json`)에서 메운다. 활성 팩에 있는 코드는 활성 팩 값을 쓴다(7.1.0 출시 점검 EU-5).
+     *
      * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return array<string, array<string, string>> code → [locale → 번역 이름]
      */
@@ -155,13 +159,18 @@ class SeedClaimReasons implements DataMigration
             $manifest = json_decode((string) File::get($dir.'/language-pack.json'), true);
             if (! is_array($manifest)
                 || ($manifest['target_identifier'] ?? null) !== 'sirsoft-ecommerce'
-                || empty($manifest['locale'])
-                || ! File::exists($dir.'/seed/claim_reasons.json')) {
+                || empty($manifest['locale'])) {
                 continue;
             }
 
-            $seed = json_decode((string) File::get($dir.'/seed/claim_reasons.json'), true);
-            if (! is_array($seed)) {
+            $seed = $this->readSeed($dir.'/seed/claim_reasons.json');
+            foreach ($this->readSeed($root.'/_bundled/'.$name.'/seed/claim_reasons.json') as $code => $entry) {
+                if (! array_key_exists($code, $seed)) {
+                    $seed[$code] = $entry;
+                }
+            }
+
+            if ($seed === []) {
                 continue;
             }
 
@@ -175,6 +184,23 @@ class SeedClaimReasons implements DataMigration
         }
 
         return $translations;
+    }
+
+    /**
+     * 사유 시드 번역 파일을 읽습니다.
+     *
+     * @param  string  $path  `lang-packs/{pack}/seed/claim_reasons.json` 경로(번들 원본은 `lang-packs/_bundled/{pack}/seed/claim_reasons.json`)
+     * @return array<string, mixed> 코드 → 항목 (파일이 없거나 형식이 틀리면 빈 배열)
+     */
+    private function readSeed(string $path): array
+    {
+        if (! File::exists($path)) {
+            return [];
+        }
+
+        $seed = json_decode((string) File::get($path), true);
+
+        return is_array($seed) ? $seed : [];
     }
 
     /**

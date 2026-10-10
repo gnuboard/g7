@@ -1,0 +1,16 @@
+/**
+ * sirsoft-verification_kginicis 화면 스타일 — KG이니시스 본인인증 환경설정에만 있는 상태 유틸리티
+ *
+ * 관리자 템플릿은 자기 layouts/ 만 훑어 CSS 를 만들므로, 이 플러그인 레이아웃에만 있는 포커스·다크 모드 짝은 규칙이
+ * 생성되지 않는다. 그런 짝을 이 플러그인이 접두 클래스로 직접 제공한다(다른 확장·템플릿 클래스를 정의하거나 덮지 않는다).
+ * 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
+ */
+
+/* 입력+버튼 묶음 — 포커스 때 테두리를 지우고 다크 모드 포커스 링을 밝은 파랑으로 */
+.verification-kginicis-focus-group:focus-within {
+    border-color: transparent;
+}
+
+.dark .verification-kginicis-focus-group:focus-within {
+    --tw-ring-color: oklch(70.7% 0.165 254.624); /* blue-400 */
+}

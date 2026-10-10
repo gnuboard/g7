@@ -121,6 +121,35 @@ class DeletedMemberRecipientPolicyTest extends TestCase
     }
 
     /**
+     * 코어 사유 문구는 특정 확장의 도메인(주문 등)을 알지 않는다.
+     *
+     * 수정 전 실패 이유: 7.1.0 에 새로 들어간 문구가 「주문서 등에 남은 연락처」처럼
+     * 쇼핑몰 도메인을 직접 언급해, 쇼핑몰이 없는 사이트에도 그대로 노출됐다.
+     *
+     * @scenario case=deleted_member
+     *
+     * @effects deleted_member_skip_reason_is_domain_neutral
+     *
+     * @return void 반환값 없음
+     */
+    public function test_deleted_member_skip_reason_is_domain_neutral(): void
+    {
+        $texts = [
+            'ko' => (require base_path('lang/ko/notification.php'))['skipped']['member_account_missing'],
+            'en' => (require base_path('lang/en/notification.php'))['skipped']['member_account_missing'],
+            'ja' => (require base_path('lang-packs/_bundled/g7-core-ja/backend/ja/notification.php'))['skipped']['member_account_missing'],
+        ];
+
+        foreach ($texts as $locale => $text) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/주문|order|注文/iu',
+                $text,
+                "[{$locale}] 코어 사유 문구에 쇼핑몰 도메인 단어가 없어야 합니다."
+            );
+        }
+    }
+
+    /**
      * 수신자 해석과 발송 루프가 한 정책 객체의 판정을 쓴다.
      *
      * 정책 객체를 바꿔 끼우면 두 경로가 함께 따라와야 한다 — 한쪽만 따라오면 판정이 다시 두 벌이다.

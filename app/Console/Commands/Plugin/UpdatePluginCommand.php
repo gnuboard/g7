@@ -8,6 +8,7 @@ use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\PluginManager;
 use App\Extension\Vendor\VendorMode;
 use Illuminate\Console\Command;
@@ -114,7 +115,7 @@ class UpdatePluginCommand extends Command
 
             // 업데이트 확인 (--zip 모드는 GitHub/번들 비교를 우회하므로 스킵)
             if ($zipPath === null) {
-                $checkResult = $this->pluginManager->checkPluginUpdate($identifier);
+                $checkResult = $this->pluginManager->checkPluginUpdate($identifier, $sourceOverride);
 
                 if (! $checkResult['update_available'] && ! $force) {
                     $this->info('✅ '.__('plugins.commands.update.no_update', ['plugin' => $identifier]));
@@ -196,6 +197,7 @@ class UpdatePluginCommand extends Command
                 // 레이아웃 처리 결과 (D2) — 운영자가 고친 화면이 있을 때만 표 + 요약 한 줄
                 $this->renderLayoutSyncResult($updateResult['layout_sync'] ?? null);
                 $this->renderLayoutIncludeWarnings($updateResult['layout_warnings'] ?? []);
+                $this->renderDependencyWarnings($updateResult);
 
                 Log::info('플러그인 업데이트 완료', [
                     'plugin' => $identifier,
@@ -213,7 +215,11 @@ class UpdatePluginCommand extends Command
             return Command::FAILURE;
         } catch (\Exception $e) {
             $this->error('❌ '.$e->getMessage());
-            $this->warn('💡 '.__('plugins.commands.update.backup_restored'));
+            // 실패 뒤 실제 상태로 안내한다 — 종전에는 원인과 무관하게 「복원되었습니다」를 냈다(새 판이 남은 경우에도).
+            $outcome = $e instanceof ExtensionUpdateFailedException ? $e->outcome : 'restored';
+            $this->warn('💡 '.($outcome === 'restored'
+                ? __('plugins.commands.update.backup_restored')
+                : __('extensions.commands.update.failure_outcome.'.$outcome)));
 
             Log::error('플러그인 업데이트 실패', [
                 'plugin' => $identifier,

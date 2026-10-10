@@ -81,7 +81,14 @@
     "receipt_label": "領収書",
     "receipt_view": "領収書を表示",
     "cash_receipt_label": "現金領収書",
-    "cash_receipt_view": "現金領収書を表示"
+    "cash_receipt_view": "現金領収書を表示",
+    "vbank_title": "仮想口座入金案内",
+    "vbank_bank": "銀行",
+    "vbank_account": "口座番号",
+    "vbank_holder": "預金者名",
+    "vbank_amount": "入金金額",
+    "vbank_due": "入金期限",
+    "vbank_notice": "入金期限内に入金いただかない場合、注文は自動キャンセルされます。"
   },
   "admin": {
     "payment_panel_title": "Toss Payments決済情報",

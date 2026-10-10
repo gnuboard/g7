@@ -39,7 +39,7 @@
                 </div>
               </div>
             </label>
-            <label data-ref="secret_card" data-if="{{form_meta?.data?.board?.secret_mode !== 'disabled'}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors">
+            <label data-ref="secret_card" data-if="{{form_meta?.data?.board?.secret_mode !== 'disabled'}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer board-secret-card transition-colors">
               <div class="flex-start gap-3">
                 <input type="checkbox" name="is_secret" disabled="{{_computed.isReadOnly || form_meta?.data?.board?.secret_mode === 'always'}}" class="mt-0.5 w-4 h-4 text-amber-600 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"/>
                 <div class="flex-1">
@@ -56,7 +56,7 @@
       </div>
       <div data-ref="category_section" data-if="{{form_meta?.data?.board?.categories &amp;&amp; form_meta.data.board.categories.length > 0}}" class="pb-6">
         <label class="form-label">$t:sirsoft-board.admin.posts.form.category</label>
-        <select name="category" value="{{_local.form?.category ?? ''}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="text-primary block w-full sm:w-64 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed">
+        <select name="category" value="{{_local.form?.category ?? ''}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed">
           <option value="">$t:sirsoft-board.admin.posts.form.select_category</option>
           <option data-each="category in form_meta?.data?.board?.categories ?? []" value="{{category}}">{{category}}</option>
         </select>

@@ -14,7 +14,7 @@
       <div>
         <p class="text-label">$t:sirsoft-ecommerce.admin.order.excel.description</p>
         <div>
-          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}}">
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' : ''}}">
             <input type="radio" name="excelDownloadType" value="search" checked="{{_global.excelDownloadContext?.type === 'search'}}" class="radio mt-1">
               <on type="change">
                 <!-- 라디오 두 개가 같은 name 을 쓰지만 무엇이 선택됐는지는 브라우저가 아니라 이 키가 정한다 — 아래 요청 본문이 이 값으로 보낼 것을 가른다. -->
@@ -26,7 +26,7 @@
               <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc|count={{_global.excelDownloadContext?.total ?? 0}}</span>
             </div>
           </label>
-          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
             <input type="radio" name="excelDownloadType" value="selected" checked="{{_global.excelDownloadContext?.type === 'selected'}}" disabled="{{(_global.excelDownloadContext?.selectedItems ?? []).length === 0}}" class="radio mt-1">
               <on type="change">
                 <!-- 체크한 주문이 없으면 이 갈래는 잠긴다(라디오 자체가 disabled). 다만 아래 내려받기가 부르는 `admin/orders/export-excel` 은 모듈 라우트에 없어, 지금은 어느 갈래를 골라도 파일이 나오지 않는다 — 파일 머리 참조. -->

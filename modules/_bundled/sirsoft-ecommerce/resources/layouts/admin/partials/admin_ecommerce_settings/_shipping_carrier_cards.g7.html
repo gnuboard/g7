@@ -51,7 +51,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type</label>
-          <select value="{{$carrier.type ?? 'domestic'}}" class="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'select-error w-full' : 'w-full'}}" disabled="{{_computed.isReadOnly}}">
+          <select value="{{$carrier.type ?? 'domestic'}}" class="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'input-error w-full' : 'w-full'}}" disabled="{{_computed.isReadOnly}}">
             <options>
               <option value="domestic">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_domestic</option>
               <option value="international">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_international</option>

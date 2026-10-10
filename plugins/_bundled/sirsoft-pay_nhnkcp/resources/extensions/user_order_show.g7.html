@@ -109,6 +109,18 @@
       </form>
       <p data-if="{{nhnkcp_mock_deposit.data.is_admin_view === true}}" class="mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium">$t:sirsoft-pay_nhnkcp.user.mock_admin_notice</p>
     </div>
-    <!-- 모의입금 정보 — 로그인 전용 주소라 비회원이면 요청하지 않는다(auth_mode=required). 주소에 주문번호가 있는 주문 상세에서만 부른다(신청서 상세는 주소가 신청번호다). 주문 본체와 따로 늦게 와도 되므로 progressive 다 -->
-    <data-source id="nhnkcp_mock_deposit" label_key="$t:sirsoft-pay_nhnkcp.editor.data_source.nhnkcp_mock_deposit" type="api" endpoint="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/vbank-mock-deposit-info" method="GET" if="{{!!route.order_number}}" :auto_fetch="true" auth_mode="required" loading_strategy="progressive"/>
+    <!-- 모의입금 정보 — 로그인 전용 주소라 비회원이면 요청하지 않는다(auth_mode=required). 주소에 주문번호가 있는 주문 상세에서만 부른다(신청서 상세는 주소가 신청번호다). 주문 본체와 따로 늦게 와도 되므로 progressive 다.
+         엔진은 토큰이 없어 요청을 건너뛴 사실을 401 로 알리므로 401·403 은 여기서 조용히 넘긴다 — 처리기가 없으면 템플릿 기본 401 처리(로그인 이동)로 떨어져,
+         이 조각이 붙는 비회원 주문 상세가 로그인 화면으로 튕겼다(7.1.0 리허설 실측). 결제대행사·결제수단은 이 단계(조건 평가는 route·query·_global 만 본다)에서
+         가를 수 없어 정보 API 가 가린다 — NHN KCP 가상계좌 입금 대기·테스트 모드·본인 주문이 아니면 available=false 다. -->
+    <data-source id="nhnkcp_mock_deposit" label_key="$t:sirsoft-pay_nhnkcp.editor.data_source.nhnkcp_mock_deposit" type="api" endpoint="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/vbank-mock-deposit-info" method="GET" if="{{!!route.order_number}}" :auto_fetch="true" auth_mode="required" loading_strategy="progressive">
+      <error-handling>
+        <on-code code="401">
+          <suppress/>
+        </on-code>
+        <on-code code="403">
+          <suppress/>
+        </on-code>
+      </error-handling>
+    </data-source>
 </extension>

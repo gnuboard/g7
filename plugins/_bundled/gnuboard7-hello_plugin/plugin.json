@@ -15,7 +15,7 @@
     "hidden": true,
     "dependencies": {
         "modules": {
-            "gnuboard7-hello_module": ">=0.1.0"
+            "gnuboard7-hello_module": ">=0.2.0"
         },
         "plugins": {}
     }

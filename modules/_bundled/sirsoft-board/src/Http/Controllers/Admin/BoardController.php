@@ -308,9 +308,9 @@ class BoardController extends AdminBaseController
                 $data['description'] = [$fallbackLocale => ''];
 
                 $data['categories'] = [];
-                $spamSecurity = g7_module_settings('sirsoft-board', 'spam_security', []);
-                // TagInput 입력과 일관되게 배열로 주입 (categories 와 동일 패턴)
-                $data['blocked_keywords'] = array_values($spamSecurity['blocked_keywords'] ?? []);
+                // TagInput 입력과 일관되게 배열로 주입 (categories 와 동일 패턴).
+                // 금지어 기본값은 「게시판 기본 설정」(basic_defaults)에 있다 — 스팸·보안 설정에는 금지어 칸이 없다
+                $data['blocked_keywords'] = array_values($basicDefaults['blocked_keywords'] ?? []);
                 $data['allowed_extensions'] = array_values($basicDefaults['allowed_extensions'] ?? []);
                 // reject(is_array) 로 제거된 배열 필드 — 체크박스 초기 선택 상태 렌더에 필요
                 $data['active_reaction_types'] = array_values($basicDefaults['active_reaction_types'] ?? []);

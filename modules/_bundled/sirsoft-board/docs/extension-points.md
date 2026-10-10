@@ -260,8 +260,8 @@ Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 
 
 | 샘플 시더 훅 | 인자 | 반환 |
 |---|---|---|
-| `sirsoft-ecommerce.inquiry.seed_sample_post` | `(null, string $slug, array $question, ?array $reply)` — question: title·content·user_id·author_name·password(평문, board 가 해시)·is_secret·created_at / reply: content·user_id·created_at | `['post_id' => int, 'inquirable_type' => string]` · 게시판 없으면 이전 값 |
-| `sirsoft-ecommerce.inquiry.purge_sample_posts` | `(0, string $slug, array<string, int[]> $inquirables)` — 타입별 글 ID 묶음 | 영구 삭제한 글 수 (자기 글 타입 묶음 + 문의 게시판 답변 글만) |
+| `sirsoft-ecommerce.inquiry.seed_sample_post` | `(null, string $slug, array $question, ?array $reply)` — question: title·content·user_id·author_name·password(평문, board 가 해시)·is_secret·created_at / reply: content·user_id·created_at | `['post_id' => int, 'inquirable_type' => string]` · 게시판 없으면 이전 값 · 생성 뒤 게시판 글 수와 질문의 답변 수를 다시 센다 |
+| `sirsoft-ecommerce.inquiry.purge_sample_posts` | `(0, string $slug, array<string, int[]> $inquirables)` — 타입별 글 ID 묶음 | 영구 삭제한 글 수 — 넘겨받은 자기 글 타입(Post) 글과 그 글의 답변만(같은 게시판 안). 그 글들의 댓글·첨부(저장소 파일 포함)·반응·스크랩도 지우고 게시판 글·댓글 수를 다시 센다. 운영자가 실제 문의에 단 답변은 남는다 |
 
 `SeoBoardCacheListener` 가 `board.after_update`·`board.after_delete`·`board.posts.before_force_delete`
 를 구독하는 것은 사이트맵 색인이 게시판(부모)과 게시글(자식)의 생명주기를 함께 따르게 하기

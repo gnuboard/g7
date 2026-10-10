@@ -324,9 +324,11 @@ php artisan layout:compile --all                   # 번들 확장·템플릿 �
 php artisan layout:compile --all --roundtrip       # 생성 없이 왕복 동등성만 검사 (불일치·escape 집계)
 php artisan layout:compile <path> --out=<file>     # 산출 경로 지정
 
-# decompile = HTML → JSON (설치·검증). 산출 JSON 은 디스크에 병존시키지 않는다
+# decompile = HTML → JSON (설치·검증). 짝 .json 은 손으로 고치지 않고 --sync 로 굽는다
 php artisan layout:decompile <path>                # 단일 .g7.html 강검증 (기본이 검증 전용)
-php artisan layout:decompile --all                 # 이관된 .g7.html 전량 강검증
+php artisan layout:decompile --all                 # 번들 확장·템플릿의 .g7.html 전량 강검증
+php artisan layout:decompile <path> --sync         # 컴파일 산출을 짝 .json 에 기록 (짝이 없으면 생성)
+php artisan layout:decompile --all --check         # 짝 .json 이 소스와 일치하는지 대조만 (불일치 시 non-zero)
 php artisan layout:decompile <path> --out=<file>   # 진단용 단일 JSON 덤프 (--out 지정 시에만 기록)
 ```
 
@@ -378,7 +380,7 @@ php artisan api:docgen --scope=core                 # 코어 문서 생성 (범�
 php artisan api:docgen --scope=core --seed           # 실측용 완전 샘플 시드 후 생성 (개발 환경 전용)
 php artisan api:docgen --scope=core --base-url=https://example.com  # 실측 기준 URL 지정
 php artisan api:docgen --scope=core --examples-only  # 표·서술 불가침, 요청/응답 예시 블록만 in-place 삽입
-php artisan api:docgen --scope=core --check           # 생성 없이 누락/drift 만 리포트 (하네스 소비)
+php artisan api:docgen --scope=core --check           # 생성 없이 누락/drift 만 리포트 (자동 점검용)
 php artisan api:docgen --scope=core --dry-run         # 생성 대상 파일/엔드포인트 목록만 출력
 
 # 파라미터/응답 필드 설명 TODO 셀 in-place 백필 (재생성 없이 공통 필드 자동 서술, 멱등)

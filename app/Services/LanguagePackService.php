@@ -835,7 +835,8 @@ class LanguagePackService
 
         try {
             File::ensureDirectoryExists($tempPath);
-            ['owner' => $owner, 'repo' => $repo] = GithubHelper::parseUrl($githubUrl);
+            // parseUrl 은 [소유자, 저장소] 목록을 돌려준다 — 종전의 키 분해(owner/repo)는 늘 실패해 GitHub 경로가 동작하지 않았다.
+            [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
             $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath);
             ZipInstallHelper::extractZip($zipPath, $extractPath);
 
@@ -1718,11 +1719,14 @@ class LanguagePackService
      * 단일 GitHub 언어팩의 최신 버전을 조회하고 latest_version 을 갱신합니다.
      *
      * @param  LanguagePack  $pack  대상 언어팩
-     * @return array{identifier:string, current:string, latest:string|null, has_update:bool, error:string|null}
+     * 후보는 GitHub 공개 최신과 번들(`lang-packs/_bundled`) 판 중 높은 버전이다(같으면 GitHub) — 모듈·플러그인·템플릿과 같은 규칙.
+     * 확장 공개 릴리스가 코어 출시보다 늦으면 옛 공개 판만 보고 「최신」으로 끝나지 않게 한다.
+     *
+     * @return array{identifier:string, current:string, latest:string|null, source:string|null, has_update:bool, error:string|null}
      */
     private function checkSinglePackUpdate(LanguagePack $pack): array
     {
-        $latest = null;
+        $githubLatest = null;
         $error = null;
 
         // 1순위: GitHub (manifest.github_url SSoT — 모듈/플러그인/템플릿과 동일 패턴.
@@ -1730,9 +1734,11 @@ class LanguagePackService
         $githubUrl = $this->resolveGithubUrl($pack);
         if ($githubUrl !== null) {
             try {
-                ['owner' => $owner, 'repo' => $repo] = GithubHelper::parseUrl($githubUrl);
+                [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
                 $release = GithubHelper::fetchLatestRelease($owner, $repo);
-                $latest = ltrim((string) ($release['tag_name'] ?? ''), 'v') ?: null;
+                // 헬퍼는 `version`(태그의 v 를 뗀 값)을 돌려준다 — 종전에는 `tag_name` 을 읽어 늘 비어 번들로 폴백했다.
+                $githubLatest = ltrim((string) ($release['version'] ?? $release['tag_name'] ?? ''), 'v') ?: null;
+                $error = $release['error'] ?? null;
             } catch (Throwable $e) {
                 $error = $e->getMessage();
                 Log::warning('language-pack github update check failed', [
@@ -1742,9 +1748,13 @@ class LanguagePackService
             }
         }
 
-        // 2순위: bundled 폴백 (lang-packs/_bundled/{identifier}/language-pack.json)
-        if ($latest === null) {
-            $latest = $this->resolveBundledLatestVersion($pack);
+        // 번들 판 (lang-packs/_bundled/{identifier}/language-pack.json) — GitHub 보다 높으면 번들을 후보로
+        $latest = $githubLatest;
+        $source = $githubLatest !== null ? 'github' : null;
+        $bundledLatest = $this->resolveBundledLatestVersion($pack);
+        if ($bundledLatest !== null && ($latest === null || version_compare($bundledLatest, $latest, '>'))) {
+            $latest = $bundledLatest;
+            $source = 'bundled';
         }
 
         if ($latest === null) {
@@ -1752,6 +1762,7 @@ class LanguagePackService
                 'identifier' => $pack->identifier,
                 'current' => $pack->version,
                 'latest' => null,
+                'source' => null,
                 'has_update' => false,
                 'error' => $error,
             ];
@@ -1763,6 +1774,7 @@ class LanguagePackService
             'identifier' => $pack->identifier,
             'current' => $pack->version,
             'latest' => $latest,
+            'source' => $source,
             'has_update' => version_compare($latest, $pack->version, '>'),
             'error' => null,
         ];
@@ -1927,20 +1939,24 @@ class LanguagePackService
 
         // force=false 일 때만 버전 변동 여부를 가드한다. force=true 는 모듈/플러그인/템플릿의
         // {type}:update --force 와 동일하게 버전이 같아도 _bundled 에서 강제 재적용을 허용한다.
+        $preferBundled = false;
         if (! $force) {
             $check = $this->checkSinglePackUpdate($pack);
             if (! $check['has_update']) {
                 throw new LanguagePackOperationException('language_packs.errors.update_already_latest');
             }
+            // 확인이 고른 출처에서 받는다 — 번들이 공개 최신보다 높아 번들을 후보로 골랐으면 GitHub 에서 옛 판을 받지 않는다.
+            $preferBundled = ($check['source'] ?? null) === 'bundled';
         }
 
         $identifier = $pack->identifier;
         $previousStatus = $pack->status;
+        $previousReason = $pack->deactivated_reason;
         $autoActivate = $pack->isActive();
         $backupPath = null;
 
-        // 우선순위 결정: force=true + bundled 존재 → bundled, 그 외 → GitHub (manifest.github_url 우선)
-        $useBundled = $force && $this->hasBundledManifest($identifier);
+        // 출처 결정: force=true 또는 확인이 번들을 골랐으면(번들이 공개 최신보다 높음) + bundled 존재 → bundled, 그 외 → GitHub
+        $useBundled = ($force || $preferBundled) && $this->hasBundledManifest($identifier);
         if (! $useBundled && $githubUrl === null) {
             // GitHub URL 해석 실패 시 bundled 폴백 자동 사용
             $useBundled = $this->hasBundledManifest($identifier);
@@ -1965,7 +1981,25 @@ class LanguagePackService
                 $updated = $this->installFromGithub((string) $githubUrl, $autoActivate, $pack->installed_by, $force);
             }
 
-            // 4. 백업 정리
+            // 4. 꺼져 있던 팩의 상태·사유 복원 — 재설치 경로는 활성이 아닌 팩을 installed·사유 없음으로 기록한다.
+            //    그대로 두면 꺼 둔 팩(inactive)은 대상 확장을 다시 켤 때의 「함께 켤 언어팩」 목록(inactive 만 고른다)에서,
+            //    대상 확장을 기다리던 팩(awaiting_host)은 대상 확장 활성화의 자동 켜기에서 빠져 꺼진 채 남는다.
+            if (! $autoActivate && $updated->status === LanguagePackStatus::Installed->value) {
+                $restore = [];
+                if ($previousStatus === LanguagePackStatus::Inactive->value) {
+                    $restore['status'] = LanguagePackStatus::Inactive->value;
+                }
+                if ($previousReason !== null && $updated->deactivated_reason !== $previousReason) {
+                    $restore['deactivated_reason'] = $previousReason;
+                }
+                if ($restore !== []) {
+                    $this->repository->update($updated, $restore);
+                    $updated = $this->repository->findById($updated->id) ?? $updated;
+                    $this->refreshCache();
+                }
+            }
+
+            // 5. 백업 정리
             if ($backupPath) {
                 ExtensionBackupHelper::deleteBackup($backupPath);
             }

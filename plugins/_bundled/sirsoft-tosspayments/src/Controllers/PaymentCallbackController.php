@@ -516,6 +516,9 @@ class PaymentCallbackController
             ],
         ], fn ($v) => $v !== null));
 
+        // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
+        $this->orderService->onVbankAccountIssued($order);
+
         Log::info('TossPayments: virtual account issued', [
             'orderId' => $order->order_number,
             'paymentKey' => $paymentKey,

@@ -402,7 +402,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('blocked_domains.auto_blocking_off_hint');
             // ON 박스와 동일한 시각 형태 — blue 좌측 색띠 + circle-info
             expect(serialized).toContain('border-l-4');
-            expect(serialized).toContain('border-l-blue-500');
+            // 왼쪽 파란 색띠 — 관리자 템플릿 CSS 에 `border-l-blue-500` 규칙이 없어 플러그인 CSS 의 접두 클래스로 둔다
+            expect(serialized).toContain('gdpr-accent-info');
             expect(serialized).toContain('circle-info');
             // 한 줄 + 중간 정렬 (시맨틱 flex-center 로 통일 — #399)
             expect(serialized).toContain('flex-center');

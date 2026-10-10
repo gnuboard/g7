@@ -52,13 +52,13 @@
         <div data-ref="status_filter_row" class="flex-center flex-wrap gap-3 mb-4">
           <span class="text-label w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.status</span>
           <!-- 처리 상태를 가리지 않고 모두 -->
-          <div class="{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
+          <div class="{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
             <on type="click">
               <set-state target="_local" statusFilter=""/>
             </on>
             $t:sirsoft-ecommerce.admin.excel_download.filter.all
           </div>
-          <div class="{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
+          <div class="{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
             <on type="click">
               <!-- 완료 — 파일이 만들어져 아직 보관기한 안에 있는 건 -->
               <set-state target="_local" statusFilter="completed"/>
@@ -66,7 +66,7 @@
             <icon name="check-circle" class="text-xs"/>
             <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
           </div>
-          <div class="{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
+          <div class="{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
             <on type="click">
               <!-- 생성중 — 아직 파일이 없어 내려받기를 걸 수 없는 건 -->
               <set-state target="_local" statusFilter="processing"/>
@@ -74,7 +74,7 @@
             <icon name="spinner" class="text-xs"/>
             <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
           </div>
-          <div class="{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
+          <div class="{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
             <on type="click">
               <!-- 실패 — 생성 도중 끊긴 건. 다시 요청해야 한다 -->
               <set-state target="_local" statusFilter="failed"/>
@@ -82,7 +82,7 @@
             <icon name="circle-exclamation" class="text-xs"/>
             <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
           </div>
-          <div class="{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
+          <div class="{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
             <on type="click">
               <!-- 만료 — 보관기한이 지나 파일이 지워진 건. 이력은 남지만 내려받을 수 없다 -->
               <set-state target="_local" statusFilter="expired"/>

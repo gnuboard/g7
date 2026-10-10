@@ -183,6 +183,7 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/module.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/module.iife.js` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
@@ -190,11 +191,18 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-JS 번들 `dist/js/module.iife.js` 는 액션 핸들러만 담은 경량 IIFE 입니다(컴포넌트·CSS 없음).
+JS 번들 `dist/js/module.iife.js` 는 액션 핸들러만 담은 경량 IIFE 입니다(컴포넌트 없음).
+관리자 화면에만 있는 호버·다크 짝·반투명 배경은 `resources/css/main.css` 에 ``board-`` 접두 클래스로 두고,
+JS 엔트리가 불러와 빌드가 `dist/css/module.css` 로 냅니다(module.json `assets.css`). 관리자 템플릿은 자기
+레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃에만 있는 유틸리티(`dark:bg-gray-700/30` 같은 것)는
+규칙이 생성되지 않아 조용히 빠집니다. 새 레이아웃에 템플릿 CSS 에 없는 유틸리티가 필요하면 여기에 접두 클래스로
+정의합니다 — 이 파일은 템플릿의 `@layer utilities` 밖에 실려 같은 속성의 유틸리티보다 앞서므로 다크·호버 짝을
+함께 둡니다(규약: 코어 문서 `docs/extension/module-assets.md` 「확장 화면의 의미 색은 확장 CSS 가 싣는다」).
+
 소스는 `resources/js/` 이고 `--production` 빌드(소스맵을 남기지 않는 배포용)로 굽습니다 — 이 모듈
 디렉토리에서 `npm run build` 를 `G7_BUILD_SOURCEMAP=0` 으로 실행하거나, 설치본 manifest 에 에셋이
 반영된 뒤에는 `php artisan module:build sirsoft-board --production` 을 씁니다. 굽고 나면 `dist/` 를
-함께 커밋합니다.
+함께 커밋합니다(`dist/css/` 포함).
 
 `editor-spec.json` 은 레이아웃 편집기가 게시판 관리 화면의 컴포넌트를 인식하기 위한 선언이며
 실행 코드가 아니라 manifest 입니다. 로딩 설정(`strategy: global`, `priority: 100`)은 이 번들을 모든

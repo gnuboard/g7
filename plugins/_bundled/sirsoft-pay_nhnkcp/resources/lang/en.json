@@ -141,7 +141,7 @@
         "redirect_success_url": "Payment Success Redirect URL",
         "redirect_success_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL (https://...). {orderId} will be replaced with the actual order number.",
         "redirect_fail_url": "Payment Failure Redirect URL",
-        "redirect_fail_url_hint": "Supports relative paths or full URLs. Error details are appended as query parameters.",
+        "redirect_fail_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL. Error details are appended as query parameters.",
         "section_vbank": "Virtual Account Settings",
         "section_vbank_hint": "Settings for virtual account payment.",
         "vbank_expire_days": "Deposit Validity Period (not used)",

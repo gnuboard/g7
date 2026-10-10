@@ -130,7 +130,7 @@
               <div data-ref="field_notify_admin_on_report_channels" class="stack-tight">
                 <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title</label>
                 <div data-ref="report_received_admin_template_status" class="space-y-2">
-                  <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">
+                  <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row">
                     <div class="flex items-center gap-2 min-w-0">
                       <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
                       <div class="min-w-0">
@@ -176,7 +176,7 @@
               <div data-ref="field_notify_author_on_report_action_channels" class="stack-tight">
                 <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title</label>
                 <div data-ref="report_action_template_status" class="space-y-2">
-                  <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">
+                  <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row">
                     <div class="flex items-center gap-2 min-w-0">
                       <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
                       <div class="min-w-0">

@@ -115,6 +115,19 @@ class ValidateP4UpgradeDataTest extends ModuleTestCase
     }
 
     /**
+     * 임시 언어팩 루트에 번들 팩 사본(1.3.0 판 seed)을 둡니다.
+     *
+     * @param  array<string, array{name: string}>  $seed  코드 → 항목
+     * @return void 반환값 없음
+     */
+    private function putBundledJapaneseSeed(array $seed): void
+    {
+        $bundled = $this->tempLangRoot.'/_bundled/g7-module-sirsoft-ecommerce-ja/seed';
+        File::ensureDirectoryExists($bundled);
+        File::put($bundled.'/claim_reasons.json', json_encode($seed, JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
      * 사유 행의 이름을 배열로 읽습니다.
      *
      * @param  string  $code  사유 코드
@@ -166,6 +179,75 @@ class ValidateP4UpgradeDataTest extends ModuleTestCase
         }
 
         $this->assertSame('入金期限切れによる自動キャンセル', $this->refundReasonName('auto_cancel_expired')['ja']);
+    }
+
+    /**
+     * 활성 일본어 팩이 옛 판이라 새 사유 코드의 번역이 없으면 번들 팩 사본에서 메운다.
+     *
+     * 수정 전 실패 이유: 번들 일괄 업데이트는 모듈을 먼저, 언어팩을 나중에 갱신해 이 스텝이 도는 시점의 활성 팩에
+     * 1.3.0 신규 사유(사이즈 불일치 등 7종)가 없었다 — 일본어 상점에서 그 사유가 한국어·영어 이름으로만 들어갔다(EU-5).
+     *
+     * @scenario defect=seed_reasons
+     *
+     * @effects upgrade_fills_missing_reason_translations_from_bundled_language_pack
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upgrade_fills_missing_reason_translations_from_bundled_language_pack(): void
+    {
+        DB::table('ecommerce_claim_reasons')->where('type', 'exchange')->where('code', 'size_mismatch')->delete();
+        DB::table('ecommerce_claim_reasons')->where('type', 'refund')->where('code', 'admin_cancel')->delete();
+
+        $step = $this->seedStepWithJapanesePack();
+        $this->putBundledJapaneseSeed([
+            'size_mismatch' => ['name' => 'サイズが合わない'],
+            'admin_cancel' => ['name' => 'バンドル版の名前'],
+        ]);
+
+        $step->run($this->context());
+
+        $exchange = DB::table('ecommerce_claim_reasons')->where('type', 'exchange')->where('code', 'size_mismatch')->value('name');
+        $this->assertSame('サイズが合わない', json_decode((string) $exchange, true)['ja'] ?? null, '활성 팩에 없는 코드가 번들 팩 사본으로 메워지지 않았습니다');
+        $this->assertSame('管理者キャンセル', $this->refundReasonName('admin_cancel')['ja'], '활성 팩에 있는 코드는 활성 팩 값을 써야 합니다');
+    }
+
+    /**
+     * 실제 번들 일본어 팩 사본으로 업그레이드가 만드는 사유 전부(교환·반품 전부 + 환불 2종)에 일본어 이름이 들어간다.
+     *
+     * 7.1.0 출시 리허설 실측: 수정 전에는 업데이트 순간 활성 팩이 7.0.11 판이라 새로 만든 교환·반품 사유와
+     * `auto_cancel_expired` 의 `name.ja` 가 비었다. 활성 팩은 새 코드가 없는 옛 판으로 두고 번들 사본은 저장소 실물을 쓴다.
+     *
+     * @scenario defect=seed_reasons
+     *
+     * @effects upgrade_fills_missing_reason_translations_from_bundled_language_pack
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_reason_created_by_upgrade_gets_japanese_name_from_real_bundled_pack(): void
+    {
+        DB::table('ecommerce_claim_reasons')->whereIn('type', ['exchange', 'return'])->delete();
+        DB::table('ecommerce_claim_reasons')->where('type', 'refund')->whereIn('code', ['admin_cancel', 'auto_cancel_expired'])->delete();
+
+        $step = $this->seedStepWithJapanesePack();
+        File::put($this->tempLangRoot.'/g7-module-sirsoft-ecommerce-ja/seed/claim_reasons.json', json_encode([
+            'order_mistake' => ['name' => '注文ミス'],
+        ], JSON_UNESCAPED_UNICODE));
+
+        $real = json_decode((string) File::get(base_path('lang-packs/_bundled/g7-module-sirsoft-ecommerce-ja/seed/claim_reasons.json')), true);
+        $this->putBundledJapaneseSeed($real);
+
+        $step->run($this->context());
+
+        $rows = DB::table('ecommerce_claim_reasons')
+            ->where(fn ($q) => $q->whereIn('type', ['exchange', 'return'])
+                ->orWhere(fn ($r) => $r->where('type', 'refund')->whereIn('code', ['admin_cancel', 'auto_cancel_expired'])))
+            ->get(['type', 'code', 'name']);
+
+        $this->assertGreaterThanOrEqual(19, $rows->count(), '교환 8·반품 9·환불 2 가 만들어져야 합니다');
+        foreach ($rows as $row) {
+            $name = json_decode((string) $row->name, true);
+            $this->assertSame($real[$row->code]['name'] ?? null, $name['ja'] ?? null, "{$row->type}/{$row->code} 의 일본어 이름이 비었거나 번들 팩과 다릅니다");
+        }
     }
 
     /**

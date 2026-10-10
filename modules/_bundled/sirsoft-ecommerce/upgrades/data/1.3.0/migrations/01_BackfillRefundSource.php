@@ -21,9 +21,10 @@ use Illuminate\Support\Facades\Schema;
  *
  * 함께 기록해 두는 사실: `ecommerce_orders.total_refunded_amount` /
  * `total_refunded_points_amount` 는 1.3.0 이전에 writer 가 없어 항상 0 이었다.
- * 1.3.0 부터 환불 실행 경로가 누적하지만, 과거분은 어떤 환불이 실제 집행됐는지
- * 결제 취소 이력과 대조해야 알 수 있고 PG 부분취소 이력이 남지 않은 환경도 있어
- * 여기서 백필하지 않는다. 과거 주문의 누적 표시는 0 으로 남는다.
+ * 1.3.0 부터 환불 실행 경로가 누적하지만 과거분은 백필하지 않는다 — 1.3.0 이전 환불은 전부 취소 경로였고
+ * 취소가 `total_paid_amount` 를 이미 재계산값으로 덮어써 반영돼 있어, 과거 환불액을 더하면 잔여 결제 한도
+ * (`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 뺀다(근거 전문: Upgrade_1_3_0 「백필하지 않는 것」).
+ * 과거 주문의 누적 표시는 0 으로 남는다.
  *
  * idempotent: 이미 백필된 행은 refund_source_type 이 채워져 대상에서 빠진다.
  * V-1 안전: Illuminate\Support\Facades\* 만 사용 — 모듈 Enum/Model 을 참조하지 않는다.

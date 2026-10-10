@@ -177,7 +177,7 @@
             </div>
             <!-- 다운로드 아이콘 -->
             <div class="flex-shrink-0">
-              <icon name="download" class="text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"/>
+              <icon name="download" class="text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 board-attachment-icon transition-colors"/>
             </div>
           </div>
         </div>
@@ -235,9 +235,9 @@
         <!-- 비밀글인 경우 -->
         <span data-if="{{post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:sirsoft-board.admin.posts.detail.reply_secret_content</span>
         <!-- 일반 글인 경우 - 내용 -->
-        <extension-point name="html_content" data-if="{{!(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
+        <extension-point name="html_content" data-if="{{!(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : 'board-collapsed-content'}}">
           <default>
-            <html-content data-type="composite" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
+            <html-content data-type="composite" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : 'board-collapsed-content'}}"/>
           </default>
         </extension-point>
       </div>

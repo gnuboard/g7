@@ -11,15 +11,17 @@
  *
  * 이제 확장 결제수단이 1급 시민이므로 위장이 없고, `serverPaymentMethod` 도 제거됐습니다.
  *
- * 간편결제 선택 표시 감시(initEasyPayWatcher)는 공개 API `G7Core.state.subscribe()` 로 걸고 해제 함수를 쥔다 —
- * 코어가 재초기화 때 initPlugin 을 다시 부르면 앞 구독을 풀고 새로 건다(#639).
+ * 간편결제 선택 표시는 이커머스 결제수단 목록이 그린다. 주입 대상이 없어 한 번도 그려지지 않던 주문서 간편결제
+ * 버튼 조각과, 그 버튼을 「간편결제」 한국어 문구로 찾아 칠하던 DOM 탐색·상태 구독 감시는 7.1.0 에서 걷어냈다(D-6).
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/public-core-api-only.yaml
  *
  * @see https://github.com/gnuboard/dev-g7/issues/475
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { disposeEasyPayWatcher, initEasyPayWatcher, setPaymentMethodHandler } from '../../handlers/setPaymentMethod';
+import fs from 'node:fs';
+import path from 'node:path';
+import { setPaymentMethodHandler } from '../../handlers/setPaymentMethod';
 
 describe('setPaymentMethodHandler', () => {
     let setLocalSpy: ReturnType<typeof vi.fn>;
@@ -90,70 +92,24 @@ describe('setPaymentMethodHandler', () => {
     });
 });
 
-describe('initEasyPayWatcher — 공개 상태 구독', () => {
-    let listeners: Set<() => void>;
-    let local: Record<string, unknown>;
+describe('주문서 간편결제 버튼 조각 — 걷어낸 상태 유지 (D-6)', () => {
+    const EXT_ROOT = path.resolve(__dirname, '../../../..');
 
-    beforeEach(() => {
-        listeners = new Set();
-        local = {};
-        (window as Record<string, unknown>).G7Core = {
-            state: {
-                subscribe: vi.fn((listener: () => void) => {
-                    listeners.add(listener);
-
-                    return () => listeners.delete(listener);
-                }),
-                getLocal: () => local,
-            },
-        };
-        document.body.innerHTML = `
-            <div id="nicepay_checkout_payment_section">
-                <p>간편결제</p>
-                <div><button style="box-shadow: 0 0 0 2px #fff">카카오페이</button></div>
-            </div>`;
+    // @scenario concern=payment_method_selection
+    // @effects easy_pay_rendered_by_payment_method_catalog_only
+    it('주입 대상이 없던 주문서 간편결제 조각이 다시 생기지 않는다', () => {
+        // 조각의 주입 대상(nicepay_checkout_payment_section)이 주문서 어디에도 없어 한 번도 그려지지 않았다.
+        // 간편결제는 이커머스 결제수단 목록(RegisterEasyPayMethodsListener)이 그린다.
+        expect(fs.existsSync(path.join(EXT_ROOT, 'resources/extensions/checkout_easy_pay.g7.html'))).toBe(false);
+        expect(fs.existsSync(path.join(EXT_ROOT, 'resources/extensions/checkout_easy_pay.json'))).toBe(false);
     });
 
-    afterEach(() => {
-        disposeEasyPayWatcher();
-        delete (window as Record<string, unknown>).G7Core;
-        document.body.innerHTML = '';
-    });
-
-    // @scenario concern=state_subscription
-    // @effects subscription_released_before_resubscribe
-    it('재초기화로 다시 불려도 구독은 하나만 남는다 — 앞 구독의 해제 함수를 부른다', () => {
-        initEasyPayWatcher();
-        initEasyPayWatcher();
-        initEasyPayWatcher();
-
-        expect((window as any).G7Core.state.subscribe).toHaveBeenCalledTimes(3);
-        expect(listeners.size).toBe(1);
-
-        disposeEasyPayWatcher();
-        expect(listeners.size).toBe(0);
-    });
-
-    // @scenario concern=state_subscription
-    // @effects easy_pay_highlight_cleared_on_core_method
-    it('코어 결제수단으로 바뀌면 간편결제 선택 표시를 지운다 — 선택값은 G7Core.state.getLocal() 로 읽는다', () => {
-        initEasyPayWatcher();
-        const button = document.querySelector('button') as HTMLButtonElement;
-
-        local = { paymentMethod: 'nicepay_kakaopay' };
-        listeners.forEach((listener) => listener());
-        expect(button.style.boxShadow).not.toBe('');
-
-        local = { paymentMethod: 'card' };
-        listeners.forEach((listener) => listener());
-        expect(button.style.boxShadow).toBe('');
-    });
-
-    // @scenario concern=state_subscription
-    // @effects subscription_released_before_resubscribe
-    it('공개 구독 API 가 없으면 아무것도 걸지 않는다', () => {
-        (window as Record<string, unknown>).G7Core = { state: {} };
-
-        expect(() => initEasyPayWatcher()).not.toThrow();
+    // @scenario concern=payment_method_selection
+    // @effects no_locale_dependent_dom_lookup
+    it('결제수단 선택 핸들러는 화면 문구로 DOM 을 찾지 않는다', () => {
+        // 「간편결제」 한국어 문구로 버튼 묶음을 찾던 탐색은 다른 언어에서 맞지 않았다.
+        const source = fs.readFileSync(path.join(EXT_ROOT, 'resources/js/handlers/setPaymentMethod.ts'), 'utf8');
+        expect(source).not.toMatch(/textContent|querySelector|getElementById/);
+        expect(source).not.toMatch(/간편결제'|네이버페이'|카카오페이'/);
     });
 });

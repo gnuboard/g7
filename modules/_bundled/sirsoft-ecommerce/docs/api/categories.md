@@ -295,7 +295,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 새 카테고리를 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.create` 권한이 필요하며, `CategoryService::createCategory()`가 검증된 데이터로 저장한 뒤 `CategoryResource`를 201로 반환합니다. `name`(다국어 배열)과 `slug`는 필수이고, `parent_id`를 지정하면 해당 카테고리의 하위로 배치되어 path/depth가 계산됩니다. `temp_key`로 사전 업로드해 둔 임시 이미지를 이 시점에 카테고리에 연결할 수 있으며, `sirsoft-ecommerce.category.create_validation_rules` 필터로 확장이 추가 파라미터를 검증에 주입할 수 있습니다. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「카테고리명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Category Name field is required.").
+**설명** 새 카테고리를 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.create` 권한이 필요하며, `CategoryService::createCategory()`가 검증된 데이터로 저장한 뒤 `CategoryResource`를 201로 반환합니다. `name`(다국어 배열)과 `slug`는 필수이고, `parent_id`를 지정하면 해당 카테고리의 하위로 배치되어 path/depth가 계산됩니다. `temp_key`로 사전 업로드해 둔 임시 이미지를 이 시점에 카테고리에 연결할 수 있으며, `sirsoft-ecommerce.category.create_validation_rules` 필터로 확장이 추가 파라미터를 검증에 주입할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「카테고리명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Category Name field is required.").
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/categories/images
@@ -1017,7 +1017,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 기존 카테고리(path의 `category`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.update` 권한이 필요하며, `CategoryService::updateCategory()`가 검증된 데이터로 갱신한 뒤 `CategoryResource`를 반환합니다. `name`과 `slug`는 필수이고, `parent_id`를 변경하면 계층 위치(path/depth)가 재계산됩니다. `temp_key`로 임시 업로드한 이미지를 이 시점에 연결할 수 있으며, 대상이 없거나 처리 중 예외가 발생하면 404 또는 400을 반환합니다. `sirsoft-ecommerce.category.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다. `parent_id`에는 자기 자신이나 자신의 하위 카테고리를 지정할 수 없습니다 — 순환이 만들어지는 요청은 422(`parent_id`)로 거절됩니다. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「카테고리명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Category Name field is required.").
+**설명** 기존 카테고리(path의 `category`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.update` 권한이 필요하며, `CategoryService::updateCategory()`가 검증된 데이터로 갱신한 뒤 `CategoryResource`를 반환합니다. `name`과 `slug`는 필수이고, `parent_id`를 변경하면 계층 위치(path/depth)가 재계산됩니다. `temp_key`로 임시 업로드한 이미지를 이 시점에 연결할 수 있으며, 대상이 없거나 처리 중 예외가 발생하면 404 또는 400을 반환합니다. `sirsoft-ecommerce.category.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다. `parent_id`에는 자기 자신이나 자신의 하위 카테고리를 지정할 수 없습니다 — 순환이 만들어지는 요청은 422(`parent_id`)로 거절됩니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「카테고리명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Category Name field is required.").
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/categories/{id}

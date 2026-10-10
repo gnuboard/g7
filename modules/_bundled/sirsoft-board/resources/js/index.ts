@@ -11,6 +11,9 @@
 
 import { handlerMap } from './handlers';
 
+// 관리자 게시판 화면에만 있는 호버·다크 짝(접두 클래스) — 빌드가 dist/css/module.css 로 뽑아낸다
+import '../css/main.css';
+
 const MODULE_IDENTIFIER = 'sirsoft-board';
 
 // Logger (G7Core 초기화 전에도 동작하도록 폴백 포함)

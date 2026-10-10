@@ -54,7 +54,7 @@
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_mid_hint</p>
             </div>
             <div class="lg:col-span-2">
-              <div class="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-transparent">
+              <div class="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-kginicis-focus-group">
                 <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SIR</span>
                 <input type="text" name="live_mid" placeholder="shoptest" class="text-primary flex-1 px-3 py-2 bg-white dark:bg-gray-700 font-mono text-sm outline-none border-0"/>
               </div>
@@ -208,7 +208,7 @@
             <toggle data-type="composite" name="japan_enabled"/>
           </div>
           <div data-ref="japan_fields" data-if="{{_local.form &amp;&amp; _local.form.japan_enabled}}" class="space-y-6 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <div data-ref="field_japan_restrict_jpy_payment_methods" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
+            <div data-ref="field_japan_restrict_jpy_payment_methods" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 pay-kginicis-panel-muted p-4">
               <div>
                 <label class="block text-body font-medium">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods</label>
                 <p class="text-tertiary mt-1">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods_hint</p>
@@ -243,7 +243,7 @@
                   <icon data-if="{{!_local.cbtTestProductCreating}}" name="plus" class="text-xs"/>
                   <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_create_button</span>
                 </button>
-                <a href="/admin/ecommerce/products" target="_blank" rel="noopener" class="pay-kginicis-tone-info text-xs inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-md transition-colors">
+                <a href="/admin/ecommerce/products" target="_blank" rel="noopener" class="pay-kginicis-tone-info text-xs inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 pay-kginicis-btn-info rounded-md transition-colors">
                   <icon name="external-link-alt" class="text-xs"/>
                   <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_products_link</span>
                 </a>

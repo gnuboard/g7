@@ -160,6 +160,50 @@ class TempKeyGeneratorLayoutUpgradeTest extends ModuleTestCase
         $this->assertGreaterThanOrEqual(3, count($selects), '250행인데 청크가 3번 미만 — 청크 순회가 아니다');
         $this->assertSame(0, DB::table('template_layouts')->whereIn('id', $ids)->where('content', 'like', "%'temp_' + Date.now()%")->count());
     }
+
+    /**
+     * 본문의 빈 map(`{}`)은 보정 뒤에도 `{}` 로 남고, 편집하지 않은 행의 해시·크기는 코어 표준형과 맞는다.
+     *
+     * 예전에는 본문을 연관 배열로 읽어 다시 썼으므로 운영자가 고친 행의 `{}`(7.0.11 상품 상세의
+     * `params.currentSelection`·`additionalOptions`·`reviewOptionFilters` 등)가 `[]` 로 굳었다(U2-3).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario row_state=edited
+     *
+     * @effects empty_map_preserved_after_patch, unedited_row_hash_resynced
+     */
+    public function test_empty_maps_are_preserved_and_hash_follows_core_standard_form(): void
+    {
+        $content = json_encode([
+            'version' => '1.0.0',
+            'initLocal' => ['currentSelection' => new \stdClass],
+            'init_actions' => [
+                ['handler' => 'setState', 'params' => ['target' => 'local', 'tempKey' => self::LEGACY]],
+                ['handler' => 'setState', 'params' => ['target' => 'local', 'reviewOptionFilters' => new \stdClass]],
+            ],
+            'components' => [['name' => 'FileUploader', 'props' => ['uploadUrl' => '/api/modules/sirsoft-ecommerce/admin/categories/images']]],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $edited = $this->insertLayout('shop/show_edited', $content, 'template', edited: true);
+        $unedited = $this->insertLayout('shop/show_unedited', $content, 'template', edited: false);
+
+        $this->runUpgrade();
+
+        foreach ([$edited, $unedited] as $id) {
+            $after = DB::table('template_layouts')->find($id);
+            $decoded = json_decode($after->content);
+
+            $this->assertStringContainsString('{{$uuid()}}', $after->content);
+            $this->assertInstanceOf(\stdClass::class, $decoded->initLocal->currentSelection, '초기 선택값 {} 가 [] 로 바뀌었다');
+            $this->assertInstanceOf(\stdClass::class, $decoded->init_actions[1]->params->reviewOptionFilters, '리뷰 필터 {} 가 [] 로 바뀌었다');
+        }
+
+        $after = DB::table('template_layouts')->find($unedited);
+        $this->assertSame($this->hash($after->content), $after->original_content_hash, '보정이 편집으로 보인다');
+        $this->assertSame(strlen($this->normalize($after->content)), (int) $after->original_content_size);
+    }
+
     /**
      * 1.3.0 업그레이드 스텝을 실행합니다.
      *

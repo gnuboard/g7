@@ -113,10 +113,8 @@ export async function copyProductHandler(
 
     logger.log('[copyProduct] Navigating to:', targetUrl);
 
-    // 상품 등록 페이지로 이동
-    if (G7Core.navigate) {
-        G7Core.navigate(targetUrl);
-    } else if (context.navigate) {
+    // 상품 등록 페이지로 이동 (코어에 `G7Core.navigate` 는 없다 — 액션 컨텍스트의 navigate 를 쓴다)
+    if (context.navigate) {
         context.navigate(targetUrl);
     } else {
         window.location.href = targetUrl;

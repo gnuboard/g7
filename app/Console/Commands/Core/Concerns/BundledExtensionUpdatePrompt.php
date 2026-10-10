@@ -448,7 +448,9 @@ trait BundledExtensionUpdatePrompt
             $strategy = $strategies["modules:{$id}"] ?? 'overwrite';
             $this->line(__('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $this->lineLayoutSyncSummary($moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled'));
+                $result = $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
@@ -462,7 +464,9 @@ trait BundledExtensionUpdatePrompt
             $strategy = $strategies["plugins:{$id}"] ?? 'overwrite';
             $this->line(__('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $this->lineLayoutSyncSummary($pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled'));
+                $result = $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
@@ -476,7 +480,9 @@ trait BundledExtensionUpdatePrompt
             $strategy = $strategies["templates:{$id}"] ?? 'overwrite';
             $this->line(__('extensions.commands.bundled_update.running_items.template', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $this->lineLayoutSyncSummary($templateManager->updateTemplate($id, true, null, $strategy, 'bundled'));
+                $result = $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;

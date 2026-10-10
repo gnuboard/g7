@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Gdpr\Tests\Unit\Upgrades;
 use App\Extension\UpgradeContext;
 use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftGdpr\V1_1_0\Migrations\RemoveExtensionOwnedKeysFromNecessaryAllowlist;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
@@ -51,6 +52,14 @@ class RemoveExtensionOwnedKeysFromNecessaryAllowlistTest extends PluginTestCase
         ],
     ];
 
+    /** @var array<int, string> 키를 제공하는 플러그인 */
+    private const PROVIDER_PLUGINS = [
+        'sirsoft-pay_kginicis',
+        'sirsoft-pay_nhnkcp',
+        'sirsoft-tosspayments',
+        'sirsoft-verification_nhnkcp',
+    ];
+
     /** @var string 설정 파일 절대 경로 */
     private string $path;
 
@@ -71,6 +80,10 @@ class RemoveExtensionOwnedKeysFromNecessaryAllowlistTest extends PluginTestCase
         if (File::exists($this->path)) {
             File::delete($this->path);
         }
+
+        // 제공 확장 설치 상태를 축마다 직접 정한다 — 기본은 「설치 안 됨」(키를 쓸 확장이 없으니 지운다).
+        DB::table('modules')->where('identifier', 'sirsoft-ecommerce')->delete();
+        DB::table('plugins')->whereIn('identifier', self::PROVIDER_PLUGINS)->delete();
     }
 
     /**
@@ -115,6 +128,49 @@ class RemoveExtensionOwnedKeysFromNecessaryAllowlistTest extends PluginTestCase
         $this->assertSame(['g7.identity.redirectStash', 'op_session_*'], $allowlist['sessionStorage']);
         $this->assertSame(['laravel_maintenance'], $allowlist['cookie']);
         $this->assertTrue($settings['banner_enabled']);
+    }
+
+    /**
+     * 제공 확장이 계약 훅을 모르는 옛 버전으로 설치돼 있으면 그 확장의 키는 남기고, 훅을 제공하는 버전이면 지웁니다.
+     * 이 플러그인만 먼저 올라가고 그 확장의 갱신이 거절·실패했을 때 키까지 지우면 쿠키 미동의 방문자의 장바구니·
+     * 결제창 복귀 기록이 부팅 때마다 파기된다(PU-5).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=key_absent
+     *
+     * @effects upgrade_keeps_extension_keys_while_provider_is_older_than_hook
+     */
+    public function test_keeps_keys_of_providers_installed_older_than_the_hook(): void
+    {
+        $this->installProvider('modules', 'sirsoft-ecommerce', '1.2.1');
+        $this->installProvider('plugins', 'sirsoft-pay_kginicis', '1.1.3');
+        $this->installProvider('plugins', 'sirsoft-pay_nhnkcp', '1.1.0');
+        $this->installProvider('plugins', 'sirsoft-tosspayments', '1.1.0');
+        // verification_nhnkcp 는 설치 안 됨 — 지운다
+
+        $this->writeSettings([
+            'necessary_storage_allowlist' => [
+                'localStorage' => ['g7_locale', ...self::SEEDED['localStorage']],
+                'sessionStorage' => self::SEEDED['sessionStorage'],
+            ],
+        ]);
+
+        $this->runStep();
+
+        $allowlist = $this->readSettings()['necessary_storage_allowlist'];
+        $this->assertSame([
+            'g7_locale',
+            'g7_cart_key',
+            'g7_guest_order_token',
+            'g7_guest_order_number',
+            'g7_guest_order_expires_at',
+            '__sirsoftKginicisMobilePaymentReturnPending',
+        ], $allowlist['localStorage'], '옛 이커머스·옛 KG 의 키를 지웠거나, 미설치 본인인증의 키를 남겼다');
+        $this->assertSame([
+            'g7:sirsoft-pay_kginicis:pendingClose',
+            '__sirsoftKginicisMobilePaymentReturnPending',
+        ], $allowlist['sessionStorage'], '옛 KG 의 키만 남아야 한다 — 새 KCP·토스·미설치 본인인증의 키는 지운다');
     }
 
     /**
@@ -281,6 +337,26 @@ class RemoveExtensionOwnedKeysFromNecessaryAllowlistTest extends PluginTestCase
                 logChannel: 'extension-upgrade',
             )
         );
+    }
+
+    /**
+     * 제공 확장을 주어진 버전으로 설치된 것처럼 기록합니다.
+     *
+     * @param  string  $table  modules 또는 plugins
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $version  설치 버전
+     * @return void 반환값 없음
+     */
+    private function installProvider(string $table, string $identifier, string $version): void
+    {
+        DB::table($table)->updateOrInsert(['identifier' => $identifier], [
+            'vendor' => 'sirsoft',
+            'name' => json_encode(['ko' => $identifier, 'en' => $identifier]),
+            'version' => $version,
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**

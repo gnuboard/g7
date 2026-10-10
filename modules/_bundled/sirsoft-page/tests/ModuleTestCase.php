@@ -27,7 +27,9 @@ use Tests\TestCase;
  */
 abstract class ModuleTestCase extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions {
+        beginDatabaseTransaction as protected beginTransactionAfterSchema;
+    }
 
     /**
      * 마이그레이션 완료 플래그 (프로세스당 한 번만 실행)
@@ -71,6 +73,7 @@ abstract class ModuleTestCase extends TestCase
         $this->app->register(PageServiceProvider::class);
 
         // 모듈 마이그레이션 실행 (pages 테이블 등)
+        // 보통은 beginDatabaseTransaction() 이 트랜잭션 전에 이미 끝냈다 — 트랜잭션을 쓰지 않는 하위 클래스용 안전망
         $this->runModuleMigrationIfNeeded();
 
         // 기본 역할 생성
@@ -175,6 +178,23 @@ abstract class ModuleTestCase extends TestCase
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
 
         $this->hookSnapshot = null;
+    }
+
+    /**
+     * 스키마를 먼저 끝낸 뒤 시험 트랜잭션을 엽니다.
+     *
+     * Laravel 은 `parent::setUp()` 안(트레이트 초기화)에서 이 트랜잭션을 연다. 그 뒤 setUp 에서 프로세스 첫
+     * 시험의 `migrate:fresh` 를 돌리면 MySQL 이 DDL 마다 열린 트랜잭션을 암묵 커밋해, 첫 시험이 만든 행
+     * (기본 역할, 시더가 넣은 행 등)이 롤백되지 않고 테스트 DB 에 남았다. 마이그레이션 경로는 코어
+     * TestCase::setUpTraits() 가 이미 등록한 뒤라 스키마 구성은 종전과 같다.
+     *
+     * @return void 반환값 없음
+     */
+    public function beginDatabaseTransaction()
+    {
+        $this->runModuleMigrationIfNeeded();
+
+        $this->beginTransactionAfterSchema();
     }
 
     /**

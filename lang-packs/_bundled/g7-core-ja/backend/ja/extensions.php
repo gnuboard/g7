@@ -25,6 +25,10 @@ return [
     ],
     'warnings' => [
         'auto_deactivated' => ':type ":identifier"がコアバージョン互換性の問題により自動無効化されました。',
+        'dependency_version_unmet' => ':identifier :required が必要ですが、現在は :installed です',
+        'dependency_not_installed' => ':identifier :required が必要ですが、インストールされていません',
+        'dependency_inactive' => '拡張 :identifier が無効になっています(必要バージョン :required)',
+        'dependency_summary' => 'ただし、依存する拡張が要件を満たしていません — :list。その拡張も更新するか有効にしてください。',
     ],
     'alerts' => [
         'incompatible_deactivated' => ':type ":name"自動無効化',
@@ -63,6 +67,11 @@ return [
     'commands' => [
         'clear_cache_success' => '拡張バージョン検証キャッシュが削除されました。',
         'update' => [
+            'failure_outcome' => [
+                'restore_failed' => '以前のバージョンに戻せませんでした — ファイルが混在している可能性があります。ログを確認し、同じコマンドで再試行してください。',
+                'kept_new' => '更新の最終段階で失敗したため、新しいバージョンのファイルとバージョン記録がそのまま残っています。原因を解決してから同じコマンドで再試行してください。',
+                'unchanged' => 'ファイルを置き換える前に失敗したため、何も変更されていません。',
+            ],
             'invalid_layout_strategy' => '--layout-strategy は overwrite または keep である必要があります。',
             'invalid_source' => '--source は auto、bundled、github のいずれかである必要があります。',
             'zip_source_conflict' => '--zip は --source と同時に指定できません。',
@@ -109,6 +118,7 @@ return [
             'search_index_result' => '検索インデックス: :summary',
             'manifest_required' => '--manifest オプションは必須で、存在するファイルを指定する必要があります。',
             'manifest_parse_failed' => 'マニフェスト JSON の解析に失敗しました: :path',
+            'lang_pack_phase_in_process' => '言語パックの段階を別プロセスに分離できなかったため、このプロセスで続行します — 拡張データの翻訳が空の場合は、完了後に php artisan language-pack:update <パック> --force を実行してください。',
         ],
     ],
     'progress' => [
