@@ -168,7 +168,9 @@ class PageSampleSeederConsistencyTest extends ModuleTestCase
     public function test_page_sample_seeder_creates_demo_pages(): void
     {
         Storage::fake('modules');
-        User::factory()->create(['is_super' => true]);
+        // 활동 로그 샘플 시더는 admin 역할 회원이 없으면 건너뛴다 — 앞 시험이 남긴 행에 기대지 않고 직접 붙인다
+        $admin = User::factory()->create(['is_super' => true]);
+        $admin->roles()->attach(Role::where('identifier', 'admin')->value('id'));
 
         $this->runSeeders();
 
