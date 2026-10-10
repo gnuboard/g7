@@ -1,4 +1,5 @@
 {
+    "comment": "인증 기록 한 건의 상세 창. 표의 펼친 자리에서 「상세」를 눌러 열고, **내용은 그때 전역에\n  실려 온 그 줄 하나가 전부**다 — 창이 따로 서버를 부르지 않으므로 목록이 준 것 이상은 볼 수 없다.\n  제공자·용도·수단 이름은 목록과 같은 방식으로 설정에서 찾아 붙이고, 못 찾으면 원래 식별자를\n  그대로 보여 준다(확장을 지운 뒤에도 지난 기록이 읽히게 하려는 것이다).",
     "meta": {
         "is_partial": true,
         "description": "Identity Log Detail Modal",
@@ -33,13 +34,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.provider_id"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block font-mono text-xs mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block font-mono text-xs mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.provider_id ? ((identityProviders?.data ?? []).find(p => p.id === _global.identity_log_modal_data.provider_id)?.label ?? _global.identity_log_modal_data.provider_id) : '-'}}"
                                 }
                             ]
@@ -51,13 +56,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.purpose"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{(identityPurposes?.data ?? []).find(p => p.id === _global.identity_log_modal_data?.purpose)?.label ?? _global.identity_log_modal_data?.purpose ?? '-'}}"
                                 }
                             ]
@@ -69,13 +78,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.status"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{$t('admin.identity.logs.status.' + (_global.identity_log_modal_data?.status ?? 'requested'))}}"
                                 }
                             ]
@@ -87,13 +100,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.channel"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.channel ? (((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[_global.identity_log_modal_data.channel] ?? _global.identity_log_modal_data.channel) : '-'}}"
                                 }
                             ]
@@ -105,13 +122,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.user_id"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.user_id ?? '-'}}"
                                 }
                             ]
@@ -123,13 +144,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.ip_address"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block font-mono text-xs mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block font-mono text-xs mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.ip_address ?? '-'}}"
                                 }
                             ]
@@ -141,13 +166,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.created_at"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.created_at ?? '-'}}"
                                 }
                             ]
@@ -159,13 +188,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.verified_at"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.verified_at ?? '-'}}"
                                 }
                             ]
@@ -177,13 +210,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.expires_at"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.expires_at ?? '-'}}"
                                 }
                             ]
@@ -195,13 +232,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.attempts"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{(_global.identity_log_modal_data?.attempts ?? 0) + ' / ' + (_global.identity_log_modal_data?.max_attempts ?? 5)}}"
                                 }
                             ]
@@ -213,13 +254,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.origin_type"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block mt-0.5" },
+                                    "props": {
+                                        "className": "text-primary block mt-0.5"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.origin_type ?? '-'}}"
                                 }
                             ]
@@ -231,13 +276,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                                    "props": {
+                                        "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                                    },
                                     "text": "$t:admin.identity.logs.col.origin_identifier"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-primary block font-mono text-xs mt-0.5 break-all" },
+                                    "props": {
+                                        "className": "text-primary block font-mono text-xs mt-0.5 break-all"
+                                    },
                                     "text": "{{_global.identity_log_modal_data?.origin_identifier ?? '-'}}"
                                 }
                             ]
@@ -251,13 +300,17 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide" },
+                            "props": {
+                                "className": "text-tertiary block font-semibold uppercase tracking-wide"
+                            },
                             "text": "$t:admin.identity.logs.detail.expanded.target_hash_label"
                         },
                         {
                             "type": "basic",
                             "name": "Span",
-                            "props": { "className": "text-primary block font-mono text-xs mt-0.5 break-all" },
+                            "props": {
+                                "className": "text-primary block font-mono text-xs mt-0.5 break-all"
+                            },
                             "text": "{{_global.identity_log_modal_data?.target_hash ?? '-'}}"
                         }
                     ]
@@ -270,7 +323,9 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide mb-1" },
+                            "props": {
+                                "className": "text-tertiary block font-semibold uppercase tracking-wide mb-1"
+                            },
                             "text": "$t:admin.identity.logs.detail.expanded.properties_label"
                         },
                         {
@@ -291,7 +346,9 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "props": { "className": "text-tertiary block font-semibold uppercase tracking-wide mb-1" },
+                            "props": {
+                                "className": "text-tertiary block font-semibold uppercase tracking-wide mb-1"
+                            },
                             "text": "$t:admin.identity.logs.detail.expanded.metadata_label"
                         },
                         {
@@ -316,10 +373,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                    },
                     "actions": [
                         {
                             "type": "click",
@@ -327,6 +380,10 @@
                             "target": "identity_log_detail_modal"
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
                     "children": [
                         {
                             "type": "basic",

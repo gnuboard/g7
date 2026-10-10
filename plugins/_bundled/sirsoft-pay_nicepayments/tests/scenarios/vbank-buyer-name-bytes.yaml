@@ -1,0 +1,21 @@
+feature: 가상계좌 결제창 구매자명 — 입금자명 한도(EUC-KR 10바이트) 안으로 자른다
+
+description: |
+  나이스 가상계좌 결제창은 구매자명(BuyerName)을 입금자명(예금주명) 기본값으로 쓰고, EUC-KR 10바이트(한글 5자)를
+  넘으면 「10bytes 이하」로 결제를 거절한다. 주문자명을 그대로 넘겨 한글 6자 이상 주문자는 가상계좌로 결제할 수 없었다.
+
+  수정 이력 (이커머스 전수 실측 후속 — 후속 B 실측 관찰, 제품 결정 2026-10-08 「고친다」):
+    - 가상계좌일 때만 구매자명을 EUC-KR 10바이트 안으로 글자 단위로 잘라 넘긴다. 다른 결제수단은 원래 이름 그대로.
+
+axes:
+  case: [vbank_over_limit, within_limit_or_other_method]
+
+effects:
+  - vbank_buyer_name_cut_to_ten_euc_kr_bytes          # 가상계좌: 한글 2바이트·ASCII 1바이트로 세어 10바이트 안, 글자 중간은 자르지 않음
+  - buyer_name_kept_when_within_limit_or_other_method # 한도 안의 이름·가상계좌 아닌 결제수단: 그대로
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/handlers/requestPayment.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 주문자명 한글 6자 이상으로 나이스 가상계좌 결제창을 열어 거절 없이 계좌 발급 단계로 넘어가는지

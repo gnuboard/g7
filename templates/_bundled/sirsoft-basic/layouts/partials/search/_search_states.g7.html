@@ -1,0 +1,59 @@
+<!-- 검색 전·후 안내 — 아직 검색어가 없을 때, 찾은 것이 없을 때, 찾았을 때의 요약 줄을 한자리에 모았다. 결과 목록(위 조각)과 갈라 둔 것은 이 셋이 결과의 종류와 무관하기 때문이다. -->
+<partial description="검색 상태별 UI (요약, 초기, 빈 결과)">
+  <div>
+    <!-- 검색 결과 요약 -->
+    <div data-if="{{query?.q &amp;&amp; searchResults?.data}}" class="mb-4">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        <span class="text-blue-600 dark:text-blue-400 font-medium">"{{query?.q}}"</span>
+        <span> $t:search.results</span>
+        <span class="font-medium"> {{(searchResults.data.total ?? 0) | number}}</span>
+        <!-- 총 건수가 상한에 걸리면 '건' 이 아니라 '건 이상' — 세지 않은 값을 정확한 것처럼 말하지 않는다 -->
+        <span data-if="{{(searchResults?.data?.total_is_exact ?? true) === true}}">$t:search.result_count_suffix|count={{searchResults.data.total ?? 0}}</span>
+        <span data-if="{{(searchResults?.data?.total_is_exact ?? true) === false}}">$t:search.result_count_suffix_at_least</span>
+      </p>
+      <!-- 상한 초과 안내 — 검색어를 좁히면 정확한 건수와 마지막 페이지를 볼 수 있다. 검색 실패도 total_is_exact=false 를 싣지만(실패한 0건을 '정확한 0건'으로 말하지 않기 위함) 그때는 검색어를 좁혀도 해소되지 않으므로 이 조치 안내를 그리지 않는다 -->
+      <p data-if="{{(searchResults?.data?.total_is_exact ?? true) === false &amp;&amp; !(searchResults?.data?.search_failed ?? false)}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:search.refine_query_hint</p>
+    </div>
+    <!-- 검색어 없는 초기 상태 -->
+    <div data-if="{{!query?.q}}" class="py-16 text-center">
+      <div class="mb-5 text-gray-300 dark:text-gray-600">
+        <icon name="search" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.initial.title</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">$t:search.initial.description</p>
+      <!-- 검색 팁 섹션 -->
+      <div class="max-w-md mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-left">
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+          <icon name="lightbulb" size="sm"/>
+          <span>$t:search.initial.hint_title</span>
+        </h4>
+        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <li class="flex items-center gap-2">
+            <icon name="check" size="sm" class="text-green-500 flex-shrink-0"/>
+            <span>$t:search.initial.hint_1</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <icon name="check" size="sm" class="text-green-500 flex-shrink-0"/>
+            <span>$t:search.initial.hint_2</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- 전체 탭 검색 실패 — 결과가 0건이고 실패가 있으면 '결과 없음' 대신 오류 안내 (키 부재(구버전 코어)는 종전 렌더 유지) -->
+    <div data-if="{{query?.q &amp;&amp; searchResults?.data &amp;&amp; (searchResults?.data?.total ?? 0) === 0 &amp;&amp; (query?.type ?? 'all') === 'all' &amp;&amp; (searchResults?.data?.search_failed ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-red-300 dark:text-red-500/60">
+        <icon name="triangle-exclamation" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.failed.title</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.failed.suggestion</p>
+    </div>
+    <!-- 검색 결과 없음 (전체 탭) -->
+    <div data-if="{{query?.q &amp;&amp; searchResults?.data &amp;&amp; (searchResults?.data?.total ?? 0) === 0 &amp;&amp; (query?.type ?? 'all') === 'all' &amp;&amp; !(searchResults?.data?.search_failed ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-gray-300 dark:text-gray-600">
+        <icon name="search" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.empty.all</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.empty.suggestion</p>
+    </div>
+  </div>
+</partial>

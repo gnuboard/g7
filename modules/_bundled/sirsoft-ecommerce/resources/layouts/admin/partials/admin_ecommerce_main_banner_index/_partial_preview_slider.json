@@ -1,207 +1,211 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Main Banner Preview Slider Partial"
-  },
-  "id": "preview_slider_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card mb-6"
-  },
-  "children": [
-    {
-      "id": "preview_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-between mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.main_banner.preview.title"
-        },
-        {
-          "type": "composite",
-          "name": "Select",
-          "props": {
-            "name": "previewLanguage",
-            "className": "w-28",
-            "value": "{{_local.previewLanguage}}",
-            "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "_local",
-                "previewLanguage": "{{$event.target.value}}"
-              }
-            }
-          ]
-        }
-      ]
+    "comment": "배너가 쇼핑몰에서 어떻게 보일지 미리 보여 주는 자리. 언어를 골라 그 언어의 배너를 확인한다.\n  **아직 시안이다** — 캐러셀 자리는 회색 상자이고 실제 배너를 그리지 않는다. 살아 있는 것은\n  언어 선택뿐이며, 그 선택도 `_local.previewLanguage` 에만 남을 뿐 아래 미리보기를 바꾸지 않는다.\n  언어 목록은 하드코딩이 아니라 앱 설정의 지원 로케일에서 온다 — 이 부분은 배선 후에도 그대로 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Main Banner Preview Slider Partial"
     },
-    {
-      "id": "carousel_placeholder",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center aspect-[3/1] justify-center"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "absolute inset-0 bg-gradient-to-r from-gray-700 to-gray-600"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "relative z-10 text-center text-white"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-2xl font-bold mb-2"
-                  },
-                  "text": "Always On Event"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-sm opacity-80"
-                  },
-                  "text": "Special benefits available anytime"
-                }
-              ]
-            },
-            {
-              "id": "carousel_nav_prev",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex-center absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "chevron-left",
-                    "className": "w-5 h-5"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "carousel_nav_next",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex-center absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "chevron-right",
-                    "className": "w-5 h-5"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "carousel_dots",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "absolute bottom-4 left-1/2 -translate-x-1/2 flex-center gap-2 z-20"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "w-2 h-2 rounded-full bg-white/50"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "w-2 h-2 rounded-full bg-white/50"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "w-2 h-2 rounded-full bg-white/50"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "w-2 h-2 rounded-full bg-white dark:bg-gray-800"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "id": "preview_slider_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-6"
     },
-    {
-      "id": "preview_info",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mt-3 text-sm text-secondary"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Span",
-          "text": "총 "
+            "id": "preview_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.main_banner.preview.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "comment": "미리보기 언어 선택. 값만 지역 상태에 남고 아래 캐러셀은 아직 이 값을 읽지 않는다(시안).",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "_local",
+                                "previewLanguage": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "name": "previewLanguage",
+                        "className": "w-28",
+                        "value": "{{_local.previewLanguage}}",
+                        "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
+                    }
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-blue-600 dark:text-blue-400 font-medium"
-          },
-          "text": "4개"
+            "id": "carousel_placeholder",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center aspect-[3/1] justify-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "absolute inset-0 bg-gradient-to-r from-gray-700 to-gray-600"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative z-10 text-center text-white"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-2xl font-bold mb-2"
+                                    },
+                                    "text": "Always On Event"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm opacity-80"
+                                    },
+                                    "text": "Special benefits available anytime"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "carousel_nav_prev",
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20",
+                                "aria-label": "$t:common.prev"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "chevron-left",
+                                        "className": "text-xl"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "carousel_nav_next",
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20",
+                                "aria-label": "$t:common.next"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "chevron-right",
+                                        "className": "text-xl"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "carousel_dots",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "absolute bottom-4 left-1/2 -translate-x-1/2 flex-center gap-2 z-20"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-2 h-2 rounded-full bg-white/50"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-2 h-2 rounded-full bg-white/50"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-2 h-2 rounded-full bg-white/50"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-2 h-2 rounded-full bg-white dark:bg-gray-800"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "text": "의 배너 · 3초 간격 자동 전환"
+            "id": "preview_info",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-3 text-sm text-secondary"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "총 "
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-blue-600 dark:text-blue-400 font-medium"
+                    },
+                    "text": "4개"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "의 배너 · 3초 간격 자동 전환"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

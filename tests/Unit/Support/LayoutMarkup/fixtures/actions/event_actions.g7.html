@@ -1,0 +1,26 @@
+<div class="user-toolbar">
+  <button data-ref="save_btn">
+    <on type="click">
+      <api-call target="/api/admin/users" method="POST" confirm="$t:admin.users.confirm_save">
+        <body name="{{_local.name}}" email="{{_local.email}}"/>
+        <success><toast message="$t:common.saved" type="success"/></success>
+        <fail><toast message="{{error.message}}" type="error"/></fail>
+      </api-call>
+    </on>
+    $t:common.save
+  </button>
+  <data-grid data-type="composite" data-ref="user_grid" data="{{users?.data?.data ?? []}}">
+    <on event="onRowAction">
+      <switch on="{{$args[0]}}">
+        <case when="edit"><navigate path="/admin/users/{{$args[1].uuid}}/edit"/></case>
+        <case when="delete"><open-modal target="delete_confirm_modal"/></case>
+        <default><toast message="$t:common.unknown_action" type="warning"/></default>
+      </switch>
+    </on>
+    <on type="change" event="onPageChange">
+      <navigate path="/admin/users" :mergeQuery="true">
+        <query page="{{$args[0]}}"/>
+      </navigate>
+    </on>
+  </data-grid>
+</div>

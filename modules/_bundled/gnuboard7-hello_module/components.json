@@ -1,0 +1,53 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "gnuboard7-hello_module",
+    "version": "0.2.0",
+    "components": {
+        "basic": [],
+        "composite": [
+            {
+                "name": "MemoCard",
+                "type": "composite",
+                "path": "modules/_bundled/gnuboard7-hello_module/resources/js/components/composite/MemoCard.tsx",
+                "props": {
+                    "title": {
+                        "type": "string",
+                        "required": false,
+                        "description": "메모 제목"
+                    },
+                    "body": {
+                        "type": "string",
+                        "required": false,
+                        "description": "메모 본문"
+                    },
+                    "highlighted": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "강조 표시 여부"
+                    },
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    },
+                    "id": {
+                        "type": "string",
+                        "required": false,
+                        "description": "DOM id — 레이아웃 편집기 [속성] 탭의 「요소 ID」가 여기에 닿는다"
+                    },
+                    "editorAttrs": {
+                        "type": "object",
+                        "required": false,
+                        "description": "레이아웃 편집기가 주입하는 표식(`data-editor-*`)과 선택 핸들러 (편집 모드 전용). composite 컴포넌트는 도메인 prop 만 받으므로 이 객체를 받아 시각적 루트에 펼쳐야 편집기가 이 노드를 찾는다(선택·이동·삭제). 사용자 화면에서는 주입되지 않아 아무 일도 하지 않는다."
+                    }
+                }
+            }
+        ],
+        "layout": []
+    },
+    "for": {
+        "gnuboard7-hello_admin_template": [
+            "MemoCard"
+        ]
+    }
+}

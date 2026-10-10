@@ -1,0 +1,102 @@
+<partial description="클레임 신청서 작성 - 교환상품 변경 모달 (D29)" editor_label="$t:user.modal_label.mypage_claims.change_product_modal">
+  <!-- 교환 방식은 신청서 전체가 아니라 상품마다 정하는 속성이다(D29). 이 모달은 어느 상품인지(index)를 파라미터로 받아 그 항목만 갱신한다 — index 없이 열면 언제나 첫 상품이 바뀌고 오류 없이 조용히 잘못된 신청서가 저장된다. 상태는 페이지 로컬(_local)에 두어 적용 핸들러가 읽는 값과 화면이 그리는 값이 같은 저장소를 보게 한다. -->
+  <modal data-type="composite" data-ref="modal_claim_change_product" title="$t:claim.change_product.title" size="md">
+    <div class="p-4 space-y-4">
+      <!-- 로딩 -->
+      <div data-if="{{_local.changeProductLoading === true}}" class="py-8 text-center">
+        <icon name="spinner" class="text-xl text-gray-400 dark:text-gray-500 animate-spin"/>
+      </div>
+      <!-- 교환 방식 선택 — 동일상품 / 옵션변경 -->
+      <div data-if="{{_local.changeProductLoading !== true}}" class="space-y-2">
+        <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 동일상품 교환 — 같은 옵션의 새 상품으로 바꿔 받는다. 고른 방식은 모달 안에서만 바뀌고 신청서 줄에는 [적용]을 눌러야 반영된다. -->
+          <input type="radio" name="claimChangeProductMode" value="same" checked="{{_local.changeProductMode !== 'change'}}" class="text-blue-600">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.setClaimChangeProductMode" mode="same"/>
+            </on>
+          </input>
+          <span class="text-sm text-gray-700 dark:text-gray-300">$t:claim.change_product.same_option</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 옵션 변경 교환 — 같은 상품의 다른 옵션으로 받는다. 이 방식을 고르면 옵션·추가옵션 칸이 열리고, 재고가 있는 조합이 잡혀야 [적용]이 풀린다. -->
+          <input type="radio" name="claimChangeProductMode" value="change" checked="{{_local.changeProductMode === 'change'}}" class="text-blue-600">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.setClaimChangeProductMode" mode="change"/>
+            </on>
+          </input>
+          <span class="text-sm text-gray-700 dark:text-gray-300">$t:claim.change_product.option_change</span>
+        </label>
+      </div>
+      <!-- 옵션 선택 — 같은 상품의 옵션만 고를 수 있다(서버도 같은 규칙으로 거절한다). -->
+      <div data-if="{{_local.changeProductLoading !== true &amp;&amp; _local.changeProductMode === 'change' &amp;&amp; (_local.changeProductProduct?.option_groups ?? []).length > 0}}" class="space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:claim.change_product.select_option</label>
+        <div data-each="claimOptionGroup, claimOptionGroupIdx in {{_local.changeProductProduct?.option_groups ?? []}}">
+          <div class="mb-3">
+            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}</label>
+            <!-- 옵션 그룹은 차례로 고른다 — 앞 그룹을 골라야 다음 그룹이 풀리고, 고를 때마다 지금까지의 선택 조합으로 실제 옵션을 다시 찾아 아래 요약(가격·재고)에 세운다. -->
+            <select class="w-full" value="{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{claimOptionGroupIdx > 0 &amp;&amp; !_local.changeProductSelections?.[_local.changeProductProduct?.option_groups[claimOptionGroupIdx - 1]?.name_localized]}}" options="{{[{ value: '', label: $t('shop.select') }, ...(claimOptionGroup.values_localized ?? claimOptionGroup.values ?? []).map(v => ({ value: v, label: v }))]}}">
+              <on type="change">
+                <set-state target="_local" changeProductSelections="{{Object.assign({}, _local.changeProductSelections ?? {}, { [claimOptionGroup.name_localized]: $event.target.value })}}"/>
+                <!-- 갱신된 선택으로 매칭 옵션을 찾는다 (stale state 방지 — 템플릿 공용 핸들러 재사용) -->
+                <action handler="findMatchingOption" selectedOptions="{{Object.assign({}, _local.changeProductSelections ?? {}, { [claimOptionGroup.name_localized]: $event.target.value })}}" optionGroups="{{_local.changeProductProduct?.option_groups ?? []}}" options="{{_local.changeProductProduct?.options ?? []}}"/>
+                <set-state target="_local" changeProductMatched="{{$prev.matchedOption}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- 커스텀(추가) 옵션 — 선택지가 직접입력을 허용할 때만 입력칸이 열린다. -->
+      <div data-if="{{_local.changeProductLoading !== true &amp;&amp; _local.changeProductMode === 'change' &amp;&amp; (_local.changeProductProduct?.additional_options ?? []).length > 0}}" class="space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:claim.change_product.custom_options</label>
+        <div data-each="claimAddGroup in {{_local.changeProductProduct?.additional_options ?? []}}">
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{claimAddGroup.name}}</label>
+            <!-- 추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다. -->
+            <select class="w-full" value="{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(claimAddGroup.values ?? []).map(v => ({ value: v.id, label: v.name }))]}}">
+              <on type="change">
+                <set-state target="_local" changeProductAdditionalSelections="{{$event.target.value === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalSelections ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalSelections ?? {}, { [claimAddGroup.id]: Number($event.target.value) })}}" changeProductAdditionalTexts="{{Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id)))}}"/>
+              </on>
+            </select>
+            <div data-if="{{(claimAddGroup.values ?? []).find(v => v.id === Number(_local.changeProductAdditionalSelections?.[claimAddGroup.id]))?.allow_custom_text === true}}" class="mt-2">
+              <!-- 직접입력 글 — 공백만 남기면 그 그룹의 글을 아예 지워 빈 글이 신청서에 실리지 않게 한다. 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다. -->
+              <input type="text" :maxLength="255" value="{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <on type="input">
+                  <set-state target="_local" changeProductAdditionalTexts="{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: $event.target.value })}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 고른 조합을 지금 살 수 없을 때의 안내 (T2-D10 · #599 3차 실측 L-4). 옵션 찾기(`findMatchingOption`)는 판매중지(`is_active=false`) 옵션을 건너뛰므로, 모든 그룹을 골랐는데도 찾은 옵션이 없으면 **그 조합은 지금 교환받을 수 없다**는 뜻이다. 종전에는 이 경우 가격 줄도 안내도 없이 [적용]만 조용히 잠겨, 같은 화면의 재고 0(「선택한 옵션의 재고가 없습니다.」)과 달리 왜 안 되는지 알 수 없었다. 서버도 같은 조합을 거절한다(T2-D11 — 교환 대상은 지금 살 수 있는 옵션만). -->
+      <div data-if="{{_local.changeProductMode === 'change' &amp;&amp; !_local.changeProductMatched &amp;&amp; (_local.changeProductProduct?.option_groups ?? []).length > 0 &amp;&amp; (_local.changeProductProduct?.option_groups ?? []).every(g => !!_local.changeProductSelections?.[g.name_localized])}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
+        <p class="text-xs text-red-600 dark:text-red-400 font-medium">$t:claim.change_product.unavailable</p>
+      </div>
+      <!-- 선택된 옵션 요약 — 재고가 없으면 서버가 exchange_target_out_of_stock 으로 거절하므로 여기서 먼저 드러낸다. 차액은 신청서 요약(서버 미리보기)이 확정하므로 여기서는 안내만 한다. -->
+      <div data-if="{{_local.changeProductMode === 'change' &amp;&amp; !!_local.changeProductMatched}}" class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{_local.changeProductMatched?.option_name_localized ?? ''}}</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-white">{{_local.changeProductMatched?.selling_price_formatted ?? ''}}</span>
+        </div>
+        <p data-if="{{(_local.changeProductMatched?.stock_quantity ?? 0) <= 0}}" class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">$t:claim.change_product.out_of_stock</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:claim.change_product.difference_notice</p>
+      </div>
+    </div>
+    <!-- 모달 푸터 -->
+    <div class="flex gap-3 px-4 pb-4">
+      <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:claim.change_product.cancel
+      </button>
+      <!-- [적용] — 모달을 연 그 상품 줄에만 교환 방식·옵션·추가옵션을 써 넣고 창을 닫는다. 옵션 차액은 이어서 부르는 미리보기가 신청서 요약에서 확정한다. -->
+      <button type="button" class="flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.changeProductMode === 'change' &amp;&amp; (!_local.changeProductMatched || (_local.changeProductMatched?.stock_quantity ?? 0) <= 0)}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.applyClaimChangeProduct" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+        </on>
+        $t:claim.change_product.apply
+      </button>
+    </div>
+  </modal>
+</partial>

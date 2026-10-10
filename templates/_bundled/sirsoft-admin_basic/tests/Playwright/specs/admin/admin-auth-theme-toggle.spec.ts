@@ -1,7 +1,8 @@
 /**
  * E2E: 미인증 관리자 화면(로그인·비밀번호 찾기·비밀번호 재설정)의 테마 버튼 (dev-g7#640)
  *
- * @scenario screen=admin_login|admin_forgot_password|admin_reset_password, theme=light|dark|auto
+ * 조합: 세 화면(admin_login · admin_forgot_password · admin_reset_password) × 세 버튼(light · dark · auto) — 아래 라인 마커가 9조합을 선언한다.
+ * @effects theme_attribute_and_class_applied, theme_persisted_in_local_storage, theme_survives_reload
  *
  * 배경: 세 화면의 테마 버튼이 `setTheme` 을 `params.theme` 로 호출했으나 템플릿 핸들러는
  * `action.target` 만 읽는다. 엔진에 상호 폴백이 없어 클릭이 콘솔 경고 한 줄만 남기고
@@ -25,6 +26,15 @@
  * 규율: `check()` 를 쓰지 않고 `click()` + 단언을 분리한다. `_global.theme` 은 `page.goto`
  * 로 초기화되므로 E2E 단언에 넣지 않는다.
  */
+// @scenario screen=admin_login, theme=light
+// @scenario screen=admin_login, theme=dark
+// @scenario screen=admin_login, theme=auto
+// @scenario screen=admin_forgot_password, theme=light
+// @scenario screen=admin_forgot_password, theme=dark
+// @scenario screen=admin_forgot_password, theme=auto
+// @scenario screen=admin_reset_password, theme=light
+// @scenario screen=admin_reset_password, theme=dark
+// @scenario screen=admin_reset_password, theme=auto
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 

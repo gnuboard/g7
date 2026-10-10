@@ -21,6 +21,7 @@ require_once __DIR__.'/../includes/installer-state.php';
 // polyfill 로 선언하므로, functions.php 가 먼저 와야 그 가드가 제 역할을 한다.
 require_once __DIR__.'/../includes/functions.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
+require_once __DIR__.'/../includes/installer-ownership.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
@@ -45,14 +46,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     /**
+     * 설치 소유권 게이트 — 다른 무엇보다 먼저.
+     *
+     * 이 엔드포인트는 runtime.php(DB·관리자 비밀)와 설치 계획을 쓰고 설치를 실행시킨다.
+     * Step 3 를 통과해 소유권을 가진 세션만, CSRF 토큰을 제시할 때만 진입한다.
+     */
+    $state = getInstallationState();
+    installer_require_owner($state);
+    installer_require_csrf();
+    $generation = (int) ($state['generation'] ?? 0);
+
+    /**
      * 세션에서 설정 정보 로드
-     * 세션이 비어있으면 (브라우저 재시작 등) state.json에서 로드
+     * 세션이 비어있으면 state.json에서 로드 — 소유 게이트를 통과했으므로 같은 소유자의
+     * 재개(복구 토큰으로 소유권을 되찾은 새 세션 등)만 이 경로에 도달한다.
      */
     $config = getSessionData('install_config');
 
     // 세션이 비어있으면 state.json에서 로드
     if (empty($config)) {
-        $state = getInstallationState();
         $config = $state['config'] ?? [];
 
         // state.json에도 config가 없으면 에러
@@ -96,11 +108,14 @@ try {
      *  2. runtime.php 의 admin 섹션 — 세션 유실 후 재시도/재개
      *  3. db_seed 완료 마커 — 이미 관리자 계정이 생성되어 비밀번호가 더 이상 불필요
      *
+     * runtime.php 는 소유 게이트를 통과한 이 엔드포인트만 쓰고, 최초 소유 주장 시 이전 시도의
+     * 잔존본은 폐기되므로 2번 출처는 언제나 같은 소유자의 값이다 (자격증명 혼합 차단).
+     *
      * 셋 다 없으면 Step 3 재입력이 필요한 상태 (의도된 안전 실패).
      */
     $hasAdminPassword = ! empty($config['admin_password'])
         || ! empty(readInstallerRuntime()['admin']['password'] ?? '')
-        || in_array('db_seed', getInstallationState()['completed_tasks'] ?? [], true);
+        || in_array('db_seed', $state['completed_tasks'] ?? [], true);
 
     if (! $hasAdminPassword) {
         $missingFields[] = 'admin_password';
@@ -144,14 +159,7 @@ try {
      * - polling: install-process.php 응답 완료 후 인라인으로 runInstallationTasks() 실행,
      *            프론트엔드는 state-management.php를 1초 간격으로 폴링
      */
-    $requestBody = [];
-    $rawInput = file_get_contents('php://input');
-    if (! empty($rawInput)) {
-        $decoded = json_decode($rawInput, true);
-        if (is_array($decoded)) {
-            $requestBody = $decoded;
-        }
-    }
+    $requestBody = installer_request_json_body();
 
     $installationMode = $requestBody['installation_mode']
         ?? $_POST['installation_mode']
@@ -173,9 +181,47 @@ try {
     }
 
     /**
-     * 현재 상태 가져오기
+     * 기존 테이블 삭제 확인 (drop_tables 전용)
+     *
+     * 요청 본문의 액션 값만으로는 삭제하지 않는다. Step 3 DB 테스트가 발급해 설치 계획에 실린
+     * 확인 토큰을 제시하고, 그때 탐지한 테이블이 지금도 그대로여야 한다. 불충족이면 삭제 없이(skip)
+     * 진행하고 경고를 돌려준다. 이미 소비된 확인은 같은 소유자의 재시도로 보고 테이블 변동을 허용한다.
      */
-    $state = getInstallationState();
+    $dropConfirmRecord = is_array($state['drop_confirm'] ?? null) ? $state['drop_confirm'] : null;
+    $dropConfirmRejected = false;
+
+    if ($existingDbAction === 'drop_tables') {
+        $dbPrefix = (string) ($config['db_prefix'] ?? '');
+        $currentPrefixTables = null;
+
+        if ($dropConfirmRecord !== null && empty($dropConfirmRecord['consumed'])) {
+            try {
+                $pdo = getDatabaseConnection(hydrateDbSecretsFromRuntime($config), false);
+                $statement = $pdo->query('SHOW TABLES');
+                $currentPrefixTables = filterTablesByPrefix(
+                    $statement ? $statement->fetchAll(PDO::FETCH_COLUMN) : [],
+                    installer_normalize_db_prefix($dbPrefix)
+                );
+            } catch (Throwable $e) {
+                $currentPrefixTables = null;
+            }
+        }
+
+        $decision = installer_apply_drop_confirm(
+            $dropConfirmRecord,
+            (string) ($requestBody['drop_confirm'] ?? $_POST['drop_confirm'] ?? ''),
+            $dbPrefix,
+            $currentPrefixTables
+        );
+
+        $existingDbAction = $decision['action'];
+        $dropConfirmRecord = $decision['record'];
+        $dropConfirmRejected = $decision['rejected'];
+
+        if ($dropConfirmRejected) {
+            addLog(lang('log_drop_confirm_rejected', ['reason' => $decision['reason']]));
+        }
+    }
 
     /**
      * 상태 초기화
@@ -203,6 +249,11 @@ try {
     if (! empty($config['admin_password'])) {
         $runtime['admin'] = ['password' => $config['admin_password']];
     }
+    // 설치 계획 서명 키 — 세션이 없는 SSE 워커가 이 엔드포인트(소유 게이트 통과)가 확정한
+    // 계획인지 확인하는 데 쓴다. runtime.php(0600) 에만 두고 finalize 때 함께 삭제된다.
+    if (! is_string($runtime['plan_key'] ?? null) || $runtime['plan_key'] === '') {
+        $runtime['plan_key'] = bin2hex(random_bytes(32));
+    }
     if (! writeInstallerRuntime($runtime)) {
         throw new Exception(lang('state_save_failed'));
     }
@@ -219,6 +270,11 @@ try {
     // 이전 'skip' → 신규 'drop_tables' 케이스에서 cleanup 이 재호출되도록 마커 제거
     $state = applyExistingDbActionStateGuard($state, $existingDbAction);
     $state['existing_db_action'] = $existingDbAction;
+    $state['drop_confirm'] = $dropConfirmRecord;
+
+    // 커밋될 세대로 설치 계획에 서명한다 (saveInstallationStateCas 가 같은 값으로 올린다).
+    $state['generation'] = $generation + 1;
+    $state['install_plan_sig'] = installer_plan_signature($state, $runtime['plan_key']);
 
     /**
      * 로그 파일 초기화 (재시도가 아닌 경우에만)
@@ -234,12 +290,10 @@ try {
     }
 
     /**
-     * 상태 저장
+     * 상태 저장 — 읽은 뒤 다른 상태변경이 먼저 커밋됐으면 덮어쓰지 않는다 (CAS).
      */
-    $saved = saveInstallationState($state);
-
-    if (! $saved) {
-        throw new Exception(lang('state_save_failed'));
+    if (! saveInstallationStateCas($state, $generation)) {
+        installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
     }
 
     /**
@@ -255,6 +309,9 @@ try {
         'status' => 'started',
         'message' => lang('success_installation_started'),
         'installation_mode' => $installationMode,
+        'existing_db_action' => $existingDbAction,
+        'drop_confirm_rejected' => $dropConfirmRejected,
+        'warning' => $dropConfirmRejected ? lang('drop_confirm_rejected') : null,
     ], JSON_UNESCAPED_UNICODE);
 
     /**

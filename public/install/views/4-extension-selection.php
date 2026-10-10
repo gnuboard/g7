@@ -14,6 +14,8 @@
         <?= htmlspecialchars(lang('extension_selection_description')) ?>
     </p>
 
+    <?php require __DIR__.'/partials/recovery-token-notice.php'; ?>
+
     <!-- 로딩 표시 -->
     <div id="extensions-loading" class="extension-loading">
         <div class="spinner"></div>

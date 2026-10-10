@@ -135,6 +135,10 @@ function readLayout(rel: string): unknown {
 }
 
 describe('#75 관리자 코어 목록 컨텍스트 왕복 — mergeQuery 전수', () => {
+    /**
+     * @scenario leg=enter
+     * @effects list_return_preserves_query
+     */
     it.each(CLUSTER_FILES)('%s 의 클러스터 내 navigate 는 모두 mergeQuery: true', (rel) => {
         const offenders = collectNavActions(readLayout(rel))
             .filter((a) => {
@@ -151,6 +155,10 @@ describe('#75 관리자 코어 목록 컨텍스트 왕복 — mergeQuery 전수'
 
     // 회원 상세(admin_user_detail)에는 '목록' 복귀 navigate 가 없다 — 브라우저 뒤로가기로 돌아간다.
     // 상세에서 '수정' 으로 넘어가는 leg 은 위 전수 검사가 덮는다.
+    /**
+     * @scenario leg=cancel
+     * @effects list_return_preserves_query
+     */
     it("회원 등록/수정 폼의 '목록' 복귀가 목록 상태를 복원한다", () => {
         const backs = collectNavActions(readLayout('admin_user_form.json')).filter(
             (a) => a.params.path === '/admin/users'
@@ -202,6 +210,10 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
         window.history.replaceState({}, '', '/');
     });
 
+    /**
+     * @scenario leg=enter
+     * @effects list_return_preserves_query
+     */
     it('회원 목록 행의 상세 이동이 검색/페이지를 상세 URL 로 나른다', async () => {
         window.history.replaceState({}, '', '/admin/users?page=3&search=홍길동&per_page=20');
 
@@ -220,6 +232,10 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
     // 검색은 조건을 바꾸는 액션이므로 page 를 되돌린다. mergeQuery 가 현재 페이지까지 나르기 때문에
     // 되돌리지 않으면 3페이지를 보던 중 검색했을 때 결과의 3페이지로 이동해 빈 화면이 열린다.
     // 표시 개수(per_page)·정렬은 사용자가 고른 값이므로 그대로 유지한다 (#75).
+    /**
+     * @scenario leg=search
+     * @effects list_return_preserves_query
+     */
     it('회원 목록 검색은 page 를 떨구고 표시 개수는 유지한다', async () => {
         window.history.replaceState({}, '', '/admin/users?page=3&per_page=50&sort_by=created_at');
 
@@ -234,6 +250,10 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
         expect(q.get('sort_by')).toBe('created_at');
     });
 
+    /**
+     * @scenario leg=cancel
+     * @effects list_return_preserves_query
+     */
     it("회원 폼의 '목록' 복귀가 목록 상태를 복원한다", async () => {
         window.history.replaceState({}, '', '/admin/users/9/edit?page=3&search=홍길동');
 
@@ -250,14 +270,21 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
     // 검색은 조건을 "바꾸는" 액션이지 리셋이 아니다. 검색어와 페이지만 새로 정하고
     // 사용자가 고른 표시 개수(per_page)·정렬은 그대로 둔다. 같은 파일의 페이지네이션은
     // 이미 병합하고 있어서, 검색만 비병합이면 한 화면 안에서 규약이 엇갈린다 (#75).
+    /**
+     * @scenario leg=search
+     * @effects list_return_preserves_query
+     */
     it.each([
         ['admin', 'partials/admin_template_list/_tab_admin.json'],
         ['user', 'partials/admin_template_list/_tab_user.json'],
     ])('템플릿(%s) 목록 검색이 표시 개수를 유지한다', async (kind, rel) => {
         window.history.replaceState({}, '', `/admin/templates/${kind}?page=3&per_page=48`);
 
+        // 같은 경로로 가는 navigate 가 숨김 항목 체크박스에도 있다(7.1.0 출시 전 점검에서 탭 툴바로 옮김) —
+        // 검색어(search)를 싣는 것이 검색 navigate 다.
         const action = collectNavActions(readLayout(rel)).find(
             (a) => a.params.path === `/admin/templates/${kind}`
+                && Object.prototype.hasOwnProperty.call((a.params.query ?? {}) as object, 'search')
         );
         expect(action, `${rel} 의 검색 navigate 를 찾지 못했습니다.`).toBeTruthy();
 
@@ -267,6 +294,10 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
         expect(q.get('page')).toBeNull();
     });
 
+    /**
+     * @scenario leg=cancel
+     * @effects list_return_preserves_query
+     */
     it("역할 폼의 '목록' 복귀가 목록 상태를 복원한다", async () => {
         window.history.replaceState({}, '', '/admin/roles/4/edit?page=2&search=관리');
 
@@ -295,6 +326,10 @@ describe('#75 탭 전환은 이전 탭의 목록 상태를 물려받지 않는�
         window.history.replaceState({}, '', '/');
     });
 
+    /**
+     * @scenario leg=tab_switch
+     * @effects tab_switch_resets_query
+     */
     it('템플릿 목록 탭 전환 navigate 에 mergeQuery 가 없다', () => {
         const tabNav = collectNavActions(readLayout('admin_template_list.json')).find((a) =>
             String(a.params.path ?? '').startsWith('/admin/templates/{{$args[0]')
@@ -304,6 +339,10 @@ describe('#75 탭 전환은 이전 탭의 목록 상태를 물려받지 않는�
         expect(String((tabNav as NavAction).comment ?? '')).toContain('audit:allow');
     });
 
+    /**
+     * @scenario leg=tab_switch
+     * @effects tab_switch_resets_query
+     */
     it('탭을 바꾸면 이전 탭의 검색어·페이지가 따라오지 않는다', async () => {
         window.history.replaceState({}, '', '/admin/templates/user?page=3&search=sirsoft');
 

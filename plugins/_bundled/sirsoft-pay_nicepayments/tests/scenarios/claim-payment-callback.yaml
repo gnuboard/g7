@@ -1,0 +1,29 @@
+# 시나리오 매니페스트 — 나이스페이먼츠 클레임 추가결제(CP 채번) 콜백·SignData
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: nicepayments_claim_payment_callback
+
+description: |
+  클레임 추가결제(CP 채번)는 주문과 같은 나이스페이먼츠 결제창·같은 콜백 엔드포인트로 돌아온다. 콜백·SignData
+  컨트롤러는 결제번호가 CP 로 시작하면 주문이 아니라 클레임 결제 건으로 되찾아 처리한다.
+
+  - 인증 콜백은 주문 분기를 타지 않고 모듈 승인에 위임해 신청서 상세로 돌려보낸다.
+    인증 단계 실패(결제창 종료)는 오류 안내 없이 복귀하고 결제 건은 결제 대기로 남는다.
+  - 승인 응답에 승인 금액이 없으면 결제완료로 만들지 않고 승인을 망취소한다.
+  - SignData 발급은 결제 건 기준으로 검증한다 — 금액 일치 / 부모 주문을 읽을 수 없으면 구매자 확인에서 거절.
+
+axes:
+  concern:
+    - callback_routing
+    - approved_amount
+    - sign_data
+
+effects:
+  - nice_claim_callback_confirms_the_claim_payment_without_an_order         # CP 콜백 → 클레임 결제 확정 + 신청서 상세
+  - nice_claim_callback_without_an_approved_amount_is_net_cancelled         # 응답 금액 없음 → 결제 대기 유지 + 망취소
+  - nice_claim_auth_failure_returns_to_the_claim_detail                     # 인증 단계 실패 → 오류 없이 복귀
+  - nice_claim_sign_data_is_gated_by_the_claim_payment                      # SignData 발급의 결제 건 금액 검증
+  - nice_claim_sign_data_rejects_a_payment_whose_order_cannot_be_read       # 부모 주문 부재 → 403
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/ClaimPaymentCallbackTest.php

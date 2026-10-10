@@ -1,12 +1,16 @@
 <?php
 
 return [
+    'annual_notice' => ['privacy_policy_link_label' => '개인정보처리방침', 'target_columns' => ['name' => '이름', 'email' => '이메일', 'joined_at' => '가입일'], 'attributes' => ['page' => '페이지', 'per_page' => '페이지당 건수'], 'collection_summary' => '회원 가입·서비스 이용 시 제공한 이름, 이메일 및 계정 정보', 'purpose' => '회원 식별, 서비스 제공 및 이용 문의 처리', 'retention' => '회원 탈퇴 시까지 보유하며, 법령상 보존 대상은 해당 보존 기간을 따릅니다.', 'manual_run_label' => '개인정보 연간 통지 발송', 'queued_count' => ':count명 통지 접수', 'test_queued' => '시험 발송을 접수했습니다. 이력에서 결과를 확인하세요.', 'unavailable' => '발송 가능한 활성 회원과 채널 설정을 확인하세요.', 'status' => ['queued' => '접수', 'sent' => '발송 완료', 'failed' => '발송 실패']],
+    'consent_provider' => [
+        'label' => '쿠키 동의 배너 (sirsoft-gdpr)',
+    ],
     'consent' => [
         'granted' => '동의가 저장되었습니다.',
         'granted_again' => '동의가 갱신되었습니다.',
         'rejected_saved' => '동의하지 않고 계속합니다. 선택 항목은 사용되지 않습니다.',
         'revoked' => '동의가 철회되었습니다.',
-        'renew_all_success' => '활성 항목 {renewed} 개를 새 정책 버전으로 갱신했습니다.',
+        'renew_all_success' => '활성 항목 :renewed 개를 새 정책 버전으로 갱신했습니다.',
         'granting' => '동의 중...',
         'revoking' => '철회 중...',
         'renewing' => '갱신 중...',
@@ -45,7 +49,7 @@ return [
         'description' => '쿠키 동의 배너와 마이페이지 동의 관리 카드의 동작을 운영자가 제어합니다.',
         'section' => [
             'operator' => '운영 주체 / 개인정보처리방침',
-            'operator_desc' => '쿠키 배너·정책 페이지에 표시될 운영 주체, 데이터 저장 위치, 정책 페이지 슬러그를 등록합니다. (GDPR Art.13 투명성 의무)',
+            'operator_desc' => '쿠키 배너·정책 페이지에 표시될 운영 주체, 데이터 저장 위치, 개인정보처리방침 주소를 등록합니다. (GDPR Art.13 투명성 의무)',
             'cookie_banner' => '쿠키 동의 배너',
             'cookie_banner_desc' => '방문자에게 표시되는 쿠키 동의 배너의 노출/위치/카테고리/정책 버전을 한 곳에서 설정합니다.',
             'cookie_banner_settings' => '배너 표시 설정',
@@ -66,15 +70,44 @@ return [
             'visible' => '노출',
             'hidden' => '숨김',
         ],
+        // 배열 항목 검증 문구용 라벨 — 없으면 cookie_categories.0.label.ko 처럼 키가 노출된다.
+        'attributes' => [
+            'cookie_category_key' => '쿠키 카테고리 구분',
+            'cookie_category_label' => '쿠키 카테고리 이름',
+            'cookie_category_description' => '쿠키 카테고리 설명',
+            'blocked_domain' => '차단 도메인',
+            'necessary_storage_item' => '필수 저장 항목',
+        ],
         'fields' => [
+            // 검증 메시지의 :attribute 치환용 라벨. 없으면 Laravel 이 키 이름을 그대로 노출한다
+            // ("annual notice.batch size 필드는 …") — 화면 라벨과 같은 문구를 쓴다.
+            'annual_notice' => [
+                'label' => '개인정보 연간 통지',
+            ],
+            'annual_notice_enabled' => [
+                'label' => '자동 통지 사용',
+            ],
+            'annual_notice_channels' => [
+                'label' => '발송 채널',
+                'required_when_enabled' => '자동 통지를 켜려면 발송 채널을 하나 이상 선택하세요.',
+            ],
+            'annual_notice_batch_size' => [
+                'label' => '1회 실행당 발송 상한',
+                'required_when_enabled' => '자동 통지를 켜려면 1회 실행당 발송 상한을 입력하세요.',
+            ],
+            'annual_notice_introduction' => [
+                'label' => '통지문 서문',
+                'label_with_language' => ':label (:language)',
+            ],
             'cookie_policy_version' => [
                 'label' => '정책 버전',
                 'hint' => "운영자가 직접 입력하지 않고 시스템이 자동 관리합니다.\n• 카테고리 추가/삭제, 카테고리 의미 변경, 정책 페이지 변경 → 새 버전 자동 발행 + 모든 회원 재동의\n• 도메인 추가/삭제, 라벨 변경 등 단순 변경 → 발행 없음",
             ],
-            'privacy_policy_slug' => [
-                'label' => '개인정보처리방침 페이지 슬러그',
-                'hint' => '페이지 플러그인에 등록된 처리방침 페이지의 슬러그. 비어 있으면 쿠키 배너의 정책 링크가 표시되지 않습니다.',
-                'placeholder' => '예: privacy-policy',
+            'privacy_policy_url' => [
+                'label' => '개인정보처리방침 주소',
+                'hint' => '처리방침을 게시한 주소를 입력하세요. 사이트 안의 페이지는 / 로 시작하는 경로(예: /page/privacy), 다른 사이트는 https:// 로 시작하는 전체 주소를 적습니다. 비어 있으면 쿠키 배너의 정책 링크가 표시되지 않습니다.',
+                'placeholder' => '예: /page/privacy 또는 https://example.com/privacy',
+                'invalid' => ':attribute에는 / 로 시작하는 사이트 경로나 https:// 로 시작하는 주소만 입력할 수 있습니다.',
             ],
             'legal_entity_name' => [
                 'label' => '법인명 / 운영 주체',
@@ -168,9 +201,9 @@ return [
             ],
             'snapshot_modal' => [
                 'title' => '정책 버전 v:version 본문',
-                'description' => '발행 시점 settings 의 카테고리 목록·정책 본문 슬러그·차단 도메인 등 전체 본문입니다. DPO 가 동의 분쟁 시 입증 자료로 활용합니다.',
+                'description' => '발행 시점 settings 의 카테고리 목록·개인정보처리방침 주소·차단 도메인 등 전체 본문입니다. DPO 가 동의 분쟁 시 입증 자료로 활용합니다.',
                 'section_categories' => '쿠키 카테고리',
-                'section_privacy_policy' => '정책 본문 슬러그',
+                'section_privacy_policy' => '개인정보처리방침 주소',
                 'section_blocked_domains' => '차단 도메인 카탈로그',
                 'category_required_badge' => '필수',
                 'no_categories' => '등록된 카테고리가 없습니다.',
@@ -178,7 +211,8 @@ return [
                 'view_button' => 'v:version 본문 보기',
                 'close' => '닫기',
                 'open_policy_page' => '본문 페이지 열기',
-                'no_policy_slug' => '등록된 정책 본문 페이지가 없습니다.',
+                'no_policy_url' => '등록된 개인정보처리방침 주소가 없습니다.',
+                'legacy_slug_note' => '이전 형식(페이지 슬러그 「:slug」)으로 기록된 버전입니다. 당시 링크가 가리키던 주소를 보여 줍니다.',
             ],
             'not_found' => '해당 정책 버전을 찾을 수 없습니다.',
         ],
@@ -300,5 +334,35 @@ return [
         'preferences_description' => '카테고리별 쿠키 사용을 개별 동의/철회할 수 있습니다. 필수 카테고리는 끌 수 없습니다.',
         'category_required_badge' => '필수',
         'view_policy_label' => '변경된 정책 본문 보기',
+    ],
+    // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    'notification_variables' => [
+        'common' => [
+            'recipient_name' => '수신자 이름',
+            'app_name' => '사이트명',
+            'introduction' => '운영자 서문',
+            'collection_summary' => '수집 항목 요약',
+            'purpose' => '이용 목적',
+            'retention' => '보유 기간',
+            'privacy_policy_url' => '개인정보처리방침 URL',
+            'privacy_policy_link' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)',
+            'notice_sections' => '확장이 기여한 처리 내역',
+        ],
+    ],
+    'validation' => [
+        // 요청이 칸별 문구를 정하지 않은 규칙의 대체 문구(ProvidesFallbackRuleMessages 트레이트).
+        // 칸 이름 뒤에 「값」「항목」을 붙여 받침과 무관하게 읽히게 쓴다(조사를 괄호로 남기지 않는다).
+        'fallback' => [
+            'in' => '선택한 :attribute 값이 올바르지 않습니다.',
+            'not_in' => '선택한 :attribute 값은 쓸 수 없습니다.',
+            'enum' => '선택한 :attribute 값이 올바르지 않습니다.',
+            'exists' => '선택한 :attribute 값이 존재하지 않습니다.',
+            'unique' => ':attribute 값이 이미 사용 중입니다.',
+            'required_if' => ':other 값이 :value일 때 :attribute 항목은 필수입니다.',
+            'required_with' => ':values 항목이 있으면 :attribute 항목도 필수입니다.',
+            'required_without' => ':values 항목이 없으면 :attribute 항목은 필수입니다.',
+            'same' => ':attribute 값이 :other 값과 같아야 합니다.',
+            'different' => ':attribute 값은 :other 값과 달라야 합니다.',
+        ],
     ],
 ];

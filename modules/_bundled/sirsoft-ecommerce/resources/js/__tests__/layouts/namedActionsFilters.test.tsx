@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 이커머스 모듈 필터 named_actions 검증 테스트
  *
@@ -20,6 +21,7 @@ import shippingPolicyFilter from '../../../layouts/admin/partials/admin_ecommerc
 // 주문관리
 import orderList from '../../../layouts/admin/admin_ecommerce_order_list.json';
 import orderFilter from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 재귀적으로 JSON 트리에서 특정 조건의 노드를 찾는 유틸리티 */
 function findNodes(node: any, predicate: (n: any) => boolean, results: any[] = []): any[] {
@@ -63,7 +65,7 @@ function findActionNodesReferencing(obj: any, refName: string, results: any[] = 
         if (!node || typeof node !== 'object') return false;
         if (node.actionRef === refName) return true;
         if (Array.isArray(node.actions)) {
-            return node.actions.some((a: any) => referencesRef(a));
+            return actionsOf(node).some((a: any) => referencesRef(a));
         }
         return false;
     };

@@ -1,0 +1,80 @@
+# 시나리오 매니페스트 — 클레임 before·filter 훅 신설 (#599 validate 01-#6)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(동작 × 훅 종류)의 조합마다 테스트를 두지 않는다 — 필터가 없는 동작(철회·상품 단위 전이·헤더
+#   동기화·환불 완료)은 설계상 filter 축이 비어 있고, 유형(교환·반품·환불)은 같은 공용 규칙
+#   (`GuardsClaimFilterResults`)을 쓰므로 유형마다 같은 계약을 세 번 적지 않는다. effects 축은 면제하지 않는다.
+feature: claim_before_filter_hooks
+
+description: |
+  클레임 도메인에는 after 훅(`claim.{type}.requested`·`status_changed`·`completed` 등)만 있어
+  확장이 신청·수정·전이·완료·철회를 **막거나 입력을 바꿀** 자리가 없었다. 주문 취소에는
+  `order.before_cancel` 이 있는데 같은 돈의 흐름인 클레임에는 없었다.
+
+  핵심 동작:
+    - before 훅(action)은 트랜잭션·잠금 **전** 동기 호출이다. 예외를 던지면 쓰기가 없다.
+      after 훅처럼 커밋 뒤로 미루면 막을 수 없다.
+    - 확장이 막을 때는 `OrderClaimException::blockedByExtension()` 을 던진다 — 도메인 거절이라
+      화면은 422, 일괄 전이는 그 건만 skip, 접수 직후 0원 자동 승인은 접수를 살린다.
+    - filter 훅은 **허용 키만** 반영한다: 신청은 대상 상품·사유·재발송지, 수정은 사유·재발송지,
+      전이는 메모·반려 사유, 완료는 완료 옵션(재고 복구·환불신청서 접수). 신청자·처리자·접수 창구
+      축·청구 방식·환불 우선순위·환불 계좌는 필터 뒤 원래 값으로 되돌린다.
+    - 허용 키도 필터 **뒤에** 고객 입력과 같은 검증(사유 해석·잠금 안 수량 가드·국가 불변·배송비
+      재산정)을 그대로 지난다. 금액은 필터 대상이 아니다.
+    - 목표 상태는 필터가 바꾸지 못한다 — 호출층이 미수납 게이트·종결 정산을 그 값으로 이미 판정했다.
+    - 상품 단위·일괄·송장이 끄는 전이·상품이 끌고 간 헤더 동기화도 before 훅을 지난다. 헤더 동기화는
+      상품 전이 트랜잭션 안이라 막으면 상품 전이까지 함께 되돌아간다(헤더와 상품이 갈리지 않게).
+
+axes:
+  operation:
+    - request
+    - update_request
+    - status_change
+    - bulk_status_change
+    - withdraw
+    - option_status_change
+    - header_sync
+    - complete
+    - tracking_update
+    - mode_change
+  hook_kind:
+    - before
+    - filter
+
+exclusions:
+  - { operation: bulk_status_change, hook_kind: filter, reason: "일괄 전이는 건마다 헤더 전이를 부르므로 필터 계약은 status_change 축이 대표한다" }
+  - { operation: withdraw, hook_kind: filter, reason: "철회에는 바꿀 입력이 없다 — 이어지는 전이의 filter_status_change_data 가 그 자리다" }
+  - { operation: header_sync, hook_kind: filter, reason: "헤더 목표는 상품 상태가 정한 값이다 — 바꾸면 헤더와 상품이 갈린다" }
+  - { operation: mode_change, hook_kind: filter, reason: "바꿀 수 있는 값이 진행 방식 하나뿐이고 그 값은 게이트가 판정한다(#599 후속 §3-7) — 필터를 두지 않는다" }
+
+effects:
+  - exchange_request_before_hook_blocks_the_intake_before_any_write
+  - return_request_filter_changes_the_reason_but_not_the_requester
+  - non_array_filter_result_keeps_the_original_payload
+  - refund_request_before_hook_blocks_the_intake_before_any_write
+  - refund_request_filter_changes_the_detail_but_not_the_intake_channel
+  - exchange_update_before_hook_blocks_the_edit
+  - return_update_filter_changes_the_detail_but_not_the_refund_account
+  - refund_update_filter_changes_the_detail
+  - return_status_before_hook_blocks_the_transition
+  - exchange_status_filter_changes_the_reject_reason_but_not_the_processor
+  - refund_status_filter_changes_the_reject_reason
+  - bulk_transition_skips_only_the_claim_an_extension_blocked
+  - tracking_driven_transition_passes_the_before_hook
+  - withdraw_before_hook_blocks_the_withdrawal
+  - option_status_before_hook_blocks_every_item_write
+  - option_rejection_reason_passes_the_status_filter
+  - header_sync_before_hook_rolls_back_the_item_transition
+  - return_complete_before_hook_blocks_completion_and_restock
+  - exchange_complete_filter_changes_the_restock_choice
+  - refund_complete_before_hook_blocks_the_execution
+  # 상품 행 송장 · 진행 방식 (#599 후속 §3-7)
+  - tracking_update_before_hook_blocks_the_write
+  - tracking_update_filter_changes_only_the_tracking_pair
+  - exchange_mode_before_hook_blocks_the_change
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ClaimBeforeFilterHooksTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

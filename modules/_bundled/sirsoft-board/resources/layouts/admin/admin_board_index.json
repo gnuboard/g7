@@ -1,18 +1,11 @@
 {
+    "comment": "게시판 목록 화면. 표가 아니라 카드 한 장이 게시판 하나이고, 카드 안에서 활성 전환까지 바로 한다. 검색·페이지는 전부 URL query 로 남겨 새로고침·뒤로가기에도 같은 화면이 나오게 한다",
     "version": "1.0.0",
     "layout_name": "admin_board_index",
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-board.admin.board.index.title",
         "description": "$t:sirsoft-board.admin.board.index.description"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "boards"
-        ]
     },
     "data_sources": [
         {
@@ -37,9 +30,18 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "목록 본체 — 페이지·검색어를 URL 에서 그대로 받아 서버 페이지네이션에 넘긴다. 화면에 머무는 동안 활성 토글·삭제가 이 소스를 다시 읽으므로 `refetchOnMount` 로 들어올 때도 최신을 보장한다"
         }
     ],
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "boards"
+        ]
+    },
     "slots": {
         "content": [
             {
@@ -63,10 +65,6 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon",
-                                    "aria-label": "$t:common.refresh"
-                                },
                                 "actions": [
                                     {
                                         "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75).",
@@ -79,6 +77,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:common.refresh"
+                                },
                                 "children": [
                                     {
                                         "id": "refresh_icon",
@@ -95,12 +97,9 @@
                                 "id": "add_board_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -110,6 +109,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -148,14 +151,9 @@
                                         "id": "search_bar",
                                         "type": "composite",
                                         "name": "SearchBar",
-                                        "props": {
-                                            "name": "search",
-                                            "placeholder": "$t:sirsoft-board.admin.board.index.search_placeholder",
-                                            "value": "{{query.search || ''}}",
-                                            "className": "w-64"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "검색은 URL 로 남긴다 — 다른 query(per_page 등)는 두고 검색어만 갈아 끼우되 페이지는 1 로 되돌린다(3페이지에서 검색하면 결과가 없는 페이지에 떨어지므로)",
                                                 "type": "submit",
                                                 "handler": "navigate",
                                                 "params": {
@@ -167,7 +165,13 @@
                                                     }
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "name": "search",
+                                            "placeholder": "$t:sirsoft-board.admin.board.index.search_placeholder",
+                                            "value": "{{query.search || ''}}",
+                                            "className": "w-64"
+                                        }
                                     }
                                 ]
                             },
@@ -176,6 +180,21 @@
                                 "type": "composite",
                                 "name": "CardGrid",
                                 "blur_until_loaded": true,
+                                "actions": [
+                                    {
+                                        "comment": "페이지 이동도 상태가 아니라 URL 로 남긴다 — 데이터소스가 `query.page` 를 읽으므로 이 이동 하나로 목록이 다시 채워진다",
+                                        "type": "change",
+                                        "event": "onPageChange",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "data": "{{boards.data.data}}",
                                     "gridColumns": 1,
@@ -250,21 +269,16 @@
                                                                     "id": "active_toggle",
                                                                     "type": "composite",
                                                                     "name": "Toggle",
-                                                                    "props": {
-                                                                        "checked": "{{row.is_active}}",
-                                                                        "name": "is_active",
-                                                                        "size": "sm",
-                                                                        "disabled": "{{row.abilities?.can_update !== true}}"
-                                                                    },
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다",
                                                                             "type": "change",
                                                                             "handler": "sequence",
                                                                             "actions": [
                                                                                 {
                                                                                     "handler": "apiCall",
-                                                                                    "auth_required": true,
                                                                                     "target": "/api/modules/sirsoft-board/admin/boards/{{row.slug}}",
+                                                                                    "auth_required": true,
                                                                                     "params": {
                                                                                         "method": "PUT",
                                                                                         "body": {
@@ -287,24 +301,73 @@
                                                                                             }
                                                                                         }
                                                                                     ],
-                                                                                    "onError": [
-                                                                                        {
-                                                                                            "handler": "toast",
-                                                                                            "params": {
-                                                                                                "type": "error",
-                                                                                                "message": "{{error.message}}"
-                                                                                            }
+                                                                                    "onError": {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message}}"
                                                                                         }
-                                                                                    ]
+                                                                                    }
                                                                                 }
                                                                             ]
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "props": {
+                                                                        "checked": "{{row.is_active}}",
+                                                                        "name": "is_active",
+                                                                        "size": "sm",
+                                                                        "disabled": "{{row.abilities?.can_update !== true}}"
+                                                                    }
                                                                 },
                                                                 {
                                                                     "id": "action_menu",
                                                                     "type": "composite",
                                                                     "name": "ActionMenu",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "카드 메뉴 네 갈래. 편집·글 관리는 그냥 이동이고, 복제·삭제는 대상 행을 전역에 실어 둔 «뒤» 모달을 연다 — 모달은 별도 컨텍스트라 반복 변수 `row` 를 볼 수 없기 때문이다",
+                                                                            "event": "onItemClick",
+                                                                            "handler": "switch",
+                                                                            "cases": {
+                                                                                "edit": {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/admin/boards/{{row.slug}}/edit",
+                                                                                        "mergeQuery": true,
+                                                                                        "query": {}
+                                                                                    }
+                                                                                },
+                                                                                "manage_posts": {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/admin/board/{{row.slug}}"
+                                                                                    }
+                                                                                },
+                                                                                "copy": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "modal_data": "{{row}}"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "openModal",
+                                                                                        "target": "copy_confirm_modal"
+                                                                                    }
+                                                                                },
+                                                                                "delete": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "modal_data": "{{row}}"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "openModal",
+                                                                                        "target": "delete_confirm_modal"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ],
                                                                     "props": {
                                                                         "triggerLabel": "",
                                                                         "triggerIconName": "ellipsis-h",
@@ -335,56 +398,7 @@
                                                                                 "disabled": "{{row.abilities?.can_delete !== true}}"
                                                                             }
                                                                         ]
-                                                                    },
-                                                                    "actions": [
-                                                                        {
-                                                                            "event": "onItemClick",
-                                                                            "handler": "switch",
-                                                                            "value": "{{$args[0]}}",
-                                                                            "cases": {
-                                                                                "edit": {
-                                                                                    "handler": "navigate",
-                                                                                    "params": {
-                                                                                        "path": "/admin/boards/{{row.slug}}/edit",
-                                                                                        "mergeQuery": true,
-                                                                                        "query": {}
-                                                                                    }
-                                                                                },
-                                                                                "manage_posts": {
-                                                                                    "handler": "navigate",
-                                                                                    "params": {
-                                                                                        "path": "/admin/board/{{row.slug}}"
-                                                                                    }
-                                                                                },
-                                                                                "copy": {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "global",
-                                                                                        "modal_data": "{{row}}"
-                                                                                    },
-                                                                                    "onSuccess": [
-                                                                                        {
-                                                                                            "handler": "openModal",
-                                                                                            "target": "copy_confirm_modal"
-                                                                                        }
-                                                                                    ]
-                                                                                },
-                                                                                "delete": {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "global",
-                                                                                        "modal_data": "{{row}}"
-                                                                                    },
-                                                                                    "onSuccess": [
-                                                                                        {
-                                                                                            "handler": "openModal",
-                                                                                            "target": "delete_confirm_modal"
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    ]
+                                                                    }
                                                                 }
                                                             ]
                                                         }
@@ -477,21 +491,7 @@
                                             ]
                                         }
                                     ]
-                                },
-                                "actions": [
-                                    {
-                                        "event": "onPageChange",
-                                        "type": "change",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/boards",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "page": "{{$args[0]}}"
-                                            }
-                                        }
-                                    }
-                                ]
+                                }
                             }
                         ]
                     }
@@ -501,6 +501,7 @@
     },
     "modals": [
         {
+            "comment": "복제 확인 — 복제가 무엇을 가져오고 무엇을 빼는지(글·slug) 먼저 알린 뒤, 실제 복제는 생성 화면에 `copy_id` 를 달아 넘기는 것으로 끝난다. 이 모달 자체는 아무것도 저장하지 않는다",
             "id": "copy_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -617,26 +618,22 @@
                                     "id": "copy_cancel_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
-                                    },
-                                    "text": "$t:common.cancel",
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "closeModal",
                                             "target": "copy_confirm_modal"
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
+                                    },
+                                    "text": "$t:common.cancel"
                                 },
                                 {
                                     "id": "copy_confirm_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                                    },
-                                    "text": "$t:sirsoft-board.admin.board.actions.copy",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -655,7 +652,11 @@
                                                 }
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.board.actions.copy"
                                 }
                             ]
                         }
@@ -664,6 +665,7 @@
             ]
         },
         {
+            "comment": "삭제 확인 — 남은 글 수에 따라 경고 등급과 문구가 갈린다(글이 있으면 error, 없으면 warning). 게시판 삭제는 글까지 함께 지우는 되돌릴 수 없는 동작이라 백업 안내를 함께 띄운다",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -696,7 +698,7 @@
                             "props": {
                                 "className": "text-gray-700 dark:text-gray-300"
                             },
-                            "text": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}"
+                            "text": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|count=' + _global.modal_data.posts_count + '|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}"
                         },
                         {
                             "id": "delete_main_alert",
@@ -729,16 +731,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -750,12 +752,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "삭제 실행 — 진행 표시를 켜 두 번 눌리는 것을 막고, 성공하면 목록과 «관리자 메뉴」를 함께 다시 읽는다(게시판이 메뉴에 등재돼 있으면 사이드바에 유령 항목이 남기 때문)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -768,11 +767,11 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/modules/sirsoft-board/admin/boards/{{_global.modal_data?.slug}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE",
-                                                "body": []
+                                                "body": {}
                                             },
                                             "onSuccess": [
                                                 {
@@ -834,6 +833,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

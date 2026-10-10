@@ -23,6 +23,7 @@ import { hasPipes } from './PipeRegistry';
 import { extractSingleBinding } from './BindingShape';
 import { evaluateStringCondition } from './helpers/ConditionEvaluator';
 import { addMissingLeafKeys } from './helpers/StateMerge';
+import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { DataSourceManager, dataSourceManager } from './DataSourceManager';
 import DynamicRenderer from './DynamicRenderer';
 import { useTransitionState } from './TransitionContext';
@@ -31,6 +32,7 @@ import { useResponsive, ResponsiveProvider, ResponsiveContext } from './Responsi
 import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
+import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
@@ -57,6 +59,7 @@ import {
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import { IdentityGuardInterceptor, IDENTITY_REDIRECT_STASH_KEY } from '../identity/IdentityGuardInterceptor';
 import { loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import { getEngineFlags, setEngineFlags } from './EngineFlags';
 import {
   templateAsset,
   templateAssetDir,
@@ -65,6 +68,7 @@ import {
   convertToCurrentMode,
 } from '../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
+import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
 import {
   notifyAssetFailure,
   drainExternalAssetFailures,
@@ -673,6 +677,80 @@ function initReactGlobals(): void {
 }
 
 /**
+ * 방문자 동의 파사드 초기화 — `G7Core.consent` (engine-v1.78.0, #639)
+ *
+ * 다른 확장이 동의를 관리하는 확장의 경로를 몰라도 동의 상태를 읽고 구독할 수 있게 한다. 런타임은 코어
+ * 동의 런타임(`resources/js/core/consent`) 하나이고, 이 파사드는 그것을 감싸기만 한다.
+ *
+ * - `getSnapshot()` — 현재 스냅샷 사본 (`_global.consent` 와 같은 모양). 런타임이 없는 화면(관리자)에서는 null.
+ * - `refresh()` — 다시 조회해 최신 스냅샷을 돌려준다. 런타임이 없으면 null.
+ * - `subscribe(listener)` — 변경(`consent:changed`)을 구독하고 **해제 함수**를 돌려준다.
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initConsentAPI(G7Core: any): void {
+  G7Core.consent = Object.freeze({
+    getSnapshot: () => getConsentRuntime()?.getSnapshot() ?? null,
+    refresh: async () => {
+      const runtime = getConsentRuntime();
+      return runtime ? runtime.refresh() : null;
+    },
+    subscribe: (listener: (snapshot: unknown) => void): (() => void) => {
+      if (typeof listener !== 'function') return () => {};
+      return G7Core.componentEvent.on(CONSENT_CHANGED_EVENT, listener);
+    },
+  });
+}
+
+/**
+ * 전역 상태 공개 계약 조회 API 초기화 — `G7Core.stateContracts` (engine-v1.78.0, #639)
+ *
+ * 서버가 인라인한 `G7Config.stateContracts`(코어 예약 + 활성 확장이 manifest `state_contracts` 로 선언한
+ * 공개 전역 상태)를 읽기 전용으로 노출한다. 다른 확장이 읽는 `_global.{이름}` 의 소유자·모양·쓰기 허용 주체를
+ * 코드에서 확인할 수 있다.
+ *
+ * - `get(name)` — 계약 하나 (없으면 null)
+ * - `list()` — 계약 전부 (이름 → 계약)
+ * - `ownerOf(name)` — 소유자 키 (`core`·`module:{id}`·`plugin:{id}`·`template:{id}`, 없으면 null)
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initStateContractsAPI(G7Core: any): void {
+  const raw = (window as any).G7Config?.stateContracts;
+  const contracts: Record<string, any> = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const frozen: Record<string, any> = {};
+
+  for (const [name, contract] of Object.entries(contracts)) {
+    frozen[name] = deepFreeze(JSON.parse(JSON.stringify(contract ?? {})));
+  }
+  Object.freeze(frozen);
+
+  // 이름은 자기 속성으로만 찾는다 — `get('constructor')` 처럼 Object 원형 속성이 계약으로 보이지 않게.
+  const own = (name: string): any => (Object.prototype.hasOwnProperty.call(frozen, name) ? frozen[name] : null);
+
+  G7Core.stateContracts = Object.freeze({
+    get: (name: string) => own(name),
+    list: () => frozen,
+    ownerOf: (name: string) => own(name)?.owner ?? null,
+  });
+}
+
+/**
+ * 객체를 깊게 동결한다 (읽기 전용 노출용).
+ *
+ * @param value 동결할 값
+ * @returns 같은 값
+ */
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object') {
+    Object.values(value as Record<string, unknown>).forEach((child) => deepFreeze(child));
+    Object.freeze(value);
+  }
+
+  return value;
+}
+
+/**
  * 컴포넌트 이벤트 시스템 초기화
  *
  * 컴포넌트 간 통신을 위한 이벤트 시스템을 제공합니다.
@@ -1052,9 +1130,55 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
   G7Core.createLogger = createLogger;
   logger.log('전역 객체 window.G7Core.createLogger에 노출됨');
 
+  /**
+   * 셀 렌더 래퍼가 쓸 렌더 환경을 고른다 — `renderEnv` 우선, 없으면 `componentContext.renderEnvRef.current`.
+   *
+   * 레이아웃 편집기 미리보기에서는 이 값이 미리보기 폭·콘텐츠 언어·격리 dispatcher·편집 대상 템플릿
+   * 레지스트리·편집 모드를 담는다. 편집기 밖에서는 루트 렌더러의 값(=호스트 값)이다(#141).
+   *
+   * @param renderEnv 호출자가 명시한 렌더 환경
+   * @param componentContext 호출자가 넘긴 부모 컴포넌트 컨텍스트
+   * @returns 렌더 환경, 없으면 null
+   * @since engine-v1.75.2
+   */
+  const pickRenderEnv = (renderEnv: RenderEnvironment | null | undefined, componentContext: any): RenderEnvironment | null =>
+    renderEnv ?? componentContext?.renderEnvRef?.current ?? null;
+
+  /**
+   * 렌더 환경에서 renderItemChildren 옵션으로 옮길 값만 뽑는다(빈 필드는 빼서 호스트 기본값을 덮지 않는다).
+   *
+   * @param env 렌더 환경
+   * @returns 옵션 조각
+   * @since engine-v1.75.2
+   */
+  const renderEnvToOptions = (env: RenderEnvironment | null): Record<string, any> => {
+    if (!env) return {};
+    const picked: Record<string, any> = {};
+    for (const key of ['responsiveWidth', 'translationContext', 'translationEngine', 'bindingEngine', 'actionDispatcher', 'isEditMode'] as const) {
+      if (env[key] !== undefined && env[key] !== null) picked[key] = env[key];
+    }
+    return picked;
+  };
+
+  /**
+   * 컴포넌트 맵에 렌더 환경 레지스트리를 덮는다 — 환경 레지스트리가 이기고, 기본 맵에만 있는 항목은 남긴다.
+   *
+   * @param baseMap 호출자 맵 또는 호스트 맵
+   * @param env 렌더 환경
+   * @returns 합친 맵
+   * @since engine-v1.75.2
+   */
+  const withEnvComponents = (baseMap: Record<string, any>, env: RenderEnvironment | null): Record<string, any> => {
+    const envMap = env?.componentRegistry?.getComponentMap?.();
+    return envMap ? { ...baseMap, ...envMap } : baseMap;
+  };
+
   // renderItemChildren 노출 (반복 아이템의 자식 컴포넌트 렌더링용)
   // CardGrid 등에서 호출 시 translationContext, translationEngine, bindingEngine, actionDispatcher를 자동 주입
   // 전역 상태(_global, _local, _computed)도 컨텍스트에 자동 병합하여 cellChildren에서 접근 가능
+  //
+  // 값 우선순위: 명시 options > 렌더 환경(options.renderEnv 또는 options.componentContext.renderEnvRef.current)
+  // > 호스트 state. 렌더 환경에 레지스트리가 있으면 컴포넌트 맵도 그것을 우선한다. @since engine-v1.75.2 (#141)
   G7Core.renderItemChildren = (
     children: any[],
     itemContext: Record<string, any>,
@@ -1092,16 +1216,18 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       return componentId || fallbackKey;
     };
 
-    // options가 없거나 필요한 엔진이 없으면 현재 state에서 자동 주입
+    // options가 없거나 필요한 엔진이 없으면 렌더 환경 → 현재 state 순으로 자동 주입
+    const env = pickRenderEnv(options?.renderEnv, options?.componentContext);
     const mergedOptions = {
       translationContext: state.translationContext,
       translationEngine: state.translationEngine,
       bindingEngine: state.bindingEngine,
       actionDispatcher: state.actionDispatcher,
+      ...renderEnvToOptions(env),
       getRemountKey, // remount 지원 추가
       ...options,
     };
-    return renderItemChildren(children, mergedContext, componentMap, keyPrefix, mergedOptions);
+    return renderItemChildren(children, mergedContext, withEnvComponents(componentMap, env), keyPrefix, mergedOptions);
   };
 
   /**
@@ -1151,6 +1277,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param layoutDefs component_layout 정의 배열
    * @param itemContext 항목별 컨텍스트 (예: { item: option, index: 0, isSelected: true })
    * @param keyPrefix React key prefix
+   * @param options 선택. 렌더 환경과 명시 값 — 우선순위는 명시 값 > `renderEnv` >
+   *   `componentContext.renderEnvRef.current` > 호스트 값 (@since engine-v1.75.2, #141)
    * @returns React 요소 배열
    *
    * @example
@@ -1159,20 +1287,29 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * const itemElements = G7Core.renderComponentLayout(
    *   __componentLayoutDefs?.item,
    *   { item: option, index, isSelected },
-   *   `item-${index}`
+   *   `item-${index}`,
+   *   { renderEnv: __componentContext?.renderEnvRef?.current }
    * );
    * ```
    */
   G7Core.renderComponentLayout = (
     layoutDefs: any[] | undefined,
     itemContext: Record<string, any>,
-    keyPrefix?: string
+    keyPrefix?: string,
+    options?: {
+      renderEnv?: RenderEnvironment | null;
+      componentContext?: { renderEnvRef?: { current: RenderEnvironment | null } };
+      responsiveWidth?: number;
+      translationContext?: TranslationContext;
+      actionDispatcher?: any;
+    }
   ): React.ReactNode => {
     if (!layoutDefs || !Array.isArray(layoutDefs) || layoutDefs.length === 0) {
       return null;
     }
 
-    const componentMap = ComponentRegistry.getInstance().getComponentMap();
+    const env = pickRenderEnv(options?.renderEnv, options?.componentContext);
+    const componentMap = withEnvComponents(ComponentRegistry.getInstance().getComponentMap(), env);
     const state = deps.getState();
 
     // 전역 상태 가져오기 (remount 지원을 위해)
@@ -1180,8 +1317,11 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     const globalState = templateApp?.getGlobalState?.() || {};
 
     // 전역 상태를 컨텍스트에 병합 (remount 키 접근을 위해)
+    // `getGlobalState()` 결과가 **곧 `_global` 의 내용물**이다 — 같은 파일 1077행이 그 규약을 쓴다.
+    // 여기에 `._global` 을 한 번 더 붙이면 언제나 `{}` 라, 이 자리는 engine-v1.70.0 이전까지
+    // `_global` 을 통째로 비운 채 넘겼다(`_remountKeys` 도 함께 비어 remount 키가 서지 않는다).
     const mergedContext = {
-      _global: globalState._global || {},
+      _global: globalState,
       _local: globalState._local || {},
       _computed: globalState._computed || {},
       ...itemContext,
@@ -1205,9 +1345,13 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       keyPrefix,
       {
         translationContext: state.translationContext,
-        translationEngine: state.translationEngine,
-        bindingEngine: state.bindingEngine,
+        translationEngine: state.translationEngine ?? undefined,
+        bindingEngine: state.bindingEngine ?? undefined,
         actionDispatcher: state.actionDispatcher,
+        ...renderEnvToOptions(env),
+        ...(options?.responsiveWidth !== undefined ? { responsiveWidth: options.responsiveWidth } : {}),
+        ...(options?.translationContext ? { translationContext: options.translationContext } : {}),
+        ...(options?.actionDispatcher ? { actionDispatcher: options.actionDispatcher } : {}),
         getRemountKey,
       }
     );
@@ -1225,6 +1369,9 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param config.componentContext 부모 컴포넌트 컨텍스트 (state, setState)
    * @param config.componentMap 컴포넌트 맵 (선택, 없으면 자동 조회)
    * @param config.keyPrefix React key prefix
+   * @param config.renderEnv 렌더 환경 (선택). 없으면 `componentContext.renderEnvRef.current` 를 쓴다.
+   *   폭·번역·엔진·dispatcher·레지스트리·편집 모드가 호스트 값보다 우선한다 (@since engine-v1.75.2, #141)
+   * @param config.responsiveWidth responsive 분기 폭 명시값 (선택, @since engine-v1.75.2)
    * @returns React 요소 배열
    *
    * @example
@@ -1254,9 +1401,15 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       setState?: (updates: Record<string, any>) => void;
       stateRef?: { current: Record<string, any> };
       computedRef?: { current: Record<string, any> };
+      /** @since engine-v1.75.2 */
+      renderEnvRef?: { current: RenderEnvironment | null };
     };
     componentMap?: Record<string, React.ComponentType<any>>;
     keyPrefix: string;
+    /** @since engine-v1.75.2 */
+    renderEnv?: RenderEnvironment | null;
+    /** @since engine-v1.75.2 */
+    responsiveWidth?: number;
   }): React.ReactNode => {
     const { children, row, expandContext, componentContext, keyPrefix } = config;
 
@@ -1264,8 +1417,11 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       return null;
     }
 
+    // 렌더 환경 (미리보기 값) — 명시 renderEnv > componentContext.renderEnvRef.current > 호스트 (#141)
+    const env = pickRenderEnv(config.renderEnv, componentContext);
+
     // 컴포넌트 맵 조회 (없으면 자동)
-    const componentMap = config.componentMap || ComponentRegistry.getInstance().getComponentMap();
+    const componentMap = withEnvComponents(config.componentMap || ComponentRegistry.getInstance().getComponentMap(), env);
     const state = deps.getState();
 
     // 1. 전역 상태 가져오기
@@ -1287,7 +1443,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     const latestComputed = componentContext?.computedRef?.current ?? globalState._computed ?? {};
 
     // 4. expandContext 바인딩 표현식 자동 평가
-    const bindingEngine = state.bindingEngine ?? G7Core.getDataBindingEngine?.();
+    const bindingEngine = env?.bindingEngine ?? state.bindingEngine ?? G7Core.getDataBindingEngine?.();
     const evalContext = {
       ...globalState,
       _local: mergedLocal,
@@ -1341,7 +1497,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       item: row,
       $item: row,
       _local: mergedLocal,
-      _global: globalState._global || {},
+      // 위 cellChildren 과 같은 이유로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
+      _global: globalState,
       _computed: globalState._computed || {},
       ...resolvedExpandContext,
     };
@@ -1363,6 +1520,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       translationEngine: state.translationEngine ?? undefined,
       bindingEngine: state.bindingEngine ?? undefined,
       actionDispatcher: state.actionDispatcher,
+      ...renderEnvToOptions(env),
+      ...(config.responsiveWidth !== undefined ? { responsiveWidth: config.responsiveWidth } : {}),
       componentContext,
       getRemountKey,
     });
@@ -2043,7 +2202,7 @@ function initStateAPI(G7Core: any): void {
       // 현재 우회책: 모달에서 onMount setState를 사용하지 않고,
       // 모달 열기 전 핸들러에서 setLocal()로 페이지 _local에 초기화 후 modal.open().
       // 이렇게 하면 모달이 페이지 _local을 그대로 상속하여 getLocal/setLocal과 일관.
-      // (사용자 취소 모달 _modal_cancel.json, 관리자 취소 모달 _modal_cancel_order.json)
+      // (사용자 취소 모달 _modal_cancel.g7.html, 관리자 취소 모달 _modal_cancel_order.g7.html)
       //
       // [향후 리팩토링 방향]
       // getLocal()/setLocal()을 모달-인식(modal-aware)으로 개선:
@@ -2698,14 +2857,27 @@ function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
     /**
      * 로케일을 변경합니다.
      * @param locale 변경할 로케일 (예: 'ko', 'en')
+     * @param options persist: false 면 로그인 회원의 언어를 저장하지 않는다(호출자가 이미 저장한 경우 — 요청 1회) @since engine-v1.79.0
      */
-    change: async (locale: string) => {
+    change: async (locale: string, options?: { persist?: boolean }) => {
       const templateApp = (window as any).__templateApp;
       if (templateApp?.changeLocale) {
-        await templateApp.changeLocale(locale);
+        await (options ? templateApp.changeLocale(locale, options) : templateApp.changeLocale(locale));
       } else {
         logger.warn('G7Core.locale.change: TemplateApp이 초기화되지 않았습니다.');
       }
+    },
+    /**
+     * 언어 전환 인계 저장소 — 언어 전환은 같은 화면을 새로 마운트하므로, 컴포넌트 안에만 있는 저장 전
+     * 상태(업로더가 고른 대기 파일 등)를 언마운트 때 맡기고 새 인스턴스가 마운트 때 되찾는다.
+     * `stash` 는 언어 전환 중에만 받고, `take` 는 한 번 꺼내면 지운다. 다음 화면 이동이 시작되면 남은 값은 버린다.
+     *
+     * @since engine-v1.79.0
+     */
+    handoff: {
+      isSwitching: (): boolean => isLocaleSwitching(),
+      stash: (key: string, value: unknown): boolean => stashForLocaleSwitch(key, value),
+      take: <T = unknown>(key: string): T | undefined => takeLocaleSwitchHandoff<T>(key),
     },
   };
 
@@ -2750,6 +2922,23 @@ function initToastAPI(G7Core: any): void {
 }
 
 /**
+ * 모달 상태(activeModal·modalStack)를 담은 전역 상태를 읽습니다.
+ *
+ * `G7Core.state.get()` 은 `_global` 의 **내용물**을 바로 돌려준다(`TemplateApp.getGlobalState()`). 예전 구현은
+ * `state._global?.modalStack` 을 읽어 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다(#712 실측). 감싼 모양을
+ * 돌려주는 호스트도 읽도록 `_global` 이 있으면 그쪽을 쓴다.
+ *
+ * @param G7Core G7Core 전역 객체
+ * @returns activeModal·modalStack 을 담은 전역 상태
+ * @since engine-v1.75.2
+ */
+function modalGlobalState(G7Core: any): { activeModal?: string | null; modalStack?: string[] } {
+  const state = G7Core.state?.get?.() || {};
+
+  return state._global && typeof state._global === 'object' ? state._global : state;
+}
+
+/**
  * 모달 관리 API 초기화
  */
 function initModalAPI(G7Core: any): void {
@@ -2787,17 +2976,16 @@ function initModalAPI(G7Core: any): void {
      * @param modalId 확인할 모달의 ID
      */
     isOpen: (modalId: string) => {
-      const state = G7Core.state.get();
-      return state._global?.activeModal === modalId ||
-             state._global?.modalStack?.includes(modalId) ||
+      const global = modalGlobalState(G7Core);
+      return global.activeModal === modalId ||
+             global.modalStack?.includes(modalId) ||
              false;
     },
     /**
      * 현재 열린 모달 스택을 반환합니다.
      */
     getStack: () => {
-      const state = G7Core.state.get();
-      return state._global?.modalStack || [];
+      return modalGlobalState(G7Core).modalStack || [];
     },
   };
 
@@ -3085,7 +3273,7 @@ function initCoreAPIs(G7Core: any, deps: G7CoreDependencies): void {
   // options.transitionOverlayTarget: 호출별 transition_overlay.target 동적 override (@since engine-v1.36.0)
   G7Core.updateQueryParams = async (
     newPath: string,
-    options?: { transitionOverlayTarget?: string }
+    options?: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] }
   ) => {
     const templateApp = (window as any).__templateApp;
     if (templateApp?.updateQueryParams) {
@@ -3159,6 +3347,16 @@ function initSlotAPI(G7Core: any, deps: G7CoreDependencies): void {
   G7Core.getTranslationEngine = () => {
     return deps.getTranslationEngine?.() ?? deps.getState().translationEngine;
   };
+
+  /**
+   * 엔진 안전 스위치 — 표현식 컴파일 캐시·AST 캐시·computed 스코프 물려받기를 기능별로 끈다.
+   *
+   * 개발자 콘솔·확장 스크립트 전용이다(서버 설정·관리자 화면 없음):
+   * `G7Core.engineFlags.set({ computedScopeInheritance: false })`. 끄면 수정 전 계산 경로가 된다.
+   *
+   * @since engine-v1.74.0
+   */
+  G7Core.engineFlags = { get: getEngineFlags, set: setEngineFlags };
 
   /**
    * ActionDispatcher를 가져옵니다.
@@ -3259,6 +3457,8 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
 
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
+  initConsentAPI(G7Core);
+  initStateContractsAPI(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
   initLayoutEditorStub(G7Core);
   initCoreAPIs(G7Core, deps);

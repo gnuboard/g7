@@ -55,7 +55,7 @@ export interface AuthorInfo {
   /** 아바타 URL */
   avatar?: string;
   /** 사용자 상태 */
-  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn';
+  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn' | 'dormant' | 'pending_verification';
   /** 비회원 여부 */
   is_guest?: boolean;
 }

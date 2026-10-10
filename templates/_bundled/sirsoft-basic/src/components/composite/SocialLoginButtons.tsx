@@ -155,8 +155,8 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
   editorAttrs,
 }) => {
   const handleSocialLogin = (provider: SocialProvider) => {
-    // OAuth 인증 URL로 리다이렉트
-    const callbackUrl = encodeURIComponent(window.location.href);
+    // OAuth 인증 URL로 리다이렉트 — 복귀 주소는 경로만 넘긴다(보안: 절대 주소는 접속한 Host 를 그대로 싣는다)
+    const callbackUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
     window.location.href = `/api/auth/${provider}?redirect=${callbackUrl}`;
   };
 

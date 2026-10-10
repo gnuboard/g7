@@ -1,0 +1,46 @@
+feature: `redirect` 핸들러 — 같은 탭 통째 이동 (same-origin 한정)
+
+description: |
+  본인인증 제공자처럼 **현재 탭에서 나갔다가 돌아오는** 흐름을 적을 수단이 없었다.
+  `navigate` 는 SPA 경로용이라 절대 주소를 라우트로 해석하고, `openWindow` 는 새 창이라
+  팝업 차단에 걸린다. 그 사이 자리가 이 핸들러다.
+
+  `auth/identity_challenge` 는 #297 부터 `handler="redirect"` 를 적고 있었으나 엔진에
+  소비처가 없어 **한 번도 동작하지 않았다** — 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에
+  흔적이 남지 않는다. 전 이력 조사로 확인했다: `case 'redirect'` 0건 · 매니페스트 0건 ·
+  확장 등록 0건(병합이 떨군 것이 아니라 처음부터 없었다).
+
+  판정 축은 셋이다 — 주소가 있는가 · 뒤로가기 이력을 남기는가 · 프리뷰인가.
+  프리뷰에서 실행되면 미리보기 창이 사라지므로 `navigate` 계열과 같이 억제한다.
+
+  engine-v1.73.0 부터 이동 대상은 same-origin 경로로 제한된다(KVE-2026-2348). 레이아웃이 이 주소를
+  `query` 에서 채우므로(`identity_challenge` 의 `redirect_url`) 검증 없이 넘기면 `javascript:` 실행·
+  오프사이트 이동 sink 가 된다. 외부 origin·실행 스킴은 기본 경로(`/`)로 떨어진다.
+
+axes:
+  url: [given, empty]
+  history_mode: [assign, replace]
+  runtime: [live, preview]
+
+exclusions:
+  - { url: empty, history_mode: replace, reason: "주소가 없으면 이동 자체가 없어 이력 모드가 결과에 관여하지 않는다" }
+  - { url: empty, runtime: preview, reason: "주소 검사가 억제 판정보다 먼저 끝나 결과가 같다 — live 대표 조합이 검증" }
+  - { history_mode: replace, runtime: preview, reason: "프리뷰 억제는 핸들러 진입 전이라 이력 모드와 무관 — assign 대표 조합이 검증" }
+
+effects:
+  - redirect_assigns_current_tab_to_given_url
+  - redirect_replace_leaves_no_history_entry
+  - redirect_with_empty_url_does_nothing
+  - redirect_is_suppressed_in_preview_mode
+
+sub_flows:
+  - id: unsafe_target_policy
+    description: |
+      안전하지 않은 대상(외부 origin·protocol-relative·백슬래시 우회·실행 스킴)은 sink 에 닿지 않고
+      기본 경로로 떨어진다. 이력 모드(assign/replace) 양쪽 모두 같은 판정을 거친다.
+    effects:
+      - redirect_offsite_target_falls_back_to_root
+      - redirect_script_scheme_never_executes
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.test.ts

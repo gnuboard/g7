@@ -1,312 +1,314 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Order Detail - Send Email Modal"
-  },
-  "id": "modal_send_email",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.title",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "lifecycle": {
-        "onMount": [
-          {
-            "handler": "setState",
-            "params": {
-              "target": "$parent._local",
-              "isSending": false,
-              "emailErrors": null
-            }
-          }
-        ]
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.description"
-        },
-        {
-          "comment": "Validation 에러 배너",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{$parent._local.emailErrors && Object.keys($parent._local.emailErrors).length > 0}}",
-          "props": {
-            "className": "alert-danger"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "circle-exclamation",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.validation_error"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "Object.values($parent._local.emailErrors ?? {}).flat()",
-                    "item_var": "errMsg",
-                    "index_var": "errIdx"
-                  },
-                  "text": "• {{errMsg}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "이메일 주소 필드",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "form-label-block"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.email"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "className": "{{$parent._local.emailErrors?.email ? 'input-readonly input-error' : 'input-readonly'}}",
-                "value": "{{$parent._local.emailAddress}}",
-                "readOnly": true
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{$parent._local.emailErrors?.email}}",
-              "props": {
-                "className": "form-error-xs mt-1 block"
-              },
-              "text": "{{$parent._local.emailErrors?.email?.[0]}}"
-            }
-          ]
-        },
-        {
-          "comment": "메시지 내용 필드",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between mb-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.message"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-hint"
-                  },
-                  "text": "{{($parent._local.emailMessage || '').length}}자"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Textarea",
-              "props": {
-                "className": "{{$parent._local.emailErrors?.message ? 'input w-full min-h-32 border-red-500 dark:border-red-500' : 'input w-full min-h-32'}}",
-                "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.message_placeholder",
-                "value": "{{$parent._local.emailMessage}}"
-              },
-              "actions": [
-                {
-                  "type": "input",
-                  "handler": "setState",
-                  "params": {
-                    "target": "$parent._local",
-                    "emailMessage": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{$parent._local.emailErrors?.message}}",
-              "props": {
-                "className": "form-error-xs mt-1 block"
-              },
-              "text": "{{$parent._local.emailErrors?.message?.[0]}}"
-            }
-          ]
-        }
-      ],
-      "props": {
-      }
+    "comment": "주문자에게 메일을 보내는 창. 받는 주소는 고칠 수 없고(주문에 적힌 주소를 읽기 전용으로 보여준다)\n  본문만 입력한다.\n  **입력과 상태를 자기 `_local` 이 아니라 `$parent._local` 에 둔다** — 모달은 부모와 다른 컨텍스트라\n  자기 지역 상태에 담으면 이 창을 여는 쪽(주문 상세 화면)이 받는 주소를 미리 채워 넣을 수 없다.\n  그래서 받는 주소·본문·발송 중 깃발·오류가 전부 부모 자리에 있다.\n  열릴 때마다 발송 깃발과 오류를 비운다 — 지난번 실패한 오류가 새 창에 남아 있지 않게 하는 자리다.\n  실패 알림에 서버가 준 상세 사유를 괄호로 덧붙인다. 메일은 실패 원인이 밖(SMTP·수신 거부)에 있는\n  경우가 많아 한 줄 요약만으로는 손쓸 수가 없기 때문이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Order Detail - Send Email Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "modal_send_email",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{$parent._local.isSending}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.cancel"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{$parent._local.isSending || !$parent._local.emailMessage}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+                "onMount": [
+                    {
+                        "comment": "창이 뜰 때 발송 깃발과 오류만 비운다. 본문과 받는 주소는 건드리지 않는다 — 주소는 여는 쪽이 채워 주고, 본문은 실패 후 다시 열었을 때 살아 있어야 한다.",
+                        "handler": "setState",
+                        "params": {
+                            "target": "$parent._local",
+                            "isSending": false,
+                            "emailErrors": null
+                        }
+                    }
+                ]
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "$parent._local",
-                    "isSending": true,
-                    "emailErrors": null
-                  }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.description"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_mode": "required",
-                  "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/send-email",
-                  "params": {
-                    "method": "POST",
-                    "body": {
-                      "email": "{{$parent._local.emailAddress}}",
-                      "message": "{{$parent._local.emailMessage}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "isSending": false,
-                        "emailMessage": "",
-                        "emailErrors": null
-                      }
+                    "comment": "Validation 에러 배너",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{$parent._local.emailErrors && Object.keys($parent._local.emailErrors).length > 0}}",
+                    "props": {
+                        "className": "alert-danger"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "message": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.sent_success",
-                        "type": "success"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "isSending": false,
-                        "emailErrors": "{{error.errors}}"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "message": "{{error.message + (error.errors?.detail ? ' (' + error.errors.detail + ')' : '')}}",
-                        "type": "error"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-exclamation",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.validation_error"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "Object.values($parent._local.emailErrors ?? {}).flat()",
+                                        "item_var": "errMsg",
+                                        "index_var": "errIdx"
+                                    },
+                                    "text": "• {{errMsg}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "이메일 주소 필드",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label-block"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.email"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "className": "{{$parent._local.emailErrors?.email ? 'input-readonly input-error' : 'input-readonly'}}",
+                                "value": "{{$parent._local.emailAddress}}",
+                                "readOnly": true
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{$parent._local.emailErrors?.email}}",
+                            "props": {
+                                "className": "form-error-xs mt-1 block"
+                            },
+                            "text": "{{$parent._local.emailErrors?.email?.[0]}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "메시지 내용 필드",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.message"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "{{($parent._local.emailMessage || '').length}}자"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "comment": "본문. 부모 자리에 담으므로 위 글자 수 표시와 발송 버튼 잠금이 같은 값을 본다.",
+                                    "type": "input",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local",
+                                        "emailMessage": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "{{$parent._local.emailErrors?.message ? 'input w-full min-h-32 border-red-500 dark:border-red-500' : 'input w-full min-h-32'}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.message_placeholder",
+                                "value": "{{$parent._local.emailMessage}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{$parent._local.emailErrors?.message}}",
+                            "props": {
+                                "className": "form-error-xs mt-1 block"
+                            },
+                            "text": "{{$parent._local.emailErrors?.message?.[0]}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{$parent._local.isSending}}",
-              "props": {
-                "name": "spinner",
-                "className": "animate-spin",
-                "size": "sm"
-              }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.send"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{$parent._local.isSending}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "발송. 성공하면 본문을 비우고 창을 닫는다 — 같은 주문에 같은 글이 두 번 나가는 것을 막는다.\n            실패하면 본문을 그대로 두고 창도 닫지 않는다(고쳐서 다시 보낼 수 있게).\n            발송 중 깃발을 성공·실패 양쪽에서 푸는 것이 필수다 — 한쪽만 풀면 버튼이 영영 잠긴다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local",
+                                        "isSending": true,
+                                        "emailErrors": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/send-email",
+                                    "auth_mode": "required",
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "email": "{{$parent._local.emailAddress}}",
+                                            "message": "{{$parent._local.emailMessage}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "isSending": false,
+                                                "emailMessage": "",
+                                                "emailErrors": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "message": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.sent_success",
+                                                "type": "success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "isSending": false,
+                                                "emailErrors": "{{error.errors}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "message": "{{error.message + (error.errors?.detail ? ' (' + error.errors.detail + ')' : '')}}",
+                                                "type": "error"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{$parent._local.isSending || !$parent._local.emailMessage}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{$parent._local.isSending}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "animate-spin",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.send"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -1,0 +1,95 @@
+feature: 주문 상세의 클레임 섹션 — 신청번호 링크 · 상품 썸네일 · 회원 주문상세 섹션 신설 (#599)
+
+description: |
+  세 주문 상세(관리자 · 회원 마이페이지 · 비회원 주문 조회)의 클레임 목록에서 상품마다 썸네일을
+  그리고(없으면 같은 크기의 자리표시) 신청번호 자체를 상세 링크로 만든다. 회원 마이페이지 주문
+  상세에는 그동안 클레임 섹션 자체가 없었다 — 비회원 화면이 쓰는 공유 partial 을 그대로 마운트하고
+  주문 스코프 목록 API 를 하나 더 세운다. 이 변경에서 조용히 깨지는 지점은 다섯이다.
+
+  ① **회원 셸이 셸 계약값을 빠뜨리면** 철회 요청이 나가지 않거나(주소 앞부분 없음) 링크가
+     회원 목록 화면과 같은 글자로만 남는다. 카드는 정상으로 그려지므로 눌러 봐야 드러난다.
+
+  ② **비회원 번호를 새 창 링크로 만들면** 새 창은 조회 폼으로 되돌아간다 — 비회원 조회 토큰은
+     탭에 묶인 sessionStorage 라 새 창에 실리지 않는다. 그래서 링크 모드는 셸이 정한다:
+     회원 `new_window`, 비회원 `same_window`, 신청내역 목록 화면은 없음(종전 모양).
+
+  ③ **회원 주문 스코프 목록 API 가 본인 주문 검사를 빠뜨리면** 남의 주문 ID 로 그 주문의
+     클레임이 열린다. 형제 자원(`claimable-options`)과 같은 규칙으로 404 로 닫는다.
+
+  ④ **회원 목록 데이터소스가 주문 응답보다 먼저 나가면** 주문 ID 가 없어 `/orders//claims`
+     로 나간다. `claimable` 과 같은 체인(주문 응답 → ID 세움 → 재조회)에 넣는다.
+
+  ⑤ **이미지 없는 상품의 자리가 사라지면** 줄의 시작점이 이미지 유무에 따라 흔들린다 —
+     jsdom 은 크기를 재지 않으므로 자리표시의 실측은 브라우저가 한다.
+
+# axis 의미:
+#   surface    — 세 주문 상세. 관리자는 별도 매니페스트(admin-order-claim-history)가 소유하므로
+#                여기서는 회원·비회원 두 면만 축이다.
+#   has_image  — 상품 썸네일 유무. 없을 때 자리표시가 선다.
+#
+# 유형 서브탭(교환/반품/환불/취소)은 축으로 세우지 않는다 — 번호 링크와 썸네일 자리는 카드 헤더·상품 줄에
+# 있고 유형별 4열째(금액)와 무관하다. 유형마다 다시 곱해도 검증되는 사실은 같다. 취소 유형의 관리자 상세는
+# `admin-claim-detail` 이, 주문상세 클레임 내역의 번호 링크는 `admin-order-claim-history` 가 소유한다.
+axes:
+  surface: [member, guest]
+  has_image: [yes, no]
+
+effects:
+  # 관리자 상태 버튼도 desktop(1280)/portable(375) × pending on/off에서 아이콘·라벨·disabled를 유지한다.
+  - claim_pending_feedback_preserves_responsive_label
+  - claim_actions_follow_order_items
+  - claim_order_id_initialization_uses_unwrapped_response
+  - claim_tabs_and_pages_refetch_only_claims
+  # 회원 셸 계약 (①)
+  - member_order_detail_declares_claim_section_contract
+  - member_order_detail_mounts_the_shared_claim_list
+  # 번호 링크 모드 (②)
+  - member_order_detail_number_opens_detail_in_new_window
+  - guest_order_detail_number_navigates_in_the_same_window
+  - claim_list_page_keeps_text_number_and_footer_button
+  # 서버 계약 (③)
+  - order_claim_section_lists_only_this_orders_requests
+  - order_claim_section_hides_other_members_orders
+  # 목록 재조회 (④)
+  - member_order_detail_claim_list_is_paginated_by_type
+  - claim_tab_keeps_scroll_and_focus_without_order_refetch
+  - claim_page_keeps_scroll_and_focus_without_order_refetch
+  - claim_buttons_follow_paid_order_policy_and_use_action_colors
+  - claim_async_buttons_show_spinner_and_block_duplicate_requests
+  # 같은 화면에 같은 잠금을 쓰는 버튼이 여럿이면 스피너는 누른 버튼에만 — 운송장 묶음마다 선 [도착 처리], 선택 바 [송장만 저장]/[일괄 적용] (2026-09-26 PO 지적).
+  - claim_deliver_spinner_only_on_pressed_waybill
+  - claim_item_bar_spinner_only_on_pressed_button
+  # 기본 서브탭 (⑥) — 주소에 유형이 없으면 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 고르고
+  # 응답의 claim_type/counts 로 화면이 활성 탭·뱃지를 세운다. 종전에는 늘 교환이라 취소만 있는 주문에서
+  # 빈 안내가 먼저 보였다(설계 결정 2026-09-09, 관리자 클레임 내역과 같은 규칙).
+  - order_claim_section_default_type_is_first_with_requests
+  - order_claim_section_response_carries_type_counts
+  - member_order_detail_sends_no_type_when_address_has_none
+  - order_claim_section_active_subtab_follows_server_default
+  - order_claim_section_address_type_beats_server_default
+  # 썸네일 (⑤)
+  - order_claim_section_thumbnail_placeholder_when_missing
+  # 체크박스 자리 (⑦) — 신청할 수 없는 상품에서 칸을 감추면 그 줄만 이미지가 왼쪽으로 밀려
+  # 목록의 줄 머리가 어긋난다. 칸은 두고 잠근다(2026-09-21 요구사항, 모든 클레임 화면 공통).
+  - order_item_checkbox_column_always_renders
+  - order_item_checkbox_locked_state_is_visible
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/orderClaimInteraction.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/claimButtonFeedback.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/claimButtonFeedback.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimButtonPending.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userOrderClaimSection.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/guestOrderClaimSection.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/mypage-order-claim-section.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/guest-claim.spec.ts
+
+notes: |
+  **유형은 축이 아니다.** 번호 링크와 썸네일 자리는 카드 헤더·상품 줄에 있고 유형별 4열째(금액)와
+  무관하다 — 테스트는 반품·교환 한 건으로 그 자리를 잰다. 취소 유형의 상세 자체는
+  `admin-claim-detail` 이 소유한다.
+
+  **비회원 새 창 불가는 설계가 아니라 제약이다.** 조회 토큰의 저장 위치(sessionStorage)가 바뀌면
+  비회원도 `new_window` 로 올릴 수 있다 — 그때 셸 값 하나만 바꾸면 된다.

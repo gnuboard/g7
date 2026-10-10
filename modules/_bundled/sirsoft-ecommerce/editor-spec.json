@@ -63,18 +63,60 @@
         "language_currency": {
           "default_currency": "KRW",
           "currencies": [
-            { "code": "KRW", "symbol": "₩", "flag": "🇰🇷", "exchange_rate": 1, "is_default": true },
-            { "code": "USD", "symbol": "$", "flag": "🇺🇸", "exchange_rate": 0.00073, "is_default": false },
-            { "code": "JPY", "symbol": "¥", "flag": "🇯🇵", "exchange_rate": 0.11, "is_default": false }
+            {
+              "code": "KRW",
+              "symbol": "₩",
+              "flag": "🇰🇷",
+              "exchange_rate": 1,
+              "is_default": true
+            },
+            {
+              "code": "USD",
+              "symbol": "$",
+              "flag": "🇺🇸",
+              "exchange_rate": 0.00073,
+              "is_default": false
+            },
+            {
+              "code": "JPY",
+              "symbol": "¥",
+              "flag": "🇯🇵",
+              "exchange_rate": 0.11,
+              "is_default": false
+            }
           ]
         },
         "shipping": {
           "international_shipping_enabled": true,
           "default_country": "KR",
           "available_countries": [
-            { "code": "KR", "name": { "ko": "대한민국", "en": "South Korea", "ja": "韓国" }, "is_active": true },
-            { "code": "US", "name": { "ko": "미국", "en": "United States", "ja": "アメリカ" }, "is_active": true },
-            { "code": "JP", "name": { "ko": "일본", "en": "Japan", "ja": "日本" }, "is_active": true }
+            {
+              "code": "KR",
+              "name": {
+                "ko": "대한민국",
+                "en": "South Korea",
+                "ja": "韓国"
+              },
+              "is_active": true
+            },
+            {
+              "code": "US",
+              "name": {
+                "ko": "미국",
+                "en": "United States",
+                "ja": "アメリカ"
+              },
+              "is_active": true
+            },
+            {
+              "code": "JP",
+              "name": {
+                "ko": "일본",
+                "en": "Japan",
+                "ja": "日本"
+              },
+              "is_active": true
+            }
           ]
         }
       }
@@ -83,14 +125,41 @@
     "preferredCurrency": "KRW",
     "preferredShippingCountry": "KR",
     "availableCurrencies": [
-      { "code": "KRW", "symbol": "₩", "flag": "🇰🇷", "exchange_rate": 1, "is_default": true },
-      { "code": "USD", "symbol": "$", "flag": "🇺🇸", "exchange_rate": 0.00073, "is_default": false },
-      { "code": "JPY", "symbol": "¥", "flag": "🇯🇵", "exchange_rate": 0.11, "is_default": false }
+      {
+        "code": "KRW",
+        "symbol": "₩",
+        "flag": "🇰🇷",
+        "exchange_rate": 1,
+        "is_default": true
+      },
+      {
+        "code": "USD",
+        "symbol": "$",
+        "flag": "🇺🇸",
+        "exchange_rate": 0.00073,
+        "is_default": false
+      },
+      {
+        "code": "JPY",
+        "symbol": "¥",
+        "flag": "🇯🇵",
+        "exchange_rate": 0.11,
+        "is_default": false
+      }
     ],
     "availableShippingCountries": [
-      { "code": "KR", "name": "대한민국" },
-      { "code": "US", "name": "미국" },
-      { "code": "JP", "name": "일본" }
+      {
+        "code": "KR",
+        "name": "대한민국"
+      },
+      {
+        "code": "US",
+        "name": "미국"
+      },
+      {
+        "code": "JP",
+        "name": "일본"
+      }
     ],
     "mileageManual": {},
     "mileageEdit": {},
@@ -99,80 +168,237 @@
   "sampleData": {
     "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
     "byDataSourceId": {
-      "transactions": {
-        "comment": "관리자 마일리지 내역 (admin_ecommerce_mileage_transaction_index.json — {{transactions?.data?.data}} 반복).",
+      "wishlists": {
         "data": {
           "data": [
             {
-              "row_number": 1,
-              "id": 100,
-              "user_id": 5,
-              "currency": "KRW",
-              "type": "admin_earn",
-              "type_label": "관리자 지급",
-              "admin_badge_group": "earn",
-              "user_display_category": "적립",
-              "amount": 10000,
-              "amount_formatted": "10,000",
-              "remaining_amount": 10000,
-              "balance_after": 50000,
-              "description": "신규 가입 보너스",
-              "memo": "환영 포인트",
-              "expires_at": "2027-06-03",
-              "expires_at_formatted": "2027-06-03",
-              "created_at": "2026-05-28T14:30:00Z",
-              "created_at_date": "2026-05-28",
-              "is_earning": true,
-              "expired_amount": 0,
-              "expiry_state": "active",
-              "can_edit_expiry": true,
-              "abilities": {
-                "can_manage": true,
-                "can_edit": true
-              }
+              "id": 7001,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9101,
+                "name": "무선 블루투스 이어폰",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "created_at": "2026-09-12 11:04"
             },
             {
-              "row_number": 2,
-              "id": 99,
-              "user_id": 5,
-              "currency": "KRW",
-              "type": "purchase_use",
-              "type_label": "구매 사용",
-              "admin_badge_group": "use",
-              "user_display_category": "사용",
-              "amount": -3000,
-              "amount_formatted": "-3,000",
-              "remaining_amount": 0,
-              "balance_after": 47000,
-              "description": "주문 결제 사용",
-              "memo": null,
-              "expires_at": null,
-              "expires_at_formatted": null,
-              "created_at": "2026-05-29T09:10:00Z",
-              "created_at_date": "2026-05-29",
-              "is_earning": false,
-              "expired_amount": 0,
-              "expiry_state": "none",
-              "can_edit_expiry": false,
-              "abilities": {
-                "can_manage": true,
-                "can_edit": false
-              }
+              "id": 7002,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9102,
+                "name": "한정판 머그컵",
+                "display_status": "hidden",
+                "display_status_label": "숨김",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "created_at": "2026-09-11 16:40"
+            },
+            {
+              "id": 7003,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000103",
+                "name": "탈퇴한 회원",
+                "email": null,
+                "is_withdrawn": true
+              },
+              "product": {
+                "id": 9103,
+                "name": "캠핑용 랜턴",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "suspended",
+                "sales_status_label": "판매중지"
+              },
+              "created_at": "2026-09-02 08:12"
             }
           ],
+          "abilities": {
+            "can_manage": true
+          },
           "pagination": {
             "current_page": 1,
             "last_page": 1,
             "per_page": 20,
-            "total": 2,
+            "total": 3,
             "from": 1,
-            "to": 2,
+            "to": 3,
             "has_more_pages": false
-          },
+          }
+        }
+      },
+      "carts": {
+        "data": {
+          "data": [
+            {
+              "id": 8001,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9101,
+                "name": "무선 블루투스 이어폰",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "option_name": "화이트 / 1개",
+              "quantity": 1,
+              "owner": "member",
+              "guest_key": null,
+              "created_at": "2026-09-13 09:22"
+            },
+            {
+              "id": 8002,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9102,
+                "name": "한정판 머그컵",
+                "display_status": "hidden",
+                "display_status_label": "숨김",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "option_name": null,
+              "quantity": 3,
+              "owner": "member",
+              "guest_key": null,
+              "created_at": "2026-09-12 19:55"
+            },
+            {
+              "id": 8003,
+              "member": null,
+              "product": {
+                "id": 9103,
+                "name": "캠핑용 랜턴",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "suspended",
+                "sales_status_label": "판매중지"
+              },
+              "option_name": "블랙 / 2개",
+              "quantity": 2,
+              "owner": "guest",
+              "guest_key": "a3f6b7c1",
+              "created_at": "2026-09-12 07:31"
+            }
+          ],
           "abilities": {
             "can_manage": true
           },
-          "currencies": ["KRW"]
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "from": 1,
+            "to": 3,
+            "has_more_pages": false
+          }
+        }
+      },
+      "inquiries": {
+        "data": {
+          "data": [
+            {
+              "id": 6001,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9101,
+                "name": "무선 블루투스 이어폰",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "content_excerpt": "색상이 사진과 동일한가요? 실물이 더 어둡다는 후기가 있어서요.",
+              "is_answered": false,
+              "answered_at": null,
+              "created_at": "2026-09-13 13:40"
+            },
+            {
+              "id": 6002,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9102,
+                "name": "한정판 머그컵",
+                "display_status": "hidden",
+                "display_status_label": "숨김",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "content_excerpt": "재입고 예정이 있는지 궁금합니다.",
+              "is_answered": true,
+              "answered_at": "2026-09-12 10:15",
+              "created_at": "2026-09-11 22:07"
+            },
+            {
+              "id": 6003,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000103",
+                "name": "탈퇴한 회원",
+                "email": null,
+                "is_withdrawn": true
+              },
+              "product": {
+                "id": 9103,
+                "name": "캠핑용 랜턴",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "suspended",
+                "sales_status_label": "판매중지"
+              },
+              "content_excerpt": null,
+              "is_answered": false,
+              "answered_at": null,
+              "created_at": "2026-09-01 17:26"
+            }
+          ],
+          "abilities": {
+            "can_manage": true,
+            "can_reply": true
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "from": 1,
+            "to": 3,
+            "has_more_pages": false
+          }
         }
       },
       "products": {
@@ -190,7 +416,7 @@
               "name_localized": "베이직 오버핏 코튼 티셔츠",
               "product_code": "TS-1001",
               "sku": "TS-1001",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 29000,
               "list_price_formatted": "29,000원",
               "selling_price": 23200,
@@ -293,7 +519,7 @@
               "name_localized": "데일리 와이드 슬랙스",
               "product_code": "PT-2042",
               "sku": "PT-2042",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 39000,
               "list_price_formatted": "39,000원",
               "selling_price": 39000,
@@ -391,7 +617,7 @@
               "name_localized": "구스다운 경량 패딩 점퍼",
               "product_code": "OW-3310",
               "sku": "OW-3310",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 189000,
               "list_price_formatted": "189,000원",
               "selling_price": 132300,
@@ -505,6 +731,7 @@
           "product_code": "TS-1001",
           "sales_product_code": "SP-TS-1001",
           "abilities": {
+            "can_order": true,
             "can_update": true,
             "can_delete": true
           },
@@ -513,7 +740,7 @@
               "id": 5001,
               "hash": "img5001",
               "original_filename": "tshirt_main.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "정면",
               "is_thumbnail": true,
               "sort_order": 0,
@@ -530,7 +757,7 @@
               "id": 5002,
               "hash": "img5002",
               "original_filename": "tshirt_back.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "후면",
               "is_thumbnail": false,
               "sort_order": 1,
@@ -547,7 +774,7 @@
               "id": 5003,
               "hash": "img5003",
               "original_filename": "tshirt_detail.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "디테일",
               "is_thumbnail": false,
               "sort_order": 2,
@@ -1004,7 +1231,8 @@
           "abilities": {
             "can_read": true,
             "can_update": true,
-            "can_cancel": true
+            "can_cancel": true,
+            "can_execute_refund": true
           },
           "subtotal_amount": 76000,
           "subtotal_amount_formatted": "76,000원",
@@ -1016,6 +1244,8 @@
           "total_amount_formatted": "69,500원",
           "total_paid_amount": 69500,
           "total_paid_amount_formatted": "69,500원",
+          "total_refunded_mileage_credit_amount": 0,
+          "total_refunded_mileage_credit_amount_formatted": "0원",
           "total_product_coupon_discount_amount": 5000,
           "total_product_coupon_discount_amount_formatted": "5,000원",
           "total_order_coupon_discount_amount": 2500,
@@ -1396,7 +1626,7 @@
               "product": {
                 "id": 101,
                 "name": "베이직 오버핏 코튼 티셔츠",
-                "thumbnail_url": "/images/placeholder.png"
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
               },
               "option_snapshot_label": "블랙 / M",
               "rating": 5,
@@ -1430,7 +1660,7 @@
               "product": {
                 "id": 101,
                 "name": "베이직 오버핏 코튼 티셔츠",
-                "thumbnail_url": "/images/placeholder.png"
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
               },
               "option_snapshot_label": "화이트 / L",
               "rating": 4,
@@ -1464,7 +1694,7 @@
               "product": {
                 "id": 102,
                 "name": "데일리 와이드 슬랙스",
-                "thumbnail_url": "/images/placeholder.png"
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
               },
               "option_snapshot_label": "",
               "rating": 2,
@@ -2049,6 +2279,15 @@
           }
         }
       },
+      "coupon_abilities": {
+        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+      },
+      "policy_abilities": {
+        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+      },
+      "product_abilities": {
+        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+      },
       "extra_fee_templates": {
         "data": {
           "data": [
@@ -2079,7 +2318,12 @@
               "fee_formatted": "4,000원",
               "is_active": false
             }
-          ]
+          ],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
         }
       },
       "presets": {
@@ -2095,7 +2339,8 @@
         "data": {
           "abilities": {
             "can_create": true,
-            "can_update": true
+            "can_update": true,
+            "can_delete": true
           },
           "data": [
             {
@@ -2640,6 +2885,8 @@
       },
       "settings": {
         "data": {
+          "available_rate_providers": [],
+          "active_rate_provider": null,
           "general": {
             "shop_name": "샘플 쇼핑몰",
             "currency": "KRW"
@@ -3729,6 +3976,84 @@
           }
         }
       },
+      "ecommercePrivacyRetentionPreview": {
+        "data": {
+          "orders": 42,
+          "enabled": false,
+          "mode": "anonymize",
+          "retention_years": 5,
+          "can_view_targets": true
+        }
+      },
+      "privacyManualRuns": {
+        "data": {
+          "targets": {
+            "retention:sirsoft-ecommerce.order": {
+              "key": "retention:sirsoft-ecommerce.order",
+              "label": "이커머스 종결 주문 개인정보",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": {
+                "id": 7,
+                "target": "retention:sirsoft-ecommerce.order",
+                "status": "completed",
+                "status_label": "완료",
+                "is_active": false,
+                "skip_waiting": false,
+                "processed_count": 2,
+                "remaining_count": null,
+                "mode": "anonymize",
+                "error": null,
+                "requester_name": "관리자",
+                "queued_at": "2026-09-25 14:02:11",
+                "started_at": "2026-09-25 14:02:12",
+                "finished_at": "2026-09-25 14:02:15"
+              }
+            }
+          },
+          "has_active": false,
+          "finished_since": false,
+          "checked_at": "2026-09-25T14:02:20+09:00"
+        }
+      },
+      "privacyTargets": {
+        "data": {
+          "data": [
+            {
+              "id": 101,
+              "title": "ORD-20200315-0001",
+              "subtitle": "홍길동",
+              "context": "구매확정",
+              "date": "2020-03-20",
+              "url": "/admin/ecommerce/orders/ORD-20200315-0001"
+            },
+            {
+              "id": 102,
+              "title": "ORD-20200402-0007",
+              "subtitle": "김철수",
+              "context": "취소",
+              "date": "2020-04-03",
+              "url": "/admin/ecommerce/orders/ORD-20200402-0007"
+            }
+          ],
+          "columns": {
+            "title": "주문번호",
+            "subtitle": "주문자",
+            "context": "주문 상태",
+            "date": "종결일"
+          },
+          "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 2
+          }
+        }
+      },
       "seoStats": {
         "data": {
           "count": 0,
@@ -3745,13 +4070,13 @@
           },
           "product_code": "PT-2042",
           "selling_price": 39000,
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "images": [
             {
               "id": 5101,
               "hash": "img5101",
               "original_filename": "slacks_main.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "정면",
               "is_thumbnail": true,
               "sort_order": 0,
@@ -3768,7 +4093,7 @@
               "id": 5102,
               "hash": "img5102",
               "original_filename": "slacks_detail.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "디테일",
               "is_thumbnail": false,
               "sort_order": 1,
@@ -3797,6 +4122,32 @@
             "code": "defective"
           }
         ]
+      },
+      "claimRequestContext": {
+        "data": {
+          "order_id": 1,
+          "abilities": { "can_update_status": true, "can_execute_refund": true },
+          "gates": {
+            "exchange": ["shipping", "delivered", "confirmed"],
+            "return": ["shipping", "delivered", "confirmed"],
+            "refund": ["pending_order", "pending_payment", "payment_complete", "shipping_hold", "preparing", "shipping_ready"]
+          },
+          "reasons": {
+            "exchange": [
+              { "value": "size_mismatch", "label": "사이즈가 맞지 않음", "fault_type": "customer" },
+              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+            ],
+            "return": [
+              { "value": "changed_mind", "label": "단순 변심", "fault_type": "customer" },
+              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+            ]
+          },
+          "charge_methods": [
+            { "value": "deduct_from_refund", "label": "환불금에서 차감" },
+            { "value": "pay_on_approval", "label": "고객 결제 요청" },
+            { "value": "free", "label": "무료" }
+          ]
+        }
       },
       "availableChannels": {
         "data": {
@@ -3886,7 +4237,9 @@
             "per_page": 20
           },
           "abilities": {
-            "can_create": true
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
           }
         }
       },
@@ -4007,6 +4360,7 @@
       },
       "cartItems": {
         "data": {
+          "abilities": { "can_order": true },
           "calculation": {
             "items": [
               "샘플"
@@ -4339,11 +4693,11 @@
               "type_label": "적립",
               "admin_badge_group": null,
               "user_display_category": "주문 완료",
-              "amount": 5000.0,
+              "amount": 5000,
               "amount_formatted": "5,000",
-              "remaining_amount": 5000.0,
+              "remaining_amount": 5000,
               "remaining_amount_formatted": "5,000",
-              "balance_after": 55000.0,
+              "balance_after": 55000,
               "order_id": null,
               "order_option_id": null,
               "order_cancel_id": null,
@@ -4366,7 +4720,7 @@
               "created_at_date": "2026-06-01",
               "is_earning": true,
               "can_edit_expiry": true,
-              "expired_amount": 0.0,
+              "expired_amount": 0,
               "expired_amount_formatted": "0",
               "expiry_state": "active",
               "abilities": {
@@ -4381,11 +4735,11 @@
               "type_label": "사용",
               "admin_badge_group": null,
               "user_display_category": "주문",
-              "amount": -3000.0,
+              "amount": -3000,
               "amount_formatted": "-3,000",
-              "remaining_amount": 0.0,
+              "remaining_amount": 0,
               "remaining_amount_formatted": "0",
-              "balance_after": 52000.0,
+              "balance_after": 52000,
               "order_id": null,
               "order_option_id": null,
               "order_cancel_id": null,
@@ -4408,7 +4762,7 @@
               "created_at_date": "2026-05-30",
               "is_earning": false,
               "can_edit_expiry": false,
-              "expired_amount": 0.0,
+              "expired_amount": 0,
               "expired_amount_formatted": "0",
               "expiry_state": "active",
               "abilities": {
@@ -4453,11 +4807,11 @@
               "type_label": "적립",
               "admin_badge_group": null,
               "user_display_category": "수동 지급",
-              "amount": 10000.0,
+              "amount": 10000,
               "amount_formatted": "10,000",
-              "remaining_amount": 10000.0,
+              "remaining_amount": 10000,
               "remaining_amount_formatted": "10,000",
-              "balance_after": 65000.0,
+              "balance_after": 65000,
               "order_id": null,
               "order_option_id": null,
               "order_cancel_id": null,
@@ -4480,7 +4834,7 @@
               "created_at_date": "2026-06-20",
               "is_earning": true,
               "can_edit_expiry": true,
-              "expired_amount": 0.0,
+              "expired_amount": 0,
               "expired_amount_formatted": "0",
               "expiry_state": "active",
               "abilities": {
@@ -4495,11 +4849,11 @@
               "type_label": "차감",
               "admin_badge_group": null,
               "user_display_category": "수동 차감",
-              "amount": -5000.0,
+              "amount": -5000,
               "amount_formatted": "-5,000",
-              "remaining_amount": 0.0,
+              "remaining_amount": 0,
               "remaining_amount_formatted": "0",
-              "balance_after": 45000.0,
+              "balance_after": 45000,
               "order_id": null,
               "order_option_id": null,
               "order_cancel_id": null,
@@ -4522,7 +4876,7 @@
               "created_at_date": "2026-06-19",
               "is_earning": false,
               "can_edit_expiry": false,
-              "expired_amount": 0.0,
+              "expired_amount": 0,
               "expired_amount_formatted": "0",
               "expiry_state": "active",
               "abilities": {
@@ -4545,6 +4899,524 @@
             "to": 2,
             "has_more_pages": false
           }
+        }
+      },
+      "claims": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "claim_number": "RF-20260601-0001",
+              "claim_type": "refund",
+              "claim_type_label": "환불",
+              "claim_path_segment": "refunds",
+              "order_number": "20260601-0042",
+              "status": "requested",
+              "status_label": "접수",
+              "status_variant": "info",
+              "requester_name": "홍길동",
+              "requested_at_formatted": "2026-06-01 19:40",
+              "reason_label": "단순 변심",
+              "fault_type_label": "고객 귀책",
+              "charge_method_label": "환불금에서 차감",
+              "refund_total_formatted": "34,000원",
+              "refund_progress": null,
+              "outstanding_amount_formatted": "0원",
+              "items": [
+                {
+                  "id": 1,
+                  "order_option_id": 9001,
+                  "product_name": "샘플 상품 1",
+                  "option_name": "기본 옵션",
+                  "product_code": "SAMPLE-001",
+                  "thumbnail_url": null,
+                  "quantity": 1,
+                  "original_quantity": 2,
+                  "unit_price": 33000,
+                  "unit_price_formatted": "33,000원",
+                  "amount": 33000,
+                  "amount_formatted": "33,000원",
+                  "amount_type": "refund",
+                  "subtotal_amount": 33000,
+                  "subtotal_amount_formatted": "33,000원",
+                  "option_status": "requested",
+                  "option_status_label": "접수",
+                  "option_status_variant": "info"
+                }
+              ]
+            }
+          ],
+          "counts": {
+            "exchange": 0,
+            "return": 1,
+            "refund": 2,
+            "cancel": 1
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "total": 2,
+            "per_page": 20,
+            "has_more_pages": false
+          },
+          "abilities": {
+            "can_update_status": true
+          },
+          "complete_defaults": {
+            "create_refund_request": false,
+            "restore_stock": true
+          }
+        }
+      },
+      "claim": {
+        "data": {
+          "claim": {
+            "id": 1,
+            "claim_number": "RF-20260601-0001",
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "claim_path_segment": "refunds",
+            "order_number": "20260601-0042",
+            "status": "requested",
+            "status_label": "접수",
+            "status_variant": "info",
+            "status_icon": "file-lines",
+            "is_final": false,
+            "is_editable": true,
+            "is_withdrawable": true,
+            "is_guest_request": false,
+            "requester_name": "홍길동",
+            "requested_at_formatted": "2026-06-01 19:40",
+            "approved_at_formatted": null,
+            "rejected_at_formatted": null,
+            "withdrawn_at_formatted": null,
+            "cancelled_at_formatted": null,
+            "refunded_at_formatted": null,
+            "reject_reason": null,
+            "reason_label": "단순 변심",
+            "reason_detail": "색상이 생각과 달라 환불을 신청합니다.",
+            "fault_type_label": "고객 귀책",
+            "cancel_type_label": "부분 취소",
+            "charge_method_label": "환불금에서 차감",
+            "refund_method_label": "PG 환불",
+            "refund_status_label": "접수",
+            "currency_code": "KRW",
+            "refund_product_amount": 33000,
+            "refund_product_amount_formatted": "33,000원",
+            "refund_shipping_amount": 0,
+            "refund_shipping_amount_formatted": "0원",
+            "refund_points_amount": 1000,
+            "refund_points_amount_formatted": "1,000P",
+            "refund_amount_formatted": "33,000원",
+            "refund_total_formatted": "34,000원",
+            "claim_shipping_fee_formatted": "0원",
+            "additional_product_amount_formatted": "0원",
+            "total_charge_amount": 0,
+            "total_charge_amount_formatted": "0원",
+            "outstanding_amount": 0,
+            "outstanding_amount_formatted": "0원",
+            "pending_payment": null,
+            "payments": [],
+            "images": [],
+            "items": [
+              {
+                "id": 1,
+                "order_option_id": 9001,
+                "product_name": "샘플 상품 1",
+                "option_name": "기본 옵션",
+                "product_code": "SAMPLE-001",
+                "thumbnail_url": null,
+                "quantity": 1,
+                "original_quantity": 2,
+                "unit_price": 33000,
+                "unit_price_formatted": "33,000원",
+                "amount": 33000,
+                "amount_formatted": "33,000원",
+                "amount_type": "refund",
+                "subtotal_amount": 33000,
+                "subtotal_amount_formatted": "33,000원",
+                "option_status": "requested",
+                "option_status_label": "접수",
+                "option_status_variant": "info",
+                "collection_carrier_name": null,
+                "collection_tracking_number": null,
+                "collection_tracking_url": null,
+                "collection_state": null,
+                "collection_state_label": null,
+                "is_unreturned": false
+              }
+            ],
+            "refund_bank_code": null,
+            "refund_bank_name": null,
+            "refund_bank_account": null,
+            "refund_bank_holder": null,
+            "tracking_groups": {
+              "collection": [],
+              "redelivery": []
+            },
+            "return_addresses": [],
+            "exchange_mode": null,
+            "exchange_mode_label": null,
+            "is_advance_exchange": false,
+            "collection_due_date_formatted": null,
+            "is_collection_overdue": false,
+            "collection_overdue_days": 0,
+            "collection_completed_at_formatted": null,
+            "redelivered_at_formatted": null,
+            "redelivery_address_snapshot": null,
+            "return_address_snapshot": null,
+            "shipping_fee_snapshot": null,
+            "mc_claim_shipping_fee": null,
+            "mc_refund_amount": null,
+            "mc_refund_shipping_amount": null,
+            "mc_refund_total": null,
+            "mc_total_charge_amount": null,
+            "calculation_comparison": {
+              "original": {
+                "item_count": 2,
+                "base_currency": "KRW",
+                "total_list_price_amount": 78000,
+                "subtotal_amount": 69000,
+                "total_product_coupon_discount_amount": 3000,
+                "total_order_coupon_discount_amount": 2000,
+                "total_code_discount_amount": 0,
+                "base_shipping_amount": 3000,
+                "extra_shipping_amount": 0,
+                "shipping_discount_amount": 0,
+                "total_points_used_amount": 1000,
+                "total_paid_amount": 66000,
+                "total_tax_amount": 60000,
+                "total_vat_amount": 6000,
+                "total_earned_points_amount": 660,
+                "formatted": {
+                  "total_list_price_amount": "78,000원",
+                  "subtotal_amount": "69,000원",
+                  "total_product_coupon_discount_amount": "3,000원",
+                  "total_order_coupon_discount_amount": "2,000원",
+                  "total_code_discount_amount": "0원",
+                  "base_shipping_amount": "3,000원",
+                  "extra_shipping_amount": "0원",
+                  "shipping_discount_amount": "0원",
+                  "total_points_used_amount": "1,000원",
+                  "total_paid_amount": "66,000원",
+                  "total_tax_amount": "60,000원",
+                  "total_vat_amount": "6,000원",
+                  "total_earned_points_amount": "660P"
+                }
+              },
+              "recalculated": {
+                "item_count": 1,
+                "base_currency": "KRW",
+                "total_list_price_amount": 39000,
+                "subtotal_amount": 35000,
+                "total_product_coupon_discount_amount": 3000,
+                "total_order_coupon_discount_amount": 2000,
+                "total_code_discount_amount": 0,
+                "base_shipping_amount": 3000,
+                "extra_shipping_amount": 0,
+                "shipping_discount_amount": 0,
+                "total_points_used_amount": 1000,
+                "total_paid_amount": 33000,
+                "total_tax_amount": 60000,
+                "total_vat_amount": 6000,
+                "total_earned_points_amount": 660,
+                "formatted": {
+                  "total_list_price_amount": "39,000원",
+                  "subtotal_amount": "35,000원",
+                  "total_product_coupon_discount_amount": "3,000원",
+                  "total_order_coupon_discount_amount": "2,000원",
+                  "total_code_discount_amount": "0원",
+                  "base_shipping_amount": "3,000원",
+                  "extra_shipping_amount": "0원",
+                  "shipping_discount_amount": "0원",
+                  "total_points_used_amount": "1,000원",
+                  "total_paid_amount": "33,000원",
+                  "total_tax_amount": "60,000원",
+                  "total_vat_amount": "6,000원",
+                  "total_earned_points_amount": "660P"
+                }
+              },
+              "mc_original": null,
+              "mc_recalculated": null
+            }
+          },
+          "claim_path_segment": "refunds",
+          "attachment_settings": {
+            "max_images": 5,
+            "image_max_size_kb": 2048,
+            "image_max_size_mb": 2,
+            "allowed_extensions": [
+              "jpeg",
+              "jpg",
+              "png",
+              "gif",
+              "webp"
+            ],
+            "accept": ".jpeg,.jpg,.png,.gif,.webp"
+          },
+          "progress_steps": [
+            {
+              "value": "requested",
+              "label": "접수",
+              "state": "current",
+              "variant": "info",
+              "icon": "file-lines"
+            },
+            {
+              "value": "approved",
+              "label": "승인",
+              "state": "upcoming",
+              "variant": "primary",
+              "icon": "circle-check"
+            },
+            {
+              "value": "completed",
+              "label": "환불완료",
+              "state": "upcoming",
+              "variant": "success",
+              "icon": "flag-checkered"
+            }
+          ],
+          "transition_options": [
+            {
+              "value": "approved",
+              "label": "승인"
+            },
+            {
+              "value": "rejected",
+              "label": "반려"
+            }
+          ],
+          "abilities": {
+            "can_update_status": true,
+            "can_update_amounts": true,
+            "can_execute_refund": true
+          },
+          "cancellable": {
+            "amount": 34000,
+            "amount_formatted": "34,000원",
+            "currency": "KRW",
+            "binding_label": "결제수단 잔여 한도",
+            "domain_refundable_formatted": "34,000원",
+            "payment_capacity_formatted": "66,000원",
+            "reserved_formatted": "0원",
+            "reserved_claims": [],
+            "methods": [
+              {
+                "method": "pg",
+                "label": "PG 환불",
+                "amount": 33000,
+                "amount_formatted": "33,000원"
+              },
+              {
+                "method": "points",
+                "label": "마일리지",
+                "amount": 1000,
+                "amount_formatted": "1,000P"
+              }
+            ]
+          },
+          "linked_claims": {
+            "source": null,
+            "refunds": [
+              {
+                "claim_type": "refund",
+                "claim_type_label": "환불",
+                "claim_number": "RF-20260601-0002",
+                "status": "completed",
+                "status_label": "환불완료",
+                "status_variant": "success",
+                "status_icon": "status-completed",
+                "is_live": true,
+                "requested_at_formatted": "2026-06-02 10:00",
+                "detail_url": "/admin/ecommerce/claims/RF-20260601-0002",
+                "refund_method": "pg",
+                "refund_method_label": "PG사 환불",
+                "refund_total": 26000,
+                "refund_total_formatted": "26,000원",
+                "mc_refund_total": {},
+                "refunded_at_formatted": "2026-06-02 11:00"
+              }
+            ],
+            "result_cancel": null,
+            "latest_refund": {
+              "claim_type": "refund",
+              "claim_type_label": "환불",
+              "claim_number": "RF-20260601-0002",
+              "status": "completed",
+              "status_label": "환불완료",
+              "status_variant": "success",
+              "status_icon": "status-completed",
+              "is_live": true,
+              "requested_at_formatted": "2026-06-02 10:00",
+              "detail_url": "/admin/ecommerce/claims/RF-20260601-0002",
+              "refund_method": "pg",
+              "refund_method_label": "PG사 환불",
+              "refund_total": 26000,
+              "refund_total_formatted": "26,000원",
+              "mc_refund_total": {},
+              "refunded_at_formatted": "2026-06-02 11:00"
+            }
+          },
+          "settlement": {
+            "claim_shipping_fee": 0,
+            "claim_shipping_fee_formatted": "0원",
+            "charge_method": "deduct_from_refund",
+            "total_charge_amount_formatted": "0원",
+            "outstanding_amount_formatted": "0원",
+            "refund_total_formatted": "34,000원",
+            "payments": []
+          },
+          "refund_methods": [
+            {
+              "value": "pg",
+              "label": "PG 환불"
+            },
+            {
+              "value": "bank",
+              "label": "계좌 환불"
+            }
+          ],
+          "charge_methods": [
+            {
+              "value": "deduct_from_refund",
+              "label": "환불금에서 차감"
+            },
+            {
+              "value": "pay_on_request",
+              "label": "별도 결제"
+            }
+          ],
+          "carriers": [
+            {
+              "id": 1,
+              "name": "샘플택배"
+            }
+          ],
+          "complete_defaults": {
+            "create_refund_request": false,
+            "restore_stock": true
+          },
+          "redelivery_address_differs": false,
+          "order": {
+            "order_number": "20260601-0042",
+            "order_status_label": "배송준비중",
+            "ordered_at_formatted": "2026-06-01 19:30",
+            "total_paid_amount_formatted": "66,000원",
+            "total_refunded_mileage_credit_amount": 0,
+            "total_refunded_mileage_credit_amount_formatted": "0원"
+          }
+        }
+      },
+      "claim_logs": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "action_label": "환불신청서 접수",
+              "causer_name": "홍길동",
+              "created_at_formatted": "2026-06-01 19:40",
+              "changes": []
+            }
+          ],
+          "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "total": 1,
+            "per_page": 20,
+            "has_more_pages": false
+          }
+        }
+      },
+      "claim_reasons": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "type": "refund",
+              "code": "changed_mind",
+              "name": "단순 변심",
+              "fault_type": "customer",
+              "is_user_selectable": true,
+              "is_active": true
+            },
+            {
+              "id": 2,
+              "type": "return",
+              "code": "defective_product",
+              "name": "상품 불량",
+              "fault_type": "seller",
+              "is_user_selectable": true,
+              "is_active": true
+            }
+          ]
+        }
+      },
+      "orderClaims": {
+        "data": {
+          "claims": [
+            {
+              "id": 1,
+              "claim_number": "RF-20260601-0001",
+              "claim_type": "refund",
+              "claim_type_label": "환불",
+              "claim_path_segment": "refunds",
+              "order_number": "20260601-0042",
+              "status": "requested",
+              "status_label": "접수",
+              "status_variant": "info",
+              "requester_name": "홍길동",
+              "requested_at_formatted": "2026-06-01 19:40",
+              "reason_label": "단순 변심",
+              "fault_type_label": "고객 귀책",
+              "charge_method_label": "환불금에서 차감",
+              "refund_total_formatted": "34,000원",
+              "outstanding_amount_formatted": "0원",
+              "items": [
+                {
+                  "id": 1,
+                  "order_option_id": 9001,
+                  "product_name": "샘플 상품 1",
+                  "option_name": "기본 옵션",
+                  "product_code": "SAMPLE-001",
+                  "thumbnail_url": null,
+                  "quantity": 1,
+                  "original_quantity": 2,
+                  "unit_price": 33000,
+                  "unit_price_formatted": "33,000원",
+                  "amount": 33000,
+                  "amount_formatted": "33,000원",
+                  "amount_type": "refund",
+                  "subtotal_amount": 33000,
+                  "subtotal_amount_formatted": "33,000원",
+                  "option_status": "requested",
+                  "option_status_label": "접수",
+                  "option_status_variant": "info"
+                }
+              ]
+            }
+          ],
+          "counts": {
+            "exchange": 0,
+            "return": 1,
+            "refund": 2,
+            "cancel": 1
+          },
+          "unavailable": []
+        }
+      },
+      "claim_settings": {
+        "data": {
+          "return_address_id": null,
+          "exchange_address_id": null,
+          "claim_shipping_fees": [
+            {
+              "country_code": "KR",
+              "country_name": "대한민국",
+              "return_fee": 3000,
+              "exchange_fee": 6000
+            }
+          ]
         }
       }
     },
@@ -4864,14 +5736,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -4889,7 +5761,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -4907,7 +5779,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -4922,7 +5794,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -5384,14 +6256,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -5409,7 +6281,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -5427,7 +6299,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -5442,7 +6314,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -5904,14 +6776,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -5929,7 +6801,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -5947,7 +6819,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -5962,7 +6834,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -6424,14 +7296,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -6449,7 +7321,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -6467,7 +7339,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -6482,7 +7354,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -6929,10 +7801,10 @@
                           "image_count": 2,
                           "images": [
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             }
                           ],
                           "has_reply": true,
@@ -7006,19 +7878,19 @@
                           "image_count": 5,
                           "images": [
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             }
                           ],
                           "has_reply": true,
@@ -8245,7 +9117,7 @@
         ]
       },
       {
-        "comment": "admin 이커머스 설정 — {{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}} 으로 9개 탭 화면을 if 분기한다(본문 line 303/344~). query.tab + 우선 키 함께 주입.",
+        "comment": "admin 이커머스 설정 — {{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}} 으로 11개 탭 화면을 if 분기한다(본문 line 303/344~). query.tab + 우선 키 함께 주입.",
         "scope": {
           "kind": "route",
           "match": "*/admin/ecommerce/settings"
@@ -8359,32 +9231,28 @@
                 "activeEcommerceSettingsTab": "identity_policies"
               }
             }
-          }
-        ]
-      },
-      {
-        "comment": "admin 마일리지/예치금 설정 — _local.activeTab(mileage/deposit)으로 탭을 분기한다(본문 line 130/165).",
-        "scope": {
-          "kind": "route",
-          "match": "*/admin/ecommerce/mileage-deposit-settings"
-        },
-        "items": [
+          },
           {
             "id": "tab_mileage",
             "label": "$t:editor.state.tab.mileage",
-            "default": true,
             "initialState": {
-              "local": {
-                "activeTab": "mileage"
+              "query": {
+                "tab": "mileage"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "mileage"
               }
             }
           },
           {
-            "id": "tab_deposit",
-            "label": "$t:editor.state.tab.deposit",
+            "id": "tab_privacy_retention",
+            "label": "$t:editor.state.tab.privacy_retention",
             "initialState": {
-              "local": {
-                "activeTab": "deposit"
+              "query": {
+                "tab": "privacy_retention"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "privacy_retention"
               }
             }
           }
@@ -8483,6 +9351,22 @@
                 }
               }
             }
+          },
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "issueHistoryCoupon": {
+                  "id": 1
+                },
+                "issueHistoryPage": 1,
+                "issueHistoryFilterUser": {
+                  "uuid": "00000000-0000-4000-8000-000000000031"
+                },
+                "issueHistoryPerPage": 10
+              }
+            }
           }
         ]
       },
@@ -8563,12 +9447,3190 @@
             "label": "$t:editor.state.order_detail_partially_cancelled",
             "comment": "부분취소 상태 — order.data.is_partially_cancelled=true 로 취소 표시 분기를 캔버스에 노출.",
             "sampleDataOverrides": {
-              "byEndpointPattern": {
-                "/api/modules/sirsoft-ecommerce/admin/orders/*": {
+              "byDataSourceId": {
+                "order": {
                   "data": {
-                    "is_partially_cancelled": true
+                    "id": 5101,
+                    "order_number": "20260601-0042",
+                    "order_status": "preparing",
+                    "order_status_label": "배송준비중",
+                    "order_status_variant": "info",
+                    "order_device": "pc",
+                    "order_device_label": "PC",
+                    "is_first_order": false,
+                    "abilities": {
+                      "can_read": true,
+                      "can_update": true,
+                      "can_cancel": true
+                    },
+                    "subtotal_amount": 76000,
+                    "subtotal_amount_formatted": "76,000원",
+                    "total_discount_amount": 9500,
+                    "total_discount_amount_formatted": "9,500원",
+                    "total_shipping_amount": 3000,
+                    "total_shipping_amount_formatted": "3,000원",
+                    "total_amount": 69500,
+                    "total_amount_formatted": "69,500원",
+                    "total_paid_amount": 69500,
+                    "total_paid_amount_formatted": "69,500원",
+                    "total_product_coupon_discount_amount": 5000,
+                    "total_product_coupon_discount_amount_formatted": "5,000원",
+                    "total_order_coupon_discount_amount": 2500,
+                    "total_order_coupon_discount_amount_formatted": "2,500원",
+                    "total_coupon_discount_amount": 7500,
+                    "total_coupon_discount_amount_formatted": "7,500원",
+                    "total_code_discount_amount": 2000,
+                    "total_code_discount_amount_formatted": "2,000원",
+                    "total_points_used_amount": 1000,
+                    "total_points_used_amount_formatted": "1,000원",
+                    "total_deposit_used_amount": 0,
+                    "total_deposit_used_amount_formatted": "0원",
+                    "total_earned_points_amount": 710,
+                    "total_earned_points_amount_formatted": "710원",
+                    "total_tax_amount": 6318,
+                    "total_tax_amount_formatted": "6,318원",
+                    "total_vat_amount": 6318,
+                    "total_vat_amount_formatted": "6,318원",
+                    "total_list_price": 82000,
+                    "total_list_price_formatted": "82,000원",
+                    "total_quantity": 3,
+                    "item_count": 2,
+                    "mc_subtotal_amount": {
+                      "KRW": {
+                        "price": 76000,
+                        "formatted": "76,000원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 55.7,
+                        "formatted": "$55.70",
+                        "is_default": false
+                      }
+                    },
+                    "mc_total_discount_amount": {
+                      "KRW": {
+                        "price": 9500,
+                        "formatted": "9,500원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 6.9,
+                        "formatted": "$6.90",
+                        "is_default": false
+                      }
+                    },
+                    "mc_total_shipping_amount": {
+                      "KRW": {
+                        "price": 3000,
+                        "formatted": "3,000원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 2.2,
+                        "formatted": "$2.20",
+                        "is_default": false
+                      }
+                    },
+                    "mc_total_amount": {
+                      "KRW": {
+                        "price": 69500,
+                        "formatted": "69,500원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 50.7,
+                        "formatted": "$50.70",
+                        "is_default": false
+                      }
+                    },
+                    "ordered_at_formatted": "2026-06-01 19:30",
+                    "paid_at_formatted": "2026-06-01 19:31",
+                    "delivered_at": null,
+                    "user_id": "u-1001",
+                    "user_login_id": "gildong",
+                    "orderer_name": "홍길동",
+                    "orderer_phone": "010-1234-5678",
+                    "orderer_tel": "02-555-1234",
+                    "orderer_email": "gildong@example.com",
+                    "recipient_name": "홍길동",
+                    "recipient_phone": "010-1234-5678",
+                    "recipient_zipcode": "06234",
+                    "recipient_address": "서울특별시 강남구 테헤란로 123",
+                    "recipient_detail_address": "4층 401호",
+                    "delivery_memo": "부재 시 경비실에 맡겨주세요",
+                    "shipping_address": {
+                      "recipient_name": "홍길동",
+                      "recipient_phone": "010-1234-5678",
+                      "zipcode": "06234",
+                      "address": "서울특별시 강남구 테헤란로 123",
+                      "address_detail": "4층 401호",
+                      "full_address": "서울특별시 강남구 테헤란로 123 4층 401호",
+                      "delivery_memo": "부재 시 경비실에 맡겨주세요"
+                    },
+                    "options": [
+                      {
+                        "id": 9101,
+                        "option_status": "preparing",
+                        "option_status_label": "배송준비중",
+                        "option_status_variant": "info",
+                        "product_id": 1,
+                        "product_option_id": 101,
+                        "sku": "EARBUDS-PRO-BLK",
+                        "product_name": "프리미엄 무선 이어버드 프로",
+                        "product_option_name": "미드나잇 블랙 / 기본",
+                        "option_name": "미드나잇 블랙 / 기본",
+                        "quantity": 2,
+                        "shipped_quantity": 0,
+                        "unit_price": 29000,
+                        "unit_price_formatted": "29,000원",
+                        "subtotal_price": 58000,
+                        "subtotal_price_formatted": "58,000원",
+                        "subtotal_discount_amount": 7500,
+                        "subtotal_discount_amount_formatted": "7,500원",
+                        "list_price": 32000,
+                        "list_price_formatted": "32,000원",
+                        "final_amount": 50500,
+                        "final_amount_formatted": "50,500원",
+                        "product_coupon_discount_amount": 5000,
+                        "product_coupon_discount_amount_formatted": "5,000원",
+                        "order_coupon_discount_amount": 2500,
+                        "order_coupon_discount_amount_formatted": "2,500원",
+                        "coupon_discount_amount": 7500,
+                        "coupon_discount_amount_formatted": "7,500원",
+                        "code_discount_amount": 0,
+                        "code_discount_amount_formatted": "0원",
+                        "referral_discount_amount": 0,
+                        "referral_discount_amount_formatted": "0원",
+                        "subtotal_points_used_amount": 500,
+                        "subtotal_points_used_amount_formatted": "500원",
+                        "subtotal_deposit_used_amount": 0,
+                        "subtotal_deposit_used_amount_formatted": "0원",
+                        "subtotal_earned_points_amount": 530,
+                        "subtotal_earned_points_amount_formatted": "530원",
+                        "subtotal_tax_amount": 4818,
+                        "subtotal_tax_amount_formatted": "4,818원",
+                        "subtotal_vat_amount": 4818,
+                        "subtotal_vat_amount_formatted": "4,818원",
+                        "shipping_policy_name": "기본 배송 정책",
+                        "shipping_type_label": "택배",
+                        "shipping_amount": 3000,
+                        "shipping_amount_formatted": "3,000원",
+                        "carrier_name": "CJ대한통운",
+                        "tracking_number": "6123456789012",
+                        "thumbnail_url": null,
+                        "product_snapshot": {
+                          "product_code": "EARBUDS-PRO"
+                        },
+                        "mc_unit_price": {
+                          "KRW": {
+                            "price": 29000,
+                            "formatted": "29,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 21.3,
+                            "formatted": "$21.30",
+                            "is_default": false
+                          }
+                        },
+                        "mc_subtotal_price": {
+                          "KRW": {
+                            "price": 58000,
+                            "formatted": "58,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 42.6,
+                            "formatted": "$42.60",
+                            "is_default": false
+                          }
+                        },
+                        "confirmed_at": null,
+                        "promotions_applied_snapshot": {
+                          "coupons": [
+                            {
+                              "name": "이어버드 단독 10% 할인",
+                              "total_discount_formatted": "5,000원"
+                            }
+                          ],
+                          "discount_codes": [
+                            {
+                              "code": "WELCOME2000",
+                              "name": "신규가입 2,000원 할인코드",
+                              "total_discount_formatted": "2,000원"
+                            }
+                          ],
+                          "events": []
+                        }
+                      },
+                      {
+                        "id": 9102,
+                        "option_status": "cancelled",
+                        "option_status_label": "주문취소",
+                        "option_status_variant": "danger",
+                        "product_id": 2,
+                        "product_option_id": 102,
+                        "sku": "CABLE-15M-WHT",
+                        "product_name": "고속 충전 케이블 1.5m",
+                        "product_option_name": "1.5m",
+                        "option_name": "1.5m",
+                        "quantity": 1,
+                        "shipped_quantity": 0,
+                        "unit_price": 18000,
+                        "unit_price_formatted": "18,000원",
+                        "subtotal_price": 18000,
+                        "subtotal_price_formatted": "18,000원",
+                        "subtotal_discount_amount": 0,
+                        "subtotal_discount_amount_formatted": "0원",
+                        "list_price": 18000,
+                        "list_price_formatted": "18,000원",
+                        "final_amount": 18000,
+                        "final_amount_formatted": "18,000원",
+                        "product_coupon_discount_amount": 0,
+                        "product_coupon_discount_amount_formatted": "0원",
+                        "order_coupon_discount_amount": 0,
+                        "order_coupon_discount_amount_formatted": "0원",
+                        "coupon_discount_amount": 0,
+                        "coupon_discount_amount_formatted": "0원",
+                        "code_discount_amount": 0,
+                        "code_discount_amount_formatted": "0원",
+                        "referral_discount_amount": 0,
+                        "referral_discount_amount_formatted": "0원",
+                        "subtotal_points_used_amount": 0,
+                        "subtotal_points_used_amount_formatted": "0원",
+                        "subtotal_deposit_used_amount": 0,
+                        "subtotal_deposit_used_amount_formatted": "0원",
+                        "subtotal_earned_points_amount": 180,
+                        "subtotal_earned_points_amount_formatted": "180원",
+                        "subtotal_tax_amount": 1500,
+                        "subtotal_tax_amount_formatted": "1,500원",
+                        "subtotal_vat_amount": 1500,
+                        "subtotal_vat_amount_formatted": "1,500원",
+                        "shipping_policy_name": "무료 배송 정책",
+                        "shipping_type_label": "택배",
+                        "shipping_amount": 0,
+                        "shipping_amount_formatted": "0원",
+                        "carrier_name": "CJ대한통운",
+                        "tracking_number": "6123456789013",
+                        "thumbnail_url": null,
+                        "product_snapshot": {
+                          "product_code": "CABLE-15M"
+                        },
+                        "mc_unit_price": {
+                          "KRW": {
+                            "price": 18000,
+                            "formatted": "18,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 13.2,
+                            "formatted": "$13.20",
+                            "is_default": false
+                          }
+                        },
+                        "mc_subtotal_price": {
+                          "KRW": {
+                            "price": 18000,
+                            "formatted": "18,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 13.2,
+                            "formatted": "$13.20",
+                            "is_default": false
+                          }
+                        },
+                        "confirmed_at": null,
+                        "promotions_applied_snapshot": {
+                          "coupons": [],
+                          "discount_codes": [],
+                          "events": []
+                        }
+                      }
+                    ],
+                    "payment": {
+                      "payment_method_label": "신용카드"
+                    },
+                    "payments": [
+                      {
+                        "id": 8101,
+                        "payment_status": "paid",
+                        "payment_status_label": "결제완료",
+                        "payment_status_variant": "success",
+                        "payment_method": "card",
+                        "payment_method_label": "신용카드",
+                        "payment_type_label": "일반결제",
+                        "payment_number": "PAY-20260601-0042",
+                        "paid_amount_formatted": "69,500원",
+                        "account_info": null,
+                        "requested_at_formatted": "2026-06-01 19:30",
+                        "paid_at_formatted": "2026-06-01 19:31",
+                        "due_date_formatted": null,
+                        "cancelled_amount": 0,
+                        "cancelled_amount_formatted": "0원",
+                        "refunded_amount": 0,
+                        "refunded_amount_formatted": "0원",
+                        "refund_status_label": null,
+                        "refund_status_variant": null,
+                        "refund_points_amount": 0,
+                        "refund_points_amount_formatted": "0원",
+                        "event_discount_amount": 0,
+                        "event_discount_amount_formatted": "0원",
+                        "referral_discount_amount": 0,
+                        "referral_discount_amount_formatted": "0원"
+                      }
+                    ],
+                    "shippings": [],
+                    "promotions_applied_snapshot": {
+                      "product_promotions": {
+                        "coupons": [
+                          {
+                            "coupon_id": 5001,
+                            "name": "이어버드 단독 10% 할인",
+                            "target_type": "product_amount",
+                            "total_discount": 5000,
+                            "total_discount_formatted": "5,000원"
+                          }
+                        ],
+                        "discount_codes": [
+                          {
+                            "code_id": 7001,
+                            "code": "WELCOME2000",
+                            "name": "신규가입 2,000원 할인코드",
+                            "total_discount": 2000,
+                            "total_discount_formatted": "2,000원"
+                          }
+                        ],
+                        "events": []
+                      },
+                      "order_promotions": {
+                        "coupons": [
+                          {
+                            "coupon_id": 6001,
+                            "name": "5만원 이상 5,000원 할인",
+                            "target_type": "order_amount",
+                            "total_discount": 5000,
+                            "total_discount_formatted": "5,000원"
+                          }
+                        ],
+                        "discount_codes": [],
+                        "events": []
+                      }
+                    },
+                    "shipping_policy_applied_snapshot": {
+                      "items": [
+                        {
+                          "product_option_id": 9001,
+                          "policy": {
+                            "policy_name": "기본 배송 정책",
+                            "standalone_shipping_amount": 3000,
+                            "standalone_shipping_amount_formatted": "3,000원"
+                          }
+                        }
+                      ],
+                      "address": {
+                        "country_code": "KR",
+                        "zipcode": "06234"
+                      }
+                    },
+                    "is_partially_cancelled": true,
+                    "total_refunded_mileage_credit_amount": 0,
+                    "total_refunded_mileage_credit_amount_formatted": "0원"
                   }
                 }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(tempFormForBulkChange) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_change_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "tempFormForBulkChange": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkSelectedItems, isBulkDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkSelectedItems": [],
+                "isBulkDeleting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkSelectedItems, bulkToggleValue, isBulkToggling) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_toggle_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkSelectedItems": [],
+                "bulkToggleValue": "true",
+                "isBulkToggling": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(selectedItem) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "copy_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(targetPolicy) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "copy_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "targetPolicy": {
+                  "countries_display": "대한민국, 미국",
+                  "country_settings": [
+                    {
+                      "country_code": "KR",
+                      "shipping_method_label": "택배",
+                      "charge_policy": "conditional_free",
+                      "charge_policy_label": "조건부 무료",
+                      "base_fee": 3000,
+                      "currency_code": "KRW",
+                      "extra_fee_enabled": true,
+                      "is_active": true
+                    },
+                    {
+                      "country_code": "US",
+                      "shipping_method_label": "국제 특송",
+                      "charge_policy": "fixed",
+                      "charge_policy_label": "고정",
+                      "base_fee": 25,
+                      "currency_code": "USD",
+                      "extra_fee_enabled": false,
+                      "is_active": true
+                    }
+                  ],
+                  "id": 1,
+                  "name_localized": "기본 택배 배송"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteModal, isDeleting, modal_data) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "modal_data": {
+                  "brandId": 1,
+                  "brandName": "샘플 제목",
+                  "productsCount": 0,
+                  "templateId": 1,
+                  "templateName": "샘플 제목"
+                },
+                "isDeleting": false,
+                "deleteModal": {
+                  "itemId": 1,
+                  "itemName": "샘플 제목"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isDeleting, targetPolicy) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isDeleting": false,
+                "targetPolicy": {
+                  "countries_display": "대한민국",
+                  "country_settings": [],
+                  "id": 1,
+                  "name_localized": "기본 택배 배송"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ecommerceIdentityPolicyDeleteId, ecommerceIdentityPolicyDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "ecommerce_identity_policy_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerceIdentityPolicyDeleting": false,
+                "ecommerceIdentityPolicyDeleteId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(pendingItem, pendingItemId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "editing_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "pendingItemId": 1,
+                "pendingItem": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(infiniteScroll, isTemplateDeleting, isTemplateSaving) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "extra_fee_template"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "infiniteScroll": {
+                  "currentPage": 1,
+                  "hasMore": true,
+                  "isLoadingMore": false
+                },
+                "isTemplateDeleting": false,
+                "isTemplateSaving": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(identity_policy_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "identity_policy_form_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "identity_policy_form_modal": {
+                  "errors": {
+                    "errors": {
+                      "applies_to": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "fail_mode": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "grace_minutes": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "key": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "priority": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "purpose": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "scope": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "target": [
+                        "샘플 안내 문구입니다."
+                      ]
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "form": {
+                    "applies_to": "샘플 값",
+                    "conditions": {
+                      "signup_stage": "샘플 값"
+                    },
+                    "enabled": true,
+                    "fail_mode": "sample",
+                    "grace_minutes": 0,
+                    "id": 1,
+                    "key": "sample",
+                    "priority": 100,
+                    "provider_id": 1,
+                    "purpose": "signup",
+                    "scope": "sample",
+                    "source_identifier": "샘플 값",
+                    "source_type": "admin",
+                    "target": "샘플 값"
+                  },
+                  "isNew": true,
+                  "isSaving": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkSelectedItems, isBulkDeleting) — 표가 선택한 행을 옮겨 담는 값이라, 편집기에서는 이 상태로 담아야 「0건」으로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_addresses_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkSelectedItems": [
+                  1,
+                  2,
+                  3
+                ],
+                "isBulkDeleting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget, isDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 확인 문장의 수령인·회원 이름이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_addresses_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isDeleting": false,
+                "deleteTarget": {
+                  "id": 1,
+                  "recipient_name": "홍길동",
+                  "member_name": "김회원"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_addresses_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isProcessing) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_batch_change_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isProcessing": false
+              },
+              "local": {
+                "bulkConfirmItems": [
+                  {
+                    "id": 101,
+                    "product_name": "베이직 오버핏 코튼 티셔츠",
+                    "product_option_name": "색상: 블랙 / 사이즈: L",
+                    "sku": "TS-BK-L",
+                    "original_price": 29000,
+                    "unit_price": 23200,
+                    "quantity": 2,
+                    "option_status": "payment_complete",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  },
+                  {
+                    "id": 102,
+                    "product_name": "프리미엄 무선 이어버드 프로",
+                    "product_option_name": "색상: 미드나잇 블랙",
+                    "sku": "EB-PRO-MB",
+                    "original_price": 129000,
+                    "unit_price": 129000,
+                    "quantity": 1,
+                    "option_status": "payment_complete",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  }
+                ],
+                "changeQuantities": {
+                  "101": 2,
+                  "102": 1
+                }
+              }
+            }
+          },
+          {
+            "id": "modal_with_warnings",
+            "label": "$t:editor.state.validation_failed",
+            "initialState": {
+              "global": {
+                "isProcessing": false,
+                "manualPaidPreview": {
+                  "orders": [
+                    {
+                      "restoration": {
+                        "coupon_conflicts": [
+                          {
+                            "coupon_issue_id": 1,
+                            "coupon_name": "신규가입 10% 할인"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkConfirmData, bulkDisplayStatus, bulkPriceCondition, bulkSalesStatus, bulkStockCondition, bulkUpdateErrors, isProcessing) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_bulk_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkPriceCondition": "+1,000원",
+                "bulkStockCondition": "+10개",
+                "isProcessing": false,
+                "bulkConfirmData": {
+                  "courierId": 1,
+                  "orderStatus": "shipping",
+                  "trackingNumber": "123456789012",
+                  "selectedItems": [
+                    1,
+                    2
+                  ],
+                  "products": [
+                    {
+                      "id": 1,
+                      "name": "베이직 오버핏 코튼 티셔츠",
+                      "changes": "판매 상태·전시 상태"
+                    }
+                  ],
+                  "options": [
+                    {
+                      "productId": 1,
+                      "optionId": 11,
+                      "productName": "베이직 오버핏 코튼 티셔츠",
+                      "optionName": "블랙 / L",
+                      "changes": "판매가 +1,000원 · 재고 +10개"
+                    },
+                    {
+                      "productId": 1,
+                      "optionId": 12,
+                      "productName": "베이직 오버핏 코튼 티셔츠",
+                      "optionName": "화이트 / M",
+                      "changes": "판매가 +1,000원 · 재고 +10개"
+                    },
+                    {
+                      "productId": 2,
+                      "optionId": 0,
+                      "productName": "프리미엄 무선 이어버드 프로",
+                      "aggregate": true,
+                      "optionCount": 1,
+                      "changes": "판매가 +1,000원 · 재고 +10개"
+                    }
+                  ],
+                  "summary": {
+                    "productCount": 1,
+                    "optionCount": 3,
+                    "hasBulkChanges": true,
+                    "hasInlineChanges": false
+                  }
+                },
+                "bulkSalesStatus": "coming_soon",
+                "bulkDisplayStatus": "visible",
+                "bulkUpdateErrors": []
+              }
+            }
+          },
+          {
+            "id": "modal_with_warnings",
+            "label": "$t:editor.state.validation_failed",
+            "initialState": {
+              "global": {
+                "bulkPriceCondition": "+1,000원",
+                "bulkStockCondition": "+10개",
+                "isProcessing": false,
+                "bulkConfirmData": {
+                  "courierId": 1,
+                  "orderStatus": "shipping",
+                  "trackingNumber": "123456789012",
+                  "selectedItems": [
+                    1,
+                    2
+                  ],
+                  "products": [
+                    {
+                      "id": 1,
+                      "name": "베이직 오버핏 코튼 티셔츠",
+                      "changes": "판매 상태·전시 상태"
+                    }
+                  ],
+                  "options": [
+                    {
+                      "productId": 1,
+                      "optionId": 11,
+                      "productName": "베이직 오버핏 코튼 티셔츠",
+                      "optionName": "블랙 / L",
+                      "changes": "판매가 +1,000원 · 재고 +10개"
+                    },
+                    {
+                      "productId": 1,
+                      "optionId": 12,
+                      "productName": "베이직 오버핏 코튼 티셔츠",
+                      "optionName": "화이트 / M",
+                      "changes": "판매가 +1,000원 · 재고 +10개"
+                    },
+                    {
+                      "productId": 2,
+                      "optionId": 0,
+                      "productName": "프리미엄 무선 이어버드 프로",
+                      "aggregate": true,
+                      "optionCount": 1,
+                      "changes": "판매가 +1,000원 · 재고 +10개"
+                    }
+                  ],
+                  "summary": {
+                    "productCount": 1,
+                    "optionCount": 3,
+                    "hasBulkChanges": true,
+                    "hasInlineChanges": false
+                  }
+                },
+                "bulkSalesStatus": "coming_soon",
+                "bulkDisplayStatus": "visible",
+                "bulkUpdateErrors": ["프리미엄 무선 이어버드 프로: 재고는 0개보다 적게 바꿀 수 없습니다."],
+                "manualPaidPreview": {
+                  "summary": {
+                    "mileage_deduction": {
+                      "short_order_numbers": [
+                        "20260919-0001"
+                      ]
+                    },
+                    "restoration": {
+                      "coupon_conflict_order_numbers": [
+                        "20260919-0002"
+                      ]
+                    },
+                    "warnings": {
+                      "pg_already_cancelled": [
+                        "20260919-0003"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(cancelIssueSubmitting, cancelIssueTarget, issueHistoryCoupon) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_cancel_issue_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "issueHistoryCoupon": {
+                  "id": 1
+                },
+                "cancelIssueTarget": {
+                  "id": 1,
+                  "user_name": "홍길동"
+                },
+                "cancelIssueSubmitting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(defaultCurrency, preferredCurrency) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_cancel_order"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "preferredCurrency": "KRW",
+                "defaultCurrency": "KRW"
+              },
+              "local": {
+                "cancelItems": [
+                  {
+                    "id": 101,
+                    "product_name": "베이직 오버핏 코튼 티셔츠",
+                    "product_option_name": "색상: 블랙 / 사이즈: L",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                    "unit_price_formatted": "23,200원",
+                    "quantity": 2,
+                    "subtotal_formatted": "46,400원",
+                    "cancel_quantity": 1,
+                    "option_status": "payment_complete",
+                    "option_status_label": "결제완료"
+                  },
+                  {
+                    "id": 102,
+                    "product_name": "프리미엄 무선 이어버드 프로",
+                    "product_option_name": "색상: 미드나잇 블랙",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                    "unit_price_formatted": "129,000원",
+                    "quantity": 1,
+                    "subtotal_formatted": "129,000원",
+                    "cancel_quantity": 1,
+                    "option_status": "payment_complete",
+                    "option_status_label": "결제완료"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_carts, selectedItems_carts) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_carts_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_carts": [],
+                "bulkDeleting_carts": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_carts, deleting_carts, selectedItems_carts) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_carts_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_carts": [],
+                "deleting_carts": false,
+                "deleteTarget_carts": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_carts_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isCopyingProduct) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_copy_product"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isCopyingProduct": false
+              },
+              "local": {
+                "productList": {
+                  "copyTargetProduct": {
+                    "name": {
+                      "ko": "베이직 오버핏 코튼 티셔츠",
+                      "en": "Basic Oversized Cotton T-shirt"
+                    },
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  }
+                },
+                "ui": {
+                  "copyOptions": {
+                    "images": true,
+                    "options": true,
+                    "categories": true,
+                    "sales_info": true,
+                    "description": true,
+                    "notice": true,
+                    "common_info": true,
+                    "other_info": false,
+                    "shipping": true,
+                    "seo": false,
+                    "identification": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteProduct, deleteTarget, isDeleting, isProductDeleting, selectedCategory, selectedCategoryId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_delete_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "children_count": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedCategoryId": 1,
+                "isDeleting": false,
+                "deleteProduct": {
+                  "canDelete": true,
+                  "reason": "샘플 사유입니다.",
+                  "relatedData": {
+                    "additionalOptions": 0,
+                    "images": 0,
+                    "options": 0
+                  },
+                  "target": {
+                    "id": 1
+                  }
+                },
+                "isProductDeleting": false,
+                "deleteTarget": {
+                  "id": 1,
+                  "name": "샘플 제목"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(directIssueCoupon, directIssueSearchKeyword, directIssueSearchResults, directIssueSelectedUsers, directIssueSubmitting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_direct_issue"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "directIssueCoupon": {
+                  "id": 1,
+                  "name": "샘플 제목"
+                },
+                "directIssueSearchKeyword": "샘플 값",
+                "directIssueSearchResults": [],
+                "directIssueSelectedUsers": [
+                  {
+                    "uuid": "00000000-0000-4000-8000-000000000041",
+                    "name": "김민준"
+                  },
+                  {
+                    "uuid": "00000000-0000-4000-8000-000000000042",
+                    "name": "이서연"
+                  }
+                ],
+                "directIssueSubmitting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ecommerce_notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_ecommerce_notification_definition_preview"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerce_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "sample_notification",
+                    "relations": [
+                      "author"
+                    ],
+                    "relation_labels": {
+                      "author": "문의 작성자"
+                    },
+                    "name": {
+                      "ko": "샘플 알림 정의",
+                      "en": "Sample notification"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      },
+                      {
+                        "key": "subject_title"
+                      },
+                      {
+                        "key": "target_url"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/sample",
+                    "subject": {
+                      "ko": "[{app_name}] {subject_title} 알림",
+                      "en": "[{app_name}] {subject_title} notification"
+                    },
+                    "body": {
+                      "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                      "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "related_user",
+                      "relation": "author"
+                    },
+                    {
+                      "type": "role",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "[샘플 사이트] 새 소식 알림",
+                    "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isResettingNotification, resetTargetId, resetTargetName) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_ecommerce_notification_definition_reset"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "resetTargetName": "샘플 제목",
+                "isResettingNotification": false,
+                "resetTargetId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ecommerce_notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_ecommerce_notification_template_edit"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerce_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "sample_notification",
+                    "relations": [
+                      "author"
+                    ],
+                    "relation_labels": {
+                      "author": "문의 작성자"
+                    },
+                    "name": {
+                      "ko": "샘플 알림 정의",
+                      "en": "Sample notification"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      },
+                      {
+                        "key": "subject_title"
+                      },
+                      {
+                        "key": "target_url"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/sample",
+                    "subject": {
+                      "ko": "[{app_name}] {subject_title} 알림",
+                      "en": "[{app_name}] {subject_title} notification"
+                    },
+                    "body": {
+                      "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                      "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "related_user",
+                      "relation": "author"
+                    },
+                    {
+                      "type": "role",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "[샘플 사이트] 새 소식 알림",
+                    "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(mileageEdit) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_edit_transaction"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "mileageEdit": {
+                  "amountFormatted": "1,000",
+                  "canEditExpiry": true,
+                  "createdAtFormatted": "2026-09-19 11:30",
+                  "currency": "KRW",
+                  "earnedAtDate": "2026-09-19 11:30:00",
+                  "errors": null,
+                  "expiresAt": "2026-09-19 11:30:00",
+                  "id": 1,
+                  "isSaving": false,
+                  "memberName": "홍길동",
+                  "memo": "구매확정 적립",
+                  "typeLabel": "구매 적립"
+                }
+              }
+            }
+          },
+          {
+            "id": "modal_validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "initialState": {
+              "global": {
+                "mileageEdit": {
+                  "amountFormatted": "1,000",
+                  "canEditExpiry": true,
+                  "createdAtFormatted": "2026-09-19 11:30",
+                  "currency": "KRW",
+                  "earnedAtDate": "2026-09-19 11:30:00",
+                  "errors": {
+                    "message": "입력값을 확인해 주세요.",
+                    "errors": {
+                      "expires_at": [
+                        "만료일은 적립일 이후여야 합니다."
+                      ],
+                      "memo": [
+                        "사유는 200자 이하로 입력해 주세요."
+                      ]
+                    }
+                  },
+                  "expiresAt": "2026-09-19 11:30:00",
+                  "id": 1,
+                  "isSaving": false,
+                  "memberName": "홍길동",
+                  "memo": "구매확정 적립",
+                  "typeLabel": "구매 적립"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isDownloading) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_excel_download"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isDownloading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(mileageExtend) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_extend_expiry"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "mileageExtend": {
+                  "days": 0,
+                  "errors": {
+                    "errors": {
+                      "days": [
+                        "샘플 안내 문구입니다."
+                      ]
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "isSaving": false,
+                  "lotIds": [
+                    11,
+                    12,
+                    13
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(imagePreview, reviewForModal, reviewImageIndex) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_image_preview"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "imagePreview": {
+                  "imageAlt": "샘플 값",
+                  "imageUrl": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                },
+                "reviewForModal": {
+                  "content": "샘플 설명 문구입니다.",
+                  "createdAt": "2026-09-19 11:30:00",
+                  "images": [{"download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"}],
+                  "optionValues": [],
+                  "rating": 0,
+                  "userName": "홍길동"
+                },
+                "reviewImageIndex": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_inquiries, selectedItems_inquiries) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_inquiries": [],
+                "bulkDeleting_inquiries": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_inquiries, deleting_inquiries, selectedItems_inquiries) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_inquiries": [],
+                "deleting_inquiries": false,
+                "deleteTarget_inquiries": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(replyContent_inquiries, replyTarget_inquiries, replying_inquiries) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_reply"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "replyTarget_inquiries": {
+                  "content_excerpt": "샘플 값",
+                  "id": 1,
+                  "is_answered": true,
+                  "member": {
+                    "name": "샘플 제목"
+                  },
+                  "product": {
+                    "name": "샘플 제목"
+                  }
+                },
+                "replyContent_inquiries": "샘플 값",
+                "replying_inquiries": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(adminCashReceiptForm) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_issue_cash_receipt"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "adminCashReceiptForm": {
+                  "error": null,
+                  "identifier": "123-45-67890",
+                  "identifier_type": "business",
+                  "receipt_type": "expense"
+                }
+              }
+            }
+          },
+          {
+            "id": "modal_validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "initialState": {
+              "global": {
+                "adminCashReceiptForm": {
+                  "error": "사업자등록번호 10자리를 입력해 주세요.",
+                  "identifier": "123-45",
+                  "identifier_type": "business",
+                  "receipt_type": "expense"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(issueHistoryFilterUser, issueHistoryPerPage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_issue_history"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "issueHistoryPerPage": 10,
+                "issueHistoryFilterUser": {
+                  "name": "샘플 제목",
+                  "uuid": "00000000-0000-4000-8000-000000000031"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isDeletingLabel, labelToDeleteId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_label_delete_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "labelToDeleteId": 1,
+                "isDeletingLabel": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(editingLabelId, isSavingLabel, labelFormData) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_label_form"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "editingLabelId": 1,
+                "labelFormData": {
+                  "color": "#2563eb",
+                  "name": {
+                    "ko": "샘플 한국어 문구"
+                  }
+                },
+                "isSavingLabel": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(labelToUncheckId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_label_uncheck_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "labelToUncheckId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(mileageManual) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_manual_transaction"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "mileageManual": {
+                  "action": "deduct",
+                  "amount": 0,
+                  "currency": "KRW",
+                  "errors": {
+                    "errors": {
+                      "amount": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "memo": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "user_id": [
+                        "샘플 안내 문구입니다."
+                      ]
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "expiresAt": "2026-09-19 11:30:00",
+                  "isSaving": false,
+                  "memberSearchKeyword": "김",
+                  "memberSearchResults": [
+                    {
+                      "uuid": "00000000-0000-4000-8000-000000000051",
+                      "name": "김민준",
+                      "email": "minjun@example.com",
+                      "ecommerce_mileage": {
+                        "available": 12000
+                      }
+                    },
+                    {
+                      "uuid": "00000000-0000-4000-8000-000000000052",
+                      "name": "김서윤",
+                      "email": "seoyun@example.com",
+                      "ecommerce_mileage": {
+                        "available": 3500
+                      }
+                    }
+                  ],
+                  "reason": "샘플 사유입니다.",
+                  "selectedMember": {
+                    "balance": 0,
+                    "name": "샘플 제목",
+                    "uuid": "00000000-0000-4000-8000-000000000031"
+                  },
+                  "useDefaultExpiry": true,
+                  "memberSearchResultsKeyword": "김"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deletingPresetId, deletingPresetName, isDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_preset_delete_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "deletingPresetName": "샘플 프리셋",
+                "isDeleting": false,
+                "deletingPresetId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(editingPresetId, editingPresetName, isSaving) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_preset_edit"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "editingPresetName": "샘플 제목",
+                "isSaving": false,
+                "editingPresetId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSaving, savingPresetConditions) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_preset_save"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isSaving": false,
+                "savingPresetConditions": {
+                  "brandId": 1,
+                  "category1": "샘플 값",
+                  "category2": "샘플 값",
+                  "category3": "샘플 값",
+                  "category4": "샘플 값",
+                  "claimExchangeStatus": "sample",
+                  "claimRefundStatus": "sample",
+                  "claimReturnStatus": "sample",
+                  "countries": ["샘플 값"],
+                  "dateQuick": "샘플 값",
+                  "dateType": "sample",
+                  "deliveryMethods": ["샘플 값"],
+                  "devices": ["샘플 값"],
+                  "displayStatus": "sample",
+                  "endDate": "2026-09-19 11:30:00",
+                  "maxPrice": 10000,
+                  "maxStock": "샘플 값",
+                  "minPrice": 10000,
+                  "minStock": "샘플 값",
+                  "noBrandRegistered": "샘플 값",
+                  "noCategoryRegistered": "샘플 값",
+                  "orderStatus": "sample",
+                  "paymentMethods": ["샘플 값"],
+                  "priceType": "sample",
+                  "salesStatus": "sample",
+                  "searchField": "샘플 값",
+                  "searchKeyword": "샘플 값",
+                  "shippingPolicy": "샘플 값",
+                  "startDate": "2026-09-19 11:30:00",
+                  "taxStatus": "sample"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(editReviewId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_reply_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "editReviewId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ui) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_save_template"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ui": {
+                  "saveTemplateData": {
+                    "category_id": 1,
+                    "is_default": false,
+                    "name": "샘플 제목"
+                  }
+                }
+              },
+              "local": {
+                "form": {
+                  "product_notice": {
+                    "제품 소재": "면 100%",
+                    "색상": "블랙, 화이트, 네이비",
+                    "치수": "M, L, XL",
+                    "제조자": "(주)샘플패션",
+                    "제조국": "대한민국",
+                    "세탁방법": "찬물 단독 손세탁"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSending) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_send_sms"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isSending": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSettingDefault, selectedId, selectedItem) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_set_default_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "isSettingDefault": false,
+                "selectedId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 상태 — 리뷰 일괄 처리 창은 전역 상태(reviewBatchAction, reviewBatchIds), 할인코드 상태 변경 창은 화면 로컬(selectedItems, bulkStatus)을 읽는다. 같은 창 id 를 배너, 리뷰, 할인코드 창이 함께 써서 한 묶음에 둘을 같이 심는다. 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_status_change"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "reviewBatchIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "reviewBatchAction": "visible"
+              },
+              "local": {
+                "selectedItems": [
+                  1,
+                  2
+                ],
+                "bulkStatus": "inactive"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkIssueStatus, bulkSelectedItems, isChangingStatus) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_status_change_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkIssueStatus": "issuing",
+                "bulkSelectedItems": [],
+                "isChangingStatus": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_wishlists, selectedItems_wishlists) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_wishlists_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_wishlists": [],
+                "bulkDeleting_wishlists": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_wishlists, deleting_wishlists, selectedItems_wishlists) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_wishlists_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_wishlists": [],
+                "deleting_wishlists": false,
+                "deleteTarget_wishlists": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_wishlists_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(multilingualTagEdit) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "multilingual_tag_edit_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "multilingualTagEdit": {
+                  "editingIndex": 0,
+                  "supportedLocales": [
+                    {
+                      "code": "ko",
+                      "label": "한국어"
+                    },
+                    {
+                      "code": "en",
+                      "label": "English"
+                    },
+                    {
+                      "code": "ja",
+                      "label": "日本語"
+                    }
+                  ],
+                  "values": {
+                    "ko": "빨강",
+                    "en": "Red",
+                    "ja": "赤"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(tempFormForBulkChange) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "notice_bulk_change_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "tempFormForBulkChange": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(pendingNoticeTemplateId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "notice_template_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "pendingNoticeTemplateId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSettingDefault, targetDefaultPolicy) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "set_default_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isSettingDefault": false,
+                "targetDefaultPolicy": {
+                  "id": 1,
+                  "name_localized": "기본 택배 배송"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/brands"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedBrandId": 1,
+                "panelMode": "view",
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "https://brand.example.com"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_carts) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/carts"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_carts": []
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/categories"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "panelMode": "view",
+                "selectedBrandId": 1,
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "https://brand.example.com"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(infiniteScroll, panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/common-info"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "panelMode": "view",
+                "selectedBrandId": 1,
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "https://brand.example.com"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "infiniteScroll": {
+                  "currentPage": 1,
+                  "hasMore": true,
+                  "isLoadingMore": false
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_inquiries) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/inquiries"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_inquiries": []
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(infiniteScroll, panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/product-notices"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "panelMode": "view",
+                "selectedBrandId": 1,
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "https://brand.example.com"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "infiniteScroll": {
+                  "currentPage": 1,
+                  "hasMore": true,
+                  "isLoadingMore": false
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(bulkPriceCondition, bulkStockCondition) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/products"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "bulkPriceCondition": "+1,000원",
+                "bulkStockCondition": "+10개"
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(pendingNoticeTemplateId, site_url) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/products/create"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "pendingNoticeTemplateId": 1,
+                "site_url": "/sample"
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(bulkSelectedItems) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/shipping-policies"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "bulkSelectedItems": ["샘플 값"]
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(apiTestLoading, apiTestResult) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/shipping-policies/create"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "apiTestLoading": false,
+                "apiTestResult": {
+                  "error": null,
+                  "extracted_fee": 3000,
+                  "extracted_fee_formatted": "3,000원",
+                  "request": {
+                    "body": "샘플 설명 문구입니다.",
+                    "endpoint": "https://api.example.com/shipping-fee",
+                    "method": "POST"
+                  },
+                  "response": {
+                    "body": "샘플 설명 문구입니다.",
+                    "status": 200
+                  }
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_addresses) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/user-addresses"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_addresses": []
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_wishlists) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/wishlists"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_wishlists": []
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "환불 실행 확인 창이 읽는 전역 상태(claimRefundExecuteContext·은행 칸·진행 표시) — 신청서 상세의 [환불 실행] 이 담는 값이라, 편집기에서는 이 상태가 없으면 「{{number}} 신청서의 환불을…」 처럼 자리 표시자가 드러난다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_claim_refund_execute"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "claimRefundExecuteContext": {
+                  "claimNumber": "RF20260919-0001",
+                  "refundAmount": 25000,
+                  "refundAmountFormatted": "25,000원",
+                  "refundPointsAmountFormatted": "1,000P",
+                  "refundTotalFormatted": "26,000원",
+                  "refundMethod": "pg",
+                  "refundMethodLabel": "원결제 수단",
+                  "refundAccountRequired": false,
+                  "refundAccountUsed": false,
+                  "refundBankName": "",
+                  "refundBankAccount": "",
+                  "refundBankHolder": "",
+                  "exchangeDifferenceTotal": 0,
+                  "exchangeDifferenceFormatted": "0원",
+                  "pointsNotDeducted": false
+                },
+                "isProcessing": false,
+                "claimRefundExecuteForce": false,
+                "claimRefundExecuteBankCode": "",
+                "claimRefundExecuteBankAccount": "",
+                "claimRefundExecuteBankHolder": ""
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "처리 수량 확인 창이 읽는 전역 상태(claimItemQuantityContext) — 신청 상품 행의 상태 전환 버튼이 담는 값이라, 편집기에서는 이 상태가 없으면 「{{status}} 상태로…」 가 드러나고 수량 줄이 비어 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_claim_item_quantity_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "claimItemQuantityContext": {
+                  "claimId": 1,
+                  "claimNumber": "RT20260919-0001",
+                  "claimType": "return",
+                  "status": "collected",
+                  "statusLabel": "회수완료",
+                  "direction": "forward",
+                  "directionLabel": "다음 단계로",
+                  "pathSegment": "items/status",
+                  "itemIds": [
+                    1
+                  ],
+                  "quantities": {
+                    "1": 1
+                  },
+                  "rows": [
+                    {
+                      "id": 1,
+                      "label": "베이직 오버핏 코튼 티셔츠 · 블랙 / L",
+                      "quantity": 1,
+                      "splittable": false
+                    }
+                  ],
+                  "detailRows": [],
+                  "trackingOnly": false,
+                  "carrierId": null,
+                  "carrierLabel": "",
+                  "trackingNumber": "",
+                  "rejectReason": "",
+                  "requesterName": "홍길동",
+                  "completeDefaults": null
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "교환 진행 방식 변경 확인 창이 읽는 전역 상태(claimExchangeModeContext) — 선교환 전환 버튼이 담는 값이라, 편집기에서는 이 상태가 없으면 mode 가 비어 본문 없이 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_claim_exchange_mode_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "claimExchangeModeContext": {
+                  "claimId": 1,
+                  "mode": "advance",
+                  "dueDays": 7
+                },
+                "isSettingExchangeMode": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "클레임 목록 프리셋 삭제 창이 읽는 전역 상태(deletingPresetId, deletingPresetName, isDeleting) — 프리셋 관리의 삭제 버튼이 담는 값이다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_claim_preset_delete_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "deletingPresetId": 1,
+                "deletingPresetName": "샘플 프리셋",
+                "isDeleting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "고객 대신 교환·반품 접수 창이 읽는 전역 상태(adminClaimRequest) — 주문 상세의 접수 버튼과 미리보기 응답이 담는 값이다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_admin_claim_request"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "adminClaimRequest": {
+                  "type": "return",
+                  "rows": [
+                    {
+                      "id": 101,
+                      "productId": 7,
+                      "productOptionId": 71,
+                      "label": "코튼 티셔츠 / 차콜 / M",
+                      "quantity": 1,
+                      "max": 2,
+                      "newProductOptionId": "",
+                      "optionChoices": []
+                    }
+                  ],
+                  "reasonCode": "",
+                  "reasonDetail": "",
+                  "approve": false,
+                  "chargeMethod": "",
+                  "redelivery": {
+                    "recipient_name": "홍길동",
+                    "phone": "010-1234-5678",
+                    "zipcode": "06236",
+                    "address1": "서울 강남구 테헤란로 1",
+                    "address2": "101호",
+                    "city": "",
+                    "state": ""
+                  },
+                  "redeliveryInternational": false,
+                  "refundBank": null,
+                  "refundPriority": "",
+                  "shippingFee": null,
+                  "preview": {
+                    "refund_total": 25000,
+                    "total_charge_amount": 3000
+                  },
+                  "previewFormatted": {
+                    "refund_total": "25,000원",
+                    "total_charge_amount": "3,000원"
+                  },
+                  "previewLoading": false,
+                  "previewError": null,
+                  "submitting": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "보유기간 직권 실행 창이 읽는 전역 상태(privacyRun) — 「지금 실행」 버튼과 미리보기 응답이 담는 값이라, 편집기에서는 이 상태가 없으면 대상 이름이 자리 표시자로 드러난다.",
+        "scope": {
+          "kind": "modal",
+          "match": "privacy_run_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "privacyRun": {
+                  "key": "retention:sirsoft-ecommerce.order",
+                  "label": "종결 주문",
+                  "supportsSkip": false,
+                  "skipWaiting": false,
+                  "preview": {
+                    "count": 4,
+                    "enabled": true,
+                    "mode": "anonymize"
+                  },
+                  "loading": false,
+                  "submitting": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "클레임 완료 처리 창의 처리 대상·결과 미리보기(claimCompleteRows·claimCompletePreview) — 기본 상태는 대상 없음이고, 이 대안 상태는 대상 한 건과 합계를 채운다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_claim_complete"
+        },
+        "items": [
+          {
+            "id": "modal_with_data",
+            "label": "$t:editor.state.with_data",
+            "initialState": {
+              "global": {
+                "claimCompleteRows": [
+                  {
+                    "id": 1,
+                    "claim_number": "RT20260919-0001",
+                    "requester_name": "홍길동",
+                    "item_label": "베이직 오버핏 코튼 티셔츠 외 1건",
+                    "completable_item_count": 2,
+                    "refund_applicable": true,
+                    "refund_amount_formatted": "25,000원",
+                    "refund_points_amount": 1000,
+                    "refund_points_amount_formatted": "1,000원",
+                    "blocked_reason": null
+                  }
+                ],
+                "claimCompletePreview": {
+                  "claims": [
+                    {
+                      "completable_item_count": 2,
+                      "stock_restore_count": 2,
+                      "stock_discard_count": 0,
+                      "earn_recovery": true,
+                      "coupon_restore": false,
+                      "unreturned_eligible_items": []
+                    }
+                  ],
+                  "skipped": [],
+                  "totals": {
+                    "refund_amount_total_formatted": "25,000원",
+                    "refund_points_amount_total": 1000,
+                    "refund_points_amount_total_formatted": "1,000원",
+                    "deducted_shipping_fee_total": 3000,
+                    "deducted_shipping_fee_total_formatted": "3,000원"
+                  }
+                },
+                "claimCompletePreviewLoading": false
               }
             }
           }

@@ -17,6 +17,7 @@ import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTe
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 
 import pluginSettings from '../../../layouts/admin/plugin_settings.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 플러그인 루트(plugin.json 기준)를 위로 훑어 찾는다.
@@ -158,7 +159,7 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
     it('업로드 관리 화면으로 가는 링크가 있다', () => {
         const button = findNode(cleanupCard, (n) => n.id === 'open_uploads_button');
 
-        expect(button.actions[0].params.path).toBe('/admin/plugins/sirsoft-ckeditor5/uploads');
+        expect(actionsOf(button)[0].params.path).toBe('/admin/plugins/sirsoft-ckeditor5/uploads');
     });
 });
 

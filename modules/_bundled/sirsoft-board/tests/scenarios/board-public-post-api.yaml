@@ -1,0 +1,41 @@
+feature: 게시판 공개 게시글 API (최근 게시글, 회원 공개 게시글과 통계)
+
+description: |
+  여러 게시판의 최근 게시글 API 와 다른 회원의 공개 프로필에서 보는 게시글 목록, 통계 API 를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 listing 은 공개 게시글 목록 종류(여러 게시판의 최근 게시글, 한 회원의 공개 게시글과 통계), request_case 는 요청 형태다.
+  paging_parameter 는 개수(limit, per_page)나 쪽 번호를 준 요청, empty_source 는 읽을 게시판이나 회원이 없는 요청이다.
+  비밀글, 블라인드 글의 노출 방식은 default 칸 안에서 갈라 본다.
+
+axes:
+  listing: [recent_posts, user_public_posts]
+  request_case: [default, paging_parameter, empty_source]
+
+effects:
+  - recent_posts_returns_correct_structure
+  - recent_posts_default_limit_is_five
+  - recent_posts_respects_limit_parameter
+  - recent_posts_max_limit_is_twenty
+  - recent_posts_returns_empty_when_no_boards
+  - recent_posts_sorted_by_created_at_desc
+  - recent_posts_are_cached
+  - recent_posts_includes_secret_posts_with_is_secret_field
+  - secret_post_title_is_visible_in_recent_posts
+  - recent_posts_includes_created_at_and_created_at_formatted
+  # 최근글·인기글 캐시는 언어별로 나누고 날짜 표기·New 는 응답 시점에 다시 센다(2026-10-07 실측 O-K1-14·O-N4, K4-D8)
+  - recent_and_popular_cache_follow_request_locale_and_time
+  - guest_can_fetch_user_public_posts
+  - secret_posts_are_listed_without_content_for_other_viewers
+  - blinded_posts_are_listed_without_content_for_other_viewers
+  - can_fetch_user_posts_stats
+  - stats_exclude_blinded_items
+  # 통계도 목록처럼 보는 사람이 읽을 수 없는 게시판의 글·댓글을 세지 않는다(2026-10-07 실측 K4-D4).
+  - stats_exclude_unreadable_board_items
+  - pagination_works
+  - per_page_parameter_works
+  - returns_empty_for_non_existent_user
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardRecentPostsApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/UserPublicPostsApiTest.php

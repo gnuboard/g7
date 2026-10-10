@@ -1,0 +1,21 @@
+feature: 파일 업로더 — 허용 형식 판정과 거절 안내 다국어
+
+description: |
+  업로더의 accept 는 확장자(.png)와 MIME(text/plain, image/*)을 함께 받는다. 사전 검사가 확장자만 보면
+  운영자가 허용 형식을 MIME 으로 둔 경우(페이지 첨부 설정에 text/plain·image/svg+xml 추가) 서버가 받아 주는
+  파일을 화면이 먼저 거절했다. 용량·형식 거절 안내는 한국어 문장이 박혀 영어 화면에서도 한국어로 떴다
+  (7.1.0 전수 실측 영역 L, L-D1·L-D2).
+
+axes:
+  input: [mime_token, wildcard_token, extension_token, rejected_type, oversize_file]
+
+effects:
+  - mime_token_accepts_matching_file
+  - unlisted_type_rejected
+  - wildcard_token_accepts_family
+  - extension_token_unchanged
+  - type_reject_message_uses_translation_key
+  - size_reject_message_uses_translation_key
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderAcceptPolicy.test.ts

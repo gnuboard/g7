@@ -127,6 +127,9 @@ class AttachmentController extends AdminBaseController
             return $this->success('sirsoft-board::messages.attachment.delete_success');
         } catch (BoardNotFoundException $e) {
             return $this->error('sirsoft-board::messages.boards.not_found', 404);
+        } catch (AccessDeniedHttpException $e) {
+            // 남이 올린 임시 첨부 등 스코프 밖 대상 — 서버 오류(500)가 아니라 403 으로 알린다
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.attachment.delete_failed', 500, $e->getMessage());
         }
@@ -158,6 +161,9 @@ class AttachmentController extends AdminBaseController
             return $this->success('sirsoft-board::messages.attachment.reorder_success');
         } catch (BoardNotFoundException $e) {
             return $this->error('sirsoft-board::messages.boards.not_found', 404);
+        } catch (AccessDeniedHttpException $e) {
+            // 남이 올린 임시 첨부 등 스코프 밖 대상 — 서버 오류(500)가 아니라 403 으로 알린다
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.attachment.reorder_failed', 500, $e->getMessage());
         }

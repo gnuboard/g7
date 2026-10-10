@@ -1,0 +1,42 @@
+feature: 배송사·배송유형 "사용 중" 판정의 모집단과 삭제 경로 강도 (S10 19차 · #599)
+
+description: |
+  배송사·배송유형을 지워도 되는지는 "쓰이고 있는가" 판정 하나로 갈린다. 이 판정에 구멍이
+  두 종류 있었고, 둘 다 예외·경고·로그 없이 지워진 뒤의 상태만 증상으로 남긴다.
+
+  1. 모집단이 한 컬럼이었다 — 배송사 사용량을 `order_shippings.carrier_id` 로만 셌는데
+     교환 상품 행(`collection_carrier_id`·`redelivery_carrier_id`)과 반품 상품 행
+     (`collection_carrier_id`)도 배송사를 붙잡는다(송장은 상품 행마다 — #599). 회수 전용으로만
+     쓰인 배송사가 "안 쓰임" 으로 판정돼 삭제가 통과했고, 세 외래키가 `nullOnDelete` 라
+     접수된 신청서의 택배사가 조용히 비워졌다.
+  2. 같은 표에 강도가 다른 삭제 경로가 둘이었다 — 설정 경로는 사용 중이면 거절하는데,
+     모듈 재설치 시 도는 시더의 stale 정리는 그 판정을 거치지 않았다.
+
+  배송유형은 사용처 표가 `order_shippings` 하나뿐이라 ①은 해당하지 않고 ②만 본다.
+
+axes:
+  catalog: [shipping_carrier, shipping_type]
+  delete_path: [settings_service, seeder_stale_cleanup]
+
+exclusions:
+  - { catalog: shipping_type, delete_path: settings_service, reason: "배송유형 사용처는 order_shippings 하나라 모집단 구멍이 없다 — 설정 경로의 사용 중 삭제 거절은 settings-in-use-deletion-exception-status.yaml 이 덮는다" }
+
+effects:
+  # ① 판정 모집단 — 스키마 파생 전수 대조와 회수·재발송 택배사
+  - every_carrier_referencing_column_is_counted_or_declared_dormant
+  - exchange_collection_carrier_counts_as_in_use
+  - exchange_redelivery_carrier_counts_as_in_use
+  - return_collection_carrier_counts_as_in_use
+  # 음성 대조군 — 판정을 넓혀도 미사용 배송사는 지울 수 있다
+  - unused_carrier_counts_as_not_in_use
+  # 설정 경로 삭제 거절
+  - claim_only_carrier_deletion_is_rejected
+  # ② 시더 stale 정리가 설정 경로와 같은 강도다
+  - carrier_seeder_cleanup_keeps_claim_referenced_carriers
+  - shipping_type_seeder_cleanup_keeps_order_referenced_types
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ShippingCatalogUsageScopeTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -1,6 +1,23 @@
 @import "tailwindcss";
+/*
+ * `@import` 는 **`@plugin` 보다 먼저** 와야 한다 — CSS 명세상 `@import` 는 다른 at-rule 뒤에
+ * 오면 무시되고, Tailwind v4 도 그대로 따른다. 아래 두 줄이 `@plugin` 뒤에 있던 동안
+ * `dashboard.css`·`_admin_base.css` 가 통째로 유실돼 **관리자 셸(사이드바·헤더)이 무스타일로
+ * 무너졌다**(2026-09-18 실측: `left_sidebar_area` 가 빌드 산출물에 0건, `@plugin` 을 빼면 1건).
+ *
+ * 빌드는 성공하고 경고도 없어 **아무도 알려주지 않는다** — 화면을 열어야만 드러난다.
+ * 여기에 새 `@import` 를 더할 때도 반드시 이 구간 안에 둔다.
+ */
 @import "./components/dashboard.css";
 @import "./layout/_admin_base.css";
+/*
+ * Typography — `prose` / `dark:prose-invert` 를 쓰는 화면(게시판 본문·댓글 미리보기,
+ * 알림 템플릿 미리보기, 상품 공통정보 등 20개 레이아웃)이 의존한다. Tailwind v4 는
+ * CSS 우선 설정이라 JS config 가 아니라 여기서 @plugin 으로 등록한다.
+ * 미설치 상태에서는 그 클래스들이 전부 무효라 서식이 죽어 있었다(2026-09-16 실측,
+ * audit `layout-component-contract`).
+ */
+@plugin "@tailwindcss/typography";
 
 /* Pretendard 폰트를 기본 sans-serif 폰트로 설정 */
 /* 동봉본은 Variable 1종이라 패밀리명이 `Pretendard Variable` 이다. 구 static 배포본을
@@ -12,20 +29,53 @@
 @variant dark (.dark &);
 
 /**
- * 레이아웃 JSON 파일 스캔 (Tailwind v4)
- * JSON 파일의 className 값에서 Tailwind 클래스를 자동 감지합니다.
+ * 레이아웃 파일 스캔 (Tailwind v4)
+ * 레이아웃의 className 값에서 Tailwind 클래스를 자동 감지합니다.
  * 경로는 이 CSS 파일 (src/styles/main.css) 기준 상대 경로입니다.
+ *
+ * **두 표기를 모두 앵커한다.** `.g7.html` 이 소스 SSoT 이자 설치 우선 소스므로(D38),
+ * `.json` 만 스캔하면 `.g7.html` 에만 있는 클래스가 조용히 purge 된다 — 빌드도 테스트도
+ * 통과하는데 화면만 무너지는 형태라 jsdom 으로는 검출되지 않는다.
+ * 지금은 원본 `.json` 이 병존해(D39) 무해하지만, 병존이 끝나는 순간 이 한 줄이 유일한 방어다.
  */
 @source "../../layouts/**/*.json";
 /* SAFELIST-START */
-@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-emerald-400 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/30 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-indigo-900/30 dark:bg-orange-900 dark:bg-purple-800/50 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/50 dark:bg-red-500 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-rose-400 dark:bg-slate-300 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/30 dark:bg-yellow-900/40 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:disabled:bg-blue-800 dark:disabled:bg-gray-600 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-purple-800 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-blue-600 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-900/30 dark:hover:bg-purple-900/30 dark:hover:bg-red-600 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-purple-200 dark:hover:text-purple-300 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-500 dark:prose-invert dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-purple-900/50 dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-gray-900 hover:bg-green-700 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-700 hover:bg-purple-50 hover:bg-purple-700 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-700 hover:no-underline hover:text-blue-500 hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start lg:grid-cols-2 lg:grid-cols-3 lg:mb-8 lg:p-8 lg:px-8 max-h-[400px] max-h-[500px] max-h-[70vh] max-w-[200px] md: md:col-span-2 md:flex-1 md:flex-row md:gap-2 md:gap-3 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:items-center md:justify-between md:mb-6 md:p-6 md:rounded-2xl md:space-y-0 md:text-xl md:text-xs md:w-20 md:w-40 md:w-64 md:w-72 md:w-80 md:w-auto min-h-[200px] min-h-[60vh] min-w-[200px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl sm:flex-row sm:gap-6 sm:grid-cols-2 sm:inline sm:items-start sm:justify-between sm:mt-6 sm:p-6 sm:px-6 sm:text-2xl sm:text-3xl sm:w-40 text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
+@source inline("-translate-y-1/2 AD BA EX IMAGE ITEM_LIST KR MI NONE TEXT absolute admin-card animate-spin approved bg-amber-100 bg-amber-50 bg-amber-600 bg-blue-100 bg-blue-50 bg-blue-500 bg-blue-600 bg-emerald-100 bg-emerald-500 bg-emerald-600 bg-gray-100 bg-gray-50 bg-gray-600 bg-gray-800 bg-gray-900 bg-green-100 bg-green-600 bg-indigo-600 bg-orange-100 bg-orange-50 bg-purple-100 bg-purple-50 bg-purple-500 bg-purple-600 bg-red-100 bg-red-50 bg-red-500 bg-red-600 bg-rose-100 bg-sky-100 bg-slate-100 bg-slate-200 bg-slate-600 bg-teal-50 bg-teal-600 bg-transparent bg-violet-200 bg-violet-500 bg-white bg-white/70 bg-yellow-100 block blocked border border-0 border-2 border-amber-200 border-amber-300 border-amber-400 border-b border-b-2 border-blue-200 border-blue-500 border-blue-600 border-dashed border-dotted border-gray-100 border-gray-200 border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-orange-200 border-orange-300 border-orange-400 border-purple-100 border-red-100 border-red-200 border-red-400 border-red-500 border-red-600 border-solid border-t border-teal-200 border-teal-500 border-white bottom-4 bottom_left_popup bottom_right_popup break-all card-description card-title card-title-aside centered_modal ck-content col-span-1 comment cursor-not-allowed cursor-pointer dark:bg-amber-500 dark:bg-amber-700 dark:bg-amber-800 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-black dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-blue-950 dark:bg-emerald-400 dark:bg-emerald-900/20 dark:bg-emerald-900/30 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/30 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-700 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-green-900/40 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-orange-500 dark:bg-orange-600 dark:bg-orange-900 dark:bg-orange-900/20 dark:bg-orange-900/30 dark:bg-orange-900/40 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/40 dark:bg-purple-900/50 dark:bg-red-500 dark:bg-red-600 dark:bg-red-700 dark:bg-red-800 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-red-900/40 dark:bg-rose-400 dark:bg-rose-900 dark:bg-rose-900/30 dark:bg-sky-700 dark:bg-slate-300 dark:bg-slate-700 dark:bg-slate-800 dark:bg-teal-500 dark:bg-teal-900/40 dark:bg-teal-950 dark:bg-white dark:bg-yellow-500 dark:bg-yellow-600 dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/20 dark:bg-yellow-900/30 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-400 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-emerald-800 dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-800 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-orange-700 dark:border-purple-600 dark:border-purple-700 dark:border-purple-700/50 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-700/50 dark:border-red-800 dark:border-solid dark:border-teal-400 dark:border-white dark:border-yellow-600 dark:border-yellow-700 dark:border-yellow-800 dark:disabled:bg-blue-800 dark:disabled:bg-gray-600 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:divide-slate-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-blue-600 dark:hover:bg-blue-900/20 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-green-600 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-600 dark:hover:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:hover:bg-red-600 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-teal-600 dark:hover:bg-yellow-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-100 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-indigo-300 dark:hover:text-purple-200 dark:hover:text-red-400 dark:hover:text-slate-300 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-500 dark:prose-invert dark:ring-gray-800 dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-100 dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-300 dark:text-emerald-400 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-300 dark:text-orange-400 dark:text-orange-50 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-100 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-rose-300 dark:text-rose-400 dark:text-sky-100 dark:text-slate-200 dark:text-slate-300 dark:text-slate-400 dark:text-slate-500 dark:text-sm dark:text-teal-300 dark:text-teal-400 dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-50 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap deleted disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 divide-gray-100 divide-slate-200 divide-y divider-list dormant draft duration-200 fa-spin failed fixed flex flex-1 flex-auto flex-between flex-col flex-none flex-row flex-shrink-0 flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-emerald-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-mono font-normal font-semibold form-label gap-1 gap-1.5 gap-2 gap-3 gap-4 gap-x-2 gap-x-3 gap-x-4 gap-y-1 gap-y-1.5 gap-y-2 granted grid grid-2col-responsive grid-cols-1 grid-cols-2 grid-cols-3 grid-cols-4 grid-cols-[100px_1fr] grid-cols-[110px_1fr] grid-cols-[120px_1fr] h-14 h-16 h-3 h-3.5 h-4 h-5 h-[220px] h-full hidden hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-blue-50 hover:bg-blue-700 hover:bg-emerald-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-green-700 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-100 hover:bg-orange-50 hover:bg-orange-700 hover:bg-purple-700 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-300 hover:bg-slate-50 hover:bg-slate-700 hover:bg-teal-700 hover:bg-yellow-700 hover:border-teal-400 hover:decoration-solid hover:no-underline hover:text-blue-500 hover:text-blue-600 hover:text-blue-800 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-indigo-700 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-red-600 hover:text-slate-700 hover:text-white hover:underline inline-flex input input-error inquiry.board_slug inset-0 inset-x-4 italic items-baseline items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start last:border-0 leading-relaxed leading-tight left-4 lg:col-span-2 lg:col-span-4 lg:gap-5 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:mb-8 lg:px-8 list-disc max-h-60 max-h-96 max-h-[400px] max-h-[500px] max-h-[560px] max-h-[70vh] max-w-[200px] max-w-md max-w-none mb-0.5 mb-1 mb-2 mb-3 mb-4 mb-6 md: md:col-span-2 md:flex md:flex-1 md:flex-row md:gap-2 md:gap-3 md:gap-4 md:gap-8 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:hidden md:items-center md:justify-between md:mb-0 md:mb-6 md:min-w-[200px] md:p-6 md:pb-0 md:rounded-2xl md:space-y-0 md:text-2xl md:text-xl md:text-xs md:w-20 md:w-40 md:w-64 md:w-72 md:w-80 md:w-96 md:w-auto min-h-0 min-h-12 min-h-[200px] min-h-[420px] min-h-[480px] min-h-[60vh] min-w-0 min-w-[200px] min-w-[220px] min-w-[80px] min-w-full ml-1 ml-8 ml-auto mr-1 mt-0.5 mt-1 mt-2 mt-3 mt-4 mt-6 mx-6 mx-auto my-1 opacity-0 opacity-100 opacity-25 opacity-50 opacity-70 opacity-75 opacity-80 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto p-1.5 p-2 p-3 p-4 p-6 pay-kginicis-tone-danger pay-kginicis-tone-danger-strong pay-kginicis-tone-info pay-kginicis-tone-info-strong pay-kginicis-tone-success-strong pay-nicepayments-notice-success pay-nicepayments-tone-success-strong pay-tosspayments-divider pay-tosspayments-text-muted pay-tosspayments-text-strong pay-tosspayments-text-value pay-tosspayments-tone-warning pb-1 pending pl-5 prose prose-sm pt-1 pt-2 pt-3 pt-4 px-1.5 px-2 px-2.5 px-3 px-4 px-6 py-0 py-0.5 py-1 py-1.5 py-12 py-2 py-3 py-4 py-6 py-8 radio rejected requested review right-0 right-4 rotate-180 rounded rounded-full rounded-lg rounded-md rounded-none rounded-sm rounded-xl row-stack scroll-mt-32 section-heading select-none self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl shrink-0 sirsoft-ecommerce sm:col-span-2 sm:col-span-3 sm:flex-none sm:flex-row sm:gap-6 sm:grid-cols-2 sm:grid-cols-[120px_1fr_120px_1fr] sm:grid-cols-[130px_1fr_130px_1fr] sm:grid-cols-[140px_1fr_140px_1fr] sm:grid-cols-[150px_90px_1fr_80px] sm:h-[260px] sm:inline sm:items-center sm:items-start sm:justify-between sm:mt-6 sm:px-6 sm:py-4 sm:text-2xl sm:text-3xl sm:w-40 sm:w-auto space-y-0.5 space-y-1 space-y-1.5 space-y-2 space-y-3 space-y-4 spinner-sm static sticky stopped success suspended text-2xl text-3xl text-4xl text-[10px] text-[11px] text-amber-500 text-amber-600 text-amber-700 text-amber-800 text-amber-900 text-base text-blue-500 text-blue-600 text-blue-700 text-blue-800 text-blue-900 text-blue-950 text-center text-emerald-500 text-emerald-700 text-emerald-800 text-gray-300 text-gray-400 text-gray-500 text-gray-600 text-gray-700 text-gray-800 text-gray-900 text-green-300 text-green-600 text-green-700 text-green-800 text-hint text-justify text-left text-lg text-orange-500 text-orange-600 text-orange-700 text-orange-800 text-purple-600 text-purple-800 text-red-500 text-red-600 text-red-700 text-red-800 text-red-900 text-red-950 text-right text-rose-500 text-rose-600 text-rose-700 text-rose-800 text-sky-800 text-slate-400 text-slate-500 text-slate-600 text-slate-700 text-slate-900 text-sm text-table-header text-teal-600 text-teal-700 text-tertiary text-white text-xl text-xs text-yellow-500 text-yellow-700 text-yellow-800 top-0 top-1/2 top-full tracking-wide transition-all transition-colors truncate underline unwritten uppercase w-1.5 w-14 w-16 w-20 w-28 w-3 w-3.5 w-32 w-4 w-40 w-44 w-5 w-full whitespace-normal whitespace-nowrap whitespace-pre-line whitespace-pre-wrap z-10 z-40 z-50");
 /* SAFELIST-END */
+@source "../../layouts/**/*.g7.html";
 
-/**
- * Safelist (자동 생성)
-@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-blue-900text-info-soft dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/30 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-800text-warning-soft dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-indigo-900/30 dark:bg-orange-900 dark:bg-orange-900/20 dark:bg-purple-800/50 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/50 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-900 dark:bg-yellow-900/20 dark:bg-yellow-900/30 dark:bg-yellow-900/40 dark:bg-yellow-900text-warning-soft dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-orange-800 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:border-yellow-800 dark:disabled:bg-gray-800 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:divide-purple-800 dark:divide-slate-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-blue-600 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-gray-800 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-900/30 dark:hover:bg-purple-900/30 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-slate-200 dark:hover:bg-slate-700 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-purple-200 dark:hover:text-purple-300 dark:hover:text-red-400 dark:hover:text-slate-300 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-500 dark:prose-invert dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-purple-900/50 dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-400 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-200 dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-700 hover:bg-gray-800 hover:bg-gray-900 hover:bg-green-700 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-700 hover:bg-purple-50 hover:bg-purple-700 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-100 hover:bg-slate-700 hover:bg-yellow-700 hover:text-blue-500 hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-slate-700 hover:text-slate-900 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start lg:col-span-4 lg:gap-5 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:mb-8 lg:p-8 lg:px-8 max-h-[400px] max-h-[500px] max-h-[70vh] max-w-[200px] md: md:block md:col-span-2 md:flex-1 md:flex-row md:gap-0 md:gap-2 md:gap-3 md:gap-4 md:gap-8 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:h-36 md:items-center md:justify-between md:mb-2 md:mb-6 md:p-5 md:p-6 md:rounded-2xl md:space-y-0 md:text-2xl md:text-[2rem] md:text-xl md:text-xs md:w-20 md:w-40 md:w-48 md:w-64 md:w-72 md:w-80 md:w-auto min-h-[200px] min-h-[60vh] min-w-[200px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl sm:flex-row sm:gap-6 sm:grid-cols-2 sm:inline sm:items-start sm:justify-between sm:mt-6 sm:p-6 sm:px-6 sm:text-2xl sm:text-3xl sm:w-40 text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
- * 빌드 시 자동 실행: npm run build → prebuild → main.css 업데이트
+/*
+ * 확장(모듈/플러그인) 레이아웃이 쓰는 Icon 크기 클래스.
+ *
+ * 위 `@source` 는 **이 템플릿의 layouts/ 만** 훑는다. 모듈·플러그인 레이아웃은 스캔 대상이 아니라
+ * 거기서만 쓰이는 클래스는 여기 명시하지 않으면 CSS 가 생성되지 않는다(= 아이콘이 상속 크기로
+ * 렌더된다). Icon 은 `<i>` 글리프라 박스가 아니라 `font-size` 로 크기가 정해지므로, 기존
+ * `w-N h-N` 을 픽셀 그대로 옮길 때 Tailwind 기본 스케일에 같은 값이 없는 것만 임의값으로 둔다.
+ *
+ * SAFELIST-START/END 구간은 `extract-safelist.cjs` 가 재생성하므로 그 안에 넣지 않는다.
  */
+@source inline("text-5xl text-[4rem]");
+/*
+ * 이커머스 필터 칩의 「고른 상태」 테두리 색(엑셀 다운로드·결제 실패 이력·개인결제·주문 필터). 파랑·회색만 이 템플릿
+ * 레이아웃에도 있어 생성됐고 나머지 색은 한 번도 그려지지 않았다.
+ */
+@source inline("ring-green-400 ring-cyan-400 ring-orange-400 ring-red-400 ring-yellow-400 dark:ring-blue-500 dark:ring-gray-500 dark:ring-green-500 dark:ring-cyan-500 dark:ring-orange-500 dark:ring-red-500 dark:ring-yellow-500");
+
+/*
+ * 확장(모듈) 레이아웃이 쓰는 간격·최소 폭 클래스 — 이커머스 상품 목록·상품 옵션·주문 목록·마일리지 내역·
+ * 리뷰 이미지 창이 `gap-0.5`·`min-w-[12rem]` 을 쓴다. 이 템플릿 layouts/ 에는 없어 여기 적지 않으면 CSS 가
+ * 생성되지 않고 여백이 조용히 0 이 된다(2026-09-26 #599 3차 검증).
+ * `min-w-5` 는 이커머스 클레임 유형 칩, 게시판 일괄 적용 칩 — 없으면 한 자리 숫자 칩이 원이 아닌 타원이 된다.
+ */
+@source inline("gap-0.5 min-w-[12rem] min-w-5");
+
+/*
+ * 결제 브랜드 마크(BrandMark) 색 배지 클래스 — 결제 플러그인이 결제수단 카탈로그 brand_mark.class 로 실어 보내는 값이라
+ * 어느 레이아웃 파일에도 글자로 없다. 이커머스 관리자 결제수단 목록이 이 컴포넌트로 배지를 그린다(#639 — 이전에는 PG
+ * 플러그인 주입 스크립트가 DOM 을 고쳐 붙였다).
+ */
+@source inline("bg-blue-500 bg-blue-600 bg-gray-500 bg-gray-900 bg-green-500 bg-green-600 bg-orange-500 bg-purple-600 bg-red-500 bg-red-700 bg-yellow-400 text-gray-950 text-white");
+
 
 /* ========================================
  * BASE STYLES - 기본 글자 크기 설정
@@ -144,6 +194,7 @@
     @apply text-sm text-gray-500;
     @apply dark:text-gray-400;
   }
+  /* Histories Compact Grid 는 캐스케이드 층 밖에 둔다 — 아래 「Histories Compact Grid (층 밖)」 참고 */
   .admin-card > .card-title {
     @apply mb-4;
   }
@@ -861,6 +912,15 @@
     @apply bg-blue-50 text-blue-600;
     @apply dark:bg-blue-900/20 dark:text-blue-400;
   }
+  /* 대기(발급만 됨 — 예: 가상계좌 입금 대기) · 진행(사람 손이 필요한 처리 — 예: 수동 매칭) */
+  .badge-status-ready {
+    @apply bg-purple-50 text-purple-600;
+    @apply dark:bg-purple-900/20 dark:text-purple-400;
+  }
+  .badge-status-progress {
+    @apply bg-amber-50 text-amber-700;
+    @apply dark:bg-amber-900/20 dark:text-amber-400;
+  }
   .badge-status-error {
     @apply bg-red-50 text-red-600;
     @apply dark:bg-red-900/20 dark:text-red-400;
@@ -1208,6 +1268,15 @@
   .modal-body-content {
     @apply px-6 py-4 overflow-y-auto max-h-[calc(90vh-140px)];
   }
+  /*
+   * Modal Footer Row — Modal 의 `footer` prop 이 렌더되는 고정 하단 영역.
+   * `.modal-body-content` 의 스크롤 밖에 있어 본문이 길어도 액션 버튼이 항상 보인다.
+   * 자산 책임: 우측 정렬 + 버튼 간격 + 구분선. 호출처는 정렬/여백 토큰 명시 금지.
+   */
+  .modal-footer-row {
+    @apply flex justify-end gap-3 px-6 py-4 border-t border-gray-200;
+    @apply dark:border-gray-700;
+  }
   .modal {
     @apply bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6;
     @apply dark:bg-gray-800;
@@ -1240,6 +1309,11 @@
   .danger-confirm-icon svg,
   .danger-confirm-icon .icon {
     @apply w-6 h-6 text-red-600;
+    @apply dark:text-red-400;
+  }
+  /* 글꼴 아이콘(FontAwesome `<i>`)은 너비·높이가 아니라 글자 크기로 커진다 — 칸 안 글리프 24px. */
+  .danger-confirm-icon > i {
+    @apply text-2xl leading-none text-red-600;
     @apply dark:text-red-400;
   }
   .danger-confirm-title {
@@ -1880,8 +1954,13 @@
     @apply flex items-center justify-between mb-6 -mx-6 px-6 bg-gray-50;
     @apply dark:bg-gray-900;
   }
+  /* 폭이 모자라면 버튼을 다음 줄로 넘긴다 — 줄바꿈 없이 눌리면 버튼 글자가 한 글자씩 세로로 꺾인다. */
   .page-actions {
-    @apply flex items-center gap-3;
+    @apply flex flex-wrap items-center gap-3;
+  }
+  /* 머리말 버튼은 줄어들지 않고 글자를 한 줄로 둔다 — 자리가 모자라면 .page-actions 가 줄을 바꾼다 */
+  .page-actions > * {
+    @apply shrink-0 whitespace-nowrap;
   }
 
   /* Section Components */
@@ -1924,24 +2003,35 @@
     @apply dark:text-blue-400 dark:hover:text-blue-300;
   }
 
-  /* Icon Sizes */
+  /* Icon Sizes
+     상자 크기(w/h)와 글리프 크기(font-size)를 함께 정한다. 아이콘은 FontAwesome `<i>` 웹폰트로
+     그려지므로 w-*/h- 만 주면 상자만 커지고 글리프는 본문에서 물려받은 14px 에 머문다 — KPI 카드의
+     48px 상자 안에서 아이콘이 14px 로 그려지던 원인이다(#682 라운드 4, 검수 지적 ②). `leading-none` 은
+     h- 와 줄 높이를 맞춰 상자가 세로로 3px 늘어나지 않게 하고, `text-center` 는 글리프가 상자보다
+     좁을 때 가운데 두기 위함이다. `<svg>` 로 쓰는 자리에서는 이 세 값이 무해하다. */
   .icon-xs {
-    @apply w-3 h-3;
+    @apply w-3 h-3 leading-none text-center;
+    font-size: 0.75rem;
   }
   .icon-sm {
-    @apply w-4 h-4;
+    @apply w-4 h-4 leading-none text-center;
+    font-size: 1rem;
   }
   .icon-md {
-    @apply w-5 h-5;
+    @apply w-5 h-5 leading-none text-center;
+    font-size: 1.25rem;
   }
   .icon-lg {
-    @apply w-6 h-6;
+    @apply w-6 h-6 leading-none text-center;
+    font-size: 1.5rem;
   }
   .icon-xl {
-    @apply w-8 h-8;
+    @apply w-8 h-8 leading-none text-center;
+    font-size: 2rem;
   }
   .icon-2xl {
-    @apply w-10 h-10;
+    @apply w-10 h-10 leading-none text-center;
+    font-size: 2.5rem;
   }
   .icon-action {
     @apply text-gray-400 hover:text-gray-600 cursor-pointer;
@@ -1999,6 +2089,8 @@
    * 첫/마지막 자식은 pt-0 / pb-0 자동 — 컨테이너 외곽 불필요한 빈 공간 차단.
    * 호출처 책임: 자식 행 내부 레이아웃 (flex-between / form-label 등) 만 명시.
    * 자식 행에 별도 border-b / border-t / py-N 토큰 명시 금지 — 본 자산이 책임.
+   * 직속 자식으로 테두리 상자(border·admin-card) 금지 — py-2 가 테두리 안쪽에 들어간다.
+   * 래퍼 div 로 감싸거나 stack-tight·card-stack·stack-flush 를 쓴다(audit row-stack-boxed-child).
    * 이전 명칭 .stack — 의미 명확화(input row 컨테이너)
    * + 구분선 통합 + 균형 간격 .
    */
@@ -2276,6 +2368,25 @@
    */
   .divider-list {
     @apply divide-y divide-gray-200 dark:divide-gray-700;
+  }
+
+  /*
+   * Key-Value List — 「라벨 값」 짝을 세로로 나열하는 목록 자산.
+   * 라벨마다 폭이 달라 값이 들쭉날쭉 시작하던 것을(#682 S4 라운드 8) 라벨 칸을 가장 긴 라벨
+   * 폭(max-content)으로 맞춘 격자로 바로잡는다. `items-baseline` 은 라벨(xs)과 값(sm)의 글자 크기가
+   * 달라도 첫 줄 기준선을 맞춘다. 행은 `.kv-row`(display: contents)로 감싸 라벨·값이 격자 칸에 바로
+   * 앉게 한다. `.kv-list-2` 는 sm 이상에서 짝 두 개를 한 줄에 둔다(열마다 라벨 칸을 따로 맞춤).
+   * 확장 레이아웃은 Tailwind 스캔 대상이 아니므로 임의값 격자를 레이아웃에 직접 쓰지 말고 이 자산을 쓴다.
+   */
+  .kv-list {
+    @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
+  }
+  .kv-list-2 {
+    @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
+    @apply sm:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)];
+  }
+  .kv-row {
+    @apply contents;
   }
 
   /*
@@ -3077,9 +3188,13 @@
   }
 }
 
-/* Page Header Responsive */
+/* Page Header Responsive — 세 헤더 변형을 함께 묶는다. 기본형만 걸면 여백형·풀블리드형 헤더(클레임 상세·주문 상세·
+   상품 폼·쿠폰 폼·게시판 폼·회원 상세)가 375px 에서도 가로 한 줄로 남아 오른쪽 버튼 묶음이 눌린다.
+   반응형 접두 클래스(sm:)는 이 템플릿 빌드 CSS 에 없어 레이아웃에서 고칠 수 없다. */
 @media (max-width: 640px) {
-  .page-header {
+  .page-header,
+  .page-header-padded,
+  .page-header-fullbleed {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
@@ -3088,6 +3203,22 @@
     width: 100%;
     justify-content: flex-start;
   }
+}
+
+/*
+ * Histories Compact Grid (층 밖) — 이력 표를 좁은 카드 안에 촘촘하게 싣는 DataGrid variant.
+ * 신고 상세의 「처리 이력」처럼 행수가 적고 열이 짧은 표에 쓴다. 기본 DataGrid 의
+ * px-6 py-4 셀 패딩이 카드 폭을 잡아먹어 날짜·담당자가 줄바꿈되던 것을 좁힌다.
+ * 클래스 이름이 마크업에만 있고 정의가 없어 audit `layout-component-contract` 가
+ * 잡았다(2026-09-16) — 의도는 있었으나 정의가 누락된 상태였다.
+ *
+ * **`@layer components` 안에 두면 안 된다.** 표 칸에 붙은 `px-6 py-4` 는 utilities 층이라
+ * 컴포넌트 층 규칙을 명시도와 상관없이 이긴다 — 층 안에 있던 동안 이 규칙은 한 번도 적용되지
+ * 않았고, 1024px 신고 상세에서 표가 칸보다 넓어 가로 스크롤이 생겼다(7.1.0 실측 O-K2-7).
+ * 층 없는 규칙은 모든 층을 이기므로 여기 둔다.
+ */
+.histories-compact-grid :is(th, td) {
+  @apply px-3 py-2;
 }
 
 /* Responsive Grid - sm breakpoint */
@@ -3147,11 +3278,13 @@
     align-items: flex-start;
     padding-top: 2rem;
   }
-  .modal-footer {
+  .modal-footer,
+  .modal-footer-row {
     flex-direction: column;
     gap: 0.5rem;
   }
-  .modal-footer .btn {
+  .modal-footer .btn,
+  .modal-footer-row .btn {
     width: 100%;
   }
 }
@@ -3214,4 +3347,42 @@
 
 .dark .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgb(107 114 128);
+}
+
+/* 코드 편집기 파일 트리 오버레이 — 서랍은 왼쪽에서 200ms 슬라이드(계획서 §7.4), 시트는 아래에서
+   올라온다(§7.5). `FileTreePicker` 가 마운트 시점에 붙이는 진입 애니메이션이라 상태 없이 동작한다.
+   움직임 축소 설정이면 즉시 뜬다. */
+@keyframes g7le-drawer-enter {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes g7le-sheet-enter {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.g7le-drawer-enter {
+  animation: g7le-drawer-enter 200ms ease-out;
+}
+
+.g7le-sheet-enter {
+  animation: g7le-sheet-enter 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g7le-drawer-enter,
+  .g7le-sheet-enter {
+    animation: none;
+  }
 }

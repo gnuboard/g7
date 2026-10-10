@@ -10,7 +10,7 @@ import { VersionList, VersionItem } from '../composite/VersionList';
 
 // Monaco Editor mock
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, onChange, onMount }: any) => {
+  default: ({ defaultValue: value, onChange, onMount }: any) => {
     React.useEffect(() => {
       if (onMount) {
         const mockEditor = {
@@ -182,6 +182,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
   });
 
   describe('CodeEditor 대용량 JSON 처리', () => {
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects code_editor_renders_large_json_within_budget
+     */
     it('1MB JSON 파일을 500ms 이내에 렌더링한다', async () => {
       const largeJSON = loadFixture('test-1mb.json');
 
@@ -194,6 +199,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects code_editor_renders_large_json_within_budget
+     */
     it('5MB JSON 파일을 2초 이내에 렌더링한다', async () => {
       const largeJSON = loadFixture('test-5mb.json');
 
@@ -206,6 +216,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects code_editor_renders_large_json_within_budget
+     */
     it('10MB JSON 파일을 5초 이내에 렌더링한다', async () => {
       const largeJSON = loadFixture('test-10mb.json');
 
@@ -218,6 +233,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects code_editor_emits_change_on_large_json
+     */
     it('대용량 JSON 변경 시 onChange 콜백이 정상 작동한다', async () => {
       const largeJSON = loadFixture('test-1mb.json');
       const handleChange = vi.fn();
@@ -235,6 +255,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
   });
 
   describe('LayoutFileList 대량 데이터 렌더링', () => {
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects layout_file_list_renders_many_files_within_budget
+     */
     it('100개 파일을 300ms 이내에 렌더링한다', () => {
       const files = generateLargeFileList(100);
 
@@ -247,6 +272,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(screen.getByText('layout-file-1.json')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects layout_file_list_renders_many_files_within_budget
+     */
     it('500개 파일을 1초 이내에 렌더링한다', () => {
       const files = generateLargeFileList(500);
 
@@ -259,6 +289,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(screen.getByText('layout-file-1.json')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects layout_file_list_renders_many_files_within_budget
+     */
     it('대량 파일 목록에서 파일 선택이 빠르게 동작한다', async () => {
       const files = generateLargeFileList(500);
       const handleSelect = vi.fn();
@@ -281,6 +316,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
   describe('VersionList 대량 데이터 렌더링', () => {
     // 렌더 시간 임계값은 카타스트로픽 회귀(O(n²)·메모이제이션 누락 등)를 잡기 위한 것이며,
     // jsdom 의 머신별 편차를 고려해 충분한 헤드룸을 둔다.
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects version_list_renders_many_versions_within_budget
+     */
     it('100개 버전을 카타스트로픽 지연 없이 렌더링한다', () => {
       const versions = generateLargeVersionList(100);
 
@@ -293,6 +333,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(screen.getByText(/버전 v0\.0\.0/)).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects version_list_renders_many_versions_within_budget
+     */
     it('500개 버전을 카타스트로픽 지연 없이 렌더링한다', () => {
       const versions = generateLargeVersionList(500);
 
@@ -305,6 +350,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(screen.getByText(/버전 v0\.0\.0/)).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects version_list_renders_many_versions_within_budget
+     */
     it('대량 버전 목록에서 버전 선택이 빠르게 동작한다', async () => {
       const versions = generateLargeVersionList(500);
       const handleSelect = vi.fn();
@@ -325,6 +375,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
   });
 
   describe('빈번한 리렌더링 성능', () => {
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects layout_editor_composites_rerender_within_budget
+     */
     it('CodeEditor가 빠르게 리렌더링된다', () => {
       const { rerender } = render(<CodeEditor value="test1" />);
 
@@ -340,6 +395,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
 
     // CI/로컬 환경의 워크로드 변동을 흡수하기 위해 임계값을 1000ms 로 설정.
     // 기존 500ms 는 setup/transform 부하가 큰 첫 실행에서 환경 변동으로 flaky 했다.
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects layout_editor_composites_rerender_within_budget
+     */
     it('LayoutFileList가 선택 변경 시 빠르게 리렌더링된다', () => {
       const files = generateLargeFileList(100);
       const { rerender } = render(
@@ -358,6 +418,11 @@ describe('레이아웃 에디터 성능 테스트', () => {
       expect(totalRerenderTime).toBeLessThan(1000);
     });
 
+    /**
+     * @scenario data_scale=large
+     *
+     * @effects layout_editor_composites_rerender_within_budget
+     */
     it('VersionList가 선택 변경 시 빠르게 리렌더링된다', () => {
       const versions = generateLargeVersionList(100);
       // 안정 onSelect — 재렌더 간 동일 참조여야 React.memo 가 효과 발휘

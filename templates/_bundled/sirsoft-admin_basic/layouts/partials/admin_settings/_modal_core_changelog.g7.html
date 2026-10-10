@@ -1,0 +1,21 @@
+<!-- 코어 변경 이력 창(정보 탭). 이력은 이 창이 받지 않고 **부모 화면이 받아 둔 것을 `$parent` 로 읽는다**
+  — 조각이 자기 데이터소스를 갖지 않는 대신 여는 쪽의 상태를 빌리는 형태다. -->
+<partial description="코어 변경사항 모달" editor_label="$t:admin.modal_label.admin_settings.core_changelog_modal">
+  <modal data-type="composite" data-ref="core_changelog_modal" title="$t:admin.settings.info.changelog_title" size="lg">
+    <div data-if="{{!$parent._local.coreChangelog || $parent._local.coreChangelog.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:admin.settings.info.no_changelog</div>
+    <div data-if="{{$parent._local.coreChangelog &amp;&amp; $parent._local.coreChangelog.length > 0}}" class="max-h-96 overflow-y-auto space-y-4">
+      <div data-each="entry, entryIdx in $parent._local.coreChangelog" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <div class="flex-center gap-2 mb-3">
+          <span class="text-primary text-sm font-bold">v{{entry.version}}</span>
+          <span data-if="{{entry.date}}" class="text-tertiary">{{entry.date}}</span>
+        </div>
+        <div data-each="category, catIdx in entry.categories" class="mb-2">
+          <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">{{category.name}}</span>
+          <ul class="mt-1 list-disc list-inside space-y-0.5">
+            <li data-each="changeItem, itemIdx in category.items" class="text-label">{{changeItem}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </modal>
+</partial>

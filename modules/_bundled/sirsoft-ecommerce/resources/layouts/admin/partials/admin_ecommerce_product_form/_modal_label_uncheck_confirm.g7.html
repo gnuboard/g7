@@ -1,0 +1,34 @@
+<!-- 상품 폼 — 라벨 해제 확인. 그 라벨에 노출 기간을 걸어 두었다면 해제와 함께 그 설정이 사라지므로,
+  걸린 기간을 보여 주고 되묻는다. 기간 값은 폼이 들고 있어 `$parent` 로 건너다본다. -->
+<partial description="Product Form - Label Uncheck Confirmation Modal (engine-v1.16.0: $parent 바인딩 사용)">
+  <modal data-type="composite" data-ref="modal_label_uncheck_confirm" title="$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.title" size="sm">
+    <div>
+      <div class="flex-start gap-3">
+        <div class="flex-center w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 justify-center flex-shrink-0">
+          <icon name="exclamation-triangle" class="text-xl text-yellow-600 dark:text-yellow-400"/>
+        </div>
+        <div class="flex-1">
+          <p class="text-primary font-medium mb-2">
+            <span class="px-2 py-0.5 rounded text-xs font-medium" style="background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280'}}">{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.name) ?? ''}}</span>
+          </p>
+          <p class="text-label">$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.message</p>
+          <p data-if="{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at || ($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at}}" class="text-label-subtle mt-2 font-medium">{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at ?? ''}} ~ {{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at ?? ''}}</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" class="btn btn-outline">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:sirsoft-ecommerce.common.cancel
+        </button>
+        <button type="button" class="btn btn-warning">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.confirmUncheckLabel"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

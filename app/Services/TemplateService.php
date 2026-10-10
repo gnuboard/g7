@@ -9,14 +9,19 @@ use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\TemplateNotFoundException;
 use App\Exceptions\TemplateOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
+use App\Models\Template;
+use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -24,6 +29,9 @@ use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
+    // 편집기 표면의 레이아웃/조각 읽기는 소스 SSoT 규약에 위임한다 (S19 ⑦ · R16).
+    // 사본을 두면 `.g7.html` 을 못 보고, 그 결과가 "마크업 전용 레이아웃이 트리에서 사라짐" 이었다.
+    use CollectsFragmentSources;
     use ResolvesLanguageFragments;
 
     /**
@@ -31,6 +39,15 @@ class TemplateService
      */
     private bool $routeMergeDegraded = false;
 
+    /**
+     * 템플릿 서비스를 생성합니다.
+     *
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소
+     * @param  TemplateManagerInterface  $templateManager  템플릿 매니저
+     * @param  ModuleManagerInterface  $moduleManager  모듈 매니저 (의존성 판정용)
+     * @param  PluginManagerInterface  $pluginManager  플러그인 매니저 (의존성 판정용)
+     * @param  LayoutVersionRepositoryInterface  $layoutVersionRepository  레이아웃 버전 저장소
+     */
     public function __construct(
         private TemplateRepositoryInterface $templateRepository,
         private TemplateManagerInterface $templateManager,
@@ -92,7 +109,11 @@ class TemplateService
      */
     public function getPaginatedTemplates(array $filters, int $perPage = 12, int $page = 1): array
     {
+        // before_list/after_list 는 전체 목록(getAllTemplates)에서 유형 문자열을 싣는데, 여기서는 필터 배열을
+        // 실어 발화처마다 모양이 달랐다. 서드파티 호환을 위해 기존 발화는 그대로 두고(이 자리의 발화는
+        // deprecated), 모양을 이름에 드러낸 *_list_paginated 를 나란히 발화한다(#138 후속).
         HookManager::doAction('core.templates.before_list', $filters);
+        HookManager::doAction('core.templates.before_list_paginated', $filters);
 
         // 템플릿 매니저 초기화
         $this->templateManager->loadTemplates();
@@ -146,6 +167,7 @@ class TemplateService
         ];
 
         HookManager::doAction('core.templates.after_list', $result, $filters);
+        HookManager::doAction('core.templates.after_list_paginated', $result, $filters);
 
         return $result;
     }
@@ -407,7 +429,7 @@ class TemplateService
      */
     public function installTemplate(string $identifier, bool $force = false): ?array
     {
-        HookManager::doAction('core.templates.before_install', $identifier);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $result = $this->templateManager->installTemplate($identifier, null, $force);
@@ -415,15 +437,16 @@ class TemplateService
             if ($result) {
                 $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
-                HookManager::doAction('core.templates.after_install', $identifier, $templateInfo);
+                // after_install 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
-                return $templateInfo;
+                return $this->withLayoutWarnings($templateInfo);
             }
 
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.installation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.installation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -446,16 +469,24 @@ class TemplateService
     ): ?array {
         $preservedBackups = [];
 
-        HookManager::doAction('core.templates.before_uninstall', $identifier, $deleteData);
+        // 유형의 마지막 활성 템플릿은 지울 수 없다 — 화면은 활성 템플릿의 삭제를 잠근다
+        $record = $this->templateRepository->findByIdentifier($identifier);
+        if ($record) {
+            $this->assertNotLastActiveOfType($record, 'templates.errors.last_active_uninstall');
+        }
+
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             // 제거 전 템플릿 정보 보존
             $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
-            $result = $this->templateManager->uninstallTemplate($identifier, null, $preservedBackups);
+            // $deleteData 를 Manager 로 넘겨야 훅 인자(활동 로그)에 운영자 선택이 실린다.
+            $result = $this->templateManager->uninstallTemplate($identifier, null, $preservedBackups, $deleteData);
 
             if ($result) {
-                HookManager::doAction('core.templates.after_uninstall', $identifier, $templateInfo, $deleteData);
+                // after_uninstall 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $templateInfo;
             }
@@ -463,7 +494,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.uninstallation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.uninstallation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -505,7 +536,11 @@ class TemplateService
             ]);
         }
 
-        HookManager::doAction('core.templates.before_deactivate', $template->identifier);
+        // 유형의 마지막 활성 템플릿은 끌 수 없다 — 화면은 활성 템플릿의 스위치를 잠그고,
+        // 전환은 같은 유형의 다른 템플릿을 활성화하는 것으로만 한다
+        $this->assertNotLastActiveOfType($template, 'templates.errors.last_active_deactivate');
+
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             // 위치 인자로 넘긴다 — 이 의존성은 인터페이스 타입이고 테스트가 그 인터페이스를
@@ -529,9 +564,44 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.deactivation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.deactivation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
+    }
+
+    /**
+     * 템플릿이 유형(관리자·사용자)의 마지막 활성 템플릿이면 비활성화·삭제를 거절합니다.
+     *
+     * 유형마다 활성 템플릿은 하나이고, 그것이 없으면 그 화면(관리자 또는 사이트)이 통째로 그려지지
+     * 않는다. 관리자 템플릿 목록은 그래서 활성 템플릿의 스위치·삭제를 잠그고 다른 템플릿을 활성화하는
+     * 것으로만 바꾸게 한다 — API 도 같은 조건으로 받아야 화면과 서버의 판정이 어긋나지 않는다.
+     * 비활성 템플릿이나, 같은 유형에 다른 활성 템플릿이 남는 경우는 통과한다.
+     *
+     * 관리자 API 경로에만 적용한다. 코어 비호환 자동 비활성화(`CoreServiceProvider`)와 Artisan
+     * 커맨드는 매니저를 직접 호출하므로 이 가드를 거치지 않는다.
+     *
+     * @param  Template  $template  대상 템플릿 레코드
+     * @param  string  $messageKey  거절 메시지 번역 키 (`:type` 치환)
+     * @return void 반환값 없음
+     *
+     * @throws ValidationException 유형의 마지막 활성 템플릿일 때
+     */
+    private function assertNotLastActiveOfType(Template $template, string $messageKey): void
+    {
+        if ($template->status !== ExtensionStatus::Active->value) {
+            return;
+        }
+
+        $othersActive = $this->templateRepository->getActiveByType($template->type)
+            ->contains(fn (Template $active) => $active->identifier !== $template->identifier);
+
+        if ($othersActive) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'template_name' => [__($messageKey, ['type' => __('templates.types.'.$template->type)])],
+        ]);
     }
 
     /**
@@ -558,12 +628,10 @@ class TemplateService
             ]);
         }
 
-        HookManager::doAction('core.templates.before_activate', $template->identifier);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
-            // 필터 훅 - 활성화 데이터 변형
-            $data = ['status' => ExtensionStatus::Active->value];
-            $data = HookManager::applyFilters('core.templates.filter_activate_data', $data, $template);
+            // 활성화 데이터 필터는 Manager 가 직전 훅 뒤에 발화한다 — CLI·어드민 UI 공통(#138 후속, before → filter 순서 복원)
 
             // TemplateManager에 활성화 로직 위임 (force 파라미터 전달)
             $result = $this->templateManager->activateTemplate($template->identifier, $force);
@@ -577,7 +645,8 @@ class TemplateService
             $this->templateManager->loadTemplates();
             $templateInfo = $this->templateManager->getTemplateInfo($template->identifier);
 
-            HookManager::doAction('core.templates.after_activate', $templateInfo);
+            // after_activate 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return [
                 'success' => true,
@@ -585,7 +654,7 @@ class TemplateService
             ];
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.activation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.activation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -1231,14 +1300,16 @@ class TemplateService
      * (`{kind, identifier}`)를 태깅하지만, 편집기 요구사항에 맞춰 두 가지가 다르다:
      *  - 활성/비활성 무관: 설치돼 있으나 비활성인 템플릿도 편집 가능해야 하므로
      *  활성 상태 가드를 적용하지 않는다.
-     *  - `_bundled` 폴백: 활성 디렉토리에 routes.json 이 없으면 `_bundled` 원본을 읽는다.
+     *  - 설치본 전용: routes.json 은 설치본(`templates/{id}/routes.json`)만 읽는다. 설치본에
+     *  없으면 배포 원본(`_bundled`)을 대신 읽지 않고 `routes_not_found` 를 돌려준다 —
+     *  편집기가 실제로 돌아가는 설치본과 다른 라우트 목록을 보여주지 않게 한다.
      *
      * source 태깅이 없으면 편집기 `buildRouteTree`(useRouteTree)가 `route.source.kind`
      * 접근에서 throw 하여 라우트 트리 전체가 network 에러로 무너진다 — 본 메서드가
      * 편집기 진입 routes 응답의 SSoT 다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return array{success: bool, data: array|null, error: string|null}
+     * @return array{success: bool, data: array|null, error: string|null} 성공 시 병합 라우트 데이터, 실패 시 오류 코드(`routes_not_found`·`invalid_json`)
      */
     public function getEditorRoutesDataWithModules(string $identifier): array
     {
@@ -1247,19 +1318,9 @@ class TemplateService
         // 모듈 디렉토리가 복구된 뒤의 병합까지 열화로 보고된다.
         $this->routeMergeDegraded = false;
 
-        // 1. routes.json 경로 — 활성 디렉토리 우선, _bundled 폴백 (활성/비활성 무관).
-        $candidates = [
-            base_path("templates/{$identifier}/routes.json"),
-            base_path("templates/_bundled/{$identifier}/routes.json"),
-        ];
-        $routesFilePath = null;
-        foreach ($candidates as $candidate) {
-            if (file_exists($candidate)) {
-                $routesFilePath = $candidate;
-                break;
-            }
-        }
-        if ($routesFilePath === null) {
+        // 1. routes.json 경로 — 설치본만 본다(활성/비활성 무관, 배포 원본 폴백 없음).
+        $routesFilePath = base_path("templates/{$identifier}/routes.json");
+        if (! file_exists($routesFilePath)) {
             return ['success' => false, 'data' => null, 'error' => 'routes_not_found'];
         }
 
@@ -1338,7 +1399,7 @@ class TemplateService
      *
      * 다음 세 출처의 `layouts/` 를 재귀 순회해 수집한다(계획서 8.4.5 — "대상 템플릿의
      * 모든 레이아웃의 modals 섹션을 스캔"):
-     *  - 템플릿: `templates/{id}/layouts/` (활성 → `_bundled` 폴백). host_layout 접두사 없음.
+     *  - 템플릿: `templates/{id}/layouts/` (설치본만 — 배포 원본 폴백 없음). host_layout 접두사 없음.
      *  - 활성 모듈: `modules/{id}/resources/layouts/`. host_layout 에 `{moduleId}.` 접두사.
      *  - 활성 플러그인: `plugins/{id}/resources/layouts/`. host_layout 에 `{pluginId}.` 접두사.
      *
@@ -1360,7 +1421,8 @@ class TemplateService
      * 라벨은 base 는 `meta.editor_label`/`layout_name`, 모달은 `modal.meta.editor_label`/
      * `modal.title`/`modal.id` 우선순위로 해석한다(편집기 클라이언트 라벨 규칙과 동형).
      * 활성/비활성 무관(편집은 비활성 템플릿도 허용), 파일 부재/파싱 실패는
-     * 조용히 건너뛴다(라우트 그룹은 정상 표시).
+     * 조용히 건너뛴다(라우트 그룹은 정상 표시). 설치본에 `layouts/` 가 없으면 배포 원본을
+     * 대신 순회하지 않고 템플릿 몫을 비운다 — routes.json 부재는 상위에서 이미 404 로 안내된다.
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $templateType  템플릿 타입(`admin`/`user`) — 모듈/플러그인 레이아웃 타입 필터
@@ -1371,19 +1433,10 @@ class TemplateService
         $baseLayouts = [];
         $modals = [];
 
-        // 1. 템플릿 레이아웃 (활성 → _bundled 폴백). host_layout 접두사 없음.
+        // 1. 템플릿 레이아웃 (설치본만 — 배포 원본 폴백 없음). host_layout 접두사 없음.
         //    템플릿 레이아웃은 해당 템플릿 전용이므로 타입 필터 없이 전부 수집한다.
-        $templateDir = null;
-        foreach ([
-            base_path("templates/{$identifier}/layouts"),
-            base_path("templates/_bundled/{$identifier}/layouts"),
-        ] as $candidate) {
-            if (File::isDirectory($candidate)) {
-                $templateDir = $candidate;
-                break;
-            }
-        }
-        if ($templateDir !== null) {
+        $templateDir = base_path("templates/{$identifier}/layouts");
+        if (File::isDirectory($templateDir)) {
             $collected = $this->collectBaseAndModalsFromLayoutDir($templateDir, '');
             $baseLayouts = array_merge($baseLayouts, $collected['base_layouts']);
             $modals = array_merge($modals, $collected['modals']);
@@ -1432,6 +1485,45 @@ class TemplateService
      * @param  string  $hostPrefix  host_layout/layout_name 에 붙일 접두사(예 `sirsoft-ecommerce.`). 템플릿은 빈 문자열.
      * @return array{base_layouts: array<int, array{layout_name: string, label: string|null}>, modals: array<int, array{modal_id: string, host_layout: string, label: string|null}>}
      */
+    /**
+     * 레이아웃 디렉토리의 **문서** 소스를 재귀로 모읍니다 — 소스 SSoT 우선, partials 제외.
+     *
+     * `collectFragmentSources()` 는 fragment 디렉토리 한 겹(`*.json` glob)만 보므로 라우트
+     * 레이아웃 트리(하위 디렉토리 다단)에는 쓸 수 없다. 그래서 열거는 여기서 재귀로 하고,
+     * **짝 판별과 우선순위는 규약 SSoT** (`mergeLayoutSourcesByPriority`)에 넘긴다 — 사본을
+     * 늘리지 않으면서 마크업 전용 레이아웃이 트리에 나타나게 하는 최소 결합이다 (S19 ⑦ · R16).
+     *
+     * @param  string  $layoutDir  레이아웃 루트 디렉토리
+     * @param  string  $partialsDirPrefix  제외할 partials 디렉토리 접두 경로
+     * @return array<int, array{path: string, markup: bool}> 소스 디스크립터 목록
+     */
+    private function collectLayoutDocumentSources(string $layoutDir, string $partialsDirPrefix): array
+    {
+        $markupFiles = [];
+        $jsonFiles = [];
+
+        foreach (File::allFiles($layoutDir) as $file) {
+            $pathname = $file->getPathname();
+            if (str_starts_with($pathname, $partialsDirPrefix)) {
+                continue;
+            }
+            if (str_ends_with($pathname, '.g7.html')) {
+                $markupFiles[] = $pathname;
+            } elseif ($file->getExtension() === 'json') {
+                $jsonFiles[] = $pathname;
+            }
+        }
+
+        return $this->mergeLayoutSourcesByPriority($markupFiles, $jsonFiles, '레이아웃');
+    }
+
+    /**
+     * 레이아웃 디렉터리에서 기본 레이아웃과 모달 조각을 수집합니다.
+     *
+     * @param  string  $layoutDir  레이아웃 디렉터리 절대 경로
+     * @param  string  $hostPrefix  수집 결과 키에 붙일 호스트 접두사
+     * @return array<string, mixed> 수집 결과
+     */
     private function collectBaseAndModalsFromLayoutDir(string $layoutDir, string $hostPrefix): array
     {
         $baseLayouts = [];
@@ -1439,26 +1531,25 @@ class TemplateService
 
         // 라우트 레이아웃은 하위 디렉토리(`auth/`, `shop/`, `admin/` 등)에 있으므로 재귀 순회한다
         // (File::files 는 최상위만 읽어 하위 레이아웃의 모달을 누락한다).
+        // **소스 SSoT 를 모집단으로 삼는다** (S19 ⑦ · R16). 종전에는 `getExtension() !== 'json'`
+        // 으로 걸러 **마크업 전용 레이아웃이 편집기 트리에서 아예 보이지 않았다**. 짝을 가진
+        // 레이아웃은 짝이 대표해 왔으므로 화면이 멀쩡해 보였지만, 그것은 짝이 전건 병존한
+        // 덕이고 규약이 지켜진 결과가 아니다. 소스 선택과 읽기 모두 규약에 위임한다.
         $partialsDirPrefix = $layoutDir.DIRECTORY_SEPARATOR.'partials';
-        foreach (File::allFiles($layoutDir) as $file) {
-            if ($file->getExtension() !== 'json') {
-                continue;
-            }
-            if (str_starts_with($file->getPathname(), $partialsDirPrefix)) {
-                continue;
-            }
+        $sources = $this->collectLayoutDocumentSources($layoutDir, $partialsDirPrefix);
 
-            $decoded = json_decode((string) File::get($file->getPathname()), true);
-            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+        foreach ($sources as $source) {
+            $decoded = $this->loadFragmentSource($source, ['context' => 'editor_tree_layout_scan']);
+            if ($decoded === null) {
                 continue;
             }
 
             // layout_name 미선언 시 layouts 디렉토리 기준 상대 경로(확장자 제외)로 폴백한다
             // — 라우트 layoutName 규약(`auth/register`)과 일치시켜 host_layout 매칭을 보장.
             $relativeName = str_replace(
-                ['\\', '.json'],
-                ['/', ''],
-                $file->getRelativePathname()
+                ['\\', '.g7.html', '.json'],
+                ['/', '', ''],
+                ltrim(str_replace($layoutDir, '', $source['path']), '/\\')
             );
             $layoutBaseName = is_string($decoded['layout_name'] ?? null) && $decoded['layout_name'] !== ''
                 ? $decoded['layout_name']
@@ -1491,7 +1582,7 @@ class TemplateService
                     // partial 참조 모달 → 참조 파일을 읽어 모달 노드를 끌어온다.
                     // partial 경로는 호스트 파일 디렉토리 기준(1순위) → layouts 루트(폴백)로 해석한다.
                     if (isset($modal['partial']) && is_string($modal['partial'])) {
-                        $resolved = $this->resolveModalPartial($modal['partial'], $layoutDir, $file->getPath());
+                        $resolved = $this->resolveModalPartial($modal['partial'], $layoutDir, dirname($source['path']));
                         if ($resolved === null) {
                             continue;
                         }
@@ -1529,7 +1620,7 @@ class TemplateService
      * 디렉토리 기준 상대 경로, `partials/` 시작 시 layouts 루트 폴백. layouts 디렉토리 밖
      * 참조는 거부(경로 traversal 방지). 파일 부재/파싱 실패는 null(조용히 건너뜀).
      *
-     * @param  string  $partialPath  modals[].partial 값 (예: `partials/auth/_modal_terms.json`)
+     * @param  string  $partialPath  modals[].partial 값 (예: partials/auth/_modal_terms.json — 상대 표기)
      * @param  string  $layoutDir  layouts 디렉토리 절대 경로(보안 경계 + 루트 폴백 기준)
      * @param  string  $hostFileDir  호스트 레이아웃 파일이 위치한 디렉토리 절대 경로(1순위 기준)
      * @return array<string, mixed>|null 해석된 모달 노드 배열 또는 null
@@ -1545,33 +1636,42 @@ class TemplateService
         // 경로 해석 규약(레이아웃 partial 과 동형): ① 호스트 파일 디렉토리 기준 →
         // ② layouts 루트 기준 폴백. 두 결합을 순서대로 시도해 먼저 존재하는 파일을 채택한다.
         //  - 호스트 기준: 예) layouts/admin/admin_ecommerce_order_detail.json 의
-        //    `partials/.../x.json` → layouts/admin/partials/.../x.json
-        //  - 루트 폴백: 예) layouts/auth/register.json 의 `partials/auth/x.json`
-        //    → layouts/partials/auth/x.json
+        //    상대 partial 참조 → layouts/admin/partials/... 아래에서 해석
+        //  - 루트 폴백: 예) layouts/auth/register 의 상대 partial 참조
+        //    → layouts/partials/auth/ 아래에서 해석
+        // **확장자 후보도 규약이 정한다** (S19 ⑦ · R16). 종전에는 `$partialPath` 를 그대로
+        // `realpath` 에 넘겨 `.json` 이 디스크에 있어야만 해석됐다 — 마크업 전용 조각은 그 자리에서
+        // 이미 사라졌고, 아래 읽기 단계까지 도달하지 못했다.
         $resolved = false;
         foreach ([$hostFileDir, $layoutDirReal] as $baseDir) {
-            $candidate = realpath($baseDir.DIRECTORY_SEPARATOR.$partialPath);
-            if ($candidate === false) {
-                continue;
+            foreach ($this->layoutSourceCandidates($baseDir.DIRECTORY_SEPARATOR.$partialPath) as $sourceCandidate) {
+                $candidate = realpath($sourceCandidate['path']);
+                if ($candidate === false) {
+                    continue;
+                }
+                // 보안 — layouts 디렉토리 밖 참조 거부(경로 traversal 방지).
+                if (! str_starts_with($normalize($candidate), $normalize($layoutDirReal))) {
+                    continue;
+                }
+                $resolved = $candidate;
+                break 2;
             }
-            // 보안 — layouts 디렉토리 밖 참조 거부(경로 traversal 방지).
-            if (! str_starts_with($normalize($candidate), $normalize($layoutDirReal))) {
-                continue;
-            }
-            $resolved = $candidate;
-            break;
         }
 
         if ($resolved === false) {
             return null;
         }
 
-        $decoded = json_decode((string) File::get($resolved), true);
-        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+        // 읽기는 규약에 위임한다 (S19 ⑦ · R16). 종전에는 이 자리에서 `.json` 만 파싱했다 —
+        // 짝이 전건 병존하는 동안에는 화면이 멀쩡했지만, 소스만 고친 조각은 반영되지 않고
+        // 마크업 전용 조각은 아예 보이지 않는다. `resolveFragmentSource()` 가 `.g7.html` 을
+        // 우선 고르고 `loadFragmentSource()` 가 메모리 컴파일한다.
+        $source = $this->resolveFragmentSource($resolved);
+        if ($source === null) {
             return null;
         }
 
-        return $decoded;
+        return $this->loadFragmentSource($source, ['context' => 'editor_tree_modal_partial']);
     }
 
     /**
@@ -1799,6 +1899,9 @@ class TemplateService
 
     /**
      * Path Traversal 방지를 위한 경로 정제
+     *
+     * @param  string  $path  파일 경로
+     * @return string 문자열 결과
      */
     private function sanitizePath(string $path): string
     {
@@ -1819,6 +1922,9 @@ class TemplateService
 
     /**
      * 허용된 파일 확장자 확인
+     *
+     * @param  string  $filePath  filePath
+     * @return bool 판정 결과
      */
     private function isAllowedExtension(string $filePath): bool
     {
@@ -1835,6 +1941,9 @@ class TemplateService
 
     /**
      * MIME 타입 감지
+     *
+     * @param  string  $filePath  filePath
+     * @return string 문자열 결과
      */
     private function getMimeType(string $filePath): string
     {
@@ -1883,6 +1992,7 @@ class TemplateService
         $extractPath = $tempPath.'/preview-'.uniqid('template_');
         $manifest = null;
         $errors = [];
+        $icon = null;
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -1892,8 +2002,13 @@ class TemplateService
             );
 
             $manifest = $result['config'];
+
+            // 추출본은 finally 에서 지워지므로 아이콘 검사는 여기(try 안)에서 끝낸다.
+            // 아이콘 규격 위반은 설치를 막지 않는다 — 경고만 보이고 화면은 유형 글리프로 떨어진다.
+            $icon = app(ExtensionIconResolver::class)
+                ->inspectRootForApi($result['sourcePath'], $manifest['icon'] ?? null);
         } catch (\Throwable $e) {
-            $errors[] = $e->getMessage();
+            $errors[] = SafeExceptionMessage::for($e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -1906,6 +2021,7 @@ class TemplateService
 
         return [
             'manifest' => $manifest,
+            'icon' => $icon,
             'validation' => [
                 'errors' => $errors,
                 'is_valid' => $errors === [] && $manifest !== null,
@@ -1956,7 +2072,7 @@ class TemplateService
             // ZipInstallHelper 등 설치 원본 처리의 raw RuntimeException(깨진 zip·manifest
             // 누락 같은 사용자 입력 오류)을 도메인 예외로 승격한다 — 컨트롤러의 좁혀진
             // catch 가 인프라 예외와 구분해 종전 422 계약을 유지하고, 사유는 :error 로 보존.
-            throw new TemplateOperationException('templates.errors.install_failed', ['error' => $e->getMessage()], $e);
+            throw new TemplateOperationException('templates.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -2015,7 +2131,7 @@ class TemplateService
         } catch (\RuntimeException $e) {
             // GithubHelper·ZipInstallHelper 의 raw RuntimeException(잘못된 URL·다운로드
             // 실패·manifest 오류)을 도메인 예외로 승격한다 — 종전 422 계약 유지, 사유 보존.
-            throw new TemplateOperationException('templates.errors.install_failed', ['error' => $e->getMessage()], $e);
+            throw new TemplateOperationException('templates.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -2032,6 +2148,7 @@ class TemplateService
      * _bundled/_pending에만 존재하는 경우(is_installed=false)는 설치 허용합니다.
      *
      * @param  string  $identifier  템플릿 식별자
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 이미 설치된 경우
      */
@@ -2066,7 +2183,29 @@ class TemplateService
             ]);
         }
 
-        return $this->templateManager->getTemplateInfo($identifier);
+        return $this->withLayoutWarnings($this->templateManager->getTemplateInfo($identifier));
+    }
+
+    /**
+     * 설치 결과 템플릿 정보에 방금 설치가 빈 자리로 등록한 조각 참조 경고를 싣습니다 (#712).
+     *
+     * 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록되며, 그 사실을 응답 `data.layout_warnings`
+     * 로 알린다(관리자 화면이 경고 토스트로 보여 준다).
+     *
+     * @param  array|null  $templateInfo  템플릿 정보
+     * @return array|null 경고(`layout_warnings`)를 실은 템플릿 정보
+     */
+    private function withLayoutWarnings(?array $templateInfo): ?array
+    {
+        $warnings = $this->templateManager->takeLastLayoutWarnings();
+
+        if ($templateInfo === null) {
+            return null;
+        }
+
+        $templateInfo['layout_warnings'] = $warnings;
+
+        return $templateInfo;
     }
 
     /**
@@ -2131,13 +2270,18 @@ class TemplateService
 
                 HookManager::doAction('core.templates.after_refresh_layouts', $identifier, $result);
 
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                if (is_array($templateInfo)) {
+                    $templateInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
+                }
+
                 return $templateInfo;
             }
 
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.refresh_layouts_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -2234,7 +2378,7 @@ class TemplateService
             return $result;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'templates' => [__('templates.check_updates_failed', ['error' => $e->getMessage()])],
+                'templates' => [__('templates.check_updates_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -2251,7 +2395,7 @@ class TemplateService
      */
     public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false): array
     {
-        HookManager::doAction('core.templates.before_version_update', $templateName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->templateManager->loadTemplates();
@@ -2259,15 +2403,19 @@ class TemplateService
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 
-            HookManager::doAction('core.templates.after_version_update', $templateName, $result, $templateInfo);
+            // after_version_update 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return array_merge($result, [
                 'template_info' => $templateInfo,
             ]);
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 「업데이트 실패」(422)로 감싸면 화면이 두 번째 요청을 실패로 보여 준다(#138 실측 ②)
+            throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
             // getPrevious()로 원본 에러를 추출하여 이중 래핑 방지
-            $rawError = $e->getPrevious() ? $e->getPrevious()->getMessage() : $e->getMessage();
+            $rawError = SafeExceptionMessage::for(SafeExceptionMessage::isInternal($e) ? $e : ($e->getPrevious() ?? $e));
 
             throw ValidationException::withMessages([
                 'template_name' => [__('templates.errors.update_failed', ['template' => $templateName, 'error' => $rawError])],
@@ -2291,7 +2439,7 @@ class TemplateService
             return $this->templateManager->hasModifiedLayouts($templateName);
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'template_name' => [__('templates.check_modified_layouts_failed', ['error' => $e->getMessage()])],
+                'template_name' => [__('templates.check_modified_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }

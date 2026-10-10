@@ -1,0 +1,8 @@
+<!-- 주문 목록 결제수단 칸에 KG이니시스 테스트 결제 표시를 얹는 조각 — 이커머스가 열어 둔 표시 자리에 자기 배지만 끼운다.
+  컬럼은 이커머스 레이아웃이 단일 출처이므로 여기서 복사하지 않고, 다른 PG 의 결제 여부도 읽지 않는다. -->
+<extension extension-point="admin_order_list_payment_method_badges" priority="100">
+  <!-- 이 PG 의 테스트 결제 주문에만 보인다. 라벨과의 구분선·간격은 배지가 스스로 갖는다(표시 자리는 여러 PG 가 함께 쓰는 빈 칸이다) -->
+  <span data-if="{{kginicis_test_map.data?.[row.order_number] === true}}" class="block mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs font-medium text-orange-500 dark:text-orange-400 leading-tight">($t:sirsoft-pay_kginicis.admin.test_mode_badge)</span>
+  <!-- 주문번호 → 테스트 결제 여부 맵. 목록 본체와 별도로 늦게 도착해도 되므로 progressive 다 -->
+  <data-source id="kginicis_test_map" label_key="$t:sirsoft-pay_kginicis.editor.data_source.kginicis_test_map" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/orders/test-mode-map" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+</extension>

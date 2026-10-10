@@ -97,6 +97,10 @@
       "message": "この画面の変更を破棄し、最後の保存状態に戻します。"
     }
   },
+  "dialog": {
+    "confirm": "OK",
+    "cancel": "キャンセル"
+  },
   "preview": {
     "empty": "左側で編集するルートを選択してください",
     "empty_layout": "このレイアウトに表示するコンポーネントがありません",
@@ -358,6 +362,8 @@
   },
   "action": {
     "no_events": "この要素はアクションを設定できません",
+    "mixed_debounce_warning": "この欄には待ってから実行する動作（デバウンス）とすぐ実行する動作が混在しています。すぐ実行する動作が動くたびに待機中の動作もすぐ実行されるため、待つ動作も入力のたびに実行されます。待たせるには、この欄の動作をすべて待ってから実行するように揃えてください。",
+    "raw_value_hint": "この欄は変更後の値をイベントではなく値そのままで渡します。動作の値欄では変更後の値を {{$args[{index}]}} で読み取ってください（$event.target.value は空です）。",
     "no_recipes": "このテンプレートは使用可能なアクションがありません",
     "add_action": "+ アクションを追加",
     "remove": "アクションを削除",
@@ -390,7 +396,11 @@
       "onSelect": "選択したら",
       "onSelectionChange": "選択が変わったら",
       "onToggle": "展開または折りたたんだら",
-      "onComponentEvent": "特定のイベントが発生したら"
+      "onComponentEvent": "特定のイベントが発生したら",
+      "onPrimaryAction": "主ボタンをクリックすると",
+      "onSecondaryAction": "副ボタンをクリックすると",
+      "onAction": "メニューを選択すると",
+      "onSearch": "検索キーワードを入力すると"
     },
     "advanced": "詳細",
     "add_search": "アクションを検索…",
@@ -1222,7 +1232,8 @@
       "param_merge_query": "既存のクエリを保持",
       "param_scroll": "スクロール位置",
       "param_replace": "履歴を置き換える",
-      "param_overlay_target": "移動中のロード表示エリア"
+      "param_overlay_target": "移動中のロード表示エリア",
+      "param_refetch_data_sources": "再取得するデータソース(カンマ区切り)"
     },
     "open_window": {
       "label": "新しいウィンドウで開く",
@@ -1298,6 +1309,14 @@
       "label": "認証番号の再送信",
       "param_body": "認証リクエスト情報"
     },
+    "login_password_change": {
+      "label": "新しいパスワードでログインを完了",
+      "param_body": "変更リクエスト情報"
+    },
+    "login_password_change_postpone": {
+      "label": "パスワード変更を後回しにする",
+      "param_body": "変更リクエスト情報"
+    },
     "logout": {
       "label": "ログアウト処理",
       "param_target": "移動先"
@@ -1305,6 +1324,9 @@
     "set_locale": {
       "label": "言語を変更",
       "param_target": "言語"
+    },
+    "refresh_consent": {
+      "label": "訪問者の同意状態を再読み込み"
     },
     "emit_event": {
       "label": "コンポーネントイベントを送信",
@@ -1396,11 +1418,18 @@
     "upload": "ファイルアップロード",
     "delete": "削除",
     "delete_confirm": "このファイルを削除します。元に戻すことはできません。",
-    "binary_hint": "このフォーマット(:extension)は本文を直接編集できません。同じ名前で再度アップロードして置き換えてください。",
+    "binary_hint": "このフォーマット({extension})は本文を直接編集できません。同じ名前で再度アップロードして置き換えてください。",
     "apply_hint": "保存すると次の画面から適用されます。",
     "target_label": "管理対象の拡張",
     "type_template": "テンプレート",
     "type_module": "モジュール",
-    "type_plugin": "プラグイン"
+    "type_plugin": "プラグイン",
+    "discard_confirm": "保存されていない編集 {count}件があります。破棄して続行しますか？",
+    "rename": "名前変更",
+    "rename_prompt": "新しいパスを入力してください。拡張子は変更できません。",
+    "search_placeholder": "ファイル名·内容を検索",
+    "no_match": "'{keyword}' と一致するファイル·内容がありません",
+    "unsaved": "保存されていません",
+    "word_wrap": "改行"
   }
 }

@@ -56,6 +56,13 @@ effects:
   - quick_menu_buttons_hidden_when_module_inactive
   - community_section_hidden_when_module_inactive
   - non_admin_blocked_from_dashboard
+  # 서비스·커맨드·API 단위 계약 (K2 2026-10-06 — 집계 「오늘」을 사이트 표준시로 바꾸면서 테스트별 매핑을 붙였다)
+  - overview_zero_when_today_row_missing
+  - post_graph_change_rate_vs_previous_week
+  - board_stats_aggregate_upserts_recent_days_only
+  - board_stats_aggregate_idempotent
+  - aggregate_command_dry_run_persists_nothing
+  - recent_posts_limit_validated
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/DashboardApiTest.php

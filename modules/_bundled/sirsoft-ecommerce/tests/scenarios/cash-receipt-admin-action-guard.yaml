@@ -1,0 +1,18 @@
+feature: 관리자 현금영수증 발급·재발급·발급취소 보호 (S3-D22)
+
+description: |
+  [발급취소] 가 확인 없이 한 번에 결제사 취소를 걸었고, 발급·재발급·발급취소 버튼이 요청 중에도 눌렸다(실측: 주문
+  20261007-0657560638 — 발급번호 730008052 가 클릭 한 번에 취소). `<sequence confirm>` + 진행 플래그 + 버튼 disabled.
+
+axes:
+  action:
+    - cancel
+    - reissue
+    - issue
+
+effects:
+  - cash_receipt_cancel_requires_confirmation # 발급취소는 확인 문구를 받는 순차 동작 안에서 DELETE 한다
+  - cash_receipt_actions_lock_while_requesting # 발급·재발급·발급취소는 요청 중 잠기고 성공·실패에서 풀린다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminCashReceiptActionGuard.test.ts

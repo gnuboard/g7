@@ -538,14 +538,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 추가배송비 템플릿이 삭제되었습니다.",
+    "message": "2개 추가배송비 템플릿이 삭제되었습니다.",
     "data": {
         "deleted_count": 3
     }
 }
 ```
 
-> 컨트롤러가 메시지 치환 파라미터를 전달하지 않으므로 `message` 의 `:count` 자리표시자는 치환되지 않은 채로 내려갑니다. 실제 삭제 건수는 `data.deleted_count` 를 사용하세요.
+> 응답 `message` 의 `:count` 는 `deleted_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -607,14 +607,14 @@ HTTP/1.1 201
 ```json
 {
     "success": true,
-    "message": ":count개 추가배송비 템플릿이 등록되었습니다.",
+    "message": "2개 추가배송비 템플릿이 등록되었습니다.",
     "data": {
         "created_count": 2
     }
 }
 ```
 
-> 컨트롤러가 메시지 치환 파라미터를 전달하지 않으므로 `message` 의 `:count` 자리표시자는 치환되지 않은 채로 내려갑니다. 실제 등록 건수는 `data.created_count` 를 사용하세요.
+> 응답 `message` 의 `:count` 는 `created_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -678,14 +678,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 추가배송비 템플릿의 사용여부가 변경되었습니다.",
+    "message": "2개 추가배송비 템플릿의 사용여부가 변경되었습니다.",
     "data": {
         "updated_count": 3
     }
 }
 ```
 
-> 컨트롤러가 메시지 치환 파라미터를 전달하지 않으므로 `message` 의 `:count` 자리표시자는 치환되지 않은 채로 내려갑니다. 실제 변경 건수는 `data.updated_count` 를 사용하세요.
+> 응답 `message` 의 `:count` 는 `updated_count` 로 치환됩니다.
 
 **에러 응답**
 

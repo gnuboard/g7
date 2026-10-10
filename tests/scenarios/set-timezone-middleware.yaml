@@ -1,0 +1,33 @@
+feature: 요청 시간대 설정 미들웨어
+
+description: |
+  요청의 시간대 값을 검사해 적용하고 잘못된 값은 기본 시간대로 두는 미들웨어 동작을 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 timezone_source 는 적용되는 시간대를 내준 출처다. 미들웨어는 회원 설정, X-Timezone 헤더, GeoIP, 기본값 순으로 첫 유효 값을 쓴다.
+  무효 값, GeoIP 기능 꺼짐 같은 앞 출처의 탈락은 그 아래 출처가 이기는 시험으로 덮는다.
+
+axes:
+  timezone_source: [user_setting, browser_header, geoip, default]
+
+effects:
+  - authenticated_user_timezone_has_priority
+  - browser_timezone_header_applied_for_guest
+  - unsupported_timezone_is_ignored
+  - arbitrary_iana_timezone_accepted
+  - default_timezone_applied_when_no_setting
+  - authenticated_user_unsupported_timezone_falls_back
+  - get_timezone_returns_default_before_middleware
+  - geoip_timezone_applied_when_enabled
+  - geoip_skipped_when_feature_disabled
+  - geoip_invoked_when_feature_enabled
+  - browser_timezone_has_priority_over_geoip
+  - default_timezone_when_geoip_returns_null
+  - real_geoip_with_korean_ip
+  - real_geoip_with_us_ip
+  - real_geoip_with_japanese_ip
+  - real_geoip_skipped_when_feature_disabled_even_with_db
+  - authenticated_user_timezone_overrides_geoip
+
+test_files:
+  - tests/Unit/Middleware/SetTimezoneTest.php

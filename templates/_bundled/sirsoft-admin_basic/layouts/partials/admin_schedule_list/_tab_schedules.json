@@ -1,1810 +1,1857 @@
 {
-  "layout_name": "tab_schedules",
-  "id": "tab_schedules",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeScheduleTab || 'schedules') === 'schedules'}}",
-  "children": [
-    {
-      "id": "statistics_cards",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "grid-2col md:grid-cols-4 mb-6"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:admin.schedules.stats.total"
-                },
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "clock",
-                    "className": "text-xl text-gray-400 dark:text-gray-500"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-page-heading mt-2"
-              },
-              "text": "{{schedules?.data?.statistics?.total ?? 0}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:admin.schedules.stats.active"
-                },
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "check-circle",
-                    "className": "text-xl text-green-500"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "mt-2 text-2xl font-bold text-green-600 dark:text-green-400"
-              },
-              "text": "{{schedules?.data?.statistics?.active ?? 0}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:admin.schedules.stats.success"
-                },
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "check",
-                    "className": "text-xl text-blue-500"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400"
-              },
-              "text": "{{schedules?.data?.statistics?.success ?? 0}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:admin.schedules.stats.failed"
-                },
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "x-circle",
-                    "className": "text-xl text-red-500"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "mt-2 text-2xl font-bold text-red-600 dark:text-red-400"
-              },
-              "text": "{{schedules?.data?.statistics?.failed ?? 0}}"
-            }
-          ]
-        }
-      ]
+    "comment": "예약 작업 목록 탭의 본문 전체 — 통계 카드 · 검색/조건 · 일괄 작업 · 표.\n\n  조건을 다루는 방식이 다른 관리자 목록과 **반대**다. 여기서는 라디오·날짜·정렬을 건드리는\n  즉시 주소가 바뀌고 목록이 다시 온다(로컬에 쌓았다 검색 버튼으로 내보내지 않는다). 그래서\n  조건을 여러 개 바꾸면 그때마다 조회가 일어나고, 뒤로 가기로 직전 조건에 돌아갈 수 있다.\n  예외가 검색어와 검색 대상 둘인데, 이 둘만 로컬에 담겼다가 Enter 나 검색 버튼에서 나간다.\n\n  자주 안 쓰는 조건 넷(마지막 결과·중복 실행·점검 중 실행·모듈)은 접힌 영역에 두었고, 그\n  펼침 상태는 전역이라 초기화 버튼이 함께 접는다.",
+    "meta": {
+        "is_partial": true
     },
-    {
-      "id": "search_filter_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "layout_name": "tab_schedules",
+    "id": "tab_schedules",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeScheduleTab || 'schedules') === 'schedules'}}",
+    "children": [
         {
-          "id": "search_header_row",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center flex-wrap gap-3 mb-4"
-          },
-          "children": [
-            {
-              "id": "search_type_select",
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "search_type",
-                "className": "w-28",
-                "value": "{{_local.searchType || ''}}",
-                "options": [
-                  {
-                    "label": "$t:admin.schedules.search_fields.all",
-                    "value": ""
-                  },
-                  {
-                    "label": "$t:admin.schedules.search_fields.name",
-                    "value": "name"
-                  },
-                  {
-                    "label": "$t:admin.schedules.search_fields.command",
-                    "value": "command"
-                  },
-                  {
-                    "label": "$t:admin.schedules.search_fields.description",
-                    "value": "description"
-                  }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "searchType": "{{$event.target.value}}"
-                  }
-                }
-              ]
+            "id": "statistics_cards",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid-2col md:grid-cols-4 mb-6"
             },
-            {
-              "id": "search_input",
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "name": "search",
-                "placeholder": "$t:admin.schedules.search_input_placeholder",
-                "value": "{{_local.searchQuery || ''}}",
-                "className": "input flex-1 min-w-[200px]"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "searchQuery": "{{$event.target.value}}"
-                  }
-                },
-                {
-                  "type": "keypress",
-                  "key": "Enter",
-                  "actionRef": "searchSchedules"
-                }
-              ]
-            },
-            {
-              "id": "advanced_search_toggle",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "filter",
-                    "className": "text-base"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:admin.schedules.advanced_search"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "basic_filters",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "type_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.type"
-                },
-                {
-                  "type": "composite",
-                  "name": "RadioGroup",
-                  "props": {
-                    "name": "type_filter",
-                    "value": "{{query.type || ''}}",
-                    "options": [
-                      {
-                        "label": "$t:admin.schedules.filters.all",
-                        "value": ""
-                      },
-                      {
-                        "label": "$t:admin.schedules.type.artisan",
-                        "value": "artisan"
-                      },
-                      {
-                        "label": "$t:admin.schedules.type.shell",
-                        "value": "shell"
-                      },
-                      {
-                        "label": "$t:admin.schedules.type.url",
-                        "value": "url"
-                      }
-                    ],
-                    "inline": true
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "mergeQuery": true,
-                        "query": {
-                          "type": "{{$event.target.value}}",
-                          "page": 1
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.stats.total"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "clock",
+                                        "className": "text-xl text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            ]
                         },
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "frequency_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.frequency"
-                },
-                {
-                  "type": "composite",
-                  "name": "RadioGroup",
-                  "props": {
-                    "name": "frequency_filter",
-                    "value": "{{query.frequency || ''}}",
-                    "options": [
-                      {
-                        "label": "$t:admin.schedules.filters.all",
-                        "value": ""
-                      },
-                      {
-                        "label": "$t:admin.schedules.frequency.everyMinute",
-                        "value": "everyMinute"
-                      },
-                      {
-                        "label": "$t:admin.schedules.frequency.hourly",
-                        "value": "hourly"
-                      },
-                      {
-                        "label": "$t:admin.schedules.frequency.daily",
-                        "value": "daily"
-                      },
-                      {
-                        "label": "$t:admin.schedules.frequency.weekly",
-                        "value": "weekly"
-                      },
-                      {
-                        "label": "$t:admin.schedules.frequency.monthly",
-                        "value": "monthly"
-                      },
-                      {
-                        "label": "$t:admin.schedules.frequency.custom",
-                        "value": "custom"
-                      }
-                    ],
-                    "inline": true
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "mergeQuery": true,
-                        "query": {
-                          "frequency": "{{$event.target.value}}",
-                          "page": 1
-                        },
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "created_at_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.created_at"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "calendar",
-                        "className": "text-base text-gray-500"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "date",
-                        "value": "{{query.created_from || ''}}",
-                        "className": "input input-w-sm"
-                      },
-                      "actions": [
                         {
-                          "type": "change",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_from": "{{$event.target.value}}",
-                              "page": 1
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-page-heading mt-2"
                             },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
+                            "text": "{{schedules?.data?.statistics?.total ?? 0}}"
                         }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "~"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "calendar",
-                        "className": "text-base text-gray-500"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "date",
-                        "value": "{{query.created_to || ''}}",
-                        "className": "input input-w-sm"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_to": "{{$event.target.value}}",
-                              "page": 1
-                            },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "id": "date_presets",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex gap-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:admin.schedules.filters.preset.today",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_from": "{{new Date().toISOString().split('T')[0]}}",
-                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
-                              "page": 1
-                            },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:admin.schedules.filters.preset.week",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_from": "{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
-                              "page": 1
-                            },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:admin.schedules.filters.preset.month",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_from": "{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
-                              "page": 1
-                            },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:admin.schedules.filters.preset.3months",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_from": "{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
-                              "page": 1
-                            },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:admin.schedules.filters.preset.6months",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_from": "{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
-                              "page": 1
-                            },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:admin.schedules.filters.preset.year",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/schedules",
-                            "mergeQuery": true,
-                            "query": {
-                              "created_from": "{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
-                              "page": 1
-                            },
-                            "replace": true,
-                            "transition_overlay_target": "schedules_data_grid__body"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "status_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.status"
-                },
-                {
-                  "type": "composite",
-                  "name": "RadioGroup",
-                  "props": {
-                    "name": "status_filter",
-                    "value": "{{query.status || ''}}",
-                    "options": [
-                      {
-                        "label": "$t:admin.schedules.filters.all",
-                        "value": ""
-                      },
-                      {
-                        "label": "$t:admin.schedules.status.active",
-                        "value": "active"
-                      },
-                      {
-                        "label": "$t:admin.schedules.status.inactive",
-                        "value": "inactive"
-                      }
-                    ],
-                    "inline": true
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "mergeQuery": true,
-                        "query": {
-                          "status": "{{$event.target.value}}",
-                          "page": 1
-                        },
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "advanced_search_panel",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.showAdvancedSearch}}",
-          "props": {
-            "className": "mt-4 pt-4 space-y-4"
-          },
-          "children": [
-            {
-              "id": "last_result_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.last_result"
-                },
-                {
-                  "type": "composite",
-                  "name": "RadioGroup",
-                  "props": {
-                    "name": "last_result_filter",
-                    "value": "{{query.last_result || ''}}",
-                    "options": [
-                      {
-                        "label": "$t:admin.schedules.filters.all",
-                        "value": ""
-                      },
-                      {
-                        "label": "$t:admin.schedules.result.success",
-                        "value": "success"
-                      },
-                      {
-                        "label": "$t:admin.schedules.result.failed",
-                        "value": "failed"
-                      },
-                      {
-                        "label": "$t:admin.schedules.result.running",
-                        "value": "running"
-                      },
-                      {
-                        "label": "$t:admin.schedules.result.never",
-                        "value": "never"
-                      }
-                    ],
-                    "inline": true
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "mergeQuery": true,
-                        "query": {
-                          "last_result": "{{$event.target.value}}",
-                          "page": 1
-                        },
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "without_overlapping_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.without_overlapping"
-                },
-                {
-                  "type": "composite",
-                  "name": "RadioGroup",
-                  "props": {
-                    "name": "without_overlapping_filter",
-                    "value": "{{query.without_overlapping || ''}}",
-                    "options": [
-                      {
-                        "label": "$t:admin.schedules.filters.all",
-                        "value": ""
-                      },
-                      {
-                        "label": "$t:admin.schedules.filters.use",
-                        "value": "1"
-                      },
-                      {
-                        "label": "$t:admin.schedules.filters.not_use",
-                        "value": "0"
-                      }
-                    ],
-                    "inline": true
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "mergeQuery": true,
-                        "query": {
-                          "without_overlapping": "{{$event.target.value}}",
-                          "page": 1
-                        },
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "run_in_maintenance_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.run_in_maintenance"
-                },
-                {
-                  "type": "composite",
-                  "name": "RadioGroup",
-                  "props": {
-                    "name": "run_in_maintenance_filter",
-                    "value": "{{query.run_in_maintenance || ''}}",
-                    "options": [
-                      {
-                        "label": "$t:admin.schedules.filters.all",
-                        "value": ""
-                      },
-                      {
-                        "label": "$t:admin.schedules.filters.allow",
-                        "value": "1"
-                      },
-                      {
-                        "label": "$t:admin.schedules.filters.disallow",
-                        "value": "0"
-                      }
-                    ],
-                    "inline": true
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "mergeQuery": true,
-                        "query": {
-                          "run_in_maintenance": "{{$event.target.value}}",
-                          "page": 1
-                        },
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "module_filter_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium min-w-[80px]"
-                  },
-                  "text": "$t:admin.schedules.filters.module"
-                },
-                {
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "module_filter",
-                    "className": "w-48",
-                    "value": "{{query.module || ''}}",
-                    "options": [
-                      {
-                        "label": "$t:admin.schedules.filters.all",
-                        "value": ""
-                      }
                     ]
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "mergeQuery": true,
-                        "query": {
-                          "module": "{{$event.target.value}}",
-                          "page": 1
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.stats.active"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "check-circle",
+                                        "className": "text-xl text-green-500"
+                                    }
+                                }
+                            ]
                         },
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "search_buttons",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4 pt-4 flex justify-center gap-2"
-          },
-          "children": [
-            {
-              "id": "search_button",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "actionRef": "searchSchedules"
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "search",
-                    "className": "text-base"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:common.search"
-                }
-              ]
-            },
-            {
-              "id": "refresh_button",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "refetchDataSource",
-                  "params": {
-                    "dataSourceId": "schedules"
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "refresh-cw",
-                    "className": "text-base"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "reset_button",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "searchQuery": "",
-                        "searchType": "",
-                        "showAdvancedSearch": false
-                      }
-                    },
-                    {
-                      "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — type/frequency/status/검색어가 모두 URL 쿼리로 구동되므로(=이 화면의 필터 SSoT), 병합하면 초기화가 아무 일도 하지 않게 된다.",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/schedules",
-                        "query": {},
-                        "replace": true,
-                        "transition_overlay_target": "schedules_data_grid__body"
-                      }
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:admin.schedules.reset_filters"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "bulk_actions_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-between flex-wrap gap-4 mb-4"
-      },
-      "children": [
-        {
-          "id": "bulk_actions_left",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-label"
-              },
-              "text": "$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}"
-            },
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "bulk_status",
-                "className": "w-32",
-                "placeholder": "$t:admin.schedules.bulk.status_change",
-                "value": "",
-                "options": [
-                  {
-                    "label": "$t:admin.schedules.status.active",
-                    "value": "active"
-                  },
-                  {
-                    "label": "$t:admin.schedules.status.inactive",
-                    "value": "inactive"
-                  }
-                ],
-                "disabled": "{{!_global.selectedScheduleIds?.length}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "bulkStatusAction": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "bulk_action",
-                "className": "w-32",
-                "placeholder": "$t:admin.schedules.bulk.action_run",
-                "value": "",
-                "options": [
-                  {
-                    "label": "$t:admin.schedules.actions.run",
-                    "value": "run"
-                  }
-                ],
-                "disabled": "{{!_global.selectedScheduleIds?.length}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "bulkAction": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{!_global.selectedScheduleIds?.length}}"
-              },
-              "text": "$t:admin.schedules.bulk.apply",
-              "actions": [
-                {
-                  "comment": "handler:'if' 는 미등록 핸들러이고 액션 레벨 'condition' 도 엔진이 무시한다. 등록된 conditions 핸들러 형태로 표기.",
-                  "type": "click",
-                  "handler": "conditions",
-                  "conditions": [
-                    {
-                      "if": "{{_global.bulkStatusAction}}",
-                      "then": {
-                    "handler": "apiCall",
-                    "auth_required": true,
-                    "target": "/api/admin/schedules/bulk-status",
-                    "params": {
-                      "method": "PATCH",
-                      "body": {
-                        "ids": "{{_global.selectedScheduleIds}}",
-                        "is_active": "{{_global.bulkStatusAction === 'active'}}"
-                      }
-                    },
-                    "onSuccess": [
-                      {
-                        "handler": "toast",
-                        "params": {
-                          "type": "success",
-                          "message": "$t:admin.schedules.messages.bulk_status_updated"
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mt-2 text-2xl font-bold text-green-600 dark:text-green-400"
+                            },
+                            "text": "{{schedules?.data?.statistics?.active ?? 0}}"
                         }
-                      },
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "selectedScheduleIds": [],
-                          "bulkStatusAction": ""
-                        }
-                      },
-                      {
-                        "handler": "refetchDataSource",
-                        "params": {
-                          "dataSourceId": "schedules"
-                        }
-                      }
-                    ],
-                    "onError": [
-                      {
-                        "handler": "toast",
-                        "params": {
-                          "type": "error",
-                          "message": "{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"
-                        }
-                      }
                     ]
-                      }
-                    }
-                  ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.stats.success"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "check",
+                                        "className": "text-xl text-blue-500"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400"
+                            },
+                            "text": "{{schedules?.data?.statistics?.success ?? 0}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.stats.failed"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-xmark",
+                                        "className": "text-xl text-red-500"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mt-2 text-2xl font-bold text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{schedules?.data?.statistics?.failed ?? 0}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "list_info_right",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-3 py-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-body font-medium"
-              },
-              "text": "$t:admin.schedules.total_count|count={{schedules?.data?.total ?? 0}}"
+            "id": "search_filter_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "sort_by",
-                "className": "w-40",
-                "value": "{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}",
-                "options": [
-                  {
-                    "label": "$t:admin.schedules.sort.created_at_desc",
-                    "value": "created_at_desc"
-                  },
-                  {
-                    "label": "$t:admin.schedules.sort.created_at_asc",
-                    "value": "created_at_asc"
-                  },
-                  {
-                    "label": "$t:admin.schedules.sort.name_asc",
-                    "value": "name_asc"
-                  },
-                  {
-                    "label": "$t:admin.schedules.sort.name_desc",
-                    "value": "name_desc"
-                  },
-                  {
-                    "label": "$t:admin.schedules.sort.next_run_at_asc",
-                    "value": "next_run_at_asc"
-                  },
-                  {
-                    "label": "$t:admin.schedules.sort.next_run_at_desc",
-                    "value": "next_run_at_desc"
-                  }
-                ]
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/schedules",
-                    "mergeQuery": true,
-                    "query": {
-                      "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                      "sort_order": "{{$event.target.value.split('_').pop()}}",
-                      "page": 1
+                    "id": "search_header_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center flex-wrap gap-3 mb-4"
                     },
-                    "replace": true,
-                    "transition_overlay_target": "schedules_data_grid__body"
-                  }
+                    "children": [
+                        {
+                            "id": "search_type_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "search_type",
+                                "className": "w-28",
+                                "value": "{{_local.searchType || ''}}",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:admin.schedules.search_fields.all"
+                                    },
+                                    {
+                                        "value": "name",
+                                        "label": "$t:admin.schedules.search_fields.name"
+                                    },
+                                    {
+                                        "value": "command",
+                                        "label": "$t:admin.schedules.search_fields.command"
+                                    },
+                                    {
+                                        "value": "description",
+                                        "label": "$t:admin.schedules.search_fields.description"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "search_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "searchQuery": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "type": "keypress",
+                                    "key": "Enter",
+                                    "actionRef": "searchSchedules"
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "search",
+                                "placeholder": "$t:admin.schedules.search_input_placeholder",
+                                "value": "{{_local.searchQuery || ''}}",
+                                "className": "input flex-1 min-w-[200px]"
+                            }
+                        },
+                        {
+                            "id": "advanced_search_toggle",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "접힌 조건 영역을 여닫는다. 이 값만 전역인데, 아래 초기화 버튼이 같은 자리를 닫아 조건과 함께 되돌리기 때문이다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "filter",
+                                        "className": "text-base"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.schedules.advanced_search"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "basic_filters",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "type_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.type"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "고르는 즉시 조회한다 — 아래 조건들도 모두 이 꼴이고, 표 몸통에 덮개를 씌워 새 목록이 올 때까지 이전 내용이 흔들리지 않게 한다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {
+                                                    "type": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "type_filter",
+                                        "value": "{{query.type || ''}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:admin.schedules.filters.all",
+                                                "value": ""
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.type.artisan",
+                                                "value": "artisan"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.type.shell",
+                                                "value": "shell"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.type.url",
+                                                "value": "url"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "frequency_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.frequency"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "「직접 지정」은 정해진 주기가 아니라 식을 손으로 적은 작업들을 모은다 — 그 식이 무엇인지는 여기서 좁히지 못한다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {
+                                                    "frequency": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "frequency_filter",
+                                        "value": "{{query.frequency || ''}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:admin.schedules.filters.all",
+                                                "value": ""
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.frequency.everyMinute",
+                                                "value": "everyMinute"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.frequency.hourly",
+                                                "value": "hourly"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.frequency.daily",
+                                                "value": "daily"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.frequency.weekly",
+                                                "value": "weekly"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.frequency.monthly",
+                                                "value": "monthly"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.frequency.custom",
+                                                "value": "custom"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "created_at_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.created_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "calendar",
+                                                "className": "text-base text-gray-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "이 날짜는 **만든 날**이지 도는 날이 아니다 — 언제 실행되는지로 좁히려면 주기나 마지막 결과를 쓴다.",
+                                                    "type": "change",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_from": "{{$event.target.value}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_start|label={{$t('admin.schedules.filters.created_at')}}",
+                                                "value": "{{query.created_from || ''}}",
+                                                "className": "input input-w-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "calendar",
+                                                "className": "text-base text-gray-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "한쪽만 채워도 조건이 선다(그날 이후 또는 그날 이전). 아래 기간 버튼은 두 칸을 함께 채운다.",
+                                                    "type": "change",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_to": "{{$event.target.value}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_end|label={{$t('admin.schedules.filters.created_at')}}",
+                                                "value": "{{query.created_to || ''}}",
+                                                "className": "input input-w-sm"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "date_presets",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다. 날짜는 계정 시간대(회원 → 사이트 기본)의 달력 날짜다 — 서버가 그 시간대의 하루로 자르므로 브라우저 시간대로 만들면 하루 어긋난다",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_from": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.schedules.filters.preset.today"
+                                        },
+                                        {
+                                            "comment": "최근 7일",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_from": "{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.schedules.filters.preset.week"
+                                        },
+                                        {
+                                            "comment": "최근 30일",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_from": "{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.schedules.filters.preset.month"
+                                        },
+                                        {
+                                            "comment": "최근 90일",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_from": "{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.schedules.filters.preset.3months"
+                                        },
+                                        {
+                                            "comment": "최근 180일",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_from": "{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.schedules.filters.preset.6months"
+                                        },
+                                        {
+                                            "comment": "최근 1년",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/schedules",
+                                                        "mergeQuery": true,
+                                                        "replace": true,
+                                                        "transition_overlay_target": "schedules_data_grid__body",
+                                                        "query": {
+                                                            "created_from": "{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "page": 1
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.schedules.filters.preset.year"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "status_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.status"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "켜짐/꺼짐은 「도는가」이지 「마지막에 성공했는가」가 아니다. 결과로 좁히려면 접힌 영역의 마지막 결과를 쓴다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {
+                                                    "status": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "status_filter",
+                                        "value": "{{query.status || ''}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:admin.schedules.filters.all",
+                                                "value": ""
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.status.active",
+                                                "value": "active"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.status.inactive",
+                                                "value": "inactive"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "advanced_search_panel",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.showAdvancedSearch}}",
+                    "props": {
+                        "className": "mt-4 pt-4 space-y-4"
+                    },
+                    "children": [
+                        {
+                            "id": "last_result_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.last_result"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "「한 번도 안 돔」이 따로 있는 것이 요점이다 — 만들어 놓고 실제로는 돈 적 없는 작업을 찾아내는 갈래다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {
+                                                    "last_result": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "last_result_filter",
+                                        "value": "{{query.last_result || ''}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:admin.schedules.filters.all",
+                                                "value": ""
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.result.success",
+                                                "value": "success"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.result.failed",
+                                                "value": "failed"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.result.running",
+                                                "value": "running"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.result.never",
+                                                "value": "never"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "without_overlapping_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.without_overlapping"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "앞 회차가 아직 안 끝났을 때 겹쳐 돌지 못하게 막아 둔 작업만 골라 본다 — 오래 걸리는 작업이 쌓이는지 확인할 때 쓴다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {
+                                                    "without_overlapping": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "without_overlapping_filter",
+                                        "value": "{{query.without_overlapping || ''}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:admin.schedules.filters.all",
+                                                "value": ""
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.filters.use",
+                                                "value": "1"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.filters.not_use",
+                                                "value": "0"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "run_in_maintenance_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.run_in_maintenance"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "점검 모드에서도 도는 작업을 가려낸다 — 점검 중에 손대면 안 되는 것이 도는지 확인하는 자리다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {
+                                                    "run_in_maintenance": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "run_in_maintenance_filter",
+                                        "value": "{{query.run_in_maintenance || ''}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:admin.schedules.filters.all",
+                                                "value": ""
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.filters.allow",
+                                                "value": "1"
+                                            },
+                                            {
+                                                "label": "$t:admin.schedules.filters.disallow",
+                                                "value": "0"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "module_filter_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium min-w-[80px]"
+                                    },
+                                    "text": "$t:admin.schedules.filters.module"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "**고를 것이 「전체」뿐이다** — 어느 모듈이 낸 작업인지로 좁히려는 칸인데 목록을 채워 주는 곳이 없어, 지금은 조건을 걸 수 없다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {
+                                                    "module": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "module_filter",
+                                        "className": "w-48",
+                                        "value": "{{query.module || ''}}",
+                                        "options": [
+                                            {
+                                                "value": "",
+                                                "label": "$t:admin.schedules.filters.all"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "search_buttons",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4 pt-4 flex justify-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "search_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "actionRef": "searchSchedules"
+                                }
+                            ],
+                            "props": {
+                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "search",
+                                        "className": "text-base"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.search"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "refresh_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "schedules"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "aria-label": "$t:common.refresh",
+                                "title": "$t:common.refresh",
+                                "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "arrows-rotate",
+                                        "className": "text-base"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "reset_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "조건을 전부 털고 질의 없는 주소로 간다(다른 조건들과 달리 여기만 합치지 않는다 —\n              합치면 지우려던 조건이 그대로 남는다). 접어 둔 영역도 함께 닫는다.\n              **검색어를 전역에 비우는데 화면이 읽는 값은 로컬이다** — 그래서 목록은 초기화돼도\n              검색어 칸의 글자는 그대로 남는다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "searchQuery": "",
+                                                "searchType": "",
+                                                "showAdvancedSearch": false
+                                            }
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — type/frequency/status/검색어가 모두 URL 쿼리로 구동되므로(=이 화면의 필터 SSoT), 병합하면 초기화가 아무 일도 하지 않게 된다.",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules",
+                                                "replace": true,
+                                                "transition_overlay_target": "schedules_data_grid__body",
+                                                "query": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.schedules.reset_filters"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
+            ]
+        },
+        {
+            "id": "bulk_actions_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between flex-wrap gap-4 mb-4"
             },
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "per_page",
-                "className": "w-20",
-                "value": "{{query.per_page ?? '20'}}",
-                "options": [
-                  {
-                    "label": "$t:admin.schedules.per_page.10",
-                    "value": "10"
-                  },
-                  {
-                    "label": "$t:admin.schedules.per_page.20",
-                    "value": "20"
-                  },
-                  {
-                    "label": "$t:admin.schedules.per_page.50",
-                    "value": "50"
-                  },
-                  {
-                    "label": "$t:admin.schedules.per_page.100",
-                    "value": "100"
-                  }
-                ]
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/schedules",
-                    "mergeQuery": true,
-                    "query": {
-                      "per_page": "{{$event.target.value}}",
-                      "page": 1
+                    "id": "bulk_actions_left",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
                     },
-                    "replace": true,
-                    "transition_overlay_target": "schedules_data_grid__body"
-                  }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "고르기만 하고 아직 아무것도 하지 않는다 — 실제 적용은 옆의 적용 버튼이고, 그 버튼은 이 값이 있을 때만 움직인다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkStatusAction": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "bulk_status",
+                                "className": "w-32",
+                                "placeholder": "$t:admin.schedules.bulk.status_change",
+                                "value": "",
+                                "disabled": "{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}",
+                                "options": [
+                                    {
+                                        "value": "active",
+                                        "label": "$t:admin.schedules.status.active"
+                                    },
+                                    {
+                                        "value": "inactive",
+                                        "label": "$t:admin.schedules.status.inactive"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "**담기기만 하고 쓰이지 않는다** — 옆의 적용 버튼은 위 상태 변경만 처리하므로, 여기서 「실행」을 골라도 아무 일도 일어나지 않는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkAction": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "bulk_action",
+                                "className": "w-32",
+                                "placeholder": "$t:admin.schedules.bulk.action_run",
+                                "value": "",
+                                "disabled": "{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_run !== true}}",
+                                "options": [
+                                    {
+                                        "value": "run",
+                                        "label": "$t:admin.schedules.actions.run"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "handler:'if' 는 미등록 핸들러이고 액션 레벨 'condition' 도 엔진이 무시한다. 등록된 conditions 핸들러 형태로 표기.",
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{_global.bulkStatusAction}}",
+                                            "then": {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/schedules/bulk-status",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PATCH",
+                                                    "body": {
+                                                        "ids": "{{_global.selectedScheduleIds}}",
+                                                        "is_active": "{{_global.bulkStatusAction === 'active'}}"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.schedules.messages.bulk_status_updated"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedScheduleIds": [],
+                                                            "bulkStatusAction": ""
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "schedules"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}"
+                            },
+                            "text": "$t:admin.schedules.bulk.apply"
+                        }
+                    ]
+                },
+                {
+                    "id": "list_info_right",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 py-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-body font-medium"
+                            },
+                            "text": "$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "「무엇을·어느 방향으로」를 한 칸에 담아 두고 여기서 **마지막 마디를 떼어** 둘로 가른다(`created_at_desc` → 기준 `created_at` + 방향 `desc`). 그래서 기준 이름에 밑줄이 들어가도 괜찮다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/schedules",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "transition_overlay_target": "schedules_data_grid__body",
+                                        "query": {
+                                            "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                            "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "sort_by",
+                                "className": "w-40",
+                                "value": "{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}",
+                                "options": [
+                                    {
+                                        "value": "created_at_desc",
+                                        "label": "$t:admin.schedules.sort.created_at_desc"
+                                    },
+                                    {
+                                        "value": "created_at_asc",
+                                        "label": "$t:admin.schedules.sort.created_at_asc"
+                                    },
+                                    {
+                                        "value": "name_asc",
+                                        "label": "$t:admin.schedules.sort.name_asc"
+                                    },
+                                    {
+                                        "value": "name_desc",
+                                        "label": "$t:admin.schedules.sort.name_desc"
+                                    },
+                                    {
+                                        "value": "next_run_at_asc",
+                                        "label": "$t:admin.schedules.sort.next_run_at_asc"
+                                    },
+                                    {
+                                        "value": "next_run_at_desc",
+                                        "label": "$t:admin.schedules.sort.next_run_at_desc"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "한 쪽에 몇 줄을 볼지. 개수가 바뀌면 지금 쪽 번호가 뜻을 잃으므로 첫 쪽으로 돌아간다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/schedules",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "transition_overlay_target": "schedules_data_grid__body",
+                                        "query": {
+                                            "per_page": "{{$event.target.value}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "per_page",
+                                "className": "w-24",
+                                "value": "{{query.per_page ?? '20'}}",
+                                "options": [
+                                    {
+                                        "value": "10",
+                                        "label": "$t:admin.schedules.per_page.10"
+                                    },
+                                    {
+                                        "value": "20",
+                                        "label": "$t:admin.schedules.per_page.20"
+                                    },
+                                    {
+                                        "value": "50",
+                                        "label": "$t:admin.schedules.per_page.50"
+                                    },
+                                    {
+                                        "value": "100",
+                                        "label": "$t:admin.schedules.per_page.100"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "schedules_data_grid",
-      "type": "composite",
-      "name": "DataGrid",
-      "blur_until_loaded": true,
-      "props": {
-        "columns": [
-          {
-            "field": "name",
-            "header": "$t:admin.schedules.columns.name",
-            "sortable": false,
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "font-medium text-gray-900 dark:text-white"
-                    },
-                    "text": "{{row.name}}"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Code",
-                    "props": {
-                      "className": "block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate"
-                    },
-                    "text": "{{row.command}}"
-                  }
-                ]
-              }
             ]
-          },
-          {
-            "field": "type",
-            "header": "$t:admin.schedules.columns.type",
-            "sortable": false,
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.type === 'artisan'}}",
-                "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                },
-                "text": "$t:admin.schedules.type.artisan"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.type === 'shell'}}",
-                "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-                },
-                "text": "$t:admin.schedules.type.shell"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.type === 'url'}}",
-                "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                },
-                "text": "$t:admin.schedules.type.url"
-              }
-            ]
-          },
-          {
-            "field": "frequency",
-            "header": "$t:admin.schedules.columns.frequency",
-            "sortable": false,
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "text-sm text-gray-900 dark:text-white"
-                    },
-                    "text": "{{row.frequency_label}}"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{row.frequency_detail}}",
-                    "props": {
-                      "className": "block text-tertiary mt-0.5"
-                    },
-                    "text": "{{row.frequency_detail}}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "field": "next_run_at",
-            "header": "$t:admin.schedules.columns.next_run",
-            "sortable": false,
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.is_active && row.next_run_at}}",
-                "props": {
-                  "className": "text-label"
-                },
-                "text": "{{row.next_run_at}}"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{!row.is_active}}",
-                "props": {
-                  "className": "text-sm text-gray-400 dark:text-gray-500"
-                },
-                "text": "-"
-              }
-            ]
-          },
-          {
-            "field": "last_run_at",
-            "header": "$t:admin.schedules.columns.last_run",
-            "sortable": false,
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "if": "{{row.last_run_at}}",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "text-label"
-                    },
-                    "text": "{{row.last_run_at}}"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{row.last_duration}}",
-                    "props": {
-                      "className": "block text-tertiary mt-0.5"
-                    },
-                    "text": "$t:defer:admin.schedules.duration_display|duration={{row.last_duration}}"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{!row.last_run_at}}",
-                "props": {
-                  "className": "text-sm text-gray-400 dark:text-gray-500"
-                },
-                "text": "-"
-              }
-            ]
-          },
-          {
-            "field": "last_result",
-            "header": "$t:admin.schedules.columns.last_result",
-            "sortable": false,
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.last_result === 'success'}}",
-                "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                },
-                "text": "$t:admin.schedules.result.success"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.last_result === 'failed'}}",
-                "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                },
-                "text": "$t:admin.schedules.result.failed"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.last_result === 'running'}}",
-                "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                },
-                "text": "$t:admin.schedules.result.running"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{row.last_result === 'never' || !row.last_result}}",
-                "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-                },
-                "text": "$t:admin.schedules.result.never"
-              }
-            ]
-          },
-          {
-            "field": "is_active",
-            "header": "$t:admin.schedules.columns.status",
-            "sortable": false,
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Toggle",
-                "props": {
-                  "checked": "{{row.is_active}}",
-                  "size": "sm"
-                },
-                "actions": [
-                  {
+        },
+        {
+            "id": "schedules_data_grid",
+            "type": "composite",
+            "name": "DataGrid",
+            "blur_until_loaded": true,
+            "actions": [
+                {
+                    "comment": "쪽 이동만 이력에 쌓지 않는다 — 조건을 바꾼 것은 남기고 쪽 넘긴 것은 남기지 않아, 뒤로 가기가 조건 단위로 움직인다.",
                     "type": "change",
-                    "handler": "apiCall",
-                    "auth_required": true,
-                    "target": "/api/admin/schedules/bulk-status",
+                    "event": "onPageChange",
+                    "handler": "navigate",
                     "params": {
-                      "method": "PATCH",
-                      "body": {
-                        "ids": [
-                          "{{row.id}}"
-                        ],
-                        "is_active": "{{$event.target.checked}}"
-                      }
-                    },
-                    "onSuccess": [
-                      {
-                        "handler": "toast",
-                        "params": {
-                          "type": "success",
-                          "message": "$t:admin.schedules.messages.status_updated"
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "replace": true,
+                        "transition_overlay_target": "schedules_data_grid__body",
+                        "query": {
+                            "page": "{{$args[0]}}"
                         }
-                      },
-                      {
-                        "handler": "refetchDataSource",
-                        "params": {
-                          "dataSourceId": "schedules"
-                        }
-                      }
-                    ],
-                    "onError": [
-                      {
-                        "handler": "toast",
-                        "params": {
-                          "type": "error",
-                          "message": "{{error.message ?? '$t:admin.schedules.errors.status_update_failed'}}"
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        "data": "{{schedules?.data?.data}}",
-        "pagination": true,
-        "serverSidePagination": true,
-        "serverCurrentPage": "{{schedules?.data?.current_page ?? 1}}",
-        "serverTotalPages": "{{schedules?.data?.last_page ?? null}}",
-        "serverHasMorePages": "{{schedules?.data?.has_more_pages ?? false}}",
-        "pageSize": "{{+(query.per_page || 20)}}",
-        "alwaysShowPagination": true,
-        "idField": "id",
-        "selectable": true,
-        "selectionScope": "page",
-        "showColumnSelector": true,
-        "responsiveBreakpoint": 768,
-        "rowActions": [
-          {
-            "id": "run",
-            "label": "$t:admin.schedules.actions.run",
-            "iconName": "play",
-            "disabledField": "abilities.can_run"
-          },
-          {
-            "id": "history",
-            "label": "$t:admin.schedules.actions.history",
-            "iconName": "clock"
-          },
-          {
-            "id": "edit",
-            "label": "$t:common.edit",
-            "iconName": "pencil",
-            "disabledField": "abilities.can_update"
-          },
-          {
-            "id": "duplicate",
-            "label": "$t:admin.schedules.actions.duplicate",
-            "iconName": "copy",
-            "disabledField": "abilities.can_create"
-          },
-          {
-            "id": "delete",
-            "label": "$t:common.delete",
-            "iconName": "trash",
-            "variant": "danger",
-            "disabledField": "abilities.can_delete"
-          }
-        ],
-        "actionsColumnHeader": "$t:common.actions"
-      },
-      "actions": [
-        {
-          "event": "onPageChange",
-          "type": "change",
-          "handler": "navigate",
-          "params": {
-            "path": "/admin/schedules",
-            "mergeQuery": true,
-            "query": {
-              "page": "{{$args[0]}}"
-            },
-            "replace": true,
-            "transition_overlay_target": "schedules_data_grid__body"
-          }
-        },
-        {
-          "event": "onSelectionChange",
-          "type": "action",
-          "handler": "setState",
-          "params": {
-            "target": "global",
-            "selectedScheduleIds": "{{$args[0]}}"
-          }
-        },
-        {
-          "event": "onRowAction",
-          "type": "action",
-          "handler": "switch",
-          "cases": {
-            "run": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "selectedSchedule": "{{$args[1]}}"
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "schedule_run_modal"
-                }
-              ]
-            },
-            "history": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "selectedSchedule": "{{$args[1]}}"
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "schedule_history_modal"
-                }
-              ]
-            },
-            "edit": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "selectedSchedule": "{{$args[1]}}",
-                    "isEditMode": true,
-                    "scheduleForm": {
-                      "type": "{{$args[1].type ?? 'artisan'}}",
-                      "frequency": "{{$args[1].frequency ?? 'daily'}}",
-                      "without_overlapping": "{{!!$args[1].without_overlapping}}",
-                      "run_in_maintenance": "{{!!$args[1].run_in_maintenance}}",
-                      "is_active": "{{!!$args[1].is_active}}"
                     }
-                  }
                 },
                 {
-                  "handler": "openModal",
-                  "target": "schedule_form_modal"
-                }
-              ]
-            },
-            "duplicate": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "selectedSchedule": "{{$args[1]}}"
-                  }
+                    "comment": "고른 줄을 전역에 둔다 — 일괄 작업 영역이 표 위쪽에 따로 있어 그 버튼들의 잠금과 대상 목록이 이 값을 읽는다.",
+                    "type": "action",
+                    "event": "onSelectionChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "selectedScheduleIds": "{{$args[0]}}"
+                    }
                 },
                 {
-                  "handler": "openModal",
-                  "target": "schedule_duplicate_modal"
+                    "comment": "다섯 갈래가 모두 「고른 줄을 담고 창을 연다」는 같은 모양이다 — 창들이 서버를 다시 부르지\n          않고 이 값만 읽기 때문이다. 둘만 다르다: 수정은 「고치는 중」 표시를 함께 켜서 한 창이\n          만들기·고치기 두 몫을 하게 하고, 삭제는 줄 전체가 아니라 번호와 이름만 담는다\n          (그 창이 그 둘만 쓴다).",
+                    "type": "action",
+                    "event": "onRowAction",
+                    "handler": "switch",
+                    "cases": {
+                        "run": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "지난 실행 결과를 비우고 연다 — 결과가 남으면 실행 버튼이 감춰진 채 열린다(Esc·X 로 닫으면 닫기 단추의 초기화를 거치지 않는다).",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedSchedule": "{{$args[1]}}",
+                                        "runResult": null
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "schedule_run_modal"
+                                }
+                            ]
+                        },
+                        "history": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "앞서 연 작업의 이력·쪽 번호가 남아 새 작업의 창에 잠깐이라도 보이지 않게 비우고 1쪽부터 연다(Esc 로 닫으면 닫기 단추의 초기화를 거치지 않는다).",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedSchedule": "{{$args[1]}}",
+                                        "scheduleHistory": null,
+                                        "historyPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "schedule_history_modal"
+                                }
+                            ]
+                        },
+                        "edit": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedSchedule": "{{$args[1]}}",
+                                        "isEditMode": true,
+                                        "scheduleForm": {
+                                            "type": "{{$args[1].type ?? 'artisan'}}",
+                                            "frequency": "{{$args[1].frequency ?? 'daily'}}",
+                                            "without_overlapping": "{{!!$args[1].without_overlapping}}",
+                                            "run_in_maintenance": "{{!!$args[1].run_in_maintenance}}",
+                                            "is_active": "{{!!$args[1].is_active}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "schedule_form_modal"
+                                }
+                            ]
+                        },
+                        "duplicate": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedSchedule": "{{$args[1]}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "schedule_duplicate_modal"
+                                }
+                            ]
+                        },
+                        "delete": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "deleteTargetId": "{{$args[1].id}}",
+                                        "deleteTargetName": "{{$args[1].name}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "schedule_delete_modal"
+                                }
+                            ]
+                        }
+                    }
                 }
-              ]
-            },
-            "delete": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "deleteTargetId": "{{$args[1].id}}",
-                    "deleteTargetName": "{{$args[1].name}}"
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "schedule_delete_modal"
-                }
-              ]
+            ],
+            "props": {
+                "selectedCountText": "",
+                "data": "{{schedules?.data?.data}}",
+                "pagination": true,
+                "serverSidePagination": true,
+                "serverCurrentPage": "{{schedules?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{schedules?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{schedules?.data?.pagination?.has_more_pages ?? false}}",
+                "pageSize": "{{+(query.per_page || 20)}}",
+                "alwaysShowPagination": true,
+                "idField": "id",
+                "selectable": "{{schedules?.data?.abilities?.can_update === true}}",
+                "selectionScope": "page",
+                "showColumnSelector": true,
+                "responsiveBreakpoint": 768,
+                "actionsColumnHeader": "$t:common.actions",
+                "rowActions": [
+                    {
+                        "id": "run",
+                        "label": "$t:admin.schedules.actions.run",
+                        "iconName": "play",
+                        "disabledField": "abilities.can_run"
+                    },
+                    {
+                        "id": "history",
+                        "label": "$t:admin.schedules.actions.history",
+                        "iconName": "clock"
+                    },
+                    {
+                        "id": "edit",
+                        "label": "$t:common.edit",
+                        "iconName": "pencil",
+                        "disabledField": "abilities.can_update"
+                    },
+                    {
+                        "id": "duplicate",
+                        "label": "$t:admin.schedules.actions.duplicate",
+                        "iconName": "copy",
+                        "disabledField": "abilities.can_create"
+                    },
+                    {
+                        "id": "delete",
+                        "label": "$t:common.delete",
+                        "iconName": "trash",
+                        "variant": "danger",
+                        "disabledField": "abilities.can_delete"
+                    }
+                ],
+                "columns": [
+                    {
+                        "field": "name",
+                        "header": "$t:admin.schedules.columns.name",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-medium text-gray-900 dark:text-white"
+                                        },
+                                        "text": "{{row.name}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Code",
+                                        "props": {
+                                            "className": "block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate"
+                                        },
+                                        "text": "{{row.command}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "type",
+                        "header": "$t:admin.schedules.columns.type",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.type === 'artisan'}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                },
+                                "text": "$t:admin.schedules.type.artisan"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.type === 'shell'}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                                },
+                                "text": "$t:admin.schedules.type.shell"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.type === 'url'}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                },
+                                "text": "$t:admin.schedules.type.url"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "frequency",
+                        "header": "$t:admin.schedules.columns.frequency",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-gray-900 dark:text-white"
+                                        },
+                                        "text": "{{row.frequency_label}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.frequency_detail}}",
+                                        "props": {
+                                            "className": "block text-tertiary mt-0.5"
+                                        },
+                                        "text": "{{row.frequency_detail}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "next_run_at",
+                        "header": "$t:admin.schedules.columns.next_run",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.is_active && row.next_run_at}}",
+                                "props": {
+                                    "className": "text-label"
+                                },
+                                "text": "{{row.next_run_at | datetime}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.is_active}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "last_run_at",
+                        "header": "$t:admin.schedules.columns.last_run",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{row.last_run_at}}",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "{{row.last_run_at | datetime}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.last_duration}}",
+                                        "props": {
+                                            "className": "block text-tertiary mt-0.5"
+                                        },
+                                        "text": "$t:defer:admin.schedules.duration_display|duration={{row.last_duration}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.last_run_at}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "last_result",
+                        "header": "$t:admin.schedules.columns.last_result",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.last_result === 'success'}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                },
+                                "text": "$t:admin.schedules.result.success"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.last_result === 'failed'}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                },
+                                "text": "$t:admin.schedules.result.failed"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.last_result === 'running'}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                },
+                                "text": "$t:admin.schedules.result.running"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.last_result === 'never' || !row.last_result}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                                },
+                                "text": "$t:admin.schedules.result.never"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "is_active",
+                        "header": "$t:admin.schedules.columns.status",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Toggle",
+                                "actions": [
+                                    {
+                                        "comment": "줄 하나만 바꾸는데도 **일괄 변경 창구를 그대로 쓴다** — 그래서 대상 목록에 이 줄 하나만 담아 보낸다(단건 전용 창구를 따로 두지 않았다).",
+                                        "type": "change",
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/schedules/bulk-status",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": [
+                                                    "{{row.id}}"
+                                                ],
+                                                "is_active": "{{$event.target.checked}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.schedules.messages.status_updated"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "schedules"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:admin.schedules.errors.status_update_failed'}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "실패하면 목록을 다시 받아 스위치를 서버 값으로 되돌린다(바뀐 채로 남지 않게).",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "schedules"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "checked": "{{row.is_active}}",
+                                    "disabled": "{{row.abilities?.can_update !== true}}",
+                                    "size": "sm",
+                                    "ariaLabel": "{{row.name}}"
+                                }
+                            }
+                        ]
+                    }
+                ]
             }
-          }
         }
-      ]
-    }
-  ]
+    ]
 }

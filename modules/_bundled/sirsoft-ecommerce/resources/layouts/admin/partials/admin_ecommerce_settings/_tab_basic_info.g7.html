@@ -1,0 +1,201 @@
+<!-- 쇼핑몰 설정 — 기본정보 탭. 상호·연락처처럼 폼 자동 바인딩만으로 충분한 항목이라 별도
+  액션이 없다(입력값은 이름 규약으로 `_local.form` 에 담기고 저장은 화면의 저장 버튼이 한다). -->
+<partial description="쇼핑몰 설정 기본 정보 탭 콘텐츠">
+  <div data-ref="tab_content_basic_info" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'basic_info'}}">
+    <div data-ref="shop_info_card" class="admin-card">
+      <h3 data-ref="shop_info_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.title</h3>
+      <div data-ref="shop_info_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.description</div>
+      <div data-ref="shop_info_content" class="row-stack">
+        <div data-ref="field_shop_name" class="form-group">
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.shop_name</span>
+            <span class="text-required">*</span>
+          </label>
+          <!-- w-80(320px) 고정폭은 폰(<768px)의 콘텐츠 영역을 넘긴다(320px 뷰포트에서 32px 초과). 태블릿(768~1023px)은 넘치지 않으므로 portable 이 아니라 mobile(0~767px) 로 한정한다 — portable 로 잡으면 태블릿에서 입력칸이 불필요하게 늘어난다. className 오버라이드는 통째 교체라 에러 분기 표현식을 복제한다. -->
+          <input type="text" name="basic_info.shop_name" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.shop_name_placeholder" class="{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-80' : 'input w-80'}}" disabled="{{_computed.isReadOnly}}">
+            <responsive on="mobile" class="{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-full' : 'input w-full'}}"/>
+          </input>
+          <span data-if="{{_local.errors?.['basic_info.shop_name']}}" class="form-error">{{_local.errors?.['basic_info.shop_name']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="field_route_path" class="form-group">
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.route_path</span>
+            <span data-if="{{!_local.form?.basic_info?.no_route}}" class="text-required">*</span>
+          </label>
+          <input type="text" name="basic_info.route_path" placeholder="shop" disabled="{{_computed.isReadOnly || _local.form?.basic_info?.no_route === true}}" class="{{_local.errors?.['basic_info.route_path'] ? 'input input-error w-60' : 'input w-60'}}{{_local.form?.basic_info?.no_route ? 'opacity-50 cursor-not-allowed' : ''}}"/>
+          <span data-if="{{_local.errors?.['basic_info.route_path']}}" class="form-error">{{_local.errors?.['basic_info.route_path']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="field_no_route" class="flex-center gap-2">
+          <input aria-label="$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.no_route" type="checkbox" name="basic_info.no_route" class="checkbox" disabled="{{_computed.isReadOnly}}"/>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.no_route</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="business_info_card" class="admin-card">
+      <h3 data-ref="business_info_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.title</h3>
+      <div data-ref="business_info_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.description</div>
+      <div data-ref="business_info_content" class="row-stack">
+        <div data-ref="row_company_business_number" class="grid-2col-responsive">
+          <div data-ref="field_company_name" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.company_name</label>
+            <input type="text" name="basic_info.company_name" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.company_name_placeholder" class="{{_local.errors?.['basic_info.company_name'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.company_name']}}" class="form-error">{{_local.errors?.['basic_info.company_name']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_business_number" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_number</label>
+            <div class="input-split">
+              <input type="text" name="basic_info.business_number_1" placeholder="123" :maxLength="3" class="{{_local.errors?.['basic_info.business_number_1'] ? 'input input-error w-16 text-center' : 'input w-16 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span class="input-split-separator">-</span>
+              <input type="text" name="basic_info.business_number_2" placeholder="45" :maxLength="2" class="{{_local.errors?.['basic_info.business_number_2'] ? 'input input-error w-12 text-center' : 'input w-12 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span class="input-split-separator">-</span>
+              <input type="text" name="basic_info.business_number_3" placeholder="67890" :maxLength="5" class="{{_local.errors?.['basic_info.business_number_3'] ? 'input input-error w-20 text-center' : 'input w-20 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+            </div>
+            <span data-if="{{_local.errors?.['basic_info.business_number_1'] || _local.errors?.['basic_info.business_number_2'] || _local.errors?.['basic_info.business_number_3']}}" class="form-error">{{_local.errors?.['basic_info.business_number_1']?.[0] ?? _local.errors?.['basic_info.business_number_2']?.[0] ?? _local.errors?.['basic_info.business_number_3']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="row_ceo_business_type" class="grid-2col-responsive">
+          <div data-ref="field_ceo_name" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.ceo_name</label>
+            <input type="text" name="basic_info.ceo_name" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.ceo_name_placeholder" class="{{_local.errors?.['basic_info.ceo_name'] ? 'input input-error w-60' : 'input w-60'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.ceo_name']}}" class="form-error">{{_local.errors?.['basic_info.ceo_name']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_business_type" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_type</label>
+            <input type="text" name="basic_info.business_type" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_type_placeholder" class="{{_local.errors?.['basic_info.business_type'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.business_type']}}" class="form-error">{{_local.errors?.['basic_info.business_type']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="field_business_category" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_category</label>
+          <!-- w-80(320px) 고정폭은 폰(<768px)의 콘텐츠 영역을 넘긴다(320px 뷰포트에서 32px 초과). 태블릿(768~1023px)은 넘치지 않으므로 portable 이 아니라 mobile(0~767px) 로 한정한다 — portable 로 잡으면 태블릿에서 입력칸이 불필요하게 늘어난다. className 오버라이드는 통째 교체라 에러 분기 표현식을 복제한다. -->
+          <input type="text" name="basic_info.business_category" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_category_placeholder" class="{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-80' : 'input w-80'}}" disabled="{{_computed.isReadOnly}}">
+            <responsive on="mobile" class="{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-full' : 'input w-full'}}"/>
+          </input>
+          <span data-if="{{_local.errors?.['basic_info.business_category']}}" class="form-error">{{_local.errors?.['basic_info.business_category']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="field_address" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.address</label>
+          <div>
+            <!-- 우편번호 줄·기본주소·상세주소가 세로로 쌓이는 묶음 — 줄 사이 간격이 없으면 입력칸 테두리가 서로 붙는다. -->
+            <div class="stack-tight">
+              <div class="flex-center gap-2">
+                <input type="text" name="basic_info.zipcode" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.zipcode" class="input w-28" :readOnly="false" disabled="{{_computed.isReadOnly}}"/>
+                <!-- 주입된 [주소 검색] 버튼도 읽기 전용이면 잠근다 — 확장점은 호스트 상태를 모르므로 disabled 로 넘긴다. -->
+                <extension-point name="address_search_slot" data-ref="address_search_slot" disabled="{{_computed.isReadOnly}}">
+                  <prop name="readOnlyFields">
+                    <item>basic_info.zipcode</item>
+                    <item>basic_info.base_address</item>
+                  </prop>
+                  <prop name="targetFields">
+                    <field name="zipcode" value="form.basic_info.zipcode"/>
+                    <field name="address" value="form.basic_info.base_address"/>
+                    <field name="region" value="form.basic_info.region"/>
+                    <field name="city" value="form.basic_info.city"/>
+                  </prop>
+                </extension-point>
+              </div>
+              <input type="text" name="basic_info.base_address" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.base_address" class="input" :readOnly="false" disabled="{{_computed.isReadOnly}}"/>
+              <input type="text" name="basic_info.detail_address" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.detail_address" class="{{_local.errors?.['basic_info.detail_address'] ? 'input input-error md:w-96' : 'input md:w-96'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['basic_info.zipcode'] || _local.errors?.['basic_info.base_address'] || _local.errors?.['basic_info.detail_address']}}" class="form-error">{{_local.errors?.['basic_info.zipcode']?.[0] ?? _local.errors?.['basic_info.base_address']?.[0] ?? _local.errors?.['basic_info.detail_address']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="row_phone_fax" class="grid-2col-responsive">
+          <div data-ref="field_phone" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.phone</label>
+            <div class="input-split">
+              <input type="text" name="basic_info.phone_1" placeholder="02" :maxLength="4" class="{{_local.errors?.['basic_info.phone_1'] ? 'input input-error w-14 text-center' : 'input w-14 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span class="input-split-separator">-</span>
+              <input type="text" name="basic_info.phone_2" placeholder="1234" :maxLength="4" class="{{_local.errors?.['basic_info.phone_2'] ? 'input input-error w-16 text-center' : 'input w-16 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span class="input-split-separator">-</span>
+              <input type="text" name="basic_info.phone_3" placeholder="5678" :maxLength="4" class="{{_local.errors?.['basic_info.phone_3'] ? 'input input-error w-16 text-center' : 'input w-16 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+            </div>
+            <span data-if="{{_local.errors?.['basic_info.phone_1'] || _local.errors?.['basic_info.phone_2'] || _local.errors?.['basic_info.phone_3']}}" class="form-error">{{_local.errors?.['basic_info.phone_1']?.[0] ?? _local.errors?.['basic_info.phone_2']?.[0] ?? _local.errors?.['basic_info.phone_3']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_fax" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.fax</label>
+            <div class="input-split">
+              <input type="text" name="basic_info.fax_1" placeholder="02" :maxLength="4" class="{{_local.errors?.['basic_info.fax_1'] ? 'input input-error w-14 text-center' : 'input w-14 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span class="input-split-separator">-</span>
+              <input type="text" name="basic_info.fax_2" placeholder="1234" :maxLength="4" class="{{_local.errors?.['basic_info.fax_2'] ? 'input input-error w-16 text-center' : 'input w-16 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span class="input-split-separator">-</span>
+              <input type="text" name="basic_info.fax_3" placeholder="5678" :maxLength="4" class="{{_local.errors?.['basic_info.fax_3'] ? 'input input-error w-16 text-center' : 'input w-16 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+            </div>
+            <span data-if="{{_local.errors?.['basic_info.fax_1'] || _local.errors?.['basic_info.fax_2'] || _local.errors?.['basic_info.fax_3']}}" class="form-error">{{_local.errors?.['basic_info.fax_1']?.[0] ?? _local.errors?.['basic_info.fax_2']?.[0] ?? _local.errors?.['basic_info.fax_3']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="field_email" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email</label>
+          <!-- flex-center 는 nowrap 이고 자식이 고정폭(아이디 w-36 + @ + 도메인 입력 + '직접입력' 드롭다운 104px)이라 좁은 뷰포트에서 이 행이 콘텐츠 영역을 71px 넘긴다 → portable 에서 줄바꿈. -->
+          <div class="flex-center gap-2">
+            <responsive on="portable" class="flex-center flex-wrap gap-2"/>
+            <input type="text" name="basic_info.email_id" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_id_placeholder" class="{{_local.errors?.['basic_info.email_id'] ? 'input input-error w-36' : 'input w-36'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span class="text-label-subtle">@</span>
+            <input type="text" name="basic_info.email_domain" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_domain_placeholder" class="{{_local.errors?.['basic_info.email_domain'] ? 'input input-error w-36' : 'input w-36'}}" disabled="{{_computed.isReadOnly}}"/>
+            <select name="basic_info.email_domain_select" aria-label="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_domain_select" class="w-28" value="" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_domain_direct</option>
+                <option value="gmail.com">gmail.com</option>
+                <option value="naver.com">naver.com</option>
+                <option value="daum.net">daum.net</option>
+              </options>
+            </select>
+          </div>
+          <span data-if="{{_local.errors?.['basic_info.email_id'] || _local.errors?.['basic_info.email_domain']}}" class="form-error">{{_local.errors?.['basic_info.email_id']?.[0] ?? _local.errors?.['basic_info.email_domain']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="row_privacy_officer" class="grid-2col-responsive">
+          <div data-ref="field_privacy_officer" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.privacy_officer</label>
+            <input type="text" name="basic_info.privacy_officer" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.privacy_officer_placeholder" class="{{_local.errors?.['basic_info.privacy_officer'] ? 'input input-error w-60' : 'input w-60'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.privacy_officer']}}" class="form-error">{{_local.errors?.['basic_info.privacy_officer']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_privacy_officer_email" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.privacy_officer_email</label>
+            <input type="email" name="basic_info.privacy_officer_email" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.privacy_officer_email_placeholder" class="{{_local.errors?.['basic_info.privacy_officer_email'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.privacy_officer_email']}}" class="form-error">{{_local.errors?.['basic_info.privacy_officer_email']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="row_order_numbers" class="grid-2col-responsive">
+          <div data-ref="field_mail_order_number" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.mail_order_number</label>
+            <input type="text" name="basic_info.mail_order_number" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.mail_order_number_placeholder" class="{{_local.errors?.['basic_info.mail_order_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.mail_order_number']}}" class="form-error">{{_local.errors?.['basic_info.mail_order_number']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_telecom_number" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.telecom_number</label>
+            <input type="text" name="basic_info.telecom_number" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.telecom_number_placeholder" class="{{_local.errors?.['basic_info.telecom_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.telecom_number']}}" class="form-error">{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="public_asset_storage_card" class="admin-card">
+      <h3 data-ref="public_asset_storage_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.title</h3>
+      <div data-ref="public_asset_storage_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.description</div>
+      <div data-ref="field_public_asset_disk" class="form-group">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.disk</label>
+        <div class="w-full md:w-64">
+          <select name="basic_info.public_asset_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}" options="{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"/>
+          <span data-if="{{_local.errors?.['basic_info.public_asset_disk']}}" class="form-error">{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}</span>
+          <!-- 쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다 -->
+          <div data-if="{{!!_local.form?.basic_info?.public_asset_disk_unavailable}}" role="status" class="text-warning-soft mt-2">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.unavailable|disk={{_local.form?.basic_info?.public_asset_disk_unavailable}}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.help</div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="inquiry_settings_card" class="admin-card">
+      <h3 data-ref="inquiry_settings_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.title</h3>
+      <div data-ref="inquiry_settings_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.description</div>
+      <div data-ref="inquiry_settings_body">
+        <extension-point name="inquiry_board_setting">
+          <default>
+            <div data-ref="inquiry_board_setting_fallback" class="alert-info">
+              <icon data-ref="inquiry_board_setting_fallback_icon" name="circle-info" class="text-blue-500 dark:text-blue-400 shrink-0"/>
+              <span data-ref="inquiry_board_setting_fallback_text" class="text-info-soft">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.module_not_installed</span>
+            </div>
+          </default>
+        </extension-point>
+      </div>
+    </div>
+  </div>
+</partial>

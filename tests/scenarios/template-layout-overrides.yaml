@@ -1,0 +1,40 @@
+feature: 템플릿의 모듈 레이아웃 오버라이드 등록·정리 (TemplateManager)
+
+description: |
+  템플릿은 `layouts/overrides/{모듈 식별자}/**` 아래 파일로 모듈 레이아웃을 대체한다. TemplateManager 가
+  그 파일을 template_layouts 행(source_type=template, source_identifier=템플릿 식별자)으로 등록하고,
+  파일에서 사라진 오버라이드 행을 정리하며, 관련 레이아웃 캐시와 확장 캐시 버전을 갱신한다.
+
+  축 step 은 오버라이드 수명의 단계다.
+    - register: 오버라이드 디렉터리 스캔 결과를 행으로 등록 (여러 모듈·재등록·디렉터리 부재 포함)
+    - name_resolution: 파일 경로 → `{모듈}_{경로}` 레이아웃 이름
+    - scan: 하위 디렉터리까지 재귀 스캔
+    - content_extract: 파일 JSON 에서 메타 필드(layout_name·extends)를 뺀 content 추출
+    - orphan_cleanup: 파일에 더는 없는 이 템플릿 소유 행 정리. 파일에서 등록된 행(원본 해시 보유)만
+      대상이고, 해시 없는 행(편집기에서 새로 만든 레이아웃)과 다른 템플릿이 등록한 행은 남긴다(#703)
+    - cache: 오버라이드 레이아웃 캐시 무효화와 확장 캐시 버전 증가·조회·재생성
+
+axes:
+  step: [register, name_resolution, scan, content_extract, orphan_cleanup, cache]
+
+effects:
+  - override_file_registered_as_template_source
+  - override_source_type_is_template
+  - overrides_for_each_module_registered
+  - reregistration_updates_single_row
+  - missing_overrides_directory_is_noop
+  - override_name_prefixed_with_module_identifier
+  - nested_path_segments_joined_with_underscore
+  - override_files_scanned_recursively
+  - content_excludes_layout_meta_fields
+  - renamed_override_orphan_removed
+  - other_template_overrides_preserved
+  - all_file_overrides_removed_when_directory_gone
+  - orphan_cleanup_clears_layout_cache
+  - override_layout_cache_invalidated
+  - extension_cache_version_bumped
+  - extension_cache_version_read
+  - missing_cache_version_regenerated
+
+test_files:
+  - tests/Unit/Extension/TemplateManagerOverrideTest.php

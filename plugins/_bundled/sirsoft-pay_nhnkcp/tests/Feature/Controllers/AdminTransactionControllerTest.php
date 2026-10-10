@@ -23,7 +23,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
         $order = OrderFactory::new()->create([
             'user_id' => User::factory()->create()->id,
-            'order_number' => 'ORD-KCP-ADMIN-' . random_int(10000, 99999),
+            'order_number' => 'ORD-KCP-ADMIN-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
             'total_amount' => 50000,
             'total_due_amount' => 0,
@@ -63,7 +63,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         $data = $response->json('data');
         $this->assertContains($data['_embedded_pg_provider_label'] ?? null, ['카카오페이', 'KakaoPay']);
         $this->assertSame(
-            ($data['_embedded_pg_provider_label'] ?? '') . ' (' . ($data['_base_pay_method_label'] ?? '') . ')',
+            ($data['_embedded_pg_provider_label'] ?? '').' ('.($data['_base_pay_method_label'] ?? '').')',
             $data['_pay_method_label'] ?? null,
         );
     }
@@ -75,7 +75,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
         $order = OrderFactory::new()->create([
             'user_id' => User::factory()->create()->id,
-            'order_number' => 'ORD-KCP-CANCELLED-' . random_int(10000, 99999),
+            'order_number' => 'ORD-KCP-CANCELLED-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::CANCELLED,
             'total_amount' => 1100,
             'total_due_amount' => 0,
@@ -111,7 +111,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         DB::table('ecommerce_order_refunds')->insert([
             'order_id' => $order->id,
             'order_cancel_id' => null,
-            'refund_number' => 'RF-KCP-' . random_int(10000, 99999),
+            'refund_number' => 'RF-KCP-'.random_int(10000, 99999),
             'refund_status' => RefundStatusEnum::COMPLETED->value,
             'refund_method' => 'pg',
             'refund_amount' => 1100,

@@ -1,0 +1,352 @@
+<!-- 주문서의 배송지 칸 — 이 조각만 **금액을 움직인다**. 국가·우편번호가 배송비를 바꾸므로 그 둘이
+     달라질 때마다 주문서를 서버로 다시 보내(PUT) 계산된 금액을 받아 온다. 나머지 칸(받는분·연락처·
+     요청사항)은 담기만 한다. 저장된 배송지를 고르는 경로와 직접 입력하는 경로가 같은 `_local.shipping`
+     한 자리로 모이고, 그 값이 곧 주문 확정 때 보내는 배송지다. -->
+<partial description="배송지 정보 입력 섹션 (PC/모바일 반응형)">
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+    <!-- 섹션 헤더 -->
+    <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+      <icon name="truck" size="md" class="text-gray-700 dark:text-gray-300"/>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+        $t:shop.checkout.shipping_info
+      </h2>
+    </div>
+    <!-- 저장된 배송지 탭 + 배송지 관리 버튼 (로그인 사용자만). 비로그인 시 /api/auth/user 401 fallback 으로 _global.currentUser 가 [] 가 될 수 있어 `!= null` 비교는 비회원도 truthy → uuid 키 존재 여부로 판정 -->
+    <div data-if="{{_global.currentUser?.uuid}}" class="flex flex-wrap gap-2 mb-4">
+      <!-- 저장된 배송지 목록 (배송지가 있을 때만) -->
+      <div data-if="{{(userAddresses?.data?.addresses?.data ?? []).length > 0}}" data-each="addr, addrIndex in {{userAddresses?.data?.addresses?.data ?? []}}" class="contents">
+        <!-- 저장된 배송지 칩 — 누르면 저장 형식(UserAddress)을 주문서 형식으로 옮겨 담고 배송비를 다시 받는다.
+             두 형식의 필드 이름이 달라(도시·주state·우편번호가 해외 주소에서 `intl_*` 로 갈린다) 한 칸씩 옮긴다 -->
+        <button type="button" class="{{_local.selectedAddressId === addr.id ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+          <responsive on="portable" class="{{_local.selectedAddressId === addr.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-xs font-medium' : 'px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-xs hover:bg-gray-50 dark:hover:bg-gray-700'}}"/>
+          <on type="click">
+            <set-state target="local" selectedAddressId="{{addr.id}}"/>
+            <set-state target="local" selectedAddressObj="{{addr}}"/>
+            <!-- shipping 필드명을 shipping_address API 형식에 맞춤 (UserAddress → shipping 변환). B3: 해외 주소 선택 시 UserAddress(city/state/postal_code) → 체크아웃 폼(intl_city/intl_state/intl_postal_code) 변환 + address_line_1/2 포함. KR 주소는 intl_* 가 빈 값이므로 무해. -->
+            <set-state target="local">
+              <field name="shipping">
+                <field name="recipient_name" value="{{addr.recipient_name}}"/>
+                <field name="recipient_phone" value="{{addr.recipient_phone}}"/>
+                <field name="country_code" value="{{addr.country_code ?? 'KR'}}"/>
+                <field name="zipcode" value="{{addr.zipcode ?? ''}}"/>
+                <field name="address" value="{{addr.address ?? ''}}"/>
+                <field name="address_detail" value="{{addr.address_detail ?? ''}}"/>
+                <field name="region" value="{{addr.region ?? ''}}"/>
+                <field name="address_line_1" value="{{addr.address_line_1 ?? ''}}"/>
+                <field name="address_line_2" value="{{addr.address_line_2 ?? ''}}"/>
+                <field name="intl_city" value="{{addr.city ?? ''}}"/>
+                <field name="intl_state" value="{{addr.state ?? ''}}"/>
+                <field name="intl_postal_code" value="{{addr.postal_code ?? ''}}"/>
+              </field>
+            </set-state>
+            <!-- checkout.zipcode, country_code 업데이트 (도서산간 배송비 계산용) -->
+            <set-state target="local" checkout.zipcode="{{addr.zipcode}}" checkout.country_code="{{addr.country_code ?? 'KR'}}"/>
+            <!-- 배송지 변경 시 checkout API 호출 (배송비 재계산) -->
+            <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+              <success>
+                <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          {{$localized(addr.name)}} ({{addr.recipient_name}})
+        </button>
+      </div>
+      <!-- 배송지 관리 버튼 (항상 표시) -->
+      <button type="button" class="px-4 py-2 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1">
+        <responsive on="portable" class="px-3 py-1.5 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded-full text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"/>
+        <on type="click">
+          <!-- 배송지 관리 창을 목록 모드로 연다 — 같은 창이 등록/수정 모드로도 열리므로 모드를 먼저 정한다 -->
+          <sequence>
+            <set-state target="local" addressModalMode="list"/>
+            <open-modal target="addressManageModal"/>
+          </sequence>
+        </on>
+        <icon name="cog" size="sm"/>
+        <span>$t:shop.checkout.manage_addresses</span>
+      </button>
+    </div>
+    <!-- 주문자 정보와 동일 체크박스 -->
+    <div class="flex items-center gap-2 mb-4">
+      <responsive on="portable" class="flex items-center gap-2 mb-3"/>
+      <checkbox id="same_as_orderer" name="same_as_orderer" checked="{{_local.sameAsOrderer ?? false}}">
+        <on type="change">
+          <!-- 켤 때만 주문자 값을 옮긴다 — 끌 때 배송지를 비우면 이미 고쳐 둔 값까지 날아가기 때문 -->
+          <sequence>
+            <set-state target="local" sameAsOrderer="{{$event.target.checked}}"/>
+            <set-state if="{{$event.target.checked}}" target="local" shipping.recipient_name="{{_local.orderer?.name ?? _global.currentUser?.name}}" shipping.recipient_phone="{{_local.orderer?.phone ?? _global.currentUser?.phone}}"/>
+          </sequence>
+        </on>
+      </checkbox>
+      <label for="same_as_orderer" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">$t:shop.checkout.same_as_orderer</label>
+    </div>
+    <!-- 배송 국가 선택 (국제 배송 활성화 시만 표시). 선택값·국내/해외 주소 폼·결제 버튼 잠금·배송비 계산이 모두
+         같은 자리(_local.shipping.country_code, 없으면 주문서 진입 때 시드한 _local.checkout.country_code)를 본다 —
+         선택 칸만 선호 배송국가를 보고 주소 폼은 KR 로 떨어지면 「미국」이 골라진 채 국내 폼이 보였다. -->
+    <div data-if="{{shippingSettings?.data?.shipping?.international_shipping_enabled === true}}" class="mb-4">
+      <responsive on="portable" class="mb-3"/>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:shop.checkout.shipping_country</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <select name="country_code" value="{{_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR'}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: $localized(c.name) || c.code }))}}">
+        <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+        <on type="change">
+          <!-- 배송 국가 변경. 이전 국가의 우편번호·주소를 함께 비우고 배송비를 다시 계산한다 — 남겨 두면 다른 나라 주소로 배송비가 잘못 매겨진다 -->
+          <sequence>
+            <!-- 국가 변경 시 주소 필드 초기화 (이전 국가의 우편번호/주소가 남아 다른 국가 배송비에 잘못 반영되는 것 방지)
+                 배송국가 변경 시 checkout API 호출(배송비 재계산). 저장배송지 선택/주소검색 경로와 동일하게 PUT 으로 country_code 를 저장해 미리보기 금액과 주문 확정 재계산(저장값 기준)이 일치하도록 보장한다 — 주문서 선택국가가 SSoT. -->
+            <set-state target="local" shipping.country_code="{{$event.target.value}}" checkout.country_code="{{$event.target.value}}"/>
+            <set-state target="local" shipping.zipcode="" shipping.address="" shipping.address_detail="" shipping.address_line_1="" shipping.address_line_2="" shipping.intl_city="" shipping.intl_state="" shipping.intl_postal_code=""/>
+            <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+              <success>
+                <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+      </select>
+    </div>
+    <!-- 받는분 + 연락처 2컬럼 그리드 (모바일: 1컬럼) -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <responsive on="portable" class="grid grid-cols-1 gap-3 mb-3"/>
+      <!-- 받는 분 -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <span>$t:shop.checkout.recipient_name</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="text" name="recipient_name" value="{{_local.shipping?.recipient_name ?? ''}}" placeholder="$t:shop.checkout.recipient_name_placeholder" class="{{_local.errors?.['shipping.recipient_name'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+          <responsive on="portable" class="{{_local.errors?.['shipping.recipient_name'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
+          <on type="change">
+            <!-- 받는 분 이름 -->
+            <set-state target="local" shipping.recipient_name="{{$event.target.value}}"/>
+          </on>
+          <on type="blur">
+            <!-- 「주문자와 동일」이 켜져 있으면 반대 방향으로도 따라간다 — 어느 칸을 고쳐도 둘이 어긋나지 않게 -->
+            <set-state if="{{_local.sameAsOrderer}}" target="local" orderer.name="{{_local.shipping?.recipient_name ?? ''}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.errors?.['shipping.recipient_name']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.recipient_name']?.[0] ?? ''}}</span>
+      </div>
+      <!-- 연락처 -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <span>$t:shop.checkout.recipient_phone</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="tel" name="recipient_phone" value="{{_local.shipping?.recipient_phone ?? ''}}" placeholder="$t:shop.checkout.recipient_phone_placeholder" class="{{_local.errors?.['shipping.recipient_phone'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+          <responsive on="portable" class="{{_local.errors?.['shipping.recipient_phone'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
+          <on type="change">
+            <!-- 받는 분 연락처 — 배송 안내 문자가 가는 번호다 -->
+            <set-state target="local" shipping.recipient_phone="{{$event.target.value}}"/>
+          </on>
+          <on type="blur">
+            <!-- 이름과 같은 이유로 반대 방향 동기 -->
+            <set-state if="{{_local.sameAsOrderer}}" target="local" orderer.phone="{{_local.shipping?.recipient_phone ?? ''}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.errors?.['shipping.recipient_phone']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.recipient_phone']?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <!-- 국내 주소 검색 - sirsoft-daum_postcode 플러그인 연동 (KR 국가만 표시) -->
+    <div data-if="{{(_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR'}}" class="mb-4">
+      <responsive on="portable" class="mb-3"/>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:shop.checkout.address</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <div class="space-y-2">
+        <!-- 우편번호 + 검색 버튼 -->
+        <div class="flex gap-2">
+          <!-- 주소 검색 SDK 를 못 불러오면 이 칸은 편집 가능 상태로 열린다(플러그인 폴백). 그때 사용자가 친 값이 상태로 가려면 이 change 액션이 있어야 한다 — 평소에는 openPostcode 가 shipping.* 를 직접 써서 넣으므로 없어도 드러나지 않지만, 폴백 상황에서는 결제 버튼이 이 값을 요구해 영영 비활성이 된다. -->
+          <input type="text" name="zipcode" value="{{_local.shipping?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.errors?.['shipping.zipcode'] ? 'w-28 px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
+            <responsive on="portable" class="{{_local.errors?.['shipping.zipcode'] ? 'w-24 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
+            <on type="change">
+              <set-state target="local" shipping.zipcode="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <extension-point name="address_search_slot" data-ref="checkout_address_search_slot">
+            <prop name="readOnlyFields">
+              <item>zipcode</item>
+              <item>address</item>
+            </prop>
+            <callback name="onAddressSelect">
+              <sequence>
+                <!-- 그누보드7 표준 필드명 사용 (플러그인이 변환 후 전달) -->
+                <set-state target="local" shipping.zipcode="{{$event.zipcode}}" shipping.address="{{$event.address}}" shipping.region="{{$event.region}}" shipping.city="{{$event.city}}"/>
+                <!-- checkout.zipcode, country_code 업데이트 (도서산간 배송비 계산용) -->
+                <set-state target="local" checkout.zipcode="{{$event.zipcode}}" checkout.country_code="{{$event.countryCode}}"/>
+                <!-- 배송지 변경 시 checkout API 호출 (배송비 재계산) -->
+                <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+                  <success>
+                    <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </callback>
+          </extension-point>
+        </div>
+        <span data-if="{{_local.errors?.['shipping.zipcode']}}" class="text-red-500 text-xs block">{{_local.errors?.['shipping.zipcode']?.[0] ?? ''}}</span>
+        <!-- 기본 주소(도로명). 주소 검색 SDK 를 못 불러오면 이 칸은 편집 가능 상태로 열린다(플러그인 폴백). 그때 사용자가 친 값이 상태로 가려면 이 change 액션이 있어야 한다 — 평소에는 openPostcode 가 shipping.* 를 직접 써서 넣으므로 없어도 드러나지 않지만, 폴백 상황에서는 결제 버튼이 이 값을 요구해 영영 비활성이 된다. -->
+        <input type="text" name="address" value="{{_local.shipping?.address ?? ''}}" placeholder="$t:shop.checkout.address_placeholder" class="{{_local.errors?.['shipping.address'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
+          <responsive on="portable" class="{{_local.errors?.['shipping.address'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
+          <on type="change">
+            <set-state target="local" shipping.address="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.errors?.['shipping.address']}}" class="text-red-500 text-xs block">{{_local.errors?.['shipping.address']?.[0] ?? ''}}</span>
+        <!-- 상세 주소 — 국내 주문의 필수 칸이다(서버가 해외 주소 1행이 없을 때 요구한다). 별표와 칸 아래 오류가
+             없으면 결제하기가 422 로 막혀도 어느 칸이 비었는지 찾을 수 없다. 해외 폼에는 이 칸이 없다(주소 2행이 대신한다). -->
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <span>$t:shop.checkout.detail_address</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="text" name="address_detail" value="{{_local.shipping?.address_detail ?? ''}}" placeholder="$t:shop.checkout.detail_address_placeholder" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+          <responsive on="portable" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
+          <on type="change">
+            <!-- 입력한 상세 주소를 배송지 상태에 담는다 — 주문 제출이 이 값을 싣는다 -->
+            <set-state target="local" shipping.address_detail="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.errors?.['shipping.address_detail']}}" class="text-red-500 text-xs block">{{_local.errors?.['shipping.address_detail']?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <!-- 해외 주소 입력 폼 (KR 이외 국가 선택 시 표시) -->
+    <div data-if="{{(_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') !== 'KR'}}" class="mb-4 space-y-3">
+      <responsive on="portable" class="mb-3 space-y-2"/>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:shop.checkout.intl_address</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <!-- Address Line 1 -->
+      <div>
+        <input type="text" name="address_line_1" value="{{_local.shipping?.address_line_1 ?? ''}}" placeholder="$t:shop.checkout.intl_address1_placeholder" class="{{_local.errors?.['shipping.address_line_1'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+          <responsive on="portable" class="{{_local.errors?.['shipping.address_line_1'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
+          <on type="change">
+            <!-- 해외 주소 1행 — 국내 주소와 저장 자리가 갈린다(국내는 `shipping.address`) -->
+            <set-state target="local" shipping.address_line_1="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.errors?.['shipping.address_line_1']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.address_line_1']?.[0] ?? ''}}</span>
+      </div>
+      <!-- Address Line 2 (Optional) -->
+      <input type="text" name="address_line_2" value="{{_local.shipping?.address_line_2 ?? ''}}" placeholder="$t:shop.checkout.intl_address2_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+        <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+        <on type="change">
+          <!-- 해외 주소 2행(선택) — 별표도 오류 표시도 없는 유일한 주소 칸이다 -->
+          <set-state target="local" shipping.address_line_2="{{$event.target.value}}"/>
+        </on>
+      </input>
+      <!-- City + State/Province 2컬럼 그리드 -->
+      <div class="grid grid-cols-2 gap-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-2"/>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <span>$t:shop.checkout.intl_city</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <input type="text" name="intl_city" value="{{_local.shipping?.intl_city ?? ''}}" placeholder="$t:shop.checkout.intl_city_placeholder" class="{{_local.errors?.['shipping.intl_city'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+            <responsive on="portable" class="{{_local.errors?.['shipping.intl_city'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
+            <on type="change">
+              <!-- 도시. 저장 배송지에서 옮겨 올 때 `addr.city` 가 이 자리로 들어온다 -->
+              <set-state target="local" shipping.intl_city="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span data-if="{{_local.errors?.['shipping.intl_city']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.intl_city']?.[0] ?? ''}}</span>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.intl_state</label>
+          <input type="text" name="intl_state" value="{{_local.shipping?.intl_state ?? ''}}" placeholder="$t:shop.checkout.intl_state_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+            <on type="change">
+              <!-- 주(州)·지역 — 나라에 따라 없을 수 있어 필수가 아니다 -->
+              <set-state target="local" shipping.intl_state="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <!-- Postal Code -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <span>$t:shop.checkout.intl_postal_code</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="text" name="intl_postal_code" value="{{_local.shipping?.intl_postal_code ?? ''}}" placeholder="$t:shop.checkout.intl_postal_code_placeholder" class="{{_local.errors?.['shipping.intl_postal_code'] ? 'w-48 px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+          <responsive on="portable" class="{{_local.errors?.['shipping.intl_postal_code'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
+          <on type="change">
+            <!-- 해외 우편번호 — 국내와 달리 배송비를 다시 받지 않는다. 해외 요금은 국가 단위로 갈리고
+                 우편번호는 도서산간 같은 국내 세부 차등에만 쓰이기 때문 -->
+            <set-state target="local" shipping.intl_postal_code="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.errors?.['shipping.intl_postal_code']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.intl_postal_code']?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <!-- 배송 메모 -->
+    <div class="mb-4">
+      <responsive on="portable" class="mb-3"/>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_memo</label>
+      <select name="shipping_memo" value="{{_local.shippingMemo ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+        <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+        <on type="change">
+          <!-- 배송 요청사항을 고른 값으로 담는다. `custom` 을 고르면 아래 직접 입력칸이 열린다 -->
+          <set-state target="local" shippingMemo="{{$event.target.value}}"/>
+        </on>
+        <option value="">$t:shop.checkout.memo_none</option>
+        <option value="door">$t:shop.checkout.memo_door</option>
+        <option value="security">$t:shop.checkout.memo_security</option>
+        <option value="parcel_box">$t:shop.checkout.memo_parcel_box</option>
+        <option value="call">$t:shop.checkout.memo_call</option>
+        <option value="custom">$t:shop.checkout.memo_custom</option>
+      </select>
+    </div>
+    <!-- 직접 입력 (custom 선택 시) -->
+    <div data-if="{{_local.shippingMemo === 'custom'}}" class="mb-4">
+      <responsive on="portable" class="mb-3"/>
+      <input type="text" name="shipping_memo_custom" value="{{_local.shippingMemoCustom ?? ''}}" placeholder="$t:shop.checkout.memo_custom_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+        <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+        <on type="change">
+          <!-- 고른 값과 별도로 담는다 — 다른 항목으로 바꿨다가 되돌아와도 쓰던 문장이 남아 있게 -->
+          <set-state target="local" shippingMemoCustom="{{$event.target.value}}"/>
+        </on>
+      </input>
+    </div>
+    <!-- 저장된 배송지를 골라 놓고 «여기서» 고쳤을 때 — 그 배송지를 이 내용으로 갱신할지 묻는다.
+         주문서에서 고친 주소가 주소록에 남지 않으면 다음 주문서도 옛 주소로 열려 매번 같은 손질을
+         반복하게 된다(2026-09-21 요구사항). 기본은 켠 상태이고, 고친 것이 없으면 칸 자체가 안 보인다 —
+         「바꾸지도 않았는데 갱신 여부를 묻는」 칸은 무엇을 묻는지 알 수 없다. -->
+    <div data-if="{{_global.currentUser?.uuid &amp;&amp; _computed.shippingAddressDirty}}" class="flex items-center gap-2 mt-4">
+      <responsive on="portable" class="flex items-center gap-2 mt-3"/>
+      <checkbox id="update_selected_address" name="update_selected_address" checked="{{_local.updateSelectedAddress ?? true}}">
+        <on type="change">
+          <!-- 고른 배송지를 이번 주문 입력값으로 갱신할지 — 기본은 갱신 -->
+          <set-state target="local" updateSelectedAddress="{{$event.target.checked}}"/>
+        </on>
+      </checkbox>
+      <label for="update_selected_address" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">$t:shop.checkout.update_selected_address_checkbox</label>
+    </div>
+    <!-- 배송지 저장 체크박스 (로그인 + 직접 입력한 경우만). 비로그인 시 _global.currentUser 가 [] fallback 일 수 있어 uuid 키 존재 여부로 판정 -->
+    <div data-if="{{_global.currentUser?.uuid &amp;&amp; _local.selectedAddressId == null}}" class="flex items-center gap-2 mt-4">
+      <responsive on="portable" class="flex items-center gap-2 mt-3"/>
+      <checkbox id="save_shipping_address" name="save_shipping_address" checked="{{_local.saveShippingAddress ?? false}}">
+        <on type="change">
+          <!-- 이번에 직접 쓴 주소를 배송지 목록에 남길지 — 저장된 배송지를 고른 경우에는 칸 자체가 안 보인다 -->
+          <set-state target="local" saveShippingAddress="{{$event.target.checked}}"/>
+        </on>
+      </checkbox>
+      <label for="save_shipping_address" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">$t:shop.checkout.save_shipping_address_checkbox</label>
+    </div>
+  </div>
+</partial>

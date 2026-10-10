@@ -27,13 +27,20 @@ description: |
     - 신규 상태 라벨/formErrors $t: 키가 캐시 무효화 구멍 없이 친화명으로 해석(raw 키 회귀 차단).
 
 axes:
-  scope_kind: [route_exact, route_glob, base, modal]
+  scope_kind: [route_exact, route_glob, base, modal, host_inherited]
   states_count: [zero, one, two_or_more]
   patch_branch: [sample_override, local, global, query, route_set, route_null, form_errors]
   template: [sirsoft-basic, sirsoft-admin_basic]
   label_resolution: [existing_key, new_key_cache_busted]
+  mode_transition: [stay, enter_iteration_item, round_trip, move_to_other_screen]
 
 exclusions:
+  - { scope_kind: host_inherited, patch_branch: sample_override, reason: "호스트 상속은 scope 도출 축 — 패치 분기와 직교(route_exact 가 cover)" }
+  - { scope_kind: host_inherited, patch_branch: form_errors, reason: "동일" }
+  - { scope_kind: host_inherited, patch_branch: route_null, reason: "동일" }
+  - { mode_transition: enter_iteration_item, states_count: zero, reason: "states 미선언 → 물려받을 scope 가 없다(디그레이드)" }
+  - { mode_transition: round_trip, states_count: zero, reason: "동일" }
+  - { mode_transition: move_to_other_screen, patch_branch: route_null, reason: "화면 이동은 목록 교체 축 — 패치 분기와 직교" }
   - { states_count: zero, patch_branch: local, reason: "states 미선언 → 토글 미표시 + no-op(패치 분기 무관)" }
   - { states_count: zero, patch_branch: global, reason: "동일" }
   - { states_count: zero, patch_branch: query, reason: "동일" }
@@ -60,7 +67,61 @@ effects:
   - scope_base_and_modal_match_exactly
   - state_switcher_visible_when_two_or_more_items
   - state_switcher_hidden_when_single_or_zero_or_unmatched
+  - state_switcher_shows_active_state_description
+  - modal_scope_guard_population_is_derived_from_repository # 창 범위 묶음 가드 모집단을 저장소에서 파생
+  - modal_scope_groups_point_to_registered_modals # 창 범위 묶음은 레이아웃 modals[] 에 등록된 창만 가리킨다
+  - template_modal_groups_point_to_modals_the_template_renders # 템플릿 스펙의 창 묶음은 그 템플릿이 그리는 화면의 창을 가리킨다
+  - scope_kind_guard_population_is_derived_from_repository # 범위 종류 가드 모집단을 저장소와 deriveCurrentScope 에서 파생
+  - state_scope_kinds_are_ones_the_editor_derives # 묶음 scope.kind 는 route/base/modal 만
+  - sample_override_guard_population_is_derived_from_repository # 표본 덮어쓰기 가드 모집단을 저장소와 레이아웃 데이터소스에서 파생
+  - sample_override_fragment_is_detected # 끝점 패턴으로 단건 기록을 플래그 하나로 덮는 모양을 판정이 잡는다
+  - sample_override_keeps_record_shape # id 를 가진 단건 표본을 덮는 상태 표본은 전체 기록이다
+  - modal_seed_guard_population_is_derived_from_repository # 창 표본 시드 가드 모집단을 저장소의 상태 묶음과 레이아웃에서 파생
+  - modal_seed_rendered_field_gap_is_detected # 여는 쪽이 싣고 창이 글자로 그리는 하위 키를 시드가 빠뜨린 모양을 판정이 잡는다
+  - modal_states_prefer_host_owner_extension # 창 편집은 창을 연 확장 레이아웃 주인의 상태 묶음만 쓴다
+  - modal_states_prefer_template_for_template_layout # 템플릿 레이아웃의 창은 템플릿 묶음
+  - modal_states_fall_back_when_owner_has_none # 주인이 낸 묶음이 없으면 매칭된 묶음 전부
+  - modal_states_unchanged_without_host # 호스트를 모르면 종전 concat
+  - error_seed_non_message_is_detected # 오류 맵 필드 값이 문구 목록이 아닌 모양을 판정이 잡는다
+  - modal_seed_carries_rendered_fields # 창 표본 시드는 창이 글자로 그리는 하위 키를 담는다
+  - error_seed_is_message_list # 검증 오류 시드는 필드별 문구 목록이다
+  - string_seed_read_as_locale_map_is_detected # 언어 색인으로 읽는 자리의 문자열 시드를 판정이 잡는다
+  - string_seed_not_read_as_locale_map # 언어 색인으로 읽는 자리에는 언어별 맵 시드를 둔다
+  - empty_error_map_banner_is_detected # 빈 오류 맵으로 오류 띠를 띄우는 시드를 판정이 잡는다
+  - empty_error_map_does_not_render_banner # 참/거짓으로 오류 띠를 띄우는 자리에는 null 시드를 둔다
+  - filled_modal_without_list_items_is_detected # 채움 상태가 창의 상태 목록을 하나도 채우지 않는 모양을 판정이 잡는다
+  - filled_modal_fills_a_list # 창의 채움 표본은 창이 도는 상태 목록 하나 이상을 채운다
+  - placeholder_image_seed_is_detected # 그림 키의 생성기 자리표시 값을 판정이 잡는다
+  - image_seed_has_no_placeholder # 그림을 싣는 키에는 자리표시 값을 두지 않는다
+  - scalar_item_read_as_object_is_detected # 항목을 객체로 읽는 상태 목록에 문자열 항목을 둔 표본을 판정이 잡는다
+  - iteration_items_read_as_objects_are_seeded_as_objects # 그런 목록에는 객체 항목을 시드한다
+  - sample_pollution_guard_population_is_derived_from_repository # 편집기 표본 파일 모집단을 저장소에서 파생한다
+  - sample_test_fixture_pollution_is_detected # 테스트 실행 잔여물·직렬화된 언어별 맵 문자열을 판정이 잡는다
+  - editor_samples_carry_no_test_fixtures_or_serialized_maps # 편집기 표본에는 그런 값이 없다
+  - modal_edit_preview_passes_host_context_as_parent # 창 편집 미리보기는 창 노드에 루트 맥락을 $parent 로 넘긴다
+  - modal_edit_preview_parent_carries_host_computed # 창 노드의 $parent 에는 호스트 레이아웃의 _computed 값도 실린다(런타임 openModal 과 같은 모양)
+  - modal_edit_preview_host_node_gets_no_parent # 호스트 노드에는 $parent 를 넘기지 않는다
   - simulator_noop_when_no_active_state
+  # 호스트 scope 상속 (확장 조각 / 반복 항목 템플릿)
+  - iteration_item_inherits_host_route_scope
+  - iteration_item_inherits_host_base_and_modal_scope
+  - iteration_item_degrades_when_host_path_unknown
+  - extension_inherits_host_modal_scope
+  # 모드 왕복 시 선택 보존
+  - active_state_survives_enter_iteration_item_edit
+  - active_state_survives_transient_empty_state_list
+  - active_state_resets_to_default_when_moving_to_other_screen
+  - active_state_memory_not_cleared_on_stateless_screen
+  - picking_a_state_overwrites_the_memory
+  - active_state_memory_is_scoped_to_its_screen
+  # 단독 변종(시드 목적) 허용
+  - single_variant_scope_allowed_when_it_carries_simulation_effect
+  - scope_with_no_effect_variant_is_rejected
+  - state_effect_guard_population_is_derived_from_repository
+  # 자동 채움 표본이 소비처 타입과 맞는가 (문자열이 배열·수 자리에 박히면 분기가 뒤집힌다)
+  - sample_seed_type_guard_population_is_derived_from_repository
+  - sample_seed_type_matches_consumer_expression
+  - sample_seed_type_matches_component_prop_type # 컴포넌트의 배열·수·객체 속성에 그대로 바인딩된 자리도 문자열 표본 금지
   # sampleData 오버라이드
   - active_state_sample_override_replaces_base_wholesale
   - unmatched_sample_falls_back_to_base
@@ -89,11 +150,23 @@ effects:
   - admin_users_edit_vs_create_title_via_route_id_removal
   - admin_settings_general_vs_seo_tab_via_query_tab
   - checkout_validation_failed_renders_dotted_key_inline_errors
+  - guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch
   # 비편집 무영향
   - non_edit_user_page_unaffected_simulation_gated_by_isEditMode
 
 test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PageStateSwitcher.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateModalScopeTargetsExist.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateScopeKindIsSupported.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateSampleOverrideKeepsRecordShape.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateModalSeedCarriesRenderedFields.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/sampleDataHasNoTestFixtures.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/modalEditParentContext.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.modalParentContext.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/utils/matchStateScope.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/LayoutEditorReducer.activeState.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateItemHasEffect.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateSeedTypeMatchesConsumer.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/state/pageStateSimulator.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/sample-data/sampleDataProvider.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorTemplateAssets.test.ts

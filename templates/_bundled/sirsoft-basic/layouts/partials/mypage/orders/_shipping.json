@@ -1,398 +1,524 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "주문 상세 - 배송지 정보"
-  },
-  "type": "basic",
-  "name": "Div",
-  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
-  "responsive": {
-    "portable": {
-      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
-    }
-  },
-  "children": [
-    {
-      "comment": "섹션 제목 + 배송지 수정 버튼",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
-      "responsive": {
+    "comment": "주문 상세의 배송지 칸 — 받는 분·주소·요청사항과 송장 정보. 저장된 배송지를 가리키는 것이 아니라\n     주문에 찍힌 값이라, 마이페이지 배송지를 고쳐도 지난 주문은 그대로다.",
+    "meta": {
+        "is_partial": true,
+        "_e2e_allow": "e2e:allow S3-D10 — 배송비 표기 통화 선택키에 `order.data.base_currency ??` 한 항을 더한 변경이다(동작·구조 변화 없음). 회귀는 레이아웃 계약 테스트로 1차 차단한다 — __tests__/layouts/mypageOrderBaseCurrencyDisplay.test.tsx (수정 되돌리면 2 failed 대조 확인). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 표시통화 JPY 상태에서 수정 전 「배송완료 ¥287」(기준줄 소실) → 수정 후 「배송완료 2,500원」(헤더 JPY 유지). 통화 선택자 Playwright spec 은 currency-symbol-display.spec.ts 가 data-testid 보강 후 활성화될 때 함께 다룬다.",
+        "description": "주문 상세 - 배송지 정보"
+    },
+    "type": "basic",
+    "name": "Div",
+    "responsive": {
         "portable": {
-          "props": { "className": "flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center gap-2" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "truck", "size": "md",
-              "className": "text-gray-700 dark:text-gray-300" }
-            },
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
-              "text": "$t:mypage.order_detail.shipping_title",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
-                }
-              }
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg p-4"
             }
-          ]
-        },
+        }
+    },
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg p-6"
+    },
+    "children": [
         {
-          "comment": "배송지 수정 버튼 - 배송 전 상태 (회원/비회원 공통). 공유 partial 이라 비회원 상세(guest_order_show)에서도 재사용되며, 비회원은 모달에서 탭 없이 직접입력 폼만 노출된다.",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete'}}",
-          "props": { "type": "button", "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" },
-          "children": [
-            { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "pen-to-square" } },
-            { "type": "basic", "name": "Span", "text": "$t:mypage.order_detail.change_shipping_address" }
-          ],
-          "actions": [
-            {
-              "comment": "배송지 변경 모달 열기 — 모달은 부모 _local 을 못 읽으므로(별도 컨텍스트), 공유 상태를 _global 로 전달. 열 때마다 전부 덮어써서 이전 잔존값 무해화. changeAddressMode 는 회원=saved(탭 선택 가능)/비회원=manual(탭 없이 직접입력) 분기. 직접입력 초기값은 현재 배송지(order.data.shipping_address). _modal_address.json(_global.editingAddress) 와 동일 패턴.",
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "changeAddressMode": "{{_global.currentUser?.uuid ? 'saved' : 'manual'}}",
-                    "selectedAddressId": null,
-                    "editingShippingAddress": {
-                      "recipient_name": "{{order.data.shipping_address?.recipient_name ?? ''}}",
-                      "recipient_phone": "{{order.data.shipping_address?.recipient_phone ?? ''}}",
-                      "zipcode": "{{order.data.shipping_address?.zipcode ?? ''}}",
-                      "address": "{{order.data.shipping_address?.address ?? ''}}",
-                      "address_detail": "{{order.data.shipping_address?.address_detail ?? ''}}",
-                      "region": "{{order.data.shipping_address?.region ?? ''}}",
-                      "city": "{{order.data.shipping_address?.city ?? ''}}"
+            "comment": "섹션 제목 + 배송지 수정 버튼",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
                     }
-                  }
-                },
-                { "handler": "openModal", "target": "changeAddressModal" }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "배송지 정보 목록",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "space-y-3" },
-      "children": [
-        {
-          "comment": "받는 분",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-start" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.shipping_name",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
                 }
-              }
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.shipping_address?.recipient_name ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "배송국가 (D9 — 항상 표시, KR 포함)",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-start" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
-              "text": "$t:shop.checkout.shipping_country",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
+            "props": {
+                "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.shipping_address?.recipient_country_name?.[_global.locale] ?? order.data.shipping_address?.recipient_country_name?.ko ?? order.data.shipping_address?.recipient_country_code ?? 'KR'}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "연락처",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-start" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.shipping_phone",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.shipping_address?.recipient_phone ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "주소",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-start" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.shipping_address",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.shipping_address?.full_address ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "배송 메모 (있는 경우만 표시)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.shipping_address?.delivery_memo_label || order.data.shipping_address?.delivery_memo}}",
-          "props": { "className": "flex items-start" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.shipping_memo",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.shipping_address?.delivery_memo_label ?? order.data.shipping_address?.delivery_memo ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "배송 현황 — 결제 완료 이후 OrderStatusEnum 값(payment_complete/shipping_hold/preparing/shipping_ready/shipping/delivered/confirmed)에서만 노출. pending_order/pending_payment 상태에서는 '배송대기' 라벨 노출이 사용자에게 모호하므로 비표시 (결제 안내가 우선). cancelled 도 비표시 — 취소된 주문은 배송 현황 무의미. (부분취소는 별도 상태가 아니라 잔여 옵션 기준 진행 상태로 환원되어 배송 현황이 정상 노출됨.)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(order.data.shippings ?? []).length > 0 && ['payment_complete','shipping_hold','preparing','shipping_ready','shipping','delivered','confirmed'].includes(order.data.order_status)}}",
-      "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2" }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center gap-2 mb-2" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "box", "size": "sm",
-              "className": "text-gray-700 dark:text-gray-300" }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" },
-              "text": "$t:mypage.order_detail.shipping_status_title"
-            }
-          ]
-        },
-        {
-          "comment": "배송 목록",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "space-y-3" },
-          "iteration": { "source": "{{order.data.shippings ?? []}}", "item_var": "shipping" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 space-y-2" },
-              "children": [
+            "children": [
                 {
-                  "comment": "배송 상태 + 정책명",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center justify-between" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-2" },
-                      "children": [
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-sm font-medium {{shipping.shipping_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : shipping.shipping_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : shipping.shipping_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}" },
-                          "text": "{{shipping.shipping_status_label ?? ''}}"
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "truck",
+                                "size": "md",
+                                "className": "text-gray-700 dark:text-gray-300"
+                            }
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{shipping.delivery_policy_snapshot?.policy_name}}",
-                          "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                          "text": "({{shipping.delivery_policy_snapshot?.policy_name ?? ''}})"
+                            "type": "basic",
+                            "name": "H3",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:mypage.order_detail.shipping_title"
                         }
-                      ]
-                    },
-                    {
-                      "comment": "배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.json 와 동일 패턴).",
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
-                      "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
-                    }
-                  ]
+                    ]
                 },
                 {
-                  "comment": "배송비 상세 (기본/추가/할인)",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(shipping.extra_shipping_amount ?? 0) > 0 || (shipping.shipping_discount_amount ?? 0) > 0}}",
-                  "props": { "className": "flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:mypage.order_detail.base_shipping {{shipping.base_shipping_amount_formatted ?? ''}}"
+                    "comment": "배송지 수정 버튼 - 배송 전 상태 (회원/비회원 공통). 공유 partial 이라 비회원 상세(guest_order_show)에서도 재사용되며, 비회원은 모달에서 탭 없이 직접입력 폼만 노출된다.",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{_local.orderShippingReadonly !== true && (order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete')}}",
+                    "actions": [
+                        {
+                            "comment": "배송지 변경 모달 열기 — 모달은 부모 _local 을 못 읽으므로(별도 컨텍스트), 공유 상태를 _global 로 전달. 열 때마다 전부 덮어써서 이전 잔존값 무해화. changeAddressMode 는 회원=saved(탭 선택 가능)/비회원=manual(탭 없이 직접입력) 분기. 저장된 배송지가 0건인 회원도 manual 로 연다 — saved 로 열면 고를 것이 없는 빈 목록에서 적용이 address_id 없이 나가 422 로 막혔다(#703). 직접입력 초기값은 현재 배송지(order.data.shipping_address). _modal_address.g7.html(_global.editingAddress) 와 동일 패턴.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "changeAddressMode": "{{_global.currentUser?.uuid && (userAddresses?.data?.addresses?.data ?? []).length > 0 ? 'saved' : 'manual'}}",
+                                        "selectedAddressId": null,
+                                        "editingShippingAddress": {
+                                            "recipient_name": "{{order.data.shipping_address?.recipient_name ?? ''}}",
+                                            "recipient_phone": "{{order.data.shipping_address?.recipient_phone ?? ''}}",
+                                            "zipcode": "{{order.data.shipping_address?.zipcode ?? ''}}",
+                                            "address": "{{order.data.shipping_address?.address ?? ''}}",
+                                            "address_detail": "{{order.data.shipping_address?.address_detail ?? ''}}",
+                                            "region": "{{order.data.shipping_address?.region ?? ''}}",
+                                            "city": "{{order.data.shipping_address?.city ?? ''}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "changeAddressModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{(shipping.extra_shipping_amount ?? 0) > 0}}",
-                      "text": "$t:mypage.order_detail.extra_shipping +{{shipping.extra_shipping_amount_formatted ?? ''}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{(shipping.shipping_discount_amount ?? 0) > 0}}",
-                      "props": { "className": "text-red-400 dark:text-red-500" },
-                      "text": "$t:mypage.order_detail.shipping_discount -{{shipping.shipping_discount_amount_formatted ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "comment": "택배사/운송장 (있을 때)",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{shipping.carrier_name || shipping.tracking_number}}",
-                  "props": { "className": "flex items-center gap-2 text-sm" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{shipping.carrier_name}}",
-                      "props": { "className": "text-gray-500 dark:text-gray-400" },
-                      "text": "{{shipping.carrier_name ?? ''}}"
-                    },
-                    {
-                      "comment": "운송장 번호 — tracking_url 있으면 택배사 배송조회 링크",
-                      "type": "basic",
-                      "name": "A",
-                      "if": "{{shipping.tracking_url}}",
-                      "props": {
-                        "href": "{{shipping.tracking_url}}",
-                        "target": "_blank",
-                        "rel": "noopener noreferrer",
-                        "className": "text-blue-600 dark:text-blue-400 font-medium underline hover:text-blue-800 dark:hover:text-blue-300"
-                      },
-                      "text": "{{shipping.tracking_number ?? ''}} ($t:mypage.order_detail.track_shipment)"
-                    },
-                    {
-                      "comment": "운송장 번호 폴백 — tracking_url 없을 때 텍스트만",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{!shipping.tracking_url && shipping.tracking_number}}",
-                      "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" },
-                      "text": "{{shipping.tracking_number ?? ''}}"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "pen-to-square",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.order_detail.change_shipping_address"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "comment": "배송지 정보 목록",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "받는 분",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-start"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.shipping_name"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.shipping_address?.recipient_name ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "배송국가 (D9 — 항상 표시, KR 포함)",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-start"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:shop.checkout.shipping_country"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{$localized(order.data.shipping_address?.recipient_country_name) || order.data.shipping_address?.recipient_country_code || 'KR'}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "연락처",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-start"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.shipping_phone"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.shipping_address?.recipient_phone ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "주소",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-start"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.shipping_address"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.shipping_address?.full_address ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "배송 메모 (있는 경우만 표시)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data.shipping_address?.delivery_memo_label || order.data.shipping_address?.delivery_memo}}",
+                    "props": {
+                        "className": "flex items-start"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.shipping_memo"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.shipping_address?.delivery_memo_label ?? order.data.shipping_address?.delivery_memo ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "배송 현황 — 결제 완료 이후 OrderStatusEnum 값(payment_complete/shipping_hold/preparing/shipping_ready/shipping/delivered/confirmed)에서만 노출. pending_order/pending_payment 상태에서는 '배송대기' 라벨 노출이 사용자에게 모호하므로 비표시 (결제 안내가 우선). cancelled 도 비표시 — 취소된 주문은 배송 현황 무의미. (부분취소는 별도 상태가 아니라 잔여 옵션 기준 진행 상태로 환원되어 배송 현황이 정상 노출됨.)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(order.data.shippings ?? []).length > 0 && ['payment_complete','shipping_hold','preparing','shipping_ready','shipping','delivered','confirmed'].includes(order.data.order_status)}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                    }
+                }
+            },
+            "props": {
+                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2 mb-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "box",
+                                "size": "sm",
+                                "className": "text-gray-700 dark:text-gray-300"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:mypage.order_detail.shipping_status_title"
+                        }
+                    ]
+                },
+                {
+                    "comment": "배송 목록 — 취소된 상품의 배송 카드는 뺀다. 그 행의 배송비 몫은 0 이라 「무료배송」 으로 잘못 읽힌다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{(order.data.shippings ?? []).filter(s => (order.data.options ?? []).find(o => o.id === s.order_option_id)?.option_status !== 'cancelled')}}",
+                        "item_var": "shipping"
+                    },
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "comment": "배송 상태 + 정책명",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium {{shipping.shipping_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : shipping.shipping_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : shipping.shipping_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}"
+                                                    },
+                                                    "text": "{{shipping.shipping_status_label ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{shipping.delivery_policy_snapshot?.policy_name}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "({{shipping.delivery_policy_snapshot?.policy_name ?? ''}})"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.json 와 동일 패턴). 표기 통화는 주문 스냅샷 기준통화를 먼저 키잉한다(_items.json 와 동일) — 주문은 결제된 기록이므로 보는 사람의 표시통화를 따라가면 기준통화 줄이 통째로 사라진다.",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "배송비 상세 (기본/추가/할인)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(shipping.extra_shipping_amount ?? 0) > 0 || (shipping.shipping_discount_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:mypage.order_detail.base_shipping {{shipping.base_shipping_amount_formatted ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(shipping.extra_shipping_amount ?? 0) > 0}}",
+                                            "text": "$t:mypage.order_detail.extra_shipping +{{shipping.extra_shipping_amount_formatted ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(shipping.shipping_discount_amount ?? 0) > 0}}",
+                                            "props": {
+                                                "className": "text-red-400 dark:text-red-500"
+                                            },
+                                            "text": "$t:mypage.order_detail.shipping_discount -{{shipping.shipping_discount_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "택배사/운송장 (있을 때)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{shipping.carrier_name || shipping.tracking_number}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{shipping.carrier_name}}",
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "{{shipping.carrier_name ?? ''}}"
+                                        },
+                                        {
+                                            "comment": "운송장 번호 — tracking_url 있으면 택배사 배송조회 링크",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{shipping.tracking_url}}",
+                                            "props": {
+                                                "href": "{{shipping.tracking_url}}",
+                                                "target": "_blank",
+                                                "rel": "noopener noreferrer",
+                                                "className": "text-blue-600 dark:text-blue-400 font-medium underline hover:text-blue-800 dark:hover:text-blue-300"
+                                            },
+                                            "text": "{{shipping.tracking_number ?? ''}} ($t:mypage.order_detail.track_shipment)"
+                                        },
+                                        {
+                                            "comment": "운송장 번호 폴백 — tracking_url 없을 때 텍스트만",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!shipping.tracking_url && shipping.tracking_number}}",
+                                            "props": {
+                                                "className": "text-blue-600 dark:text-blue-400 font-medium"
+                                            },
+                                            "text": "{{shipping.tracking_number ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

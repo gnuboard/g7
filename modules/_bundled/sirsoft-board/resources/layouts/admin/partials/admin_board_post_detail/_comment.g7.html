@@ -1,0 +1,206 @@
+<!-- 댓글 한 줄. 같은 조각이 원댓글과 대댓글 양쪽에 쓰이고 `comment.depth` 로만 갈린다. 본문은 세 갈래 중 하나만 뜬다 — 삭제됨 · 가려짐 · 보통. 앞 둘은 원문을 감춘 채 「원문 보기」로 펼치게 하고 그 버튼은 관리 권한이 있을 때만 눌린다 -->
+<partial description="Admin Board Post Detail - Single Comment Component (Enhanced Design)" _e2e_allow="e2e:allow 댓글 반응 수는 읽기 전용 표시 한 줄이다 — 버튼·api-call 이 없어 조작할 동작 자체가 없다(읽기 전용임을 admin-board-post-detail-comment-reactions.test.tsx 가 /react 경로 부재로 잠근다). 노출 3조건·아이콘 2단 폴백·집계 바인딩은 같은 Vitest 레이아웃 테스트 5건이 커버하고, 줄을 지우면 4건이 red 다. 표시할 값이 실제로 내려오는지는 관리자 상세 API 실측으로 확인했다(use_comment_reaction·reaction_type_options·comment.reaction_counts).">
+  <div>
+    <div data-ref="comment_header_{{comment.id}}" class="flex-start justify-between gap-1">
+      <div data-ref="comment_left_section_{{comment.id}}" class="flex-start gap-2 flex-1 min-w-0">
+        <span data-ref="depth_indicator_{{comment.id}}" data-if="{{comment.depth > 0}}" class="text-gray-400 dark:text-gray-500 flex-shrink-0 text-sm">↳</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex-center gap-2">
+            <action-menu data-type="composite" data-ref="author_name_menu_{{comment.id}}" data-if="{{!comment?.author?.is_guest}}" triggerLabel="{{comment?.author?.name}}" triggerIconName="" triggerClassName="font-semibold text-gray-900 dark:text-white" position="right">
+              <prop name="items">
+                <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
+              </prop>
+              <on type="click" event="onItemClick">
+                <!-- 글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원은 이 메뉴 자체가 없다(uuid 가 없어 갈 곳이 없다) -->
+                <switch>
+                  <case when="view_user_info">
+                    <navigate path="/admin/users/{{comment?.author?.uuid}}"/>
+                  </case>
+                </switch>
+              </on>
+            </action-menu>
+            <span data-if="{{comment?.author?.is_guest}}" class="text-primary text-sm font-semibold">{{comment?.author?.name}}</span>
+            <span data-if="{{comment?.author?.email}}" class="text-tertiary">({{comment?.author?.email}})</span>
+            <span data-if="{{comment?.author.is_guest}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
+            <span data-if="{{comment?.author.is_admin}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">$t:sirsoft-board.admin.posts.detail.admin_badge</span>
+            <span class="text-tertiary">· {{comment?.created_at}}</span>
+            <span data-if="{{comment?.ip_address}}" class="text-tertiary">· IP: {{comment?.ip_address}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="comment_right_section_{{comment.id}}" class="flex-center gap-2 flex-shrink-0">
+        <button data-ref="reply_button_{{comment.id}}" data-if="{{post?.data?.board?.use_reply &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; comment?.status !== 'blinded' &amp;&amp; comment?.status !== 'deleted' &amp;&amp; !comment?.deleted_at &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write_comments !== true}}">
+          <on type="click">
+            <!-- 이 댓글 아래에 답글 칸을 열고 닫는다(같은 버튼을 다시 누르면 닫힌다). 열면서 편집 중이던 다른 댓글은 닫는다 — 한 화면에서 편집과 답글이 동시에 열려 있으면 어느 쪽이 저장되는지 알기 어렵다 -->
+            <set-state target="local" replyingTo="{{_local.replyingTo === comment?.id ? null : comment?.id}}" :editingComment="null" :replySubmitting="false" reply_comment_content=""/>
+          </on>
+          <icon name="comment" class="text-sm"/>
+          <span>$t:sirsoft-board.admin.posts.detail.reply</span>
+        </button>
+        <!-- 신고 버튼 — 미신고 상태 (모달 오픈) -->
+        <button data-ref="report_button_{{comment.id}}" data-if="{{post?.data?.board?.use_report &amp;&amp; comment?.author?.uuid !== current_user?.data?.uuid &amp;&amp; comment?.status !== 'blinded' &amp;&amp; comment?.status !== 'deleted' &amp;&amp; !comment?.deleted_at &amp;&amp; !comment?.is_already_reported}}" class="text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors">
+          <on type="click">
+            <!-- 이 댓글을 신고 대상으로 지목한 «뒤» 신고 창을 연다 — 모달은 별도 컨텍스트라 `comment` 를 볼 수 없어 전역에 실어 건네야 한다. 글쓴이 이름도 함께 넘겨 창에서 「누구의 댓글」인지 보여준다 -->
+            <sequence>
+              <set-state target="global">
+                <field name="modal_data">
+                  <field name="id" value="{{comment?.id}}"/>
+                  <field name="type" value="comment"/>
+                  <field name="author" value="{{comment?.author?.name}}"/>
+                </field>
+              </set-state>
+              <open-modal target="report_modal"/>
+            </sequence>
+          </on>
+          <icon name="flag" class="text-sm"/>
+          <span>$t:sirsoft-board.admin.posts.detail.report</span>
+        </button>
+        <!-- 신고 버튼 — 이미 신고한 상태 (클릭 불가) -->
+        <button data-if="{{post?.data?.board?.use_report &amp;&amp; comment?.author?.uuid !== current_user?.data?.uuid &amp;&amp; comment?.status !== 'blinded' &amp;&amp; comment?.status !== 'deleted' &amp;&amp; !comment?.deleted_at &amp;&amp; comment?.is_already_reported}}" :disabled="true" class="text-hint inline-flex items-center gap-1 px-2 py-1 font-medium rounded cursor-not-allowed opacity-60">
+          <icon name="flag" class="text-sm"/>
+          <span>$t:sirsoft-board.admin.posts.detail.reported</span>
+        </button>
+        <action-menu data-type="composite" data-ref="comment_action_menu_{{comment.id}}" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" items="{{comment?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.detail.edit', iconName: 'pencil', disabled: !(comment?.abilities?.can_write === true &amp;&amp; (comment?.is_author || comment?.abilities?.can_manage === true))}, ...((comment?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: comment?.abilities?.can_manage !== true}] : []), ...((comment?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((comment?.is_author &amp;&amp; comment?.abilities?.can_write === true) || comment?.abilities?.can_manage === true)}]}}">
+          <on type="click" event="onItemClick">
+            <!-- 댓글 점 메뉴 — 편집만 이 자리에서 바로 열고(지역 상태), 가리기·되살리기·삭제 셋은 대상을 전역에 실은 뒤 각자의 확인 창을 연다. 세 창이 서로 다른 키를 쓰는 이유는 겹쳐 열릴 때 대상이 섞이지 않게 하기 위해서다 -->
+            <switch>
+              <case when="edit">
+                <set-state target="local" editingComment="{{comment?.id}}" editingCommentPostId="{{comment?.post_id}}" edit_comment_content="{{comment?.content}}" :replyingTo="null" :editSubmitting="false"/>
+              </case>
+              <case when="blind">
+                <set-state target="global">
+                  <field name="blind_modal_data">
+                    <field name="id" value="{{comment?.id}}"/>
+                    <field name="slug" value="{{route.slug}}"/>
+                    <field name="type" value="comment"/>
+                  </field>
+                </set-state>
+                <open-modal target="blind_modal"/>
+              </case>
+              <case when="restore">
+                <set-state target="global">
+                  <field name="restore_modal_data">
+                    <field name="id" value="{{comment?.id}}"/>
+                    <field name="slug" value="{{route.slug}}"/>
+                    <field name="type" value="comment"/>
+                  </field>
+                </set-state>
+                <open-modal target="restore_modal"/>
+              </case>
+              <case when="delete">
+                <set-state target="global">
+                  <field name="modal_data">
+                    <field name="id" value="{{comment?.id}}"/>
+                    <field name="type" value="comment"/>
+                  </field>
+                </set-state>
+                <open-modal target="delete_modal"/>
+              </case>
+            </switch>
+          </on>
+        </action-menu>
+      </div>
+    </div>
+    <div data-ref="comment_content_wrapper_{{comment.id}}" data-if="{{_local.editingComment !== comment.id}}">
+      <div data-ref="deleted_comment_content_{{comment.id}}" data-if="{{comment?.deleted_at &amp;&amp; !comment?.is_cascade_deleted}}" class="mt-1.5 px-4">
+        <div class="flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle">
+          <div class="flex-center gap-2">
+            <icon name="trash" class="text-sm text-red-400 dark:text-red-500"/>
+            <span>$t:sirsoft-board.admin.posts.detail.deleted_comment_notice</span>
+          </div>
+          <button class="text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{comment?.abilities?.can_manage !== true}}">
+            <on type="click">
+              <!-- 지워진 댓글의 원문을 폈다 접었다 한다 — 열려 있는 것은 한 번에 하나뿐이라(id 하나를 담는다) 다른 줄을 열면 이 줄은 닫힌다 -->
+              <set-state target="local" showDeletedCommentId="{{_local.showDeletedCommentId === comment?.id ? null : comment?.id}}"/>
+            </on>
+            {{_local.showDeletedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}
+          </button>
+        </div>
+        <div data-if="{{_local.showDeletedCommentId === comment?.id}}" class="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-label whitespace-pre-line leading-relaxed">{{comment.content}}</div>
+      </div>
+      <div data-ref="blinded_comment_content_{{comment.id}}" data-if="{{comment?.status === 'blinded' &amp;&amp; !comment?.deleted_at}}" class="mt-1.5 px-4">
+        <div class="flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle">
+          <div class="flex-center flex-wrap gap-2">
+            <icon name="eye-slash" class="text-sm text-gray-400 dark:text-gray-500"/>
+            <span>$t:sirsoft-board.admin.posts.detail.blinded_comment_notice</span>
+            <span data-if="{{comment?.abilities?.can_manage &amp;&amp; (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}" class="text-amber-600 dark:text-amber-400">($t:sirsoft-board.admin.posts.detail.blind_reason_label {{(comment?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}})</span>
+          </div>
+          <button class="text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{comment?.abilities?.can_manage !== true}}">
+            <on type="click">
+              <!-- 가려진 댓글의 원문을 폈다 접었다 한다 — 삭제된 줄과 다른 키를 쓰므로 둘을 동시에 펼 수 있다 -->
+              <set-state target="local" showBlindedCommentId="{{_local.showBlindedCommentId === comment?.id ? null : comment?.id}}"/>
+            </on>
+            {{_local.showBlindedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}
+          </button>
+        </div>
+        <div data-if="{{_local.showBlindedCommentId === comment?.id}}" class="mt-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-label whitespace-pre-line leading-relaxed">{{comment.content}}</div>
+      </div>
+      <!-- 비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다. 비밀글 조회·게시판 관리 권한이 없는 관리자 역할에게만 해당하며, 안내가 없으면 빈 칸으로 보인다 -->
+      <div data-ref="secret_comment_content_{{comment.id}}" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.is_secret &amp;&amp; comment?.content === null}}" class="mt-1.5 px-4 flex-center gap-2 text-label-subtle">
+        <icon name="lock" class="text-sm text-gray-400 dark:text-gray-500"/>
+        <span>$t:sirsoft-board.admin.posts.detail.secret_comment_notice</span>
+      </div>
+      <div data-ref="normal_comment_content_{{comment.id}}" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; !(comment?.is_secret &amp;&amp; comment?.content === null)}}" class="mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed">{{comment.content}}</div>
+      <!-- 댓글 반응 수 — 읽기 전용. 관리자는 집계를 보기만 하고 반응을 남기지 않는다(버튼·api-call 없음). 삭제된 댓글은 집계를 감춘다 -->
+      <div data-testid="comment_reaction_counts" data-if="{{post?.data?.board?.use_comment_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; !comment?.deleted_at}}" class="mt-2 px-4 flex flex-wrap items-center gap-3">
+        <span data-each="rt in {{post?.data?.board?.reaction_type_options ?? []}}" class="text-tertiary inline-flex items-center gap-1 text-xs">
+          <img data-if="{{!!rt.icon_url}}" src="{{rt.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+          <icon data-if="{{!rt.icon_url}}" name="{{rt.icon_name ?? 'fa-thumbs-up'}}" size="xs"/>
+          <span>{{rt.name}}</span>
+          <span class="font-medium">{{comment?.reaction_counts?.[rt.id] ?? 0}}</span>
+        </span>
+      </div>
+    </div>
+    <div data-ref="comment_edit_form_{{comment.id}}" data-if="{{_local.editingComment === comment.id}}" class="mt-3 pl-10">
+      <textarea value="{{_local.edit_comment_content ?? comment.content}}" :rows="3" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2">
+        <on type="input">
+          <!-- 편집 중인 본문을 담는다 — 칸의 초기값은 원문이고, 이 상태가 비어 있으면 원문이 그대로 보인다 -->
+          <set-state target="local" edit_comment_content="{{$event.target.value}}"/>
+        </on>
+      </textarea>
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <!-- 편집을 접는다 — 고치던 내용은 버린다(따로 저장하지 않는다) -->
+            <set-state target="local" :editingComment="null" edit_comment_content=""/>
+          </on>
+          <span>$t:sirsoft-board.admin.posts.detail.cancel</span>
+        </button>
+        <button class="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.editSubmitting === true || !(comment?.abilities?.can_write === true &amp;&amp; (comment?.is_author || comment?.abilities?.can_manage === true))}}">
+          <on type="click">
+            <!-- 편집 저장 — 버튼이 잠겨 있어도 조건을 한 번 더 본다(`if`). 이 조각은 댓글마다 되풀이돼 저장 상태를 한 값으로 나눠 쓰므로, 잠금만 믿으면 다른 줄에서 저장이 도는 사이에 이 줄이 함께 나갈 수 있다 -->
+            <sequence if="{{_local.editSubmitting !== true}}">
+              <set-state target="local" :editSubmitting="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{comment?.post_id}}/comments/{{comment?.id}}" method="PUT">
+                <success>
+                  <refetch-data-source dataSourceId="post"/>
+                  <set-state target="local" :editingComment="null" edit_comment_content="" :editSubmitting="false"/>
+                  <toast type="success" message="$t:sirsoft-board.admin.posts.detail.comment_edit_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :editSubmitting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body content="{{_local.edit_comment_content}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <div class="flex-center gap-2">
+            <icon data-if="{{_local.editSubmitting}}" name="spinner" class="spinner-sm"/>
+            <span>$t:sirsoft-board.admin.posts.detail.edit</span>
+          </div>
+        </button>
+      </div>
+    </div>
+    <div data-ref="replies_toggle_button_{{comment.id}}" data-if="{{comment.depth === 0 &amp;&amp; comment.replies_count > 0}}" class="mt-2 px-4">
+      <button class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+        <on type="click">
+          <!-- 대댓글 묶음을 폈다 접었다 한다 — 원댓글이 여럿이므로 하나의 id 가 아니라 «id 별 상태 표»를 들고, 그 표를 통째로 새로 지어 넣는다. 값이 없으면 접힘(`?? true`)이 기본이다 -->
+          <set-state target="local" collapsedReplies="{{Object.assign({}, _local.collapsedReplies || {}, {[comment.id]: !(_local.collapsedReplies?.[comment.id] ?? true)})}}"/>
+        </on>
+        <icon name="{{(_local.collapsedReplies?.[comment.id] ?? true) ? 'chevron-down' : 'chevron-up'}}" class="text-sm"/>
+        <span>{{(_local.collapsedReplies?.[comment.id] ?? true) ? '$t:sirsoft-board.admin.posts.detail.show_replies|count=' + comment.replies_count : '$t:sirsoft-board.admin.posts.detail.hide_replies'}}</span>
+      </button>
+    </div>
+  </div>
+</partial>

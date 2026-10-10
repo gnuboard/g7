@@ -1,0 +1,45 @@
+feature: 사용자 템플릿이 코어 공개 API 만으로 프로필 사진·본인인증 요청·상태 구독을 하는 계약 (#639)
+
+description: |
+  사용자 템플릿 일부가 코어를 거치지 않고 요청을 보내고 있었다. 프로필 사진 업로드·삭제와 본인인증
+  launcher 의 challenge 시작이 `fetch` 로 직접 나가며 로그인 토큰·XSRF·화면 언어 헤더를 손으로 붙였다.
+  엔진이 토큰 저장 방식이나 401 처리를 바꾸면 조용히 깨지는 경로다.
+
+  - 프로필 사진(AvatarUploader): 업로드는 `G7Core.api.post(url, FormData)`(multipart), 삭제는
+    `G7Core.api.delete(url)`. 서버가 거절하면 응답 message 를, 없으면 기본 문구를 보인다
+  - 본인인증 launcher: challenge 시작은 `G7Core.api.post` — 토큰·`Accept-Language` 는 코어가 붙인다.
+    인증 대상(target) 결정 우선순위는 그대로다
+  - 전역 상태 구독(ProductCard·launcher): `G7Core.state.subscribe` 가 돌려주는 해제 함수를 언마운트·종료
+    때 부른다. 리렌더마다 새로 구독하지 않고, 해제 함수를 돌려주지 않는 구 코어에서도 오류 없이 끝난다
+
+  토큰 첨부 출처는 `extension-token-origin-policy.yaml` 이 잰다.
+
+axes:
+  surface:
+    - avatar_upload
+    - avatar_delete
+    - identity_launcher_challenge
+    - identity_launcher_target
+    - identity_launcher_subscription
+    - product_card_subscription
+
+effects:
+  - avatar_upload_via_core_api          # 업로드가 G7Core.api.post 에 avatar 파일을 담은 FormData 를 multipart 로 넘긴다
+  - avatar_delete_via_core_api          # 삭제가 G7Core.api.delete 로 나간다
+  - avatar_error_message_from_response  # 거절 시 서버 message, 없으면 기본 문구, 응답이 없으면 원래 오류 메시지
+  - avatar_success_refetches_user_via_core_data_source  # 성공 액션이 없으면 코어 G7Core.dataSource.refetch('user') 로 회원 정보를 다시 읽는다
+  - identity_challenge_via_core_api     # challenge 시작이 G7Core.api.post 로 나가고 Accept-Language 는 코어가 붙인다
+  - identity_target_resolution          # 인증 대상은 선언값 → 로그인 세션 → 가입 폼 순서로 정해 challenge body 에 싣는다
+  - state_subscription_released         # 구독 해제 함수가 언마운트·종료 때 불려 구독자 수가 0 으로 돌아간다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/AvatarUploader.publicApi.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ProductCard.subscription.test.tsx
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/identityLauncher.test.ts
+
+validation:
+  note: |
+    정적 검사는 감사 룰 `extension-private-core-internals` 가 맡는다(`__templateApp`·로그인 토큰 직접 읽기·
+    fetch/pushState 덮어쓰기). 헤더의 pushState 래퍼는 템플릿 자기 컴포넌트가 원본을 호출하는 래퍼라 줄 단위
+    면제 주석을 달았다. launcher 테스트는 실제 코어 ApiClient 를 `G7Core.api` 로 세우고 전송 직전 요청을
+    어댑터에서 가로챈다.

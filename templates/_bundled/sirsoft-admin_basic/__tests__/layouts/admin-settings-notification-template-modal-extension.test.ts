@@ -1,13 +1,14 @@
 // e2e:allow 구조 단언 + 조건식 실평가 Vitest — 브라우저 흐름은 플러그인(sirsoft-message_bizppurio)
 // tests/Playwright/specs/admin/template-lifecycle-matrix.spec.ts 가 코어 면 대표로 담당한다.
 /**
- * 코어 알림 템플릿 [편집] 모달 — 확장 슬롯 2종 + hidden_template_editor 게이트 (범용 seam)
+ * 코어 알림 템플릿 [편집] 모달 — 확장 슬롯 2종 + `template_editor` 게이트 (범용 seam)
  *
  * 채널을 소유한 확장이 그 채널 전용 편집 UI 를 같은 모달에 녹일 수 있도록:
  *  - 본문: `notification_template_form_sections` (수신자 규칙 다음, 코어 제목/본문 앞)
  *  - 푸터: `notification_template_form_footer_actions` ([취소] 와 코어 [저장] 사이)
- *  - 채널 메타 `hidden_template_editor: true` 이면 코어 언어탭/제목/본문/클릭 URL/변수 안내/미리보기/[저장]을 숨긴다
- *    (확장이 본문 편집과 저장을 대신한다). 플래그가 없는 채널(메일·사이트내 알림)은 종전과 동일.
+ *  - 채널 메타 `template_editor: 'none'` 이면 코어 언어탭/제목/본문/클릭 URL/변수 안내/미리보기/[저장]을 숨긴다
+ *    (확장이 본문 편집과 저장을 대신한다). `rich`·`plain` 채널(메일·사이트내 알림)은 종전과 동일.
+ *    종전 플래그 `hidden_template_editor: true` 는 서버가 `'none'` 으로 정규화한다.
  *
  * 조건은 문자열 동일성이 아니라 실평가로 판정한다 — 게이트 식을 잘못 고쳐도 리터럴 단언은
  * 기대값을 함께 고치면 통과한다.
@@ -50,14 +51,35 @@ const evalIf = (expr: string, scope: Record<string, unknown>): boolean => {
     // eslint-disable-next-line no-new-func
     return Boolean(new Function(...names, `return (${body});`)(...names.map((n) => scope[n])));
 };
+/**
+ * 게이트 실평가용 스코프.
+ *
+ * `hidden` 인자는 종전 플래그 이름을 그대로 쓰지만, 화면이 읽는 값은 **서버가 정규화한**
+ * `template_editor` 다 — `true` 는 `'none'`, 그 외에는 채널 기본값(메일 `rich`).
+ *
+ * @param channel 채널 id
+ * @param hidden 기본 편집기를 감추는 채널인지 (undefined = 선언 없음)
+ * @param extra `_global` 에 덧붙일 값
+ * @return 평가 스코프
+ */
 const scope = (channel: string, hidden: boolean | undefined, extra: Record<string, unknown> = {}) => ({
-    availableChannels: { data: { channels: [{ id: channel, ...(hidden === undefined ? {} : { hidden_template_editor: hidden }) }] } },
+    availableChannels: {
+        data: {
+            channels: [{
+                id: channel,
+                template_editor: hidden === true ? 'none' : (channel === 'mail' ? 'rich' : 'plain'),
+            }],
+        },
+    },
     _global: { [STATE_KEY]: { template: { channel }, definition: { variables: [{ key: 'name' }] }, ...extra } },
 });
 
 const EP_PROPS = ['definition', 'template', 'channel', 'modalId', 'stateKey', 'saveEndpoint', 'refetchDataSourceId'];
 
 describe('알림 템플릿 편집 모달 — 확장 슬롯 2종', () => {
+    /**
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
     it('본문 슬롯은 수신자 규칙 바로 다음, 언어 탭 앞에 놓인다', () => {
         const loc = findParentArray(modal, `${PREFIX}template_form_sections_ext`);
         expect(loc).toBeTruthy();
@@ -68,6 +90,9 @@ describe('알림 템플릿 편집 모달 — 확장 슬롯 2종', () => {
         expect(arr[idx + 1].id).toBe(`${PREFIX}template_lang_tabs`);
     });
 
+    /**
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
     it('푸터 슬롯은 [취소] 와 코어 [저장] 사이에 놓인다', () => {
         const footer = findById(modal, `${PREFIX}template_modal_footer`)!;
         const right = footer.children[1].children as Node[];
@@ -77,6 +102,9 @@ describe('알림 템플릿 편집 모달 — 확장 슬롯 2종', () => {
         expect(JSON.stringify(right[2])).toContain('$t:common.save');
     });
 
+    /**
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
     it.each([`${PREFIX}template_form_sections_ext`, `${PREFIX}template_form_footer_ext`])('%s 은 확장이 필요한 props 7종을 면 전용 값으로 전달한다', (id) => {
         const ep = findById(modal, id)!;
         expect(Object.keys(ep.props).sort()).toEqual([...EP_PROPS].sort());
@@ -93,6 +121,9 @@ describe('알림 템플릿 편집 모달 — 확장 슬롯 2종', () => {
 describe('알림 템플릿 편집 모달 — hidden_template_editor 게이트 실평가', () => {
     const GATED = ['template_lang_tabs', 'template_subject_input', 'template_body_input', 'template_variables_info'];
 
+    /**
+     * @effects core_modal_hides_editor_for_hidden_template_editor_channel
+     */
     it.each(GATED)('%s: 플래그 채널이면 숨김, 플래그 없음/false 채널이면 노출', (id) => {
         const node = findById(modal, `${PREFIX}${id}`)!;
         expect(node.if, `${id} if`).toBeTruthy();
@@ -101,6 +132,9 @@ describe('알림 템플릿 편집 모달 — hidden_template_editor 게이트 �
         expect(evalIf(node.if, scope('sms', false))).toBe(true);
     });
 
+    /**
+     * @effects core_modal_hides_editor_for_hidden_template_editor_channel
+     */
     it('클릭 URL 입력은 기존 조건(database 채널)과 게이트를 AND 로 결합한다', () => {
         const node = findById(modal, `${PREFIX}template_click_url_input`)!;
         expect(evalIf(node.if, scope('database', undefined))).toBe(true);
@@ -108,6 +142,9 @@ describe('알림 템플릿 편집 모달 — hidden_template_editor 게이트 �
         expect(evalIf(node.if, scope('database', true))).toBe(false);
     });
 
+    /**
+     * @effects core_modal_hides_editor_for_hidden_template_editor_channel
+     */
     it('변수 안내는 기존 조건(변수 보유)과 게이트를 AND 로 결합한다', () => {
         const node = findById(modal, `${PREFIX}template_variables_info`)!;
         const noVars = { ...scope('mail', undefined) } as Node;
@@ -115,6 +152,9 @@ describe('알림 템플릿 편집 모달 — hidden_template_editor 게이트 �
         expect(evalIf(node.if, noVars)).toBe(false);
     });
 
+    /**
+     * @effects core_modal_hides_editor_for_hidden_template_editor_channel
+     */
     it('푸터의 코어 [미리보기]·[저장]은 게이트로 숨고 [취소]는 항상 남는다', () => {
         const footer = findById(modal, `${PREFIX}template_modal_footer`)!;
         const preview = footer.children[0].children[0] as Node;
@@ -128,6 +168,9 @@ describe('알림 템플릿 편집 모달 — hidden_template_editor 게이트 �
         expect(cancel.if).toBeUndefined();
     });
 
+    /**
+     * @effects core_modal_hides_editor_for_hidden_template_editor_channel
+     */
     it('수신자 규칙·유형/채널 헤더·검증 오류 블록은 게이트와 무관하게 남는다', () => {
         for (const id of ['template_recipients_section', 'template_type_channel', 'template_validation_error']) {
             const node = findById(modal, `${PREFIX}${id}`)!;

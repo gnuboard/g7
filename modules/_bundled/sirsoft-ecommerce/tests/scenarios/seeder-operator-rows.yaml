@@ -1,0 +1,17 @@
+feature: 이커머스 시더가 운영자가 만든 클레임 사유·배송유형·택배사를 지우지 않는다
+
+description: |
+  클레임 사유·배송유형·택배사 시더의 stale 정리가 운영자가 설정 화면에서 만든 미사용 행까지 지웠다.
+  이 시더들은 언어팩을 켜고 끌 때마다 다시 돈다 (#727 W7). 정리 범위를 시더가 만든 행(`created_by IS NULL`)으로
+  좁히고, 로그인한 요청 안에서 시더가 돌아도 시드 행이 운영자 행으로 보이지 않게 새로 만드는 행의
+  `created_by` 를 명시적으로 비운다.
+
+axes:
+  seeder: [claim_reason, shipping_type, shipping_carrier]
+
+effects:
+  - operator_rows_survive_reseed
+  - seeded_rows_have_null_created_by
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seeders/SeederOperatorRowsTest.php

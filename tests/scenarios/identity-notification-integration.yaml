@@ -1,0 +1,125 @@
+feature: 본인인증(IDV) 메시지 → 알림 시스템 통합 (#699)
+
+description: |
+  본인인증 메일(회원가입·비밀번호 찾기·정보 변경·중요 작업·로그인 2단계·결제 본인 확인)은
+  알림 정의(notification_definitions, category=identity)·템플릿·채널 설정·디스패처를 경유한다.
+  옛 IDV 전용 표(identity_message_definitions/templates)와 Mail::to() 직발송은 없어졌다.
+
+  핵심 동작:
+    - 3단 폴백(정책 → 목적 → 기본)은 type 후보 3개로 해석한다
+      (identity.policy.{key} / identity.purpose.{purpose} / identity.default, 100자 초과 정책 키는 해시).
+    - 「알림 채널 관리」에서 메일을 끄면 본인인증 메일도 멈춘다 — 로그인 2단계는 503, 챌린지 요청은 502,
+      발송 로그에는 skipped(사유).
+    - 발송 결과는 DeliveryReport 로 받는다(채널 제외·템플릿 비활성·예외를 빠짐없이). 보고서를 붙이지
+      않은 일반 알림은 동작이 바뀌지 않는다.
+    - 발송 로그(notification_logs)에는 인증번호·검증 링크가 평문으로 남지 않는다(******).
+    - 운영자 정책별 문구는 알림 설정 화면에서 추가·삭제한다(core.settings.* 권한).
+    - 7.1.0 업그레이드 스텝이 옛 표를 건수 대조 후 이관·드랍한다(불일치면 드랍하지 않는다).
+    - 이커머스 「고객에게 메일 보내기」도 알림 정의 order_custom_email 로 발송한다.
+
+axes:
+  surface:
+    - type_rule
+    - delivery_report
+    - dispatcher
+    - log_masking
+    - resolution
+    - admin_api
+    - extension_compat
+    - seeding
+    - ecommerce_order_mail
+    - upgrade
+    - admin_screen
+
+effects:
+  - candidates_policy_purpose_default_order
+  - long_policy_key_hashed_within_column
+  - legacy_scope_converted_to_type
+  - sensitive_variables_declared
+  - report_records_sent
+  - report_records_channel_disabled
+  - report_records_not_ready
+  - report_records_guest_blocked
+  - report_records_unavailable_channel
+  - report_records_inactive_template
+  - report_records_transport_exception
+  - report_absent_behaviour_unchanged
+  - purpose_definition_used
+  - policy_definition_preferred
+  - inactive_candidate_falls_through
+  - unresolved_returns_false
+  - mail_channel_off_blocks_identity_mail
+  - notification_log_sent_row
+  - notification_log_skipped_row
+  - deprecated_send_hooks_fired
+  - user_or_guest_recipient
+  - no_direct_mail_send
+  - log_masks_code
+  - log_masks_action_url
+  - general_notification_not_masked
+  - store_creates_operator_policy_definition
+  - list_row_operator_definition_deletable
+  - store_rejects_invalid_policy
+  - destroy_only_operator_definitions
+  - index_category_filter
+  - abilities_and_permissions
+  # validate-plan 라운드 2 — 고친 선언 정의의 [삭제] 능력, 옛 메시지 API 의 본문 필수·비활성 유지 계약 이식
+  - customized_declared_definition_not_deletable
+  - identity_template_update_requires_body
+  - identity_template_edit_keeps_inactive
+  - legacy_identity_management_hooks_still_fire
+  - legacy_identity_management_hooks_skip_general_notifications
+  - operator_definition_survives_reseed
+  - legacy_declaration_converted_to_identity_definition
+  - legacy_provider_absorbed_and_conflict_skipped
+  - explicit_notification_declaration_wins
+  - legacy_declaration_user_overrides_preserved
+  - identity_definitions_seeded_with_category
+  - dotted_type_config_keys_safe
+  - identity_template_render_hints
+  - identity_user_overrides_preserved_on_reseed
+  - legacy_seeder_is_noop_shim
+  - order_mail_sent_through_notification
+  - order_mail_member_recipient
+  - order_mail_channel_off_422
+  - upgrade_migrates_and_drops_legacy_tables
+  - upgrade_preserves_operator_edits
+  - upgrade_removes_message_permissions
+  - upgrade_count_mismatch_keeps_tables
+  - upgrade_ignores_markers_with_unchanged_values
+  - upgrade_rerun_idempotent
+  - upgrade_drops_empty_mail_tables
+  - upgrade_keeps_mail_tables_with_rows
+  - upgrade_drops_migrated_mail_send_logs
+  - fresh_install_has_no_legacy_message_tables
+  # 관리자 화면(sirsoft-admin_basic · 이커머스 설정)
+  - category_chips_persist_in_query
+  - identity_add_button_gated_by_category_and_ability
+  - identity_card_badges_and_fixed_recipient
+  - operator_definition_reset_hidden_delete_by_ability
+  - template_form_hides_recipients_for_identity
+  - identity_tab_points_to_notification_settings
+  - identity_add_modal_posts_notification_definition
+  - identity_delete_modal_deletes_operator_definition
+  - mail_off_save_asks_confirmation
+  - mail_off_cancel_restores_toggle_in_both_stores
+  - mail_off_confirm_saves_channels
+
+test_files:
+  - tests/Unit/Notifications/Identity/IdentityNotificationTypeTest.php
+  - tests/Unit/Notifications/DeliveryReportTest.php
+  - tests/Unit/Services/IdentityMessageDispatcherTest.php
+  - tests/Feature/Notifications/IdentityNotificationLogMaskingTest.php
+  - tests/Feature/Identity/IdentityNotificationResolveTest.php
+  - tests/Feature/Api/Admin/NotificationIdentityDefinitionCrudTest.php
+  - tests/Feature/Api/Admin/NotificationIdentityLegacyHooksTest.php
+  - tests/Feature/Extension/ModuleManagerIdentityMessageSyncTest.php
+  - tests/Feature/Identity/IdentityNotificationSeederTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notification/OrderCustomEmailNotificationTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderSendEmailChannelOff.test.ts
+  - tests/Feature/Upgrade/MigrateIdentityMessagesToNotificationsTest.php
+  - tests/Feature/Upgrade/DropLegacyMailTablesTest.php
+  - tests/Unit/Database/NoLegacyMessageTableMigrationsTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-notification-identity-category.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-notification-identity-definition-modals.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-notification-channel-off-confirm.test.tsx

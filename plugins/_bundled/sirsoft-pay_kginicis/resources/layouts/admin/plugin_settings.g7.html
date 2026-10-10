@@ -1,0 +1,513 @@
+<!-- KG이니시스 결제 플러그인 환경설정 화면 — 상점 인증정보와 결제수단별 사용 여부를 정한다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
+  <data-source id="settings" label_key="$t:sirsoft-pay_kginicis.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <!-- 가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다 -->
+  <data-source id="vbank_info" label_key="$t:sirsoft-pay_kginicis.editor.data_source.vbank_info" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/vbank-notify-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="vbankInfo"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="pay-kginicis-tone-warning">$t:sirsoft-pay_kginicis.plugin_read_only</span>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" id="kginicis_settings_validation_error" role="alert" aria-live="assertive" :tabIndex="-1" class="alert-danger scroll-mt-32">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="text-error-soft">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.test_mode</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.test_mode_hint</p>
+            </div>
+            <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-sm font-semibold pay-kginicis-tone-warning-strong">$t:sirsoft-pay_kginicis.settings.live_mode_warning_title</h3>
+            <p class="mt-1 text-sm pay-kginicis-tone-warning">$t:sirsoft-pay_kginicis.settings.live_mode_warning_body</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex-start justify-between px-6 py-4">
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_live_keys</h3>
+          <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_live_keys_hint</p>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_live_mid" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_mid</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_mid_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-kginicis-focus-group">
+                <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SIR</span>
+                <input type="text" name="live_mid" placeholder="shoptest" class="text-primary flex-1 px-3 py-2 bg-white dark:bg-gray-700 font-mono text-sm outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
+              </div>
+              <p class="mt-1.5 text-tertiary">$t:sirsoft-pay_kginicis.settings.live_mid_example</p>
+            </div>
+          </div>
+          <div data-ref="field_live_sign_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_sign_key</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_sign_key_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="relative">
+                <input type="{{_local._show_live_sign_key ? 'text' : 'password'}}" name="live_sign_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_sign_key}}">
+                  <on type="click">
+                    <!-- 상점 sign key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
+                    <set-state target="local" _show_live_sign_key="{{!_local._show_live_sign_key}}"/>
+                  </on>
+                  <icon data-if="{{!_local._show_live_sign_key}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_sign_key}}" name="eye-slash" class="text-base"/>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_live_iniapi_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_iniapi_key</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_iniapi_key_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="relative">
+                <input type="{{_local._show_live_iniapi_key ? 'text' : 'password'}}" name="live_iniapi_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_key}}">
+                  <on type="click">
+                    <!-- INIAPI key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
+                    <set-state target="local" _show_live_iniapi_key="{{!_local._show_live_iniapi_key}}"/>
+                  </on>
+                  <icon data-if="{{!_local._show_live_iniapi_key}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_iniapi_key}}" name="eye-slash" class="text-base"/>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_live_iniapi_iv" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_iniapi_iv</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_iniapi_iv_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="relative">
+                <input type="{{_local._show_live_iniapi_iv ? 'text' : 'password'}}" name="live_iniapi_iv" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_iv}}">
+                  <on type="click">
+                    <!-- INIAPI IV 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
+                    <set-state target="local" _show_live_iniapi_iv="{{!_local._show_live_iniapi_iv}}"/>
+                  </on>
+                  <icon data-if="{{!_local._show_live_iniapi_iv}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_iniapi_iv}}" name="eye-slash" class="text-base"/>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_live_mobile_hash_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_mobile_hash_key</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_mobile_hash_key_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="relative">
+                <input type="{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}" name="live_mobile_hash_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_mobile_hash_key}}">
+                  <on type="click">
+                    <!-- 모바일 hash key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
+                    <set-state target="local" _show_live_mobile_hash_key="{{!_local._show_live_mobile_hash_key}}"/>
+                  </on>
+                  <icon data-if="{{!_local._show_live_mobile_hash_key}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_mobile_hash_key}}" name="eye-slash" class="text-base"/>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="easy_pay_section" data-if="{{false}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex-start justify-between px-6 py-4">
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_easy_pay</h3>
+          <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_easy_pay_hint</p>
+        </div>
+        <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div class="flex items-center justify-between px-6 py-4 bg-blue-50 dark:bg-blue-900/20">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_allow_with_other_pg</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_allow_with_other_pg_hint</p>
+            </div>
+            <toggle data-type="composite" name="easy_pay_allow_with_other_pg" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+          <div class="panel-header-row">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_naverpay</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_naverpay_hint</p>
+            </div>
+            <toggle data-type="composite" name="easy_pay_naverpay" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+          <div class="panel-header-row">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_samsung_pay</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_samsung_pay_hint</p>
+            </div>
+            <toggle data-type="composite" name="easy_pay_samsung_pay" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+          <div class="panel-header-row">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_lpay</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_lpay_hint</p>
+            </div>
+            <toggle data-type="composite" name="easy_pay_lpay" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+          <div class="panel-header-row">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_kakaopay</label>
+              <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_kginicis.settings.easy_pay_kakaopay_hint</p>
+            </div>
+            <toggle data-type="composite" name="easy_pay_kakaopay" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="general_options_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex-start justify-between px-6 py-4">
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_general_options</h3>
+        </div>
+        <div class="panel-header-row">
+          <div>
+            <label class="form-label">$t:sirsoft-pay_kginicis.settings.use_credit_point</label>
+            <p class="form-hint">$t:sirsoft-pay_kginicis.settings.use_credit_point_hint</p>
+          </div>
+          <toggle data-type="composite" name="use_credit_point" disabled="{{_computed.isPluginReadOnly}}"/>
+        </div>
+      </div>
+      <div data-ref="japan_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex-start justify-between px-6 py-4">
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_japan</h3>
+          <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_japan_hint</p>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_japan_enabled" class="flex items-center justify-between">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.japan_enabled</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.japan_enabled_hint</p>
+            </div>
+            <toggle data-type="composite" name="japan_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+          <div data-ref="japan_fields" data-if="{{_local.form &amp;&amp; _local.form.japan_enabled}}" class="space-y-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <div data-ref="field_japan_restrict_jpy_payment_methods" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 pay-kginicis-panel-muted p-4">
+              <div>
+                <label class="block text-body font-medium">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods</label>
+                <p class="text-tertiary mt-1">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods_hint</p>
+              </div>
+              <toggle data-type="composite" name="japan_restrict_jpy_payment_methods" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+            <div data-ref="cbt_test_helper_card" class="rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4">
+              <div class="flex-start gap-3 mb-3">
+                <icon name="flask" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+                <div>
+                  <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_title</h4>
+                  <p class="mt-1 text-xs pay-kginicis-tone-info-strong leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_helper_description</p>
+                </div>
+              </div>
+              <div class="flex-center flex-wrap gap-2">
+                <button type="button" disabled="{{_computed.isPluginReadOnly || vbank_info?.data?.abilities?.can_create_cbt_test_product !== true || (_local.cbtTestProductCreating)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <on type="click">
+                    <!-- CBT 테스트 상품 생성 — 진행 플래그를 세우고 직전 결과·오류를 함께 지운 뒤 호출한다 -->
+                    <sequence>
+                      <set-state target="local" :cbtTestProductCreating="true" :cbtTestProductError="null" :cbtTestProductResult="null"/>
+                      <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/cbt-test-product" method="POST">
+                        <success>
+                          <set-state target="local" :cbtTestProductCreating="false" cbtTestProductResult="{{response.data}}"/>
+                        </success>
+                        <fail>
+                          <set-state target="local" :cbtTestProductCreating="false" cbtTestProductError="$t:sirsoft-pay_kginicis.settings.cbt_helper_create_error"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
+                  </on>
+                  <icon data-if="{{_local.cbtTestProductCreating}}" name="spinner" class="text-xs animate-spin"/>
+                  <icon data-if="{{!_local.cbtTestProductCreating}}" name="plus" class="text-xs"/>
+                  <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_create_button</span>
+                </button>
+                <a href="/admin/ecommerce/products" target="_blank" rel="noopener" class="pay-kginicis-tone-info text-xs inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 pay-kginicis-btn-info rounded-md transition-colors">
+                  <icon name="external-link-alt" class="text-xs"/>
+                  <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_products_link</span>
+                </a>
+              </div>
+              <div data-if="{{_local.cbtTestProductResult}}" class="mt-3 p-3 rounded-md bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-xs space-y-1">
+                <p class="pay-kginicis-tone-success-strong font-medium">$t:sirsoft-pay_kginicis.settings.cbt_helper_create_success</p>
+                <div class="flex flex-wrap gap-3 pay-kginicis-tone-success">
+                  <a href="{{_local.cbtTestProductResult?.admin_url}}" target="_blank" rel="noopener" class="underline hover:text-green-900 dark:hover:text-green-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_admin_edit_link</a>
+                  <a href="{{_local.cbtTestProductResult?.shop_url}}" target="_blank" rel="noopener" class="underline hover:text-green-900 dark:hover:text-green-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_shop_link</a>
+                </div>
+              </div>
+              <div data-if="{{_local.cbtTestProductError}}" class="mt-3 p-3 rounded-md bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-xs pay-kginicis-tone-danger-strong">{{_local.cbtTestProductError}}</div>
+            </div>
+            <!-- CBT 호스트 연결 진단 — egress IP + DNS + TCP 443 도달성 -->
+            <div data-ref="cbt_connectivity_card" class="rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+              <div class="flex-start gap-3 mb-3">
+                <icon name="shield-alt" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+                <div>
+                  <h4 class="text-sm font-semibold text-amber-900 dark:text-amber-200">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_title</h4>
+                  <p class="mt-1 text-xs pay-kginicis-tone-warning-strong leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_description</p>
+                </div>
+              </div>
+              <div class="flex-center flex-wrap gap-2">
+                <button type="button" disabled="{{_local.cbtConnCheckRunning}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <on type="click">
+                    <!-- CBT 호스트 연결 진단 — 나가는 IP·DNS·443 도달성을 한 번에 확인한다(방화벽 문제를 설정 화면에서 바로 가르기 위한 도구) -->
+                    <sequence>
+                      <set-state target="local" :cbtConnCheckRunning="true" :cbtConnCheckError="null" :cbtConnCheckResult="null"/>
+                      <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/cbt-connectivity-check" method="GET">
+                        <success>
+                          <set-state target="local" :cbtConnCheckRunning="false" cbtConnCheckResult="{{response.data}}"/>
+                        </success>
+                        <fail>
+                          <set-state target="local" :cbtConnCheckRunning="false" cbtConnCheckError="$t:sirsoft-pay_kginicis.settings.cbt_connectivity_check_error"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
+                  </on>
+                  <icon data-if="{{_local.cbtConnCheckRunning}}" name="spinner" class="text-xs animate-spin"/>
+                  <icon data-if="{{!_local.cbtConnCheckRunning}}" name="satellite-dish" class="text-xs"/>
+                  <span>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_check_button</span>
+                </button>
+              </div>
+              <!-- 진단 결과 — egress IP + server IP + 호스트별 DNS/TCP -->
+              <div data-if="{{_local.cbtConnCheckResult}}" class="mt-3 space-y-3">
+                <!-- IP 정보 카드 -->
+                <div class="p-3 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 text-xs space-y-2">
+                  <div class="flex items-baseline gap-2">
+                    <span class="font-semibold text-gray-700 dark:text-gray-300 pay-kginicis-label-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label</span>
+                    <span class="font-mono pay-kginicis-tone-warning font-bold select-all">{{_local.cbtConnCheckResult?.egress_ip ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unknown'}}</span>
+                  </div>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400 pay-kginicis-indent-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress</p>
+                  <div class="flex items-baseline gap-2">
+                    <span class="font-semibold text-gray-700 dark:text-gray-300 pay-kginicis-label-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label</span>
+                    <span class="text-secondary font-mono select-all">{{_local.cbtConnCheckResult?.server_ip ?? '-'}}</span>
+                  </div>
+                </div>
+                <!-- APP_URL / callback URL 사전 점검 -->
+                <div class="p-3 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 text-xs space-y-2">
+                  <div class="font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_kginicis.settings.cbt_callback_title</div>
+                  <div class="pay-kginicis-callback-grid gap-x-3 gap-y-1.5">
+                    <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_app_url_label</span>
+                    <span class="font-mono text-gray-700 dark:text-gray-300 break-all select-all">{{_local.cbtConnCheckResult?.callback?.app_url ?? '-'}}</span>
+                    <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_url_label</span>
+                    <span class="font-mono text-gray-700 dark:text-gray-300 break-all select-all">{{_local.cbtConnCheckResult?.callback?.callback_url ?? '-'}}</span>
+                    <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_https_label</span>
+                    <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https}}" class="font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
+                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https)}}" class="font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_public_label</span>
+                    <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public}}" class="font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
+                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public)}}" class="font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_host_match_label</span>
+                    <span data-if="{{_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
+                    <span data-if="{{!_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                  </div>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_callback_hint</p>
+                </div>
+                <!-- 호스트별 진단 결과 (devcbt / cbt) -->
+                <div data-each="host, idx in {{_local.cbtConnCheckResult?.hosts ?? []}}" class="flex flex-col gap-2">
+                  <div class="p-3 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <span class="font-mono font-semibold text-gray-800 dark:text-gray-200">{{host.name}}</span>
+                      <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_env_test</span>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-gray-500 dark:text-gray-400 pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_dns_label</span>
+                      <span class="font-mono text-gray-700 dark:text-gray-300">{{host.dns_resolved_ip ?? '-'}}</span>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-gray-500 dark:text-gray-400 pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_tcp_label</span>
+                      <span data-if="{{host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 pay-kginicis-tone-success-strong font-medium">✓ {{host.tcp_443_latency_ms}}ms</span>
+                      <span data-if="{{!host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 pay-kginicis-tone-danger-strong font-medium">✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-[11px] text-amber-700 dark:text-amber-400 italic">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_whitelist</p>
+              </div>
+              <div data-if="{{_local.cbtConnCheckError}}" class="mt-3 p-3 rounded-md bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-xs pay-kginicis-tone-danger-strong">{{_local.cbtConnCheckError}}</div>
+            </div>
+            <div data-ref="field_live_japan_mid" class="grid-3col-responsive">
+              <div class="lg:col-span-1">
+                <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_japan_mid</label>
+                <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_mid_hint</p>
+              </div>
+              <div class="lg:col-span-2">
+                <input type="text" name="live_japan_mid" placeholder="" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+              </div>
+            </div>
+            <div data-ref="field_live_japan_cbt_key" class="grid-3col-responsive">
+              <div class="lg:col-span-1">
+                <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_japan_cbt_key</label>
+                <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_cbt_key_hint</p>
+              </div>
+              <div class="lg:col-span-2">
+                <input type="password" name="live_japan_sign_key" placeholder="••••••••••••••••" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+              </div>
+            </div>
+            <div data-ref="jppg_merchant_info" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 p-4 space-y-4">
+              <div>
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-pay_kginicis.settings.jppg_merchant_info_title</h4>
+                <p class="form-hint">$t:sirsoft-pay_kginicis.settings.jppg_merchant_info_hint</p>
+              </div>
+              <div class="grid-2col-responsive">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name</label>
+                  <input type="text" name="japan_merchant_name" placeholder="サンプルストア" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name_kana</label>
+                  <input type="text" name="japan_merchant_name_kana" placeholder="サンプルストア" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name_alphabet</label>
+                  <input type="text" name="japan_merchant_name_alphabet" placeholder="Sample Store" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name_short</label>
+                  <input type="text" name="japan_merchant_name_short" placeholder="サンプル" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_name</label>
+                  <input type="text" name="japan_contact_name" placeholder="サポート窓口" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_email</label>
+                  <input type="email" name="japan_contact_email" placeholder="support@example.com" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_phone</label>
+                  <input type="text" name="japan_contact_phone" placeholder="0120-123-456" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-pay_kginicis.settings.japan_contact_opening_hours</label>
+                  <input type="text" name="japan_contact_opening_hours" placeholder="10:00-18:00" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="escrow_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex-start justify-between px-6 py-4">
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_escrow</h3>
+          <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_escrow_hint</p>
+        </div>
+        <div class="p-6">
+          <div data-ref="field_use_escrow" class="flex items-center justify-between">
+            <div>
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.use_escrow</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.use_escrow_hint</p>
+            </div>
+            <toggle data-type="composite" name="use_escrow" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="redirect_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex-start justify-between px-6 py-4">
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_redirect</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_redirect_success_url" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.redirect_success_url</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.redirect_success_url_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-pay_kginicis.settings.redirect_fail_url</label>
+              <p class="form-hint">$t:sirsoft-pay_kginicis.settings.redirect_fail_url_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="vbank_notify_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800">
+        <div class="px-6 py-4 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg">
+          <div class="flex-center gap-2">
+            <icon name="bell" class="text-base text-blue-600 dark:text-blue-400"/>
+            <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100">$t:sirsoft-pay_kginicis.settings.section_vbank_notify</h3>
+          </div>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <p class="text-label mb-2">$t:sirsoft-pay_kginicis.settings.vbank_notify_hint</p>
+            <div class="flex-center gap-2">
+              <input type="text" :readOnly="true" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+              <button class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
+                <on type="click">
+                  <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
+                  <sequence>
+                    <action handler="sirsoft-pay_kginicis.copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}"/>
+                    <toast type="success" message="$t:sirsoft-pay_kginicis.settings.vbank_notify_copied"/>
+                  </sequence>
+                </on>
+                <icon name="copy" class="text-base"/>
+                <span>$t:sirsoft-pay_kginicis.settings.copy</span>
+              </button>
+            </div>
+          </div>
+          <div data-if="{{false}}"/>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky bottom-0 z-10 flex justify-end items-center gap-3 mt-6 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700">
+        <button data-ref="cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors ?? { _general: error.message }}}"/>
+                  <scroll-into-view selector="#kginicis_settings_validation_error" behavior="smooth" block="start" :waitForElement="true" :timeout="2000"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

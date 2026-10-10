@@ -1,0 +1,73 @@
+<!-- 메뉴 관리 화면 왼쪽의 트리 목록. 고르기·순서 바꾸기·켜고 끄기 셋을 여기서 하고, 오른쪽
+  패널은 여기서 고른 것을 따라간다.
+  **끌어 옮기기와 스위치는 수정 권한이 있을 때만 열린다** — 권한이 없으면 목록은 보이되 손댈 수 없다.
+  화면에 붙을 때 주소의 메뉴 값을 읽어 그 항목을 골라 두므로, 특정 메뉴를 가리키는 주소를
+  주고받으면 상대도 같은 항목을 편 채로 연다.
+  행마다 그 메뉴에 부여된 역할을 배지로 보인다 — 목록 응답은 역할 ID(role_ids)만 싣고, 이름은 이 화면의 활성 역할 목록에서 찾는다. -->
+<partial name="panel_menu_list">
+  <div data-ref="menu_list_panel" class="admin-card">
+    <div data-ref="menu_list_header" class="px-4 panel-header">
+      <h3 class="text-heading">$t:admin.menus.menu_list_title</h3>
+    </div>
+    <sortable-menu-list data-type="composite" data-ref="sortable_menu_list" items="{{menus?.data?.data ?? []}}" selectedId="{{_global.selectedMenuId}}" enableDrag="{{menus?.data?.abilities?.can_update ?? false}}" selectionMode="{{_global.menuBulkMode === true}}" selectedIds="{{_global.menuBulkSelectedIds ?? []}}" roleOptions="{{roles?.data?.data ?? []}}" toggleDisabled="{{menus?.data?.abilities?.can_update !== true}}" class="py-2" itemClassName="py-2.5 px-3 mx-4 my-2 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
+      <on type="action" event="onSelect">
+        <!-- 고른 항목을 오른쪽 패널이 읽을 자리에 담고, 주소도 그 항목으로 맞춘다. 주소만 갈아 끼우고 **다시 받지는 않는다** — 목록은 이미 손에 있고 이동이 이력에 쌓이면 뒤로 가기가 항목 고른 횟수만큼 늘어난다. -->
+        <sequence>
+          <set-state target="global" selectedMenuId="{{$args[0].id}}" selectedMenu="{{$args[0]}}" panelMode="view"/>
+          <!-- 목록 응답에는 하위 메뉴의 역할이 실려 있지 않다(#76 목록 하위 컬렉션 프루닝). 선택 즉시 단건을 조회해 역할 배지와 편집 폼 초기값이 실제 역할 제한을 반영하도록 보강한다 — 이 조회가 없으면 하위 메뉴 저장 시 역할이 전부 해제된다. -->
+          <api-call :auth_required="true" target="/api/admin/menus/{{$args[0].id}}" method="GET">
+            <success>
+              <set-state target="global" selectedMenu="{{response.data}}"/>
+            </success>
+          </api-call>
+          <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+          <replace-url :mergeQuery="true">
+            <query menu="{{$args[0].slug}}" mode="view"/>
+          </replace-url>
+        </sequence>
+      </on>
+      <on type="action" event="onOrderChange">
+        <!-- 끌어 놓은 결과를 그대로 실어 보낸다. 성공 갈래는 목록을 다시 받지 않는다 — 화면은 이미
+          옮겨진 모양이고 다시 받으면 눈에 띄게 다시 그려진다. 대신 사이드바 메뉴만 **차례를
+          지켜** 다시 받아, 새 순서가 적용되기 전에 다음 조작이 끼어들지 않게 한다.
+          실패했을 때만 목록을 다시 받아 서버 순서로 되돌린다. -->
+        <api-call :auth_required="true" target="/api/admin/menus/order" method="PUT" body="{{$args[0]}}">
+          <success>
+            <parallel>
+              <toast type="success" message="$t:admin.menus.messages.order_updated"/>
+              <refetch-data-source dataSourceId="admin_menu" :sync="true"/>
+            </parallel>
+          </success>
+          <fail>
+            <parallel>
+              <toast type="error" message="{{error.message ?? '$t:admin.menus.messages.order_update_failed'}}"/>
+              <refetch-data-source dataSourceId="menus"/>
+            </parallel>
+          </fail>
+        </api-call>
+      </on>
+      <on type="action" event="onToggleStatus">
+        <!-- 켜고 끄기. 실패하면 서버 메시지를 띄우지만 목록은 다시 받지 않는다 — 스위치는 눌린 모양 그대로 남아 서버와 어긋날 수 있다(순서 바꾸기 쪽에는 목록 재조회로 되돌리는 갈래가 있다). -->
+        <api-call :auth_required="true" target="/api/admin/menus/{{$args[0]}}/toggle-status" method="PATCH">
+          <success>
+            <parallel>
+              <toast type="success" message="$t:admin.menus.messages.status_changed"/>
+              <refetch-data-source dataSourceId="menus"/>
+              <refetch-data-source dataSourceId="admin_menu" :sync="true"/>
+            </parallel>
+          </success>
+          <fail>
+            <toast type="error" message="{{error.message}}"/>
+          </fail>
+        </api-call>
+      </on>
+      <on type="action" event="onSelectionChange">
+        <!-- 여러 개 선택 모드의 체크 — 목록이 부모·자손을 함께 토글한 결과 배열을 주므로 그대로 담는다. 오른쪽 일괄 판이 읽는다. -->
+        <set-state target="global" menuBulkSelectedIds="{{$args[0]}}"/>
+      </on>
+      <on event="mount">
+        <action handler="initMenuFromUrl"/>
+      </on>
+    </sortable-menu-list>
+  </div>
+</partial>

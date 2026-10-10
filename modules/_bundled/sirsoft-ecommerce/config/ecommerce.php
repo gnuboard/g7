@@ -115,6 +115,12 @@ return [
         'decimal_places_min' => 0,
         'decimal_places_max' => 8,
 
+        // 개인정보 보유기간 (이슈 #636) — 종결 주문의 주문자·수령인 정보 보유기간(년).
+        // 하한 5년: 전자상거래법 §6(계약·청약철회·대금결제·재화공급 기록 5년 보존) — 그보다 짧게
+        // 파기하면 법정 보존 의무 위반이라 서버가 막는다.
+        'privacy_retention_years_min' => 5,
+        'privacy_retention_years_max' => 20,
+
         // 리뷰
         'write_deadline_days_min' => 1,
         'write_deadline_days_max' => 365,
@@ -122,6 +128,17 @@ return [
         'max_images_max' => 20,
         'max_image_size_mb_min' => 1,
         'max_image_size_mb_max' => 50,
+
+        // 클레임 (교환/반품/환불/취소)
+        'claim_max_images_min' => 1,
+        'claim_max_images_max' => 20,
+        'claim_image_max_size_kb_min' => 128,
+        'claim_image_max_size_kb_max' => 20480,
+        'claim_request_period_days_min' => 1,
+        'claim_request_period_days_max' => 365,
+        // 선교환 헌 상품 반송 기한 (일) — 쇼핑몰 설정 `claim.advance_exchange_collection_due_days`
+        'advance_exchange_collection_due_days_min' => 1,
+        'advance_exchange_collection_due_days_max' => 90,
     ],
 
     // 관리자 대시보드 이커머스 영역 설정

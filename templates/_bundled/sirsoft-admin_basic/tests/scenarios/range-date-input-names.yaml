@@ -1,0 +1,35 @@
+feature: 기간 입력칸 이름
+
+description: |
+  목록 필터의 기간 시작·종료 칸이 칸마다 읽을 수 있는 이름을 갖는지
+
+  입력칸에 곁 라벨 이름을 자동으로 잇는 훅은 라벨 하나 뒤에 칸이 둘 이상이면 어느 칸에도 잇지 않는다(PO 승인 —
+  「가입일」 을 두 칸에 똑같이 달면 둘을 구별할 수 없다). 그래서 회원·활동 로그·본인인증 로그·알림·스케줄·
+  개인정보 요청 화면의 기간 칸이 이름 없이 「날짜」 로만 읽혔다(브라우저 측정, 2026-10-09). PO 결정은
+  「훅 유지 + 이름 없는 칸을 찾아 직접 이름을 단다」 — 기간 칸은 레이아웃에서
+  `$t:common.range_start|label=…` / `$t:common.range_end|label=…` 로 「가입일 시작일」·「가입일 종료일」 처럼 단다.
+  측정은 닫힌 탭·모달을 보지 못하므로 시험은 레이아웃 소스를 전수로 훑는다.
+
+  수정 이력: 리베이스 후속 (#747, 2026-10-09). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03]
+  # c01: 같은 부모 아래 날짜 칸이 둘 이상이면 칸마다 aria-label 이 있다
+  # c02: 기간 칸 이름은 공용 문구 range_start·range_end 를 쓴다
+  # c03: 라벨 하나 뒤 칸이 둘 이상이면 칸마다 이름(aria-label·aria-labelledby·placeholder·label[for])이 있다
+  #      — 훅 규칙(라벨: Label 또는 form-label·filter-label·text-heading, for 있는 라벨 제외 / 뒤 형제를 다음 라벨 전까지·깊이 3 /
+  #        칸: Input·Select·Textarea 중 hidden·sr-only 아님)을 레이아웃 전체 .json 에 옮긴 모집단 파생 단언.
+  #        기간 칸 밖에서 분석 설정 상위 목록 건수 세 칸·회원 상태 변경일 종류 고르기가 걸렸다(고치기 전 4건).
+
+effects:
+  - range_date_inputs_named
+  - label_group_controls_named   # 라벨 하나 뒤 칸 둘 이상이면 칸마다 스스로 이름이 있다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/range-date-input-names.test.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-range-date-input-names.spec.ts
+
+validation:
+  note: |
+    레이아웃 시험은 소스의 aria-label 표현식을 전수로 본다. 브라우저 spec 은 회원 목록 기간 칸 8개가
+    엔진에서 「가입일 시작일」 처럼 풀리는지(ko), 영어 화면에서 「Joined start date」 로 풀리는지(en)를 잰다.

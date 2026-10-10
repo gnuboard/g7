@@ -1,0 +1,51 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(유형 × 판단 조합)의 조합마다 테스트를 두지 않는다 — 이 기능의 커버리지 단위는
+#   "돈·수량·잠금 세 집계가 같은 술어를 읽는가" 이고, 각 집계마다 한 테스트가 그것을 본다.
+#   effects 축은 면제하지 않는다.
+feature: claim_item_level_decision
+
+description: |
+  운영자가 신청 상품을 **하나씩 갈라서** 받아 주거나 반려할 수 있게 되면서, 그 판단을
+  읽어야 하는 집계가 세 곳이 된다. 세 곳이 조금씩 다르게 갈라지면 어긋남이 **오류 없이
+  돈으로 드러난다.**
+
+  핵심 동작:
+    - 환불 상품 행 상태 Enum 을 신청서 Enum 하나로 합쳤다. backing value 7종이 문자 그대로
+      같아 데이터 마이그레이션이 없고, 존치하면 전이표가 두 벌이 되어 "아이템은 갈 수 있는데
+      헤더는 못 가는" 조합이 오류 없이 생긴다.
+    - 승인분 술어는 모델이 단독 소유한다(`approvedRefundOptions` / `refundOptionsForAmount`).
+      앞 라운드가 이미 `processing`·`completed` 로 가 있을 수 있어 그 둘도 승인 계열이다.
+    - 취소 가능 금액(D19)이 반려분을 세지 않는다 — 세면 과다 환불이 가드를 통과한다.
+    - 환불 실행의 취소·재고복원 대상도 승인분뿐이다 — 아니면 돈과 수량이 어긋난 채 정상 종료한다.
+    - 완료로 올리는 대상도 승인분뿐이다 — 전건을 덮으면 반려 안내를 받은 상품이 고객 화면에
+      환불완료로 보인다.
+    - 수량 잠금이 **행 단위 종결분**을 뺀다 — 헤더가 열려 있어도 반려된 상품의 수량은 풀린다.
+
+axes:
+  decision:
+    - none
+    - partial
+    - all
+  aggregate:
+    - quantity_lock
+    - cancellable_amount
+    - execution_target
+
+exclusions:
+  - { decision: all, aggregate: quantity_lock, reason: "전건 판단은 헤더가 종결돼 기존 헤더 기준 제외가 이미 처리한다" }
+  - { decision: none, aggregate: cancellable_amount, reason: "판단 전에는 전건이 대상이라 종전 계약 그대로다" }
+  - { decision: none, aggregate: execution_target, reason: "같은 사유" }
+
+effects:
+  - rejected_refund_item_releases_its_quantity_lock
+  - approved_refund_item_keeps_only_its_own_quantity_locked
+  - cancellable_amount_excludes_rejected_items
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimQuantityGuardTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CancellableAmountCalculatorTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderRefundRequestServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/ClaimRepositoriesTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

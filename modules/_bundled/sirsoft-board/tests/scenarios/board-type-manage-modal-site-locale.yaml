@@ -1,0 +1,35 @@
+feature: 게시판 유형 관리 창 — 이름 필수 언어와 서버 오류 키를 사이트 기본 언어에 맞춤
+
+description: |
+  게시판 환경설정의 「게시판 유형 관리」 창은 서버 오류를 `name.ko` 키로만 읽어, 서버가 필드 전체 키 `name` 으로
+  돌려준 이름 오류가 칸에 붙지 않고 토스트로만 보였다(7.1.0 전수 실측 O-E-2). 다국어 필수 언어는 화면 언어가
+  아니라 사이트 기본 언어(`app.site_locale`, 화면 `_global.appConfig.siteLocale`)다(코어 LocaleRequiredTranslatable,
+  2026-10-09 PO 확정 — 다른 언어 화면의 대체 표시가 늘 채워지도록).
+
+  계약: 단추 잠금은 사이트 기본 언어 칸이 비었는지로 판단한다(화면 언어와 무관). 이름 칸의 error 는 사이트 기본
+  언어 키 `name.{언어}` 를 먼저, 필드 전체 키 `name` 을 다음으로 읽고, 문구는 MultilingualInput 이 칸 아래에
+  직접 그린다(같은 문구를 담는 별도 문단은 두지 않는다 — 두 줄 중복 방지). 이름을 입력하면 이름에 붙은 오류 키
+  (필드 전체와 모든 언어)를 함께 지운다.
+
+# axis 의미:
+#   case — submit_gate(사이트 기본 언어 칸으로 단추 잠금 판단, 화면 로케일 ko·en·ja 와 사이트 기본 언어 ko·en 은
+#          테스트 안에서 it.each 로 돈다), server_error(서버 오류 키 name·name.{사이트 기본 언어} 를 칸 오류로 한 번 표시),
+#          error_clear(입력 시 이름 오류 키 정리), layout_contract(창의 나머지 구조·바인딩 계약 — 목록·폼·API·갱신·단추 형식).
+axes:
+  case: [submit_gate, server_error, error_clear, layout_contract]
+
+effects:
+  - submit_enabled_when_site_locale_name_filled
+  - submit_locked_when_site_locale_name_empty
+  - server_name_error_shown_under_name_field_once
+  - name_input_clears_all_name_error_keys
+  - board_type_manage_modal_layout_contract   # 목록 표·폼·API 엔드포인트·데이터소스 갱신·단추 형식 등 창 구조 계약
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/board-type-manage-modal.test.tsx
+
+validation:
+  browser_check: Playwright
+  note: |
+    사이트 기본 언어 ko 에서 en·ja 화면 관리자로 게시판 환경설정 > 게시판 설정 > 유형 「관리」 를 열고, 한국어 칸을
+    비우면 「추가」 단추가 잠기고, 한국어 칸만 채워도 열린다. 서버 문구는 회원 언어를 따른다.

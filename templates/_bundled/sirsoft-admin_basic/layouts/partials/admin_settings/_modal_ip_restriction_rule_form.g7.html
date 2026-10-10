@@ -1,0 +1,94 @@
+<!-- IP 접근 제한 규칙 추가·편집 겸용 창 — 보안 탭의 「규칙 추가」와 각 행의 「편집」이 연다. 어느 쪽인지는
+  전역 `ip_restriction_rule_form_modal.row_index` 로 갈린다(null = 추가, 숫자 = 그 행 편집).
+
+  이 창은 서버에 저장하지 않는다 — 규칙은 설정 폼의 한 배열이고, 저장은 화면 하단 「저장」이 보안 탭 전체를
+  한 번에 보낸다. 그래서 「적용」은 여는 순간 복사해 둔 규칙 목록(`rules`)에 이 규칙을 넣거나 바꾼 결과를
+  폼에 **한 번** 되돌려 쓰고 닫는다(저장이 읽는 자리와 화면이 읽는 자리 둘 다 — 아래 「적용」 주석 참조).
+  입력마다 폼을 고치지 않는 것은 키 입력마다 설정 화면 전체가 다시 그려지기 때문이다.
+
+  형식 검사(IP·CIDR·패턴 문자)는 저장할 때 서버가 한다 — 여기서는 빈 칸만 막는다.
+
+  취소·적용 단추는 모달 고정 하단(`<footer>`)이 아니라 **본문 맨 아래 줄**에 둔다 — 형제 창
+  `_modal_identity_policy_form` 과 같은 자리다. 고정 하단은 모달 컴포넌트가 자기 렌더러로 그리는데
+  그쪽 데이터 컨텍스트에는 창을 연 시점의 전역 상태가 실린 채라, 방금 친 패턴·IP 를 읽지 못하고
+  늘 「패턴을 입력하세요」로 되돌아간다(브라우저 실측 확인). 이 창은 단추가 방금 친 값을 읽어야
+  하므로 본문에 둔다 — 확인/닫기만 하는 창이라면 고정 하단이 맞다. -->
+<partial description="환경설정 > 보안 탭 IP 접근 제한 규칙 추가·편집 모달. _global.ip_restriction_rule_form_modal 단일 진실 — 목록이 여는 순간 통째 set, 적용 시 $parent._local 폼 배열로 1회 커밋" editor_label="$t:admin.modal_label.admin_settings.ip_restriction_rule_form_modal">
+  <modal data-type="composite" data-ref="ip_restriction_rule_form_modal" title="{{(_global.ip_restriction_rule_form_modal?.row_index ?? null) === null ? '$t:admin.settings.security.ip_restriction.modal.create_title' : '$t:admin.settings.security.ip_restriction.modal.edit_title'}}" size="md" :closeOnOverlayClick="false">
+    <div class="row-stack">
+      <div data-ref="ip_rule_form_error" data-if="{{!!_global.ip_restriction_rule_form_modal?.error}}" class="alert-danger">
+        <p class="text-error-strong">$t:admin.settings.security.ip_restriction.modal.{{_global.ip_restriction_rule_form_modal?.error ?? 'pattern_required'}}</p>
+      </div>
+      <div>
+        <label class="form-label">$t:admin.settings.security.ip_restriction.modal.pattern</label>
+        <input data-ref="ip_rule_pattern_input" type="text" value="{{_global.ip_restriction_rule_form_modal?.form?.pattern ?? ''}}" placeholder="$t:admin.settings.security.ip_restriction.modal.pattern_placeholder" :maxLength="255" class="font-mono">
+          <on type="change">
+            <!-- 패턴 — 입력마다 전역 창 상태에만 담는다(부모 폼은 「적용」 때 한 번 고친다). 고치기 시작하면 지난 「적용」의 빈 칸 안내는 지운다 -->
+            <set-state target="global" ip_restriction_rule_form_modal.form.pattern="{{$event.target.value}}" :ip_restriction_rule_form_modal.error="null"/>
+          </on>
+        </input>
+        <p class="form-hint">$t:admin.settings.security.ip_restriction.modal.pattern_hint</p>
+      </div>
+      <div>
+        <label class="form-label">$t:admin.settings.security.ip_restriction.modal.ips</label>
+        <tag-input data-type="composite" data-ref="ip_rule_ips_input" value="{{_global.ip_restriction_rule_form_modal?.form?.ips ?? []}}" :creatable="true" placeholder="$t:admin.settings.security.ip_restriction.ip_placeholder" class="w-full" defaultVariant="blue">
+          <on type="change">
+            <!-- 허용 IP — 태그 입력이 준 배열을 통째로 담는다. 고치면 지난 「적용」의 빈 칸 안내는 지운다 -->
+            <set-state target="global" ip_restriction_rule_form_modal.form.ips="{{$event.target.value}}" :ip_restriction_rule_form_modal.error="null"/>
+          </on>
+        </tag-input>
+      </div>
+      <div>
+        <label class="form-label">$t:admin.settings.security.ip_restriction.modal.memo</label>
+        <input data-ref="ip_rule_memo_input" type="text" value="{{_global.ip_restriction_rule_form_modal?.form?.memo ?? ''}}" placeholder="$t:admin.settings.security.ip_restriction.modal.memo_placeholder" :maxLength="255">
+          <on type="change">
+            <!-- 메모 — 운영자끼리 이 규칙을 왜 뒀는지 남기는 칸이다. 판정에는 쓰이지 않는다 -->
+            <set-state target="global" ip_restriction_rule_form_modal.form.memo="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <div class="flex-between">
+        <!-- 라벨은 토글 자신이 단다 — 형제 <span> 은 스위치와 연결되지 않아 읽어 주는 이름이 없다. -->
+        <toggle data-type="composite" label="$t:admin.settings.security.ip_restriction.modal.enabled" checked="{{_global.ip_restriction_rule_form_modal?.form?.enabled !== false}}" size="md">
+          <on type="change">
+            <!-- 사용 여부 — 체크 상태가 아니라 현재 값을 뒤집어 담는다(값이 없으면 켜진 것으로 본다) -->
+            <set-state target="global" ip_restriction_rule_form_modal.form.enabled="{{!(_global.ip_restriction_rule_form_modal?.form?.enabled !== false)}}"/>
+          </on>
+        </toggle>
+      </div>
+      <p class="form-hint">$t:admin.settings.security.ip_restriction.modal.apply_hint</p>
+    </div>
+    <div data-ref="ip_rule_form_footer" class="flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+      <button type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal target="ip_restriction_rule_form_modal"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="ip_rule_apply_button" type="button" class="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg">
+        <on type="click">
+          <!-- 적용 — 빈 칸이 있으면 창 안에 이유를 띄우고 멈춘다(패턴이 먼저). 다 찼으면 여는 순간 복사해 둔 규칙
+               목록에 이 규칙을 덧붙이거나(row_index=null) 그 행을 바꿔(row_index=숫자) 폼에 되돌려 쓰고 닫는다.
+               서버 저장은 하단 「저장」이 한다.
+
+               폼에 **두 번** 쓴다 — 창에서 부모 폼만 고치면(`$parent._local`) 화면 표에는 보이는데 **저장 요청
+               본문에는 실리지 않아** 「저장했는데 규칙이 사라지는」 조용한 손실이 난다(브라우저 실측 확인. 엔진이
+               모달의 부모 쓰기를 저장소 미러에서 일부러 빼 둔다 — 모달이 페이지 상태를 오염시키던 사례 때문이다).
+               그래서 ① `target="global"` 로 저장이 읽는 자리(`_local.form...`)에 먼저 쓰고 ② `$parent._local` 로
+               화면이 읽는 자리에도 같은 값을 써서 표와 「저장」 버튼이 곧바로 반응하게 한다. 두 쓰기 모두 결과
+               배열을 통째로 넣으므로 순서가 바뀌어도 같은 값이 된다. -->
+          <sequence>
+            <set-state if="{{(_global.ip_restriction_rule_form_modal?.form?.pattern ?? '').trim() === ''}}" target="global" ip_restriction_rule_form_modal.error="pattern_required"/>
+            <set-state if="{{(_global.ip_restriction_rule_form_modal?.form?.pattern ?? '').trim() !== '' &amp;&amp; (_global.ip_restriction_rule_form_modal?.form?.ips ?? []).length === 0}}" target="global" ip_restriction_rule_form_modal.error="ips_required"/>
+            <set-state if="{{(_global.ip_restriction_rule_form_modal?.form?.pattern ?? '').trim() !== '' &amp;&amp; (_global.ip_restriction_rule_form_modal?.form?.ips ?? []).length > 0}}" target="global" _local.form.security.ip_restriction_rules="{{(_global.ip_restriction_rule_form_modal?.row_index ?? null) === null ? [...(_global.ip_restriction_rule_form_modal?.rules ?? []), {..._global.ip_restriction_rule_form_modal.form, pattern: _global.ip_restriction_rule_form_modal.form.pattern.trim(), enabled: _global.ip_restriction_rule_form_modal.form.enabled !== false}] : (_global.ip_restriction_rule_form_modal?.rules ?? []).map((r, i) => i === _global.ip_restriction_rule_form_modal.row_index ? {..._global.ip_restriction_rule_form_modal.form, pattern: _global.ip_restriction_rule_form_modal.form.pattern.trim(), enabled: _global.ip_restriction_rule_form_modal.form.enabled !== false} : r)}}" :_local.hasChanges="true"/>
+            <set-state if="{{(_global.ip_restriction_rule_form_modal?.form?.pattern ?? '').trim() !== '' &amp;&amp; (_global.ip_restriction_rule_form_modal?.form?.ips ?? []).length > 0}}" target="$parent._local.form.security.ip_restriction_rules" value="{{(_global.ip_restriction_rule_form_modal?.row_index ?? null) === null ? [...(_global.ip_restriction_rule_form_modal?.rules ?? []), {..._global.ip_restriction_rule_form_modal.form, pattern: _global.ip_restriction_rule_form_modal.form.pattern.trim(), enabled: _global.ip_restriction_rule_form_modal.form.enabled !== false}] : (_global.ip_restriction_rule_form_modal?.rules ?? []).map((r, i) => i === _global.ip_restriction_rule_form_modal.row_index ? {..._global.ip_restriction_rule_form_modal.form, pattern: _global.ip_restriction_rule_form_modal.form.pattern.trim(), enabled: _global.ip_restriction_rule_form_modal.form.enabled !== false} : r)}}"/>
+            <set-state if="{{(_global.ip_restriction_rule_form_modal?.form?.pattern ?? '').trim() !== '' &amp;&amp; (_global.ip_restriction_rule_form_modal?.form?.ips ?? []).length > 0}}" target="$parent._local.hasChanges" :value="true"/>
+            <close-modal if="{{(_global.ip_restriction_rule_form_modal?.form?.pattern ?? '').trim() !== '' &amp;&amp; (_global.ip_restriction_rule_form_modal?.form?.ips ?? []).length > 0}}" target="ip_restriction_rule_form_modal"/>
+            <set-state if="{{(_global.ip_restriction_rule_form_modal?.form?.pattern ?? '').trim() !== '' &amp;&amp; (_global.ip_restriction_rule_form_modal?.form?.ips ?? []).length > 0}}" target="global" :ip_restriction_rule_form_modal="null"/>
+          </sequence>
+        </on>
+        <span>$t:admin.settings.security.ip_restriction.modal.apply</span>
+      </button>
+    </div>
+  </modal>
+</partial>

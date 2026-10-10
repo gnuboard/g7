@@ -1,0 +1,41 @@
+<!-- 보기 패널에서 이 공통정보를 기본값으로 지정하는 확인 창. 편집을 거치지 않고 **곧바로 서버에
+  반영한다** — 같은 이름의 편집용 창(`_modal_default_confirm`)이 체크만 켜 두는 것과 다르다.
+  성공하면 응답을 선택 항목에 갈아끼우고 목록도 다시 부른다 — 다른 항목의 기본 표시가 함께 풀리기
+  때문에 목록 전체가 낡는다.
+  진행 깃발이 전역이라 두 버튼이 함께 잠긴다. -->
+<partial description="Common Info Set Default Confirm Modal (View Panel)">
+  <modal data-type="composite" data-ref="modal_set_default_confirm" title="$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title" size="sm">
+    <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message</p>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.common_info.button.cancel
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+        <on type="click">
+          <!-- 기본값 지정 실행. 성공 갈래에서 선택 항목을 응답으로 갈아끼우고 목록도 다시 부른다 — 다른 항목의 기본 표시가 함께 풀려 목록 전체가 낡기 때문이다. -->
+          <sequence>
+            <set-state target="global" :isSettingDefault="true"/>
+            <api-call :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId}}" method="PUT">
+              <success>
+                <set-state target="global" :isSettingDefault="false" selectedItem="{{response.data}}"/>
+                <refetch-data-source dataSourceId="commonInfos"/>
+                <toast type="success" message="{{response.message}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isSettingDefault="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body name="{{_global.selectedItem?.name}}" :is_default="true"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isSettingDefault}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSettingDefault ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.common_info.button.confirm'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

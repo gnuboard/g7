@@ -1,0 +1,24 @@
+<!-- 주소 검색 버튼 — 주소 입력이 있는 화면(배송지 등)의 address_search_slot 자리에 템플릿이 끼워 넣는 조각이다. 실제 검색창은 다음 우편번호 서비스가 띄우고, 고른 주소를 어느 칸에 넣을지는 끼워 넣은 쪽이 넘겨 준다. -->
+<extension extension-point="address_search_slot" priority="50">
+  <div data-ref="daum_postcode_user_container" class="inline-flex">
+    <on event="mount">
+      <!-- 주소 검색 플러그인 마운트 시 지정된 필드를 readOnly로 설정 -->
+      <action handler="sirsoft-daum_postcode.setFieldReadOnly" fields="{{extensionPointProps.readOnlyFields ?? ['zipcode', 'address']}}" :readOnly="true"/>
+    </on>
+    <button data-ref="btn_user_search_address" type="button" class="flex-shrink-0 px-4 py-2.5 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+      <responsive on="portable" class="flex-shrink-0 px-3 py-2 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"/>
+      <on type="click">
+        <!-- 주소 검색창 열기 — 띄우는 방식(레이어/팝업)과 크기·색은 플러그인 설정에서 오고, 설정이 없으면 기본값으로 뜬다. 고른 주소를 받는 쪽은 이 조각이 아니라 끼워 넣은 화면이 넘겨 준 콜백이다. -->
+        <action handler="sirsoft-daum_postcode.openPostcode" displayMode="{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}" width="{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}" height="{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}" callbackAction="{{extensionPointCallbacks.onAddressSelect}}" targetFields="{{extensionPointProps.targetFields}}">
+          <field name="theme">
+            <field name="searchBgColor" value="{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}"/>
+            <field name="queryTextColor" value="#FFFFFF"/>
+          </field>
+        </action>
+      </on>
+      <icon name="search" class="text-base mr-1.5"/>
+      <span>$t:sirsoft-daum_postcode.search_address</span>
+    </button>
+  </div>
+  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" label="$t:sirsoft-daum_postcode.search_address"/>
+</extension>

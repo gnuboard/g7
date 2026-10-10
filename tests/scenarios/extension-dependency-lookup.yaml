@@ -1,0 +1,16 @@
+feature: 켜진 의존 확장 조회 (매니페스트 dependencies 맵)
+
+description: |
+  모듈·플러그인 저장소의 의존 조회 4곳(모듈→모듈, 모듈→플러그인, 플러그인→모듈, 플러그인→플러그인)이
+  존재하지 않는 메서드를 찾거나 매니페스트 전체에 in_array 를 써서 한 번도 의존 확장을 찾지 못했다
+  (#138 실측 ①). 매니페스트 dependencies.{modules|plugins} 의 「식별자 => 버전 제약」 맵 키로 판정한다.
+  이 조회는 모듈·플러그인 비활성화 경고와 제거 차단(ExtensionLifecycleHookContractTest)이 함께 쓴다.
+
+axes:
+  case: [manifest_map]
+
+effects:
+  - active_dependents_found_from_manifest_dependencies
+
+test_files:
+  - tests/Feature/Repositories/ExtensionDependencyLookupTest.php

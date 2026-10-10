@@ -132,10 +132,12 @@ class ExtensionPendingHelper
      * @param  string  $targetPath  대상 경로 (예: modules/sirsoft-board)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      *
-     * @throws \RuntimeException 소스가 존재하지 않을 때
-     *
      * @see ExtensionPendingHelperTest File Facade Spy 패턴으로 복사 실패 테스트
      * @see ProtectsExtensionDirectories 확장 활성 디렉토리 보호 trait
+     *
+     * @return void 반환값 없음
+     *
+     * @throws \RuntimeException 소스가 존재하지 않을 때
      */
     public static function copyToActive(string $sourcePath, string $targetPath, ?\Closure $onProgress = null): void
     {
@@ -192,7 +194,7 @@ class ExtensionPendingHelper
         if (! self::retryMoveDirectory($targetPath, $oldPath)) {
             // 활성 디렉토리 rename 차단 (하위 트리에 열린 핸들 존재)
             // → 파일 단위 제자리 동기화로 폴백. 덮어쓰기는 잠금의 영향을 받지 않는다.
-            $onProgress?->__invoke(null, '디렉토리 이동이 차단되어 파일 단위 제자리 교체로 전환합니다...');
+            $onProgress?->__invoke(null, __('extensions.progress.move_blocked_in_place'));
             Log::info('확장 교체: 활성 디렉토리 rename 차단 — 제자리 동기화 폴백', [
                 'target' => $targetPath,
             ]);
@@ -212,7 +214,7 @@ class ExtensionPendingHelper
         if (! self::retryMoveDirectory($tempPath, $targetPath)) {
             // 방금 복사한 스테이징 트리를 파일 워처가 이미 열어 rename 이 차단된 경우
             // → 파일 단위 복사로 폴백. 소스에는 읽기 접근만 필요해 잠금과 무관하게 성공한다.
-            $onProgress?->__invoke(null, '디렉토리 이동이 차단되어 파일 단위 복사로 전환합니다...');
+            $onProgress?->__invoke(null, __('extensions.progress.move_blocked_copy'));
             Log::info('확장 교체: 스테이징 rename 차단 — 파일 단위 복사 폴백', [
                 'staging' => $tempPath,
                 'target' => $targetPath,
@@ -258,6 +260,8 @@ class ExtensionPendingHelper
      * PSR-4 autoload 가 신규 파일(beta.1 에 없던 Seeder/Model)을 file_exists 로
      * 탐색할 때 false 반환 → "Class not found" fatal 로 업그레이드 스텝이 실패.
      * clearstatcache(true) 로 전체 stat 캐시를 비워 신규 파일이 즉시 보이도록 한다.
+     *
+     * @return void 반환값 없음
      */
     private static function refreshRuntimeCaches(): void
     {
@@ -279,6 +283,7 @@ class ExtensionPendingHelper
      * @param  string  $activePath  활성 디렉토리 (vendor/ 소스)
      * @param  string  $stagingPath  스테이징 디렉토리 (vendor/ 복사 대상)
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      */
     public static function copyVendorFromActive(string $activePath, string $stagingPath, ?\Closure $onProgress = null): void
     {
@@ -293,7 +298,7 @@ class ExtensionPendingHelper
             return;
         }
 
-        $onProgress?->__invoke(null, 'vendor 디렉토리 복사 중 (기존 유지)...');
+        $onProgress?->__invoke(null, __('extensions.progress.vendor_copy_keep'));
 
         self::copyDirectoryWithProgress($sourceVendor, $destVendor, $sourceVendor, $onProgress);
 
@@ -336,6 +341,7 @@ class ExtensionPendingHelper
      * @param  string  $dest  대상 디렉토리
      * @param  string  $basePath  상대 경로 계산 기준
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      */
     private static function copyDirectoryWithProgress(
         string $source,
@@ -383,6 +389,7 @@ class ExtensionPendingHelper
      * @param  string  $source  새 버전 콘텐츠 디렉토리
      * @param  string  $dest  활성 디렉토리
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 새 버전 파일을 심지 못했을 때
      */
@@ -423,6 +430,7 @@ class ExtensionPendingHelper
      * @param  string  $existingPath  기존 활성 디렉토리
      * @param  string  $stagingPath  새 배포본이 복사된 임시 디렉토리
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      */
     private static function carryOverPreservedDirectories(
         string $existingPath,
@@ -442,7 +450,7 @@ class ExtensionPendingHelper
                 File::deleteDirectory($to);
             }
 
-            $onProgress?->__invoke(null, "운영자 파일 보존: {$name}/");
+            $onProgress?->__invoke(null, __('extensions.progress.preserve_operator_file', ['name' => $name]));
             self::copyDirectoryWithProgress($from, $to, $from, $onProgress);
         }
     }
@@ -455,6 +463,7 @@ class ExtensionPendingHelper
      * @param  string  $basePath  상대 경로 계산 기준
      * @param  \Closure|null  $onProgress  진행 콜백
      * @param  array  $failed  교체 실패한 상대 경로 수집 (참조)
+     * @return void 반환값 없음
      */
     private static function overlayDirectory(
         string $source,
@@ -610,6 +619,8 @@ class ExtensionPendingHelper
      * @param  string  $source  새 버전 콘텐츠 디렉토리
      * @param  string  $dest  활성 디렉토리
      * @param  array  $failures  삭제 실패 경로 수집 (참조)
+     * @param  bool  $isRoot  최상위 호출인지 (최상위에서만 보존 디렉토리를 건너뛴다)
+     * @return void 반환값 없음
      */
     private static function removeStaleEntries(string $source, string $dest, array &$failures, bool $isRoot = false): void
     {
@@ -653,6 +664,7 @@ class ExtensionPendingHelper
      *
      * @param  string  $pendingPath  _pending 디렉토리 경로
      * @param  string  $identifier  확장 식별자
+     * @return void 반환값 없음
      */
     private static function cleanupSwapLeftovers(string $pendingPath, string $identifier): void
     {
@@ -672,6 +684,7 @@ class ExtensionPendingHelper
      * 잠금으로 삭제하지 못한 디렉토리는 다음 교체 시작 시 잔존물 정리가 재시도합니다.
      *
      * @param  string  $path  삭제할 디렉토리 경로
+     * @return void 반환값 없음
      */
     private static function bestEffortDeleteDirectory(string $path): void
     {
@@ -829,6 +842,7 @@ class ExtensionPendingHelper
      * 확보 절차도 한 곳에 둔다 — 복사본은 서로 다른 하드닝을 갖고 갈라진다.
      *
      * @param  string  $tempDir  임시 디렉토리 절대 경로
+     * @return void 반환값 없음
      */
     public static function ensureUpdateTempDirectory(string $tempDir): void
     {

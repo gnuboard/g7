@@ -1,0 +1,181 @@
+feature: 구매자 클레임 신청서 작성 — 주문상세 진입 + 교환 신청 (#599 S11)
+
+description: |
+  주문상세의 [교환 신청]·[반품 신청]·[취소·환불 신청] 세 버튼이 하나의 작성 셸
+  (`templates/_bundled/sirsoft-basic/layouts/mypage/claims/apply.g7.html`, 라우트 `:type`)로 들어가고, 그 셸이 유형별 partial 로 화면을
+  만든다. 이 세션은 교환을 관통까지 완성하고, 반품·취소·환불의 유형 고유 축(환불계좌·분기
+  라벨·철회)은 S12 가 잇는다. 조용히 깨지는 지점은 일곱이다.
+
+  ① **교환 방식을 신청서 전체의 라디오로 접으면** 상품마다 다른 교환 대상을 표현할 수 없다
+     (D29). 그래서 '교환 방식' 카드는 없고, 행마다 [교환상품 변경] 버튼이 그 행의 index 를
+     모달에 넘긴다. index 를 흘리면 언제나 첫 상품만 바뀌고 **오류 없이** 잘못된 신청서가
+     저장된다 — 응답도 200 이고 화면도 정상으로 보인다.
+
+  ② **미리보기는 낙관적 선택 ↔ 서버 재계산의 왕복이다.** 선택은 로컬에서 앞서 나가고 응답은
+     나중에 온다. 늦게 도착한 옛 응답이 새 선택 위에 덮이면 화면이 예고한 금액과 실제 청구가
+     갈리는데, 처리는 정상 성공하므로 어긋났다는 사실이 화면에도 로그에도 남지 않는다. 요청
+     마다 세대 번호를 붙여 최신 요청의 응답만(성공·실패 양 경로) 반영한다.
+
+  ③ **미리보기가 거절되면 금액을 남기지 않는다.** 미리보기는 신청과 같은 자격 가드를 타므로
+     그 422 가 곧 신청 거절 사유다(§7 S5 DoD — P13). 옛 요약을 남긴 채 제출을 열어 두면 화면이
+     예고한 금액과 청구가 어긋난다. 사유는 요약 자리에 남기고 제출을 잠근다 — 토스트로만
+     알리면 사라진 뒤 왜 막혔는지 화면에 남지 않는다.
+
+  ④ **청구는 2축이다 (D6).** 한 축(라디오 1그룹)으로 접으면 '승인 후 결제 + 마일리지' 조합이
+     표현 불가해진다. 두 축 모두 운영자 허용 목록에서만 나오고, 화면이 리터럴 기본값을 들고
+     있으면 운영자가 그 방식을 껐을 때 제출이 422 가 된다.
+
+  ⑤ **상한·사유는 운영자 설정이 정한다.** 사유 카탈로그는 유형별로 다른 목록이고(S10 인계 ①),
+     첨부 장수·용량은 `claim.max_images`·`claim.image_max_size_kb` 다(S10 인계 ③). 화면이
+     리터럴을 들면 안내 문구와 실제 거절선이 갈린다. 라벨은 `localized_name` 이며 `name` 은
+     다국어 맵이라 바인딩하면 객체가 그대로 찍힌다(S10 인계 ②).
+
+  ⑥ **회원 클레임 API 는 주문 ID(정수)를 받는데 이 화면의 라우트는 주문번호를 쓴다.** 그래서
+     주문 응답에서 받은 id 를 세운 뒤 `claimable-options` 를 부른다. `refetchDataSource` 는
+     액션 params 의 localStateOverride 를 읽지 않고 현재 로컬 상태를 병합하므로, setState 가
+     같은 sequence 의 **앞**에 있어야 한다 — 뒤에 두면 빈 URL 로 조회돼 404 가 된다.
+
+  ⑦ **주문상세의 취소 버튼과 클레임 버튼이 함께 남으면** 같은 일을 하는 입구가 둘이 된다.
+     `templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.g7.html` 은 비회원 주문상세와 공유하므로 셸 표식(`useClaimActions`)으로 가른다 —
+     표식이 없는 비회원 셸은 종전 취소 모달을 그대로 쓰고, S14 가 같은 표식을 세워 전환한다.
+
+# axis 의미:
+#   exchange_mode  — 교환 대상. 상품마다 정하는 속성이라 신청서 축이 아니라 상품 축이다(D29).
+#                    동일상품/옵션변경이 페이로드(`new_product_option_id`)와 차액 표기를 가른다.
+#   preview_result — 서버 재계산의 결과. 거절은 곧 신청 거절이므로 금액이 지워지고 제출이 잠겨야
+#                    한다. 거절이 사용자의 선택(교환 대상)까지 지우면 그것도 결함이다.
+#
+# **유형(claim_type)은 이 매니페스트의 축이 아니다.** 이 세션이 관통까지 완성한 것은 교환이고,
+# 반품·취소·환불의 유형 고유 축(환불계좌 · resolved_type 라벨 · mixed 분기 · 철회)은 S12 가 잇는다.
+# 여기서 세 유형을 축으로 세우면 검증되지 않은 조합이 커버된 것처럼 보인다. 유형이 바꾸는
+# 화면 규칙(청구 2축 미노출 등)은 이름 붙은 effect 가 덮는다.
+#
+# 청구 방식(pay_on_request / pay_on_approval / deduct_from_refund)도 축이 아니다 — 화면이 하는
+# 일은 "운영자 허용 목록만 노출하고 환불이 없으면 deduct_from_refund 를 잠근다" 이며 계산 분기는
+# 서버가 갖는다. 첨부 장수·수량 경계·화면 너비도 같은 이유로 이름 붙은 effect 가 덮는다.
+axes:
+  exchange_mode: [same, change]
+  preview_result: [ok, rejected]
+
+effects:
+  # 진입 (주문상세)
+  - order_detail_claim_entry_buttons_gated_by_claimable_types
+  - order_detail_claim_entry_passes_checked_options
+  - order_detail_old_cancel_button_removed
+  - order_detail_claim_additional_paid_row_present
+  # 작성 셸
+  - claim_apply_route_type_guard_404
+  - claim_apply_claimable_datasource_waits_for_order_id
+  - claim_apply_unmount_clears_estimate_timers
+  # 신청 상품 (D29)
+  - claim_apply_has_no_global_exchange_mode_card
+  - claim_apply_change_product_button_is_per_item
+  - claim_apply_change_product_updates_only_target_row
+  - claim_apply_quantity_clamped_to_available
+  - claim_apply_items_payload_omits_option_for_same_exchange
+  # 사유·첨부 (운영자 설정)
+  - claim_apply_reason_catalog_is_type_scoped
+  - claim_apply_reason_label_uses_localized_name
+  - claim_image_limits_come_from_operator_settings
+  - claim_image_extract_survives_lost_file_prototype
+  - claim_image_upload_defers_to_submit_and_keeps_uploaded_on_retry
+  # 재발송지 (D14)
+  - claim_apply_redelivery_maps_order_address_fields
+  # 미리보기 왕복
+  - claim_apply_estimate_applies_latest_generation_only
+  - claim_apply_estimate_failure_clears_amounts_and_blocks_submit
+  - claim_apply_preview_rejection_stays_on_screen
+  - claim_apply_error_channel_splits_by_fixability
+  - claim_apply_redelivery_shows_the_international_address # 해외 주문 재발송지 요약·도시·주 칸 (S2-D8)
+  - claim_apply_submit_requires_successful_preview
+  # 제출 버튼 라벨은 **지금 결제창이 뜨는가**를 말한다. 서버의 `requires_payment` 는
+  # "상계가 아니다" 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다 —
+  # 그 값만 보고 라벨을 정하면 승인 후 결제에서도 "N원 결제하기" 로 예고하는데 실제로는
+  # 접수만 되고 결제창이 뜨지 않는다(S17 트랙 A F-6).
+  - claim_apply_submit_label_matches_payment_timing
+  - claim_payment_method_choices_carry_their_own_labels   # 신청서 결제 수단 라디오도 카탈로그 이름 (S1-D14)
+  # 청구 2축 (D6)
+  - claim_apply_charge_axes_are_two_and_operator_sourced
+  - claim_apply_charge_axes_hidden_for_refund
+  # 제출·결제 진입
+  - claim_apply_submit_dispatches_server_named_pg_handler
+  - claim_apply_shipping_fee_basis_shown_for_policy_mode
+  - claim_apply_shipping_fee_basis_hidden_for_fixed_mode
+  - claim_apply_option_price_difference_broken_down_per_item
+  - claim_apply_total_charge_shows_secondary_currency
+  - order_detail_claim_additional_paid_row_shows_secondary_currency
+  - claim_apply_secondary_currency_absorbs_all_server_shapes
+  - claim_apply_summary_amount_rows_all_show_secondary_currency
+  - claim_apply_total_charge_row_hidden_for_refund
+  - claim_apply_item_validation_error_maps_to_its_row
+  - claim_apply_field_errors_render_beside_their_input
+  - claim_apply_change_product_modal_clears_previous_row_selection
+  # 브라우저 실측 (E2E)
+  - user_claim_apply_invalid_type_shows_error_page
+  - user_claim_apply_exchange_renders_per_item_change_button
+  - user_claim_apply_preview_runs_once_after_reason_selected
+  # 교환 추가옵션 (§8-3 — S15b). 고른 이름이 그 상품 줄에 남고, **같은 선택**이 미리보기
+  # 요청에 실린다. 화면이 이름만 보여 주고 요청에 싣지 않으면 예고와 청구가 서로 다른 것을
+  # 계산하는데, 접수는 성공하므로 어긋난 사실이 어디에도 남지 않는다.
+  - claim_apply_additional_options_reach_the_preview_request
+
+  # 주문금액 비교 섹션 — 교환 후 열은 서버가 옵션 치환으로 재계산한 값 (#599 후속 P5)
+  - claim_apply_exchange_after_column_reflects_substitution
+  - claim_apply_exchange_substituted_rows_render
+  # 비교표는 요약 카드 안에 산다 — 카드가 스크롤을 만들지 않는다(2026-09-11 제품 결정)
+  - claim_apply_comparison_partial_mounts_inside_the_summary_card
+  # 비교표의 기본 펼침 여부는 화면 폭이 정한다 — 좁은 화면에서 열어 두면 신청 버튼이 한참
+  # 아래로 밀려 「무엇을 눌러야 하는가」 가 첫 화면에서 사라진다. 토글은 aria-expanded/
+  # aria-controls 를 잇고, 접힌 상태에서는 본문을 아예 렌더하지 않는다(P6).
+  - claim_apply_comparison_default_open_follows_breakpoint
+  # 환불 불가(cancel_blocked)면 제출 버튼이 그 자리에서 잠기고 사유가 버튼 옆에 선다 —
+  # 눌러 본 뒤 서버 오류로 알게 되면, 무엇을 고쳐야 신청이 되는지 화면이 말해 주지 않는다.
+  - claim_apply_cancel_blocked_locks_submit_inline
+  # 신청서 화면이 처음부터 재고 있었으나 선언이 빠져 있던 축 (2026-09-21 — 클레임 체크박스
+  # 계약을 고치며 파일이 변경 집합에 들어오자 미매핑 47건이 드러났다. 그중 기존 어휘로
+  # 덮이지 않는 12건을 여기 선언한다).
+  # 셸의 initLocal 은 정적 계약값만 갖는다 — 핸들러가 쓰는 키를 두면 재적용이 사용자 입력을 되돌린다
+  - claim_apply_shell_initlocal_holds_only_static_contract
+  # 신청서 셸이 싣는 조각의 수와 교환상품 변경 모달 — 하나가 빠지면 그 구획만 조용히 사라진다
+  - claim_apply_shell_mounts_four_partials_and_the_change_modal
+  # 금액은 서버 표기 문자열을 그대로 쓴다 — 화면이 통화 기호·단위를 이어 붙이면 통화마다 어긋난다
+  - claim_apply_amounts_use_server_formatted_strings
+  # 「환불금에서 차감」 은 환불이 발생할 때만 고를 수 있고, 고르면 축2 가 비활성이 된다
+  - claim_apply_deduct_from_refund_gated_by_refund_presence
+  # 환불 예정액 행은 교환에서 그리지 않는다 — 교환에서 돈이 오가는 축은 옵션 차액과 총 청구액뿐이다
+  - claim_apply_refund_row_hidden_for_exchange
+  # 청구 축의 체크 표시는 사용자의 선택 상태에서 읽는다 — 서버 응답을 읽으면 되돌린 선택이 되살아난다
+  - claim_apply_charge_axis_check_reads_user_selection
+  # claimable 을 읽는 자리는 전부 스냅샷을 1순위로 둔다 — store 를 단독으로 읽으면 재조회 중 빈 값이 스친다
+  - claim_apply_claimable_reads_prefer_the_snapshot
+  # 교환상품 변경 모달의 id 가 claim_ 접두를 지킨다 — 다른 화면의 모달과 id 가 겹치면 엉뚱한 창이 열린다
+  - claim_apply_change_product_modal_id_uses_the_claim_prefix
+  # 모달은 페이지 로컬(_local)을 그대로 본다 — $parent._local 은 이 모달 컨텍스트에 없어 값이 비어 온다
+  - claim_apply_change_product_modal_reads_page_local_state
+  # 적용 버튼은 옵션변경인데 옵션이 없거나 품절이면 잠긴다
+  - claim_apply_change_product_apply_locked_without_a_valid_option
+  # T2-D10 (#599 3차 실측 L-4) — 고른 조합을 지금 살 수 없으면 재고 0 처럼 이유를 말한다
+  - claim_apply_change_product_explains_an_unavailable_combination
+  # 주문상품 공유 조각은 로그인 여부를 스스로 판단하지 않는다 — 회원·비회원 셸이 함께 쓰므로 판단은 셸의 몫이다
+  - order_items_partial_does_not_decide_authentication
+  # 결제 정보의 확장 슬롯은 목록 말단에 남는다 — 금액 줄이 슬롯 뒤로 밀리면 합계가 부가 정보처럼 읽힌다
+  - order_payment_extension_slot_stays_at_the_end
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimImageHandlers.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyExchange.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-exchange.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderExchangeServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimDetailCalculationComparisonTest.php
+
+notes: |
+  **반품·취소·환불은 S12 소유다.** 이 세션이 만든 공유 partial 로 이미 그려지지만, 무통장
+  주문의 환불계좌 입력·`resolved_type` 에 따른 라벨 전환·즉시취소/환불신청 혼재(`mixed`)
+  분기·철회 모달은 S12 가 잇는다. 그래서 유형을 이 매니페스트의 축으로 세우지 않았다 —
+  검증되지 않은 조합이 커버된 것처럼 보이는 쪽이 미선언보다 나쁘다.
+
+  **브라우저 실측의 선행 조건은 S9c 와 같다.** `playwright:seed-ecommerce` 의 주문 축이 아직
+  stub 이라(계획서 이월) spec 은 그 회원의 주문 중 교환이 열린 건을 API 로 발견해 진행하고,
+  한 건도 없으면 그 사실을 드러내며 건너뛴다 — 없는 데이터를 있는 척 단언하지 않는다.
+  라우트 가드(잘못된 `:type`)는 주문이 없어도 성립하므로 항상 실행된다.

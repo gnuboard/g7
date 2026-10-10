@@ -10,6 +10,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { manualPaidRequestFields, refreshManualPaidPreview, resetManualPaidState, SALES_STATUSES } from './manualPaidEffectsHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:Order')) ?? {
@@ -61,6 +62,12 @@ interface BuildOrderColumnsParams {
  *
  * 통화 설정에 따라 금액 컬럼을 동적으로 추가합니다.
  *
+ * 배선 현황: **현재 이 핸들러를 호출하는 레이아웃은 없다.** 주문 목록 DataGrid 는 컬럼을
+ * `_partial_order_datagrid.json` 에 직접 열거하며, 그 정의만이 셀 내용(`cellChildren`)을
+ * 갖는다. (형제 `saveVisibleColumnsHandler`·`loadVisibleColumnsHandler` 는 #639 부터 주문 목록이 쓴다.)
+ * 나중에 이 핸들러를 배선하려면 레이아웃 컬럼 정의의
+ * `cellChildren` 을 함께 가져오는 경로부터 만들어야 한다 — 아래 claim 컬럼 주석 참조.
+ *
  * @example
  * // init_actions에서 사용
  * {
@@ -93,6 +100,18 @@ export function buildOrderColumnsHandler(
         { field: 'payment_method', header: '$t:sirsoft-ecommerce.admin.order.column.payment_method', width: '100px', sortable: false, required: false },
         { field: 'delivery_method', header: '$t:sirsoft-ecommerce.admin.order.column.delivery_method', width: '100px', sortable: false, required: false },
         { field: 'country', header: '$t:sirsoft-ecommerce.admin.order.column.country', width: '80px', sortable: false, required: false },
+        // 형제 `loadVisibleColumnsHandler` 의 폴백은 device·claim 을 포함한 11키다. 여기만
+        // 10키로 남으면 두 핸들러를 함께 쓰는 화면에서 표시 목록이 정의 없는 field 를 가리키고,
+        // DataGrid 는 정의가 없는 컬럼을 그리지 않으므로 그 두 컬럼이 조용히 사라진다.
+        { field: 'device', header: '$t:sirsoft-ecommerce.admin.order.column.device', width: '80px', sortable: false, required: false },
+        // claim 컬럼에는 여기서 `cellChildren` 을 주지 않는다 — `ColumnDef` 는 field/header/
+        // width/sortable/required 만 갖는 타입이고, 이 핸들러는 그 다섯 축만 다룬다.
+        // 셀 내용(클레임 유형별 최신 상태 배지 + 2건 이상일 때 건수 병기)은 레이아웃
+        // `_partial_order_datagrid.json` 의 claim 컬럼 정의에만 있으며, 그것이 유일한 정본이다.
+        // 이 핸들러를 실제로 배선하게 되면(아래 "미배선" 주석 참조) 그 `cellChildren` 을
+        // 여기로 함께 옮기거나, 레이아웃 컬럼 정의와 병합하는 경로를 먼저 만들어야 한다.
+        // 그렇지 않으면 claim 컬럼이 헤더만 있고 전 행이 빈 셀이 된다.
+        { field: 'claim', header: '$t:sirsoft-ecommerce.admin.order.column.claim', width: '150px', sortable: false, required: false },
     ];
 
     // 통화별 금액 컬럼 추가 (기본 통화 제외)
@@ -199,83 +218,6 @@ export function toggleArrayValueHandler(
 }
 
 /**
- * 필터 표시/숨김 토글 파라미터
- */
-interface ToggleVisibleFilterParams {
-    filterKey: string;
-    checked: boolean;
-}
-
-/**
- * 필터 표시/숨김 토글 결과
- */
-interface ToggleVisibleFilterResult {
-    success: boolean;
-    newValue: string[];
-}
-
-/**
- * 필터 표시/숨김 토글 핸들러
- *
- * 검색 편집 모드에서 필터 기본/상세 영역 전환 시 사용합니다.
- * LocalStorage에도 저장하여 설정을 유지합니다.
- *
- * @example
- * // 편집 모드 체크박스에서 사용
- * {
- *   "type": "change",
- *   "handler": "sirsoft-ecommerce.toggleVisibleFilter",
- *   "params": {
- *     "filterKey": "date",
- *     "checked": "{{$event.target.checked}}"
- *   }
- * }
- *
- * @param action 액션 객체 (params 포함)
- * @param _context 액션 컨텍스트
- * @returns 토글 결과
- */
-export function toggleVisibleFilterHandler(
-    action: ActionWithParams<ToggleVisibleFilterParams>,
-    _context: ActionContext
-): ToggleVisibleFilterResult {
-    const params = action.params || ({} as ToggleVisibleFilterParams);
-    const { filterKey, checked } = params;
-    const G7Core = (window as any).G7Core;
-
-    if (!G7Core?.state) {
-        logger.warn('[toggleVisibleFilter] G7Core.state를 사용할 수 없습니다.');
-        return { success: false, newValue: [] };
-    }
-
-    // 현재 visibleFilters 가져오기
-    const currentLocal = G7Core.state.getLocal();
-    const currentFilters: string[] = currentLocal.visibleFilters || [];
-
-    // 새 배열 계산
-    let newFilters: string[];
-    if (checked) {
-        newFilters = currentFilters.includes(filterKey) ? currentFilters : [...currentFilters, filterKey];
-    } else {
-        newFilters = currentFilters.filter((f: string) => f !== filterKey);
-    }
-
-    // 상태 업데이트
-    G7Core.state.setLocal({
-        visibleFilters: newFilters,
-    });
-
-    // LocalStorage에 저장
-    try {
-        localStorage.setItem('g7_order_filter_visible_filters', JSON.stringify(newFilters));
-    } catch (e) {
-        logger.warn('[toggleVisibleFilter] LocalStorage 저장 실패:', e);
-    }
-
-    return { success: true, newValue: newFilters };
-}
-
-/**
  * 주문 선택 동기화 파라미터
  */
 interface SyncOrderSelectionParams {
@@ -331,303 +273,41 @@ export function syncOrderSelectionHandler(
 }
 
 /**
- * 행 액션 처리 파라미터
- */
-interface HandleOrderRowActionParams {
-    actionId: string;
-    row: {
-        id: number;
-        order_number?: string;
-        [key: string]: any;
-    };
-}
-
-/**
- * 행 액션 처리 결과
- */
-interface HandleOrderRowActionResult {
-    success: boolean;
-    action?: string;
-    targetId?: number;
-}
-
-/**
- * 행 액션 처리 핸들러
- *
- * DataGrid 행 액션 메뉴에서 선택된 액션을 처리합니다.
- * 주로 switch 핸들러와 함께 사용됩니다.
- *
- * @example
- * // DataGrid onRowAction 이벤트에서 switch와 함께 사용
- * {
- *   "event": "onRowAction",
- *   "handler": "switch",
- *   "cases": {
- *     "view": { "handler": "navigate", "params": { "path": "/admin/ecommerce/orders/{{$args[1].order_number}}" } }
- *   }
- * }
- *
- * @param action 액션 객체 (params 포함)
- * @param _context 액션 컨텍스트
- * @returns 처리 결과
- */
-export function handleOrderRowActionHandler(
-    action: ActionWithParams<HandleOrderRowActionParams>,
-    _context: ActionContext
-): HandleOrderRowActionResult {
-    const params = action.params || ({} as HandleOrderRowActionParams);
-    const { actionId, row } = params;
-    const G7Core = (window as any).G7Core;
-
-    if (!actionId || !row?.order_number) {
-        logger.warn('[handleOrderRowAction] actionId 또는 row.order_number가 없습니다.');
-        return { success: false };
-    }
-
-    // 액션에 따른 처리
-    switch (actionId) {
-        case 'view':
-            G7Core?.navigate?.(`/admin/ecommerce/orders/${row.order_number}`);
-            break;
-
-        case 'edit':
-            G7Core?.navigate?.(`/admin/ecommerce/orders/${row.order_number}`);
-            break;
-
-        case 'status':
-        case 'shipping':
-        case 'memo':
-        case 'delete':
-            // 모달 열기가 필요한 액션은 상태 설정만 하고 레이아웃에서 처리
-            G7Core?.state?.setGlobal({
-                orderList: {
-                    currentActionOrderId: row.id,
-                    currentActionType: actionId,
-                },
-            });
-            break;
-
-        case 'print':
-            // 새 창에서 배송장 출력
-            window.open(`/admin/ecommerce/orders/${row.order_number}/shipping-label`, '_blank');
-            break;
-
-        default:
-            console.warn(`[handleOrderRowAction] 알 수 없는 액션: ${actionId}`);
-            return { success: false };
-    }
-
-    return {
-        success: true,
-        action: actionId,
-        targetId: row.id,
-    };
-}
-
-/**
- * 일괄 처리 실행 파라미터
- */
-interface ProcessOrderBulkActionParams {
-    actionType: 'status' | 'shipping';
-    orderIds: number[];
-    status?: string;
-    carrierId?: number;
-    trackingNumber?: string;
-}
-
-/**
- * 일괄 처리 실행 결과
- */
-interface ProcessOrderBulkActionResult {
-    success: boolean;
-    successCount: number;
-    failCount: number;
-    errors: Array<{ id: number; message: string }>;
-}
-
-/**
- * 일괄 처리 실행 핸들러
- *
- * 일괄 상태 변경, 일괄 발송처리 등 일괄 작업을 실행합니다.
- *
- * @example
- * // 일괄 상태 변경
- * {
- *   "type": "click",
- *   "handler": "sequence",
- *   "actions": [
- *     {
- *       "handler": "sirsoft-ecommerce.processOrderBulkAction",
- *       "params": {
- *         "actionType": "status",
- *         "orderIds": "{{_local.selectedItems}}",
- *         "status": "{{_local.bulkOrderStatus}}"
- *       }
- *     }
- *   ]
- * }
- *
- * @param action 액션 객체 (params 포함)
- * @param _context 액션 컨텍스트
- * @returns 처리 결과
- */
-export async function processOrderBulkActionHandler(
-    action: ActionWithParams<ProcessOrderBulkActionParams>,
-    _context: ActionContext
-): Promise<ProcessOrderBulkActionResult> {
-    const params = action.params || ({} as ProcessOrderBulkActionParams);
-    const { actionType, orderIds, status, carrierId, trackingNumber } = params;
-    const G7Core = (window as any).G7Core;
-
-    if (!orderIds || orderIds.length === 0) {
-        throw new Error('선택된 주문이 없습니다.');
-    }
-
-    let endpoint = '';
-    const body: Record<string, unknown> = { ids: orderIds };
-
-    switch (actionType) {
-        case 'status':
-            if (!status) {
-                throw new Error('변경할 상태를 선택해주세요.');
-            }
-            endpoint = '/api/modules/sirsoft-ecommerce/admin/orders/bulk';
-            body.order_status = status;
-            break;
-
-        case 'shipping':
-            if (!trackingNumber && !carrierId) {
-                throw new Error('택배사 또는 운송장번호를 입력해주세요.');
-            }
-            endpoint = '/api/modules/sirsoft-ecommerce/admin/orders/bulk';
-            if (carrierId) body.carrier_id = carrierId;
-            if (trackingNumber) body.tracking_number = trackingNumber;
-            break;
-
-        default:
-            throw new Error(`알 수 없는 액션 타입: ${actionType}`);
-    }
-
-    // API 호출
-    const response = await G7Core?.api?.call(endpoint, {
-        method: 'PATCH',
-        body,
-    });
-
-    if (!response?.success) {
-        throw new Error(response?.message || '일괄 처리에 실패했습니다.');
-    }
-
-    return {
-        success: true,
-        successCount: response.data?.updated_count ?? orderIds.length,
-        failCount: response.data?.fail_count ?? 0,
-        errors: response.data?.errors ?? [],
-    };
-}
-
-/**
- * 엑셀 다운로드 파라미터
- */
-interface DownloadOrderExcelParams {
-    downloadType: 'search' | 'selected';
-    orderIds?: number[];
-    filters?: Record<string, unknown>;
-}
-
-/**
- * 엑셀 다운로드 결과
- */
-interface DownloadOrderExcelResult {
-    success: boolean;
-}
-
-/**
- * 엑셀 다운로드 핸들러
- *
- * 주문 목록을 엑셀 파일로 다운로드합니다.
- *
- * @example
- * // 엑셀 다운로드 모달에서 사용
- * {
- *   "type": "click",
- *   "handler": "sequence",
- *   "actions": [
- *     {
- *       "handler": "sirsoft-ecommerce.downloadOrderExcel",
- *       "params": {
- *         "downloadType": "{{_local.excelDownloadType}}",
- *         "orderIds": "{{_global.orderList.selectedItemsForExcel}}",
- *         "filters": "{{_local.filter}}"
- *       }
- *     },
- *     { "handler": "closeModal" }
- *   ]
- * }
- *
- * @param action 액션 객체 (params 포함)
- * @param _context 액션 컨텍스트
- * @returns 다운로드 결과
- */
-export async function downloadOrderExcelHandler(
-    action: ActionWithParams<DownloadOrderExcelParams>,
-    _context: ActionContext
-): Promise<DownloadOrderExcelResult> {
-    const params = action.params || ({} as DownloadOrderExcelParams);
-    const { downloadType, orderIds, filters } = params;
-    const G7Core = (window as any).G7Core;
-
-    const endpoint = '/api/modules/sirsoft-ecommerce/admin/orders/export';
-    const body: Record<string, unknown> = {};
-
-    if (downloadType === 'selected') {
-        if (!orderIds || orderIds.length === 0) {
-            throw new Error('선택된 주문이 없습니다.');
-        }
-        body.ids = orderIds;
-    } else {
-        body.filters = filters || {};
-    }
-
-    // Blob 다운로드 처리
-    const token = G7Core?.auth?.getToken();
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || '엑셀 다운로드에 실패했습니다.');
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-
-    // 파일명 생성 (YYYY-MM-DD 형식)
-    const today = new Date();
-    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    a.download = `orders_${dateStr}.xlsx`;
-
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-    return { success: true };
-}
-
-/**
  * 컬럼 표시/숨김 설정 저장 파라미터
  */
 interface SaveVisibleColumnsParams {
     columns: string[];
+}
+
+/** 회원 구분 없이 쓰던 옛 저장 키 (#639 ⑩ 이전) */
+const LEGACY_VISIBLE_COLUMNS_KEY = 'g7_order_visible_columns';
+
+/**
+ * 주문 목록 표시 컬럼의 저장 키를 구합니다 (#639 ⑩).
+ *
+ * 표시 컬럼은 관리자의 업무 설정이라 회원마다 갈린다 — 같은 브라우저의 다른 관리자에게 앞 사람의 설정이 실리면 안 된다.
+ * 형식은 코어 `ColumnSelector` 와 같이 키 끝에 회원 uuid 를 붙인다. 회원을 모르면 null(저장하지 않음).
+ *
+ * @returns 저장 키 또는 null
+ */
+function visibleColumnsKey(): string | null {
+    try {
+        const uuid = (window as any).G7Core?.AuthManager?.getInstance?.()?.getUser?.()?.uuid;
+        return typeof uuid === 'string' && uuid !== '' ? `${LEGACY_VISIBLE_COLUMNS_KEY}_${uuid}` : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 회원 구분 없는 옛 값을 지웁니다 — 누구 것인지 가를 수 없으므로 읽지 않는다.
+ */
+function discardLegacyVisibleColumns(): void {
+    try {
+        localStorage.removeItem(LEGACY_VISIBLE_COLUMNS_KEY);
+    } catch {
+        // 지우지 못해도 읽지 않으므로 다른 관리자에게 실리지 않는다.
+    }
 }
 
 /**
@@ -645,9 +325,15 @@ export function saveVisibleColumnsHandler(
 ): { success: boolean } {
     const params = action.params || ({} as SaveVisibleColumnsParams);
     const { columns = [] } = params;
+    const key = visibleColumnsKey();
+
+    discardLegacyVisibleColumns();
+    if (key === null) {
+        return { success: false };
+    }
 
     try {
-        localStorage.setItem('g7_order_visible_columns', JSON.stringify(columns));
+        localStorage.setItem(key, JSON.stringify(columns));
     } catch (e) {
         logger.warn('[saveVisibleColumns] LocalStorage 저장 실패:', e);
         return { success: false };
@@ -659,7 +345,10 @@ export function saveVisibleColumnsHandler(
 /**
  * 컬럼 표시/숨김 설정 로드 핸들러
  *
- * LocalStorage에서 표시 컬럼 설정을 로드합니다.
+ * LocalStorage에서 지금 관리자의 표시 컬럼 설정을 로드합니다 (#639 ⑩ — 회원 uuid 키).
+ *
+ * 주문 목록 초기화(`admin_ecommerce_order_list` 의 init)가 이 핸들러로 읽는다. 예전처럼 레이아웃이
+ * `loadFromLocalStorage` 로 공용 키를 직접 읽으면 다른 관리자의 설정이 실린다. 회원 구분 없는 옛 값은 지운다.
  *
  * @param action 액션 객체 (params 포함)
  * @param _context 액션 컨텍스트
@@ -670,20 +359,33 @@ export function loadVisibleColumnsHandler(
     _context: ActionContext
 ): string[] {
     const params = action.params || {};
+    // 주문 목록 DataGrid 의 실제 컬럼 field 와 같은 묶음이어야 한다. `order_date` 는 존재하지
+    // 않는 field 였고(실제 키는 `ordered_at`) `device`·`claim` 이 빠져 있었다 — 이 폴백을 쓰는
+    // 레이아웃이 생기는 순간 그 컬럼들이 조용히 사라진다(DataGrid 는 visibleColumns 에 없는
+    // 컬럼을 required 여부와 무관하게 걸러낸다). 레이아웃 3출처(state.visibleColumns /
+    // loadFromLocalStorage.defaultValue / ColumnSelector.defaultColumns)와 같은 11키로 맞춘다.
     const defaultColumns = params.defaultColumns || [
-        'order_date',
+        'ordered_at',
         'order_number',
-        'order_status',
-        'order_amount',
         'product',
+        'order_amount',
+        'order_status',
         'orderer',
         'payment_method',
         'delivery_method',
         'country',
+        'device',
+        'claim',
     ];
 
+    discardLegacyVisibleColumns();
+    const key = visibleColumnsKey();
+    if (key === null) {
+        return defaultColumns;
+    }
+
     try {
-        const saved = localStorage.getItem('g7_order_visible_columns');
+        const saved = localStorage.getItem(key);
         if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed)) {
@@ -788,10 +490,10 @@ export function loadVisibleFiltersHandler(
  *   "handler": "sirsoft-ecommerce.buildOrderBulkConfirmData"
  * }
  */
-export function buildOrderBulkConfirmDataHandler(
+export async function buildOrderBulkConfirmDataHandler(
     _action: ActionWithParams,
     _context: ActionContext
-): void {
+): Promise<void> {
     const G7Core = (window as any).G7Core;
     if (!G7Core) return;
 
@@ -833,8 +535,25 @@ export function buildOrderBulkConfirmDataHandler(
         },
     });
 
+    // 수동 결제 처리 항목(Q13) — 창을 열 때마다 세 체크를 모두 켠 채 다시 시작한다.
+    resetManualPaidState();
+
     // 모달 열기
     G7Core.modal?.open?.('modal_bulk_confirm');
+
+    // 창을 먼저 띄우고 그 안에서 미리보기를 불러온다(클레임 완료 모달과 같은 순서).
+    // 판매 상태로 가는 변경만 대상이다 — 결제 전·취소 주문이 섞여 있는지는 서버가 판정한다.
+    if (SALES_STATUSES.includes(bulkOrderStatus)) {
+        await refreshManualPaidPreview({
+            kind: 'orders',
+            body: {
+                ids: selectedItems,
+                order_status: bulkOrderStatus,
+                ...(bulkCourier ? { carrier_id: bulkCourier } : {}),
+                ...(bulkTrackingNumber ? { tracking_number: bulkTrackingNumber } : {}),
+            },
+        });
+    }
 }
 
 /**
@@ -878,6 +597,8 @@ export async function executeOrderBulkActionHandler(
     if (confirmData.trackingNumber) {
         body.tracking_number = confirmData.trackingNumber;
     }
+    // 확인 창에서 고른 세 항목 — 판매 상태로 가는 요청에만 싣는다(서버는 미지정을 「켬」으로 본다).
+    Object.assign(body, manualPaidRequestFields(confirmData.orderStatus));
 
     try {
         await G7Core.api.patch(
@@ -900,6 +621,7 @@ export async function executeOrderBulkActionHandler(
         });
         G7Core.state.set({
             bulkConfirmData: null,
+            manualPaidPreview: null,
         });
 
         // DataSource 리프레시
@@ -912,12 +634,18 @@ export async function executeOrderBulkActionHandler(
         // 서버 422 검증 메시지(상태 전이 차단 사유 등)를 우선 노출한다.
         // axios 는 error.message 에 "Request failed with status code 422" 같은 raw 문구만 담으므로
         // 실제 사유가 들어있는 error.response.data.message 를 먼저 추출한다(confirmDeposit 동일 패턴).
+        // 5xx 본문(`Server Error`)과 전송 실패·본문 없는 응답의 axios 원문(`Request failed with status code 500`·
+        // `Network Error`)은 사유가 아니다 — 띄우면 운영자가 영문 내부 문구를 읽는다(S1-D12). 번역된 폴백으로 넘긴다.
         const errorData = error?.response?.data || error?.data || {};
-        const serverMessage = errorData?.message || error?.message;
+        const status = Number(error?.response?.status ?? error?.status ?? 0);
+        const serverMessage = status >= 500 ? null : (typeof errorData?.message === 'string' && errorData.message !== '' ? errorData.message : null);
         G7Core.toast?.error?.(
             serverMessage
             || G7Core.t?.('sirsoft-ecommerce.admin.order.bulk.error')
             || '일괄 처리에 실패했습니다.'
         );
+        // 실패를 삼키면 확인 창의 성공 분기(`<close-modal/>`)가 돌아 창이 닫히고 고른 처리 항목이 사라진다.
+        // 다시 던져 레이아웃 `<fail>` 분기(창 유지)로 넘긴다 — 사유 토스트는 여기서 한 번만 띄운다.
+        throw error;
     }
 }

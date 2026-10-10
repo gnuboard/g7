@@ -13,6 +13,8 @@
  *    따라서 이 핸들러는 newGroupName+newValue를 직접 받아서 currentSelection을 자체 구성합니다.
  */
 
+import { formatCurrencyHandler } from './formatCurrency';
+
 /**
  * 옵션 그룹 구조 (다국어 지원)
  * API 응답: { name: {ko: "색상", en: "Color"}, name_localized: "색상", values: [...], values_localized: [...] }
@@ -167,68 +169,20 @@ interface ActionDefinition {
 }
 
 /**
- * 통화 코드별 소수 자릿수 폴백 (설정에 decimal_places 가 없을 때만 사용).
- */
-const DECIMAL_PLACES_FALLBACK: Record<string, number> = {
-  KRW: 0,
-  JPY: 0,
-};
-
-/**
- * 쇼핑몰 설정에 등록된 통화 목록을 전역 상태에서 읽습니다.
- *
- * @returns currencies 배열 (읽지 못하면 빈 배열)
- */
-function getConfiguredCurrencies(): Array<{ code: string; decimal_places?: number; is_default?: boolean }> {
-  try {
-    const state = (window as any).G7Core?.state?.get?.() || {};
-    const lc = state?.modules?.['sirsoft-ecommerce']?.language_currency;
-
-    return Array.isArray(lc?.currencies) ? lc.currencies : [];
-  } catch {
-    return [];
-  }
-}
-
-/**
  * 숫자를 통화 형식으로 포맷팅
  *
- * 통화 목록은 운영자가 관리자에서 추가/삭제하므로 고정 통화표를 두지 않는다. 설정에 없는
- * 통화를 특정 통화로 폴백시키면(예: GBP 를 원화 자릿수로) 값은 맞고 단위만 틀린 금액이 나간다.
- * 자릿수는 설정의 decimal_places 를 따르고, 기호·표기 규칙은 Intl 이 통화 코드로 판정한다.
+ * 템플릿 금액 처리기(`formatCurrencyHandler`)에 맡긴다 — 설정의 기호·소수 자릿수를 따르고, 원화는 보는 언어의
+ * 접두·접미(ko 「8,000원」·en 「₩8,000」·ja 「8,000ウォン」)로 적는다. 종전에는 브라우저 언어의 `Intl` 통화 서식을
+ * 써서 보는 언어와 무관하게 「₩8,000」이 되어, 같은 화면의 서버 금액(「8,000원」)과 섞였다(B4).
  *
  * @param amount 금액
- * @param currencyCode 통화 코드 (미지정 시 설정의 기본 통화)
+ * @param currencyCode 통화 코드 (미지정 시 표시 통화 → 기본 통화)
  * @returns 포맷된 금액 문자열
  */
 function formatPrice(amount: number, currencyCode?: string): string {
   if (!Number.isFinite(amount)) return '0';
 
-  const currencies = getConfiguredCurrencies();
-  const code = currencyCode || currencies.find((c) => c.is_default)?.code;
-
-  if (!code) {
-    // 통화를 판정할 수 없으면 단위를 임의로 붙이지 않는다.
-    return amount.toLocaleString();
-  }
-
-  const decimals = currencies.find((c) => c.code === code)?.decimal_places
-    ?? DECIMAL_PLACES_FALLBACK[code]
-    ?? 2;
-
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: code,
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(amount);
-  } catch {
-    return `${amount.toLocaleString(undefined, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    })} ${code}`;
-  }
+  return formatCurrencyHandler({ handler: 'formatCurrency', params: { value: amount, currencyCode } } as any);
 }
 
 /**

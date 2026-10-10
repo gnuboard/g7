@@ -10,7 +10,11 @@ use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Services\ReactionService;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -45,7 +49,7 @@ class CommentResource extends BaseApiResource
             'content' => $this->getFilteredContent($request, $slug),
 
             // 작성자 정보
-            'author' => $this->getAuthorInfo(),
+            'author' => $this->getAuthorInfo($request),
 
             // 댓글 속성
             'is_secret' => $this->is_secret,
@@ -78,11 +82,17 @@ class CommentResource extends BaseApiResource
             'action_logs' => $this->getActionLogsForResponse($slug),
 
             // 소유권 정보
-            'is_author' => Auth::id() === $this->user_id,
+            // 회원 댓글만 본인 판정한다 — 비로그인(null)과 비회원 댓글(user_id null)을 같은
+            // 값으로 비교하면 방문자가 비회원 댓글의 작성자로 판정된다(PostResource 와 같은 기준).
+            'is_author' => $this->user_id !== null && Auth::id() === $this->user_id,
             'is_guest_comment' => $this->user_id === null,
 
             // 신고 여부 (로그인 사용자 + post.board 관계 로드 시에만)
             'is_already_reported' => $this->getIsAlreadyReported($request),
+
+            // 댓글 반응 (게시판이 use_reaction + use_comment_reaction 을 모두 켰을 때만 의미 있음)
+            'reaction_counts' => $this->getReactionCountsForResponse($request),
+            'my_reaction_type_id' => $this->getMyReactionTypeId($request),
 
             // 권한 정보 (is_owner + permissions)
             ...$this->resourceMeta($request),
@@ -127,18 +137,23 @@ class CommentResource extends BaseApiResource
      * - blocked: 기본 정보 + "차단" 상태
      * - withdrawn: 익명화 ("탈퇴한 사용자")
      *
+     * 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 댓글 목록은 인증 없이 열리므로,
+     * 이메일을 그대로 실으면 회원 주소록이 응답 본문으로 수집된다.
+     *
+     * @param  Request  $request  HTTP 요청
      * @return array<string, mixed> 작성자 정보
      */
-    private function getAuthorInfo(): array
+    private function getAuthorInfo(Request $request): array
     {
         if ($this->user_id && $this->user) {
             $userStatus = UserStatus::tryFrom($this->user->status);
             $isWithdrawn = $userStatus === UserStatus::Withdrawn;
+            $canExposeEmail = $this->canExposeMemberEmail($request, $this->user_id);
 
             return [
                 'uuid' => $this->user?->uuid,
                 'name' => $isWithdrawn ? __('user.withdrawn_user') : $this->user->name,
-                'email' => $isWithdrawn ? null : $this->user->email,
+                'email' => ($isWithdrawn || ! $canExposeEmail) ? null : $this->user->email,
                 'avatar' => $isWithdrawn ? null : $this->user->getAvatarUrl(),
                 'status' => $this->user->status,
                 'status_label' => $userStatus?->label() ?? $this->user->status,
@@ -185,6 +200,95 @@ class CommentResource extends BaseApiResource
 
         return app(ReportRepositoryInterface::class)
             ->hasUserReported($user->id, $boardId, 'comment', $this->id);
+    }
+
+    /**
+     * 댓글의 반응 카운트를 응답용으로 반환합니다.
+     *
+     * 게시판이 반응·댓글반응을 모두 켰을 때만 값을 채우고, 활성 유형은 0 으로 채워
+     * "유형은 있으나 아직 아무도 누르지 않은" 상태도 화면이 그릴 수 있게 한다.
+     *
+     * 반환은 반드시 객체(stdClass)다 — 정수 키 배열은 JSON 직렬화에서 리스트로 바뀌어
+     * 프론트의 `counts[typeId]` 접근이 깨진다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return object 유형 ID => 개수
+     */
+    private function getReactionCountsForResponse(Request $request): object
+    {
+        $board = $this->resolveParentPost($request)?->board;
+
+        if (! BoardResource::reactionsEnabled($board) || ! $board->use_comment_reaction) {
+            return new \stdClass;
+        }
+
+        $counts = $this->reaction_counts ?? [];
+
+        foreach ($this->resolveActiveReactionTypeIds($request, $board) as $typeId) {
+            $key = (string) $typeId;
+            $counts[$key] = (int) ($counts[$key] ?? 0);
+        }
+
+        return (object) $counts;
+    }
+
+    /**
+     * 게시판이 켠 반응 유형 ID 목록을 요청 단위로 한 번만 해석합니다.
+     *
+     * 댓글마다 유형을 조회하면 댓글 수에 비례해 쿼리가 늘어난다(목록 응답의 N+1).
+     * 같은 요청 안에서는 게시판당 결과가 불변이므로 요청 속성에 담아 재사용한다.
+     * 함수 정적 변수에 담으면 프로세스가 끝날 때까지 남아, 장기 실행 프로세스가 관리자가 끄거나
+     * 다시 만든 유형의 옛 ID 를 계속 쓴다 — 게시글 리소스(`PostResource::activeReactionTypeIds`)와
+     * 같은 요청 속성 캐시를 쓴다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  mixed  $board  게시판 모델
+     * @return array<int, int> 활성 반응 유형 ID 목록
+     */
+    private function resolveActiveReactionTypeIds(Request $request, $board): array
+    {
+        $codes = $board->active_reaction_types ?? [];
+        $key = 'sirsoft-board.comment_active_reaction_type_ids.'.$board->id.':'.implode(',', $codes);
+
+        if (! $request->attributes->has($key)) {
+            $request->attributes->set($key, app(ReactionTypeRepositoryInterface::class)
+                ->findByCodes($codes)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all());
+        }
+
+        return $request->attributes->get($key);
+    }
+
+    /**
+     * 로그인 사용자가 이 댓글에 남긴 반응 유형 ID 를 반환합니다.
+     *
+     * 사전 로드 판정에 isset() 을 쓰면 안 된다 — "반응을 남기지 않음"이 정당한 null 이라
+     * isset() 은 프리로드가 있어도 false 가 되어 댓글마다 개별 쿼리로 조용히 퇴화한다.
+     * array_key_exists 로 "키가 주입됐는지"를 본다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return int|null 반응 유형 ID (없으면 null)
+     */
+    private function getMyReactionTypeId(Request $request): ?int
+    {
+        if (array_key_exists('my_reaction_type_id_preloaded', $this->resource->getAttributes())) {
+            $value = $this->resource->getAttributes()['my_reaction_type_id_preloaded'];
+
+            return $value === null ? null : (int) $value;
+        }
+
+        $user = $request->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $reaction = app(ReactionRepositoryInterface::class)
+            ->findByUserAndTarget($user->id, ReactionService::TARGET_COMMENT, (int) $this->id);
+
+        return $reaction === null ? null : (int) $reaction->reaction_type_id;
     }
 
     // =========================================================================
@@ -275,6 +379,14 @@ class CommentResource extends BaseApiResource
         // 컨트롤러가 넘긴 부모 post(요청 속성)를 재사용해 댓글당 lazy-load 없이 재확인한다.
         $parentPost = $this->resolveParentPost($request);
         if ($parentPost && $parentPost->is_secret && ! PostResource::canViewSecretForPost($parentPost, $request)) {
+            return null;
+        }
+
+        // 댓글 자신이 비밀이면 댓글 작성자·부모글을 열 수 있는 사람에게만 원문을 준다
+        // (KVE-2026-2371). 비밀글과 같은 모양 — content=null + is_secret 플래그로 화면이 안내한다.
+        // 부모 게시글을 해석하지 못하면 게이트가 fail-closed 로 가린다.
+        if ($this->is_secret
+            && ! app(SecretContentGate::class)->canViewSecretComment($this->resource, $parentPost, $request)) {
             return null;
         }
 

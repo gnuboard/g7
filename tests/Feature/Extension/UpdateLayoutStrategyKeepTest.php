@@ -41,6 +41,11 @@ class UpdateLayoutStrategyKeepTest extends TestCase
 
     private Template $adminTemplate;
 
+    /**
+     * 모듈 매니저와 테스트용 관리자 템플릿·모듈 레코드를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -118,6 +123,10 @@ class UpdateLayoutStrategyKeepTest extends TestCase
 
     /**
      * keep 전략은 사용자 수정 레이아웃을 덮어쓰지 않는다.
+     *
+     * @effects keep_update_merges_new_version_into_modified_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_keep_strategy_preserves_user_modified_layout(): void
     {
@@ -135,6 +144,10 @@ class UpdateLayoutStrategyKeepTest extends TestCase
 
     /**
      * overwrite 전략은 사용자 수정 레이아웃을 파일 내용으로 되돌린다 (비회귀).
+     *
+     * @effects overwrite_replaces_operator_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_overwrite_strategy_replaces_user_modified_layout(): void
     {
@@ -155,12 +168,16 @@ class UpdateLayoutStrategyKeepTest extends TestCase
     // ========================================================================
 
     /**
-     * 전략 인지 refresh **앞에서** register 를 호출하면 keep 이 무효가 된다.
+     * 활성화 경로의 register 는 이제 keep 규칙이라 refresh **앞에서** 불러도 수정 마커를 지우지 않는다 (#727 D3).
      *
-     * 이 테스트는 결함 재현을 고정한다 — 여기서 보존이 되어버리면 오히려 전제가 바뀐
-     * 것이므로, updateModule 의 호출 계약(아래)과 함께 읽어야 한다.
+     * 종전(#700 까지)에는 register 가 전략을 모른 채 content 와 original_content_hash 를 파일로 덮어써, 이 순서면
+     * keep 이 무효였다. 이제 모든 행 쓰기가 동기화기를 지나므로 register 를 몇 번 불러도 운영자 수정은 남는다.
+     *
+     * @effects activation_preserves_operator_modification
+     *
+     * @return void 반환값 없음
      */
-    public function test_pre_registering_before_refresh_destroys_the_modification_marker(): void
+    public function test_pre_registering_before_refresh_keeps_the_modification_marker(): void
     {
         $this->registerFromFiles();
         $modified = $this->markOneLayoutAsUserModified();
@@ -169,15 +186,19 @@ class UpdateLayoutStrategyKeepTest extends TestCase
         $this->registerFromFiles();
         $this->moduleManager->refreshModuleLayouts(self::MODULE, true);
 
-        $this->assertArrayNotHasKey(
+        $this->assertArrayHasKey(
             '__user_marker',
             $modified->fresh()->content,
-            '선행 register 가 수정 마커를 파괴하지 않는다면 이 회귀의 전제가 달라진 것입니다 — 계약을 재검토하세요.'
+            '활성화 경로 register 가 운영자 수정 마커를 지웠다 — 동기화기(keep) 경유가 깨졌다.'
         );
     }
 
     /**
      * register 를 빼도 DB 에 없는 레이아웃은 refresh 가 생성한다.
+     *
+     * @effects new_version_layouts_are_created
+     *
+     * @return void 반환값 없음
      */
     public function test_refresh_creates_layouts_missing_from_database(): void
     {
@@ -200,6 +221,8 @@ class UpdateLayoutStrategyKeepTest extends TestCase
 
     /**
      * 현재 템플릿에 등록된 모듈 레이아웃 수.
+     *
+     * @return int 테스트 관리자 템플릿에 등록된 대상 모듈의 레이아웃 수
      */
     private function countModuleLayouts(): int
     {
@@ -215,6 +238,10 @@ class UpdateLayoutStrategyKeepTest extends TestCase
 
     /**
      * updateModule / updatePlugin 의 레이아웃 단계에 전략 미인지 선덮어쓰기가 없어야 한다.
+     *
+     * @effects keep_update_merges_new_version_into_modified_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_update_path_does_not_pre_register_layouts(): void
     {
@@ -225,7 +252,7 @@ class UpdateLayoutStrategyKeepTest extends TestCase
             $source = $this->methodSource($class, $method);
 
             $this->assertMatchesRegularExpression(
-                '/'.preg_quote($refresh, '/').'\(\s*\$identifier\s*,\s*\$preserveModified\s*\)/',
+                '/'.preg_quote($refresh, '/').'\(\s*\$identifier\s*,\s*\$preserveModified\s*[,)]/',
                 $source,
                 "{$class}::{$method} 는 전략 인지 {$refresh} 를 호출해야 한다"
             );

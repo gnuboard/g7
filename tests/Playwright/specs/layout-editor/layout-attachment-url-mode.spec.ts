@@ -286,7 +286,7 @@ test.describe('@layout-editor 레이아웃 첨부 URL 발급 모드', () => {
     visitor.on('response', (res) => {
       if (new URL(res.url()).pathname === uploadedPath) attachmentRequests.push(res.status());
     });
-    await visitor.goto(SANDBOX_ROUTE['sirsoft-basic']);
+    await visitor.goto(SANDBOX_ROUTE.user);
     await visitor.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await expect
       .poll(() => attachmentRequests.length, { timeout: 15_000 })
@@ -424,7 +424,7 @@ test.describe('@layout-editor 레이아웃 첨부 URL 발급 모드', () => {
     visitor.on('response', (res) => {
       if (new URL(res.url()).pathname === uploadedPath) statuses.push(res.status());
     });
-    await visitor.goto(SANDBOX_ROUTE['sirsoft-basic']);
+    await visitor.goto(SANDBOX_ROUTE.user);
     await visitor.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await expect.poll(() => statuses.length, { timeout: 15_000 }).toBeGreaterThan(0);
     expect(statuses.every((s) => s === 200)).toBe(true);

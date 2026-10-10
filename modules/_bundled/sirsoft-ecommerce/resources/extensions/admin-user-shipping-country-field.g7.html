@@ -1,0 +1,40 @@
+<!-- 회원 편집 화면에 덧붙이는 배송국가 칸. 위 통화 칸(priority 330)과 같은 구조이고 바로 뒤에 선다.
+  표시 조건이 하나 더 엄격하다 — 해외배송을 켜지 않은 쇼핑몰에서는 고를 나라가 하나뿐이라 칸
+  자체를 내지 않는다(`international_shipping_enabled`).
+  통화 칸과 마찬가지로 저장 버튼이 없고 회원정보 폼의 [저장] 요청 본문에 함께 실려, 이커머스가 코어 훅으로
+  같은 요청 안에서 검증·저장한다. 비활성 국가·변경 권한 없음은 그 요청의 검증 오류로 칸 아래에 뜬다. 
+  주입이 **두 군데**로 갈린다 — 탭 목록에 항목 하나(`user_form_tabs`, inject_props)와 그 탭이 펼칠
+  본문(`extension_form_content`, append_child). 본문만 넣으면 카드는 뜨는데 **책갈피 탭이 없어**
+  찾아갈 수가 없다. 둘을 잇는 것은 `id` 하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
+  그래서 탭 항목의 `if` 는 카드의 표시 조건(해외배송 켜짐 포함)과 **같은 식**이다 — 해외배송을 끈
+  쇼핑몰에서 탭만 남으면 눌러도 갈 곳이 없는 빈 탭이 된다.
+  폭은 `md:w-64` 를 쓴다 — `sm:w-64` 는 관리자 템플릿 safelist 에 없어 CSS 가 생성되지 않고,
+  그러면 `w-full` 만 남아 Select 래퍼가 내용 폭으로 접힌다(실측 113px). -->
+<extension target-layout="admin_user_form" priority="331">
+  <inject target-id="user_form_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_user_shipping_country" label="$t:sirsoft-ecommerce.admin.user_shipping_country.title" iconName="earth-americas" if="{{!!route?.id &amp;&amp; user?.data?.ecommerce_preferred_shipping_country !== undefined &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_form_content" position="append_child">
+    <!-- 회원 배송국가 설정 (MP08 후속 — 편집 모드 + 이커머스 설치 + 해외배송 활성 시에만) -->
+    <div data-ref="ext_user_shipping_country_content" id="ext_user_shipping_country" data-if="{{route?.id &amp;&amp; user?.data?.ecommerce_preferred_shipping_country !== undefined &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <icon name="earth-asia" size="md" class="text-gray-600 dark:text-gray-400"/>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_shipping_country.title</h3>
+        </div>
+        <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+      </div>
+      <!-- 배송국가 Select — name 바인딩으로 회원정보 폼(dataKey=form)에 자동 포함. 별도 저장버튼 없음: 화면 하단 회원정보 [저장] 요청 본문에 실려 함께 저장된다. -->
+      <select name="ecommerce_preferred_shipping_country" aria-label="$t:sirsoft-ecommerce.admin.user_shipping_country.title" disabled="{{user?.data?.ecommerce_shipping_country_can_manage !== true}}" value="{{_local.form?.ecommerce_preferred_shipping_country ?? user?.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}" class="w-full md:w-64"/>
+      <!-- 회원정보 저장 요청의 검증 오류(비활성 국가·변경 권한 없음)를 이 칸 아래에 띄운다 -->
+      <p data-if="{{_local.errors?.ecommerce_preferred_shipping_country}}" class="text-red-500 text-xs mt-1">{{_local.errors?.ecommerce_preferred_shipping_country?.[0] ?? ''}}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.user_shipping_country.description</p>
+    </div>
+  </inject>
+</extension>

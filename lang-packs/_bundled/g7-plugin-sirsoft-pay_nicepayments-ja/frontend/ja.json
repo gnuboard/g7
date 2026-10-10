@@ -129,13 +129,26 @@
     "supply_amount": "供給価額",
     "vat_amount": "付加価値税",
     "tax_free_amount": "非課税金額",
-    "vbank_deposit_info": "仮想口座入金ご案内",
+    "vbank_deposit_info": "仮想口座入金案内",
     "vbank_bank": "銀行",
     "vbank_account": "口座番号",
     "vbank_holder": "口座名義人",
     "vbank_amount": "入金金額",
     "vbank_due": "入金期限",
-    "vbank_notice": "入金期限内に入金が完了しない場合、注文は自動キャンセルされます。"
+    "vbank_notice": "入金期限内に入金が完了しない場合、注文は自動キャンセルされます。",
+    "view_sales_slip": "売上伝票を表示",
+    "receipt_view": "領収書調査",
+    "loading": "読み込み中...",
+    "easy_pay_names": {
+      "NAVERPAY": "Naver Pay",
+      "KAKAOPAY": "Kakao Pay",
+      "SAMSUNGPAY": "Samsung Pay",
+      "APPLEPAY": "Apple Pay",
+      "PAYCO": "PAYCO",
+      "SKPAY": "11pay",
+      "SSGPAY": "SSG Pay",
+      "LPAY": "L.pay"
+    }
   },
   "messages": {
     "refund": {
@@ -153,7 +166,10 @@
   },
   "payment": {
     "error": {
-      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。"
+      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。",
+      "sdk_load_failed": "Nice Payments SDKを読み込むことができません。しばらく後に再度試してください。",
+      "request_failed": "決済中にエラーが発生しました。しばらく後に再度試してください。"
     }
-  }
+  },
+  "plugin_read_only": "このプラグイン設定を変更する権限がないため、読み取り専用で表示されます。"
 }

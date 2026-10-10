@@ -1,0 +1,18 @@
+feature: 쇼핑몰 환경설정 저장 — 구역 없는 요청 거절 (StoreEcommerceSettingsRequest)
+
+description: |
+  화면의 저장 본문 식이 평가에 실패해 식 원문 문자열이 본문으로 나갔을 때, 서버가 저장할 구역이 하나도 없는데도
+  「설정이 저장되었습니다」 200 으로 응답해 모든 탭 저장이 소리 없이 무효가 됐다(#703 브라우저 실측).
+  저장 구역(basic_info·order_settings 등)이 하나도 없는 요청은 422 로 거절한다.
+
+  축 payload 는 본문 형태다. 한 테스트가 식 원문 문자열·빈 객체·`_tab` 만 있는 경우를 차례로 거절하고,
+  구역이 실린 정상 요청은 통과하는지 확인한다.
+
+axes:
+  payload: [no_section]
+
+effects:
+  - settings_save_rejects_payload_without_section
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsEmptyPayloadTest.php

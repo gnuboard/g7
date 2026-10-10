@@ -66,6 +66,10 @@ class CouponDirectIssueTest extends ModuleTestCase
 
     /**
      * #1 회원 2명 지정, 둘 다 issuable → CouponIssue 2건 + issued_count +2 + DR- + 활동로그 2건
+     *
+     * @scenario user_set=multi, eligibility=issuable
+     *
+     * @effects direct_issue_creates_per_user_couponissue, issued_count_incremented_per_success, code_prefix_DR, activity_log_one_per_issue
      */
     public function test_direct_issue_to_two_users_creates_two_records(): void
     {
@@ -99,6 +103,10 @@ class CouponDirectIssueTest extends ModuleTestCase
 
     /**
      * #2 1명 per_user_limit 도달 → 1건 발급 + skip 사유 1건 (전체 롤백 아님)
+     *
+     * @scenario user_set=multi, eligibility=per_user_limit_reached
+     *
+     * @effects ineligible_users_skipped_with_reason, direct_issue_creates_per_user_couponissue
      */
     public function test_direct_issue_skips_user_at_limit(): void
     {
@@ -125,6 +133,10 @@ class CouponDirectIssueTest extends ModuleTestCase
 
     /**
      * #3 user_uuids=[] → 422 (IssueCouponDirectRequest min:1)
+     *
+     * @scenario user_set=empty, eligibility=issuable
+     *
+     * @effects empty_user_ids_rejected
      */
     public function test_direct_issue_empty_user_ids_is_rejected(): void
     {
@@ -137,7 +149,61 @@ class CouponDirectIssueTest extends ModuleTestCase
     }
 
     /**
-     * #4 코어 회귀: downloadCoupon() 추출 후에도 DL- 코드·동일 동작
+     * #4 발급기간이 끝난 쿠폰을 직접 발급 → 400 + 사유 메시지 (500 아님)
+     *
+     * 발급 불가는 운영자가 고칠 수 있는 도메인 조건이다. 500 으로 뭉개면 운영자는
+     * 「작업 처리 중 오류가 발생했습니다」만 보고 발급기간이 끝났다는 사실을 알 수 없다.
+     *
+     * @scenario case=admin_direct_issue_expired_period
+     *
+     * @effects admin_direct_issue_surfaces_gate_reason_as_400
+     */
+    public function test_direct_issue_expired_issue_period_returns_400_with_reason(): void
+    {
+        $coupon = $this->createIssuableCoupon([
+            'issue_from' => now()->subDays(60),
+            'issue_to' => now()->subDays(20),
+        ]);
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson($this->endpoint($coupon->id), ['user_uuids' => [$user->uuid]]);
+
+        $response->assertStatus(400);
+        $this->assertSame(
+            __('sirsoft-ecommerce::messages.coupon.issue_period_expired'),
+            $response->json('message')
+        );
+        $this->assertEquals(0, CouponIssue::where('coupon_id', $coupon->id)->count());
+    }
+
+    /**
+     * #5 발급중단된 쿠폰을 직접 발급 → 400 + 사유 메시지
+     *
+     * @scenario case=admin_direct_issue_stopped_coupon
+     *
+     * @effects admin_direct_issue_surfaces_gate_reason_as_400
+     */
+    public function test_direct_issue_stopped_coupon_returns_400_with_reason(): void
+    {
+        $coupon = $this->createIssuableCoupon([
+            'issue_status' => CouponIssueStatus::STOPPED->value,
+        ]);
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson($this->endpoint($coupon->id), ['user_uuids' => [$user->uuid]]);
+
+        $response->assertStatus(400);
+        $this->assertSame(
+            __('sirsoft-ecommerce::messages.coupon.not_downloadable'),
+            $response->json('message')
+        );
+        $this->assertEquals(0, CouponIssue::where('coupon_id', $coupon->id)->count());
+    }
+
+    /**
+     * #6 코어 회귀: downloadCoupon() 추출 후에도 DL- 코드·동일 동작
      *
      * @scenario case=coupon_valid_download
      *

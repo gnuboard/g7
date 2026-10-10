@@ -1,6 +1,12 @@
 {
   "title": "ショッピングモール環境設定",
   "description": "ショッピングモールの基本環境を設定します。",
+  "unsaved_tab_modal": {
+    "title": "保存されていない変更",
+    "message": "このタブで変更した内容はまだ保存されていません。別のタブに移動すると変更内容は破棄され、保存済みの値に戻ります。",
+    "btn_stay": "このタブにとどまる",
+    "btn_leave": "保存せずに移動"
+  },
   "tabs": {
     "basic_info": "基本情報",
     "language_currency": "言語/通貨",
@@ -11,7 +17,8 @@
     "review_settings": "レビュー設定",
     "notification_definitions": "通知設定",
     "identity_policies": "本人認証ポリシー",
-    "mileage": "マイレージ"
+    "mileage": "マイレージ",
+    "privacy_retention": "個人情報の保有期間"
   },
   "save_success": "設定が保存されました。",
   "save_error": "設定の保存に失敗しました。",
@@ -48,6 +55,7 @@
       "email_id_placeholder": "メールアドレス",
       "email_domain_placeholder": "ドメイン",
       "email_domain_direct": "直接入力",
+      "email_domain_select": "メールドメインの選択",
       "privacy_officer": "個人情報保護責任者",
       "privacy_officer_placeholder": "個人情報保護責任者名",
       "privacy_officer_email": "個人情報保護責任者メール",
@@ -63,7 +71,8 @@
       "description": "商品・カテゴリ・レビュー画像など、このモジュールの完全公開アセットの保存ディスクを設定します。",
       "disk": "公開アセットディスク",
       "follow_core": "コア設定に従う",
-      "help": "このモジュールだけ別のディスクを使う場合に選択します。空にするとコア環境設定の公開アセットストレージ設定に従います。"
+      "help": "このモジュールだけ別のディスクを使う場合に選択します。空にするとコア環境設定の公開アセットストレージ設定に従います。",
+      "unavailable": "保存したディスク({disk})が現在使用できないため、画像をストリーミングで提供しています。別のディスクを使用するには、新たに選択して保存してください。"
     },
     "inquiry_settings": {
       "title": "お問い合わせ掲示板設定",
@@ -75,7 +84,6 @@
     "language_settings": {
       "title": "言語/通貨",
       "description": "ショッピングモールの基本言語および通貨を設定します。",
-      "default_language": "基本言語",
       "default_currency": "基本通貨",
       "currency_change_warning": "最初の商品登録後は変更できません。"
     },
@@ -92,7 +100,6 @@
       "actions": "管理",
       "delete": "削除",
       "base_currency": "基本通貨",
-      "krw_base": "KRW 1,000 =",
       "rounding_units": {
         "1": "1（一の位）",
         "10": "10（十の位）",
@@ -132,6 +139,17 @@
       "base_unit": "基準単位",
       "base_unit_equals": "単位 =",
       "base_unit_hint": "この通貨が基本通貨の場合、為替レート入力の基準となる単位です。(例: 円 = 1,000 / ドル = 1)"
+    },
+    "rate_provider": {
+      "label": "為替レート提供者",
+      "manual": "直接入力",
+      "managed_badge": "自動管理",
+      "manual_badge": "手動管理",
+      "last_updated": "最終更新",
+      "settings": "提供者設定",
+      "auth_key_required": "認証キーを入力すると自動管理が開始されます。",
+      "unsupported_base": "基本通貨がサポートされていないため、為替レートを直接入力する必要があります。",
+      "auto_manage_disabled": "提供者設定で為替レート自動管理を有効にしてください。"
     }
   },
   "order_settings": {
@@ -152,6 +170,7 @@
       "is_active": "使用有無",
       "orphaned_badge": "プラグイン未インストール",
       "orphaned_pg_badge": "指定PG削除済み",
+      "internal_only_badge": "顧客選択不可",
       "remove_orphaned": "削除",
       "pg_provider": "PG社",
       "pg_use_default": "デフォルトPG",
@@ -217,11 +236,7 @@
       "days_suffix": "日後に自動キャンセルされます。",
       "pending_minutes_prefix": "決済画面まで進んだものの決済が完了しなかった注文は",
       "pending_minutes_suffix": "分後に自動キャンセルされます。",
-      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。",
-      "vbank_due_days_label": "仮想口座入金期限：",
-      "vbank_due_days_suffix": "日",
-      "dbank_due_days_label": "無通帳振込入金期限：",
-      "dbank_due_days_suffix": "日"
+      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。"
     },
     "cart_expiry": {
       "title": "カート有効期間",
@@ -232,8 +247,8 @@
     "stock_management": {
       "title": "在庫管理",
       "description": "在庫関連のグローバルポリシーを設定します。",
-      "restore_on_cancel": "注文キャンセル時の在庫復旧",
-      "restore_on_cancel_description": "注文がキャンセルされると、差し引かれた在庫を自動的に復旧します。",
+      "restore_on_cancel": "注文キャンセル時の在庫復元",
+      "restore_on_cancel_description": "注文がキャンセルされると、差し引かれた在庫を自動的に復元します。",
       "restore_on_cancel_hint": "返品·交換処理時にも適用されます。"
     },
     "cash_receipt": {
@@ -256,6 +271,11 @@
   },
   "claim": {
     "title": "クレーム設定",
+    "reason_tabs": {
+      "exchange": "交換理由",
+      "return": "返品理由",
+      "refund": "返金理由"
+    },
     "refund_reasons": {
       "section_title": "返金理由管理",
       "add_button": "理由追加",
@@ -263,7 +283,7 @@
       "columns": {
         "code": "コード",
         "name": "理由名",
-        "fault_type": "責任区分",
+        "fault_type": "帰責区分",
         "is_user_selectable": "顧客選択",
         "is_active": "有効",
         "actions": "管理"
@@ -272,13 +292,12 @@
         "code": "理由コード",
         "code_placeholder": "英小文字、アンダースコア（例：order_mistake）",
         "name": "理由名",
-        "name_ko_placeholder": "日本語",
-        "name_en_placeholder": "English",
-        "fault_type": "責任区分",
+        "name_ko_placeholder": "理由名",
+        "fault_type": "帰責区分",
         "fault_types": {
-          "customer": "顧客責任",
-          "seller": "販売者責任",
-          "carrier": "配送業者責任"
+          "customer": "顧客帰責",
+          "seller": "販売者帰責",
+          "carrier": "配送業者帰責"
         },
         "is_user_selectable": "顧客選択可能",
         "cancel": "キャンセル",
@@ -287,6 +306,150 @@
       "confirm_delete": "この返金理由を削除してよろしいですか？",
       "validation": {
         "code_required": "コードを入力してください",
+        "code_format": "コードは英小文字で始まり、英小文字・数字・単語間のアンダースコア(_)のみ使用できます — 連続アンダースコア(__)と末尾のアンダースコアは不可(例: size_mismatch)",
+        "code_length": "コードは50文字以内で入力してください",
+        "code_duplicate": "同じコードの理由がすでにあります — 別のコードを入力してください",
+        "name_required": "理由名を入力してください"
+      }
+    },
+    "policy": {
+      "days_unit": "日",
+      "images_unit": "枚",
+      "requestable": {
+        "title": "申請可能条件",
+        "description": "顧客が交換·返品·キャンセル·返金を申請できる商品ステータスと期間を設定します。",
+        "placeholder": "ステータスを選択してください",
+        "exchange_label": "交換申請可能ステータス",
+        "exchange_hint": "このステータスの商品のみ交換申請ボタンが表示され、申請が受け付けられます。",
+        "return_label": "返品申請可能ステータス",
+        "return_hint": "このステータスの商品のみ返品申請ボタンが表示され、申請が受け付けられます。",
+        "instant_cancel_label": "自動遷移の対象ステータス",
+        "instant_cancel_hint": "このステータスの商品も返金申請書を作成し、承認・返金完了まで自動的に進めます。口座返金の手段は承認で止まり、運営者が送金後に完了します。",
+        "refund_request_label": "返金申請可能ステータス",
+        "refund_request_hint": "このステータスの商品は返金申請書で受け付けられ、管理者承認後に返金されます。",
+        "request_period_days_label": "申請可能期間",
+        "request_period_days_hint": "配送完了（または購入確定）後、この期間を経過すると交換·返品を申請できません。"
+      },
+      "charge": {
+        "title": "追加決済",
+        "description": "交換往復配送料·オプション差額などのクレーム追加請求をどのような方式と手段で受け取るかを設定します。",
+        "methods_label": "許可請求方式",
+        "methods_placeholder": "請求方式を選択してください",
+        "methods_hint": "顧客が申請書で選択できる請求方式です。選択しない方式は申請画面に表示されません。",
+        "payment_methods_label": "追加決済方法",
+        "payment_methods_placeholder": "決済方法を選択してください",
+        "payment_methods_hint": "クレーム追加決済に使用できる決済方法です。ポイント決済は会員のみ使用できます。"
+      },
+      "auto_approve": {
+        "title": "自動承認",
+        "description": "管理者確認なしに申請を自動承認する条件を設定します。",
+        "zero_charge_label": "追加請求なし自動承認",
+        "zero_charge_hint": "追加請求額のない交換·返品申請を受け付け直後に承認します。",
+        "after_payment_label": "追加決済完了後自動承認",
+        "after_payment_hint": "顧客が追加決済を完了すると、自動的に承認ステータスに移行します。",
+        "refund_request_label": "返金申請自動承認",
+        "refund_request_hint": "受け付けられた返金申請書を自動的に承認ステータスに移行します。返金実行は別途です。",
+        "refund_statuses_label": "自動承認の対象ステータス",
+        "refund_statuses_hint": "自動承認がオンのとき、どの商品ステータスの申請書を自動で承認するかを選びます。申請書の商品が一つでも対象外なら全件を運営者が承認します。",
+        "refund_payment_methods_label": "返金自動承認の対象決済手段",
+        "refund_payment_methods_hint": "ここで選んだ決済手段の返金だけが人手を介さず自動で進みます。一覧にない決済手段(銀行振込·仮想口座など)は決済完了の商品でも返金申請の状態で止まり、運営者が承認したうえで[返金する]で送金を完了します。この一覧は自動承認トグルとは無関係に常に適用されます。",
+        "refund_payment_methods_pg_badge": "PG即時返金"
+      },
+      "attachment": {
+        "title": "添付画像",
+        "description": "顧客が申請書にアップロードできる画像の枚数と容量を設定します。",
+        "max_images_label": "最大添付枚数",
+        "max_images_hint": "申請画面の案内文とサーバー拒否がこの値に従います。",
+        "image_max_size_kb_label": "画像最大容量",
+        "image_max_size_kb_hint": "1枚あたりの最大容量です。1MB = 1024KB。"
+      },
+      "complete_defaults": {
+        "title": "完了処理デフォルト値",
+        "description": "返品完了·交換完了へ移行する際に開く完了処理モーダルの初期選択値です。",
+        "notice": "ここで設定した値はモーダルの初期選択値に過ぎません。実際の在庫復元と返金申請書受付は、完了処理モーダルで個別に確定されます。",
+        "create_refund_request_label": "返金申請書受付",
+        "create_refund_request_hint": "モーダルの「今すぐ受付」をデフォルト選択にします。",
+        "restore_stock_label": "在庫復元",
+        "restore_stock_hint": "モーダルの個別在庫復元チェックをデフォルト選択にします。"
+      },
+      "advance_exchange": {
+        "title": "先交換",
+        "description": "新しい商品を先に送信し、既存の商品は後に受け取る交換です。有効にすると、交換詳細に[先交換に変換]が表示されます。",
+        "enabled_label": "先交換を使用",
+        "enabled_hint": "無効にすると、新しく変換することができません。既に先交換である申請書はそのまま進行されます。",
+        "due_days_label": "既存商品返送期限",
+        "due_days_hint": "新商品発送日から計算されます。期限を過ぎると管理者に一度通知されます。"
+      }
+    },
+    "exchange_reasons": {
+      "section_title": "交換理由管理",
+      "add_button": "理由追加",
+      "empty": "登録されている交換理由がありません。",
+      "columns": {
+        "code": "コード",
+        "name": "理由名",
+        "fault_type": "帰責区分",
+        "is_user_selectable": "顧客選択",
+        "is_active": "有効",
+        "actions": "管理"
+      },
+      "form": {
+        "code": "理由コード",
+        "code_placeholder": "英小文字、アンダースコア（例：order_mistake）",
+        "name": "理由名",
+        "name_ko_placeholder": "理由名",
+        "fault_type": "帰責区分",
+        "fault_types": {
+          "customer": "顧客帰責",
+          "seller": "販売者帰責",
+          "carrier": "配送業者帰責"
+        },
+        "is_user_selectable": "顧客選択可能",
+        "cancel": "キャンセル",
+        "save": "追加"
+      },
+      "confirm_delete": "この交換理由を削除してよろしいですか？",
+      "validation": {
+        "code_required": "コードを入力してください",
+        "code_format": "コードは英小文字で始まり、英小文字・数字・単語間のアンダースコア(_)のみ使用できます — 連続アンダースコア(__)と末尾のアンダースコアは不可(例: size_mismatch)",
+        "code_length": "コードは50文字以内で入力してください",
+        "code_duplicate": "同じコードの理由がすでにあります — 別のコードを入力してください",
+        "name_required": "理由名を入力してください"
+      }
+    },
+    "return_reasons": {
+      "section_title": "返品理由管理",
+      "add_button": "理由追加",
+      "empty": "登録されている返品理由がありません。",
+      "columns": {
+        "code": "コード",
+        "name": "理由名",
+        "fault_type": "帰責区分",
+        "is_user_selectable": "顧客選択",
+        "is_active": "有効",
+        "actions": "管理"
+      },
+      "form": {
+        "code": "理由コード",
+        "code_placeholder": "英小文字、アンダースコア（例：order_mistake）",
+        "name": "理由名",
+        "name_ko_placeholder": "理由名",
+        "fault_type": "帰責区分",
+        "fault_types": {
+          "customer": "顧客帰責",
+          "seller": "販売者帰責",
+          "carrier": "配送業者帰責"
+        },
+        "is_user_selectable": "顧客選択可能",
+        "cancel": "キャンセル",
+        "save": "追加"
+      },
+      "confirm_delete": "この返品理由を削除してよろしいですか？",
+      "validation": {
+        "code_required": "コードを入力してください",
+        "code_format": "コードは英小文字で始まり、英小文字・数字・単語間のアンダースコア(_)のみ使用できます — 連続アンダースコア(__)と末尾のアンダースコアは不可(例: size_mismatch)",
+        "code_length": "コードは50文字以内で入力してください",
+        "code_duplicate": "同じコードの理由がすでにあります — 別のコードを入力してください",
         "name_required": "理由名を入力してください"
       }
     }
@@ -332,8 +495,7 @@
         "code": "タイプコード",
         "code_placeholder": "英小文字、アンダースコア（例：express_delivery）",
         "name": "タイプ名",
-        "name_ko_placeholder": "日本語",
-        "name_en_placeholder": "English",
+        "name_ko_placeholder": "配送タイプ名",
         "category": "カテゴリー",
         "cancel": "キャンセル",
         "save": "追加"
@@ -358,7 +520,7 @@
         "name": "配送業者名",
         "type": "タイプ",
         "tracking_url": "追跡URL",
-        "is_active": "有効化",
+        "is_active": "有効",
         "actions": "管理"
       },
       "form": {
@@ -373,7 +535,7 @@
         "tracking_url_help": "{tracking_number}は送り状番号に置き換えられます。",
         "cancel": "キャンセル",
         "save": "保存",
-        "name_ko_placeholder": "日本語"
+        "name_ko_placeholder": "配送会社名"
       },
       "created": "配送業者が登録されました。",
       "updated": "配送業者が編集されました。",
@@ -534,6 +696,8 @@
     "enable_success": "ポリシーが有効化されました。",
     "disable_success": "ポリシーが無効化されました。",
     "toggle_failed": "ポリシー状態の変更に失敗しました。",
+    "no_read_permission": "本人認証ポリシーを閲覧する権限がありません。「eコマース 本人認証ポリシー閲覧」権限が必要です。",
+    "read_only_notice": "本人認証ポリシーを編集する権限がないため、読み取り専用として表示されます。ポリシーを追加·編集·削除するには「eコマース 本人認証ポリシー編集」権限が必要です。",
     "col": {
       "key": "ポリシーキー",
       "scope": "範囲",
@@ -557,5 +721,73 @@
     },
     "policy_form_editor_label": "本人認証ポリシーの追加/編集"
   },
-  "save_pending_currency": "追加中の通貨を先に確定（チェックボタン）するか、キャンセルしてから保存してください。"
+  "save_pending_currency": "追加中の通貨を先に確定（チェックボタン）するか、キャンセルしてから保存してください。",
+  "privacy_retention": {
+    "notice_title": "法令案内 — 事前にご確認ください",
+    "notice_desc": "電子商取引法に従い、契約・申込撤回、代金決済および商品供給に関する記録は5年間保管する必要があるため、保有期間を5年より短くすることはできません。この機能を有効化する前に、プライバシーポリシーに保有期間と削除方法をあらかじめご案内ください。",
+    "title": "終結注文の個人情報保有期間",
+    "description": "購入確定またはキャンセルで終了した注文（進行中の返金・交換・返品がない注文）の注文者・受取人情報は、保有期間経過後に毎日自動的に処理されます。配送中または購入確定前の注文は対象ではありません。",
+    "enabled": "保有期間自動処理",
+    "enabled_hint": "有効化すると、コアの個人情報保有期間作業（毎日実行）が以下の方式で注文を処理します。処理された内容は元に戻すことはできません。",
+    "target_count": "対象{{count}}件",
+    "retention_years": "保有期間",
+    "years_unit": "年",
+    "retention_years_hint": "注文が終結してから起算します。最短5年（電子商取引法）です。",
+    "mode": "処理方式",
+    "modes": {
+      "anonymize": "匿名化（注文は残し個人情報のみマスク）",
+      "delete": "削除（注文ごと削除）"
+    },
+    "anonymize_notice": "注文番号・金額・商品記録はそのまま残り、注文者・受取人の名前・連絡先・住所がマスクされます。交換・返品・返金申請書の返金口座（口座名義人・口座番号）と詳細理由・管理者メモ、交換品の配送先も一緒にマスクされます。処理された注文は非会員注文照会および管理者注文検索（名前・連絡先）ではもう見つけられず、注文番号では引き続き閲覧可能です。",
+    "delete_warning": "削除は元に戻すことができません。注文と決済・配送・キャンセル・返金・交換・返品記録が添付写真ごと一緒に削除され、その注文で作成された商品レビューも画像ごと消失し、商品評価が変わります。決済代行業者画面の領収書・取引照会がその注文番号で開かなくなり、クーポン発行・マイレージ履歴は残りますが注文との接続が切れます。",
+    "preview_hint": "対象件数は保存された設定基準です。値を変更した場合は保存してから再度確認してください。",
+    "targets": {
+      "view": "対象注文の表示",
+      "title": "保有期間処理対象注文",
+      "total": "合計 {{count}}件",
+      "empty": "対象がありません。",
+      "loading": "読み込み中...",
+      "close": "閉じる",
+      "row_label": "保有期間が経過した終結注文",
+      "editor_label": "ショップの個人情報保有期間の対象注文"
+    },
+    "manual_run": {
+      "run": "今すぐ実行",
+      "save_first_hint": "保存されていない変更があります。職権実行は保存された設定で処理されるため、先に保存してください。",
+      "status_active": "{{status}} — {{at}} 受け付け · {{by}}",
+      "last_completed": "最後の職権実行: {{at}} · {{by}} · {{count}}件 処理",
+      "last_failed": "最後の職権実行失敗: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "不明",
+      "modal_title": "{{target}} — 職権実行",
+      "confirm_desc": "スケジューラーを待たずに今すぐ1回実行します。作業はキューに受け付けられ順番に処理され、終わるとこの画面に結果が表示されます。",
+      "count_label": "処理予定",
+      "count_value": "{{count}}件",
+      "loading": "件数をカウント中...",
+      "mode_label": "処理方式",
+      "modes": {
+        "anonymize": "匿名化",
+        "delete": "削除",
+        "erase_ip": "作成IP削除"
+      },
+      "disabled_notice": "自動実行は無効になっています。職権実行はトグルとは関係なく保存された設定値で今回1回だけ処理します。",
+      "irreversible": "実行するとやり直せません。処理予定件数と対象リストを確認してから実行してください。",
+      "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け付けられた作業が終わるまでは再度実行できません。",
+      "cancel": "キャンセル",
+      "execute": "実行",
+      "executing": "受け付け中...",
+      "queued_toast": "実行をキューに受け付けました。処理が終わると結果が表示されます。",
+      "queue_failed": "実行を受け付けることができませんでした。",
+      "preview_failed": "対象件数を読み込むことができませんでした。",
+      "editor_label": "ショップの個人情報保有期間の職権実行"
+    }
+  },
+  "save_pending_form": "追加中の :forms フォームを先に追加ボタンで確定するか、キャンセルしてから保存してください。",
+  "save_pending_form_targets": {
+    "exchange_reason": "交換理由",
+    "return_reason": "返品理由",
+    "refund_reason": "返金理由",
+    "carrier": "配送業者",
+    "shipping_type": "配送タイプ",
+    "country": "配送可能国"
+  }
 }

@@ -1,72 +1,81 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Common Info Default Setting Confirm Modal"
-  },
-  "id": "default_confirm_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-body text-center"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message"
+    "comment": "편집 중인 공통정보를 기본값으로 삼겠다고 켰을 때 뜨는 확인 창. 기본은 하나뿐이라 다른 것의\n  기본 표시가 풀린다.\n  **취소 쪽이 실질 동작을 한다** — 켜 놓은 체크를 되돌린다. 확인 쪽은 창만 닫는데, 체크는 이미\n  켜져 있고 실제 반영은 폼 저장 때 함께 나가기 때문이다.\n  같은 이름의 창이 보기 패널에도 있다(`_modal_set_default_confirm`). 그쪽은 편집을 거치지 않고\n  곧바로 서버에 반영하므로 성격이 다르다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Default Setting Confirm Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "default_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "form.is_default": false
-                  }
-                },
-                {
-                  "handler": "closeModal"
-                }
-              ]
-            }
-          ]
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-body text-center"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message"
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.common_info.button.confirm",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "취소 — 켜 놓은 기본값 체크를 되돌리고 닫는다. 되돌리지 않으면 확인을 거부했는데도 체크가 켜진 채 남아 저장 때 함께 나간다.\n               부모 폼 커밋(docs/frontend/modal-usage.md)대로 **두 자리에** 쓴다 — 창의 `$parent._local` 쓰기는 저장이 읽는\n               `_global._local` 미러에서 빠지기 때문이다. 화면 쪽은 고칠 자리를 `target` 에 적는다(점 찍은 이름을 속성으로 주면\n               한 칸으로 들어가 스위치가 그대로 켜져 있다). 창이 닫히면 부모 문맥이 사라지니 닫기 **전에** 쓴다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "_local.form.is_default": false
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local.form.is_default",
+                                        "value": false
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.button.confirm"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

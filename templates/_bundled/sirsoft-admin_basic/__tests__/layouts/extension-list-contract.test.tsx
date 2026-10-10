@@ -80,7 +80,11 @@ describe('확장 목록 레이아웃 — API 계약', () => {
 
     expect(found.length).toBeGreaterThan(0);
     for (const call of found) {
-      expect(Array.isArray(call.onError)).toBe(true);
+      // 배열이 아니라 **존재**를 본다. 액션이 하나뿐인 콜백은 굽기(`LayoutJsonWriter`)가 객체로
+      // 접고, 엔진은 두 모양을 같게 받는다(`ActionDispatcher`: `Array.isArray(action.onError)
+      // ? action.onError : [action.onError]`). 배열을 요구하면 굽기가 결코 만들지 않는 모양을
+      // 기다리게 되어, 지키려던 명제("실패 갈래가 있고 플래그를 세운다")와 무관하게 red 가 된다.
+      expect(call.onError, 'check-modified-layouts 에 실패 갈래가 없다').toBeDefined();
       expect(JSON.stringify(call.onError)).toContain(`modified${kind}LayoutsCheckFailed`);
       // 성공 시에는 플래그를 반드시 해제해야 재조회가 경고에 갇히지 않는다
       expect(JSON.stringify(call.onSuccess)).toContain(`modified${kind}LayoutsCheckFailed`);

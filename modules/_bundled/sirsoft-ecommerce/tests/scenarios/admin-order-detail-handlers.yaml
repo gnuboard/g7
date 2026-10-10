@@ -1,0 +1,80 @@
+feature: 관리자 주문상세 화면 핸들러 — 폼 초기화 · 상품 선택 · 일괄 상태변경 · 관리자 메모 · 변경 수량
+
+description: |
+  관리자 주문 상세(`admin/ecommerce/orders/:orderNumber`) 화면이 `orderDetailHandlers` 로
+  묶어 둔 여섯 개의 액션 핸들러가 계약이다. 레이아웃 JSON 은 이 이름만 부르고 판정은
+  전부 여기서 난다 — 그래서 이 파일이 조용히 틀리면 화면에는 아무 오류도 뜨지 않는다.
+
+  ① **폼 초기화**(`initOrderDetailFormHandler`) — 주문의 수취인 8필드를 `_local.form` 에 싣는다.
+     `onLoaded` 로 들어온 `context.data` 가 dataSource 사본보다 새 것이므로 우선한다.
+     G7Core·주문 데이터가 없으면 **아무것도 쓰지 않는다** — 빈 폼으로 덮으면 운영자가
+     화면에서 본 주소가 사라지고, 그 상태로 저장하면 수취인이 비워진다.
+
+  ② **상품 선택 토글**(`toggleProductSelectionHandler` · `toggleAllProductsHandler`) —
+     선택 배열과 `selectAll` 이 한 번에 같이 움직여야 한다. 둘이 갈리면 헤더 체크박스와
+     행 체크박스가 서로 다른 말을 한다.
+
+  ③ **일괄 변경 확인 데이터**(`buildOrderDetailBulkConfirmDataHandler`) — 확인 모달의 내용물을
+     만든다. 상태/선택이 비면 경고만 내고 모달을 열지 않는다. **취소는 상태 변경이 아니라
+     장부 행위라** `cancelled` 는 `cancelPg` 값과 무관하게 언제나 취소신청 모달로 간다 —
+     `cancelPg` 로 경로가 갈리던 시절에는 신청서 없이 상품만 cancelled 로 옮겨져 재고는
+     돌아오는데 돈·결제행은 그대로인 취소가 원장에 근거 없이 남았다.
+     수량 상한은 **진행 중인 클레임이 선점한 수량을 뺀 가용 수량**이다(S1-D16) — 원 수량을
+     그대로 쓰면 서버가 422 로 거절할 수를 운영자가 고를 수 있게 되고, 가용 0 인 옵션은
+     고를 수 없어야 하므로 목록에서 빠진다. 이미 취소된 옵션도 같은 이유로 빠진다.
+
+  ④ **일괄 변경 실행**(`processOrderDetailBulkChangeHandler`) — `items[]` 는 옵션별 수량을
+     싣는다. `changeQuantities` 에 없는 옵션은 원본 수량을 쓴다(부분 지정). 성공하면
+     주문·활동로그 두 데이터소스를 다시 읽고 선택을 비운다 — 다시 읽지 않으면 화면이
+     방금 바꾼 상태를 모르는 채 남는다.
+
+  ⑤ **관리자 메모 저장**(`saveAdminMemoHandler`) · **변경 수량 입력**(`updateChangeQuantityHandler`) —
+     수량은 1 과 상한 사이로 클램핑하고, 숫자가 아니면 상한으로 되돌린다. 맵은 다른 옵션의
+     값을 지우지 않고 갱신한다.
+
+# axis 의미:
+#   handler — 화면이 부르는 액션 이름. 각 핸들러가 독립된 계약이라 이것이 유일한 직교 축이다.
+#             입력 유효성·성공/실패는 핸들러마다 의미가 달라(수량 클램핑 vs API 실패 토스트)
+#             축으로 곱하면 존재하지 않는 조합만 늘어나므로 이름 붙은 effect 가 덮는다.
+axes:
+  handler: [init_form, toggle_selection, build_bulk_confirm, process_bulk_change, save_admin_memo, update_change_quantity]
+
+effects:
+  # ① 폼 초기화
+  - init_form_binds_recipient_fields_into_local_form
+  - init_form_prefers_on_loaded_context_over_data_source
+  - init_form_writes_nothing_without_order_data
+  # ② 상품 선택
+  - toggle_selection_adds_and_removes_option_id
+  - toggle_selection_syncs_select_all_flag
+  - toggle_all_selects_every_option_or_clears_them
+  - toggle_selection_ignores_call_without_option_id
+  # ③ 확인 모달 데이터
+  - bulk_confirm_warns_and_stays_closed_without_status_or_selection
+  - bulk_confirm_opens_modal_with_items_quantities_and_status
+  - bulk_confirm_items_carry_thumbnail_and_original_price
+  - cancel_always_opens_cancel_order_modal_regardless_of_cancel_pg
+  - cancel_state_omits_cancel_pg_flag
+  - cancel_quantity_capped_at_claim_free_available_quantity
+  - cancel_list_excludes_options_without_available_quantity
+  - cancel_list_excludes_already_cancelled_options
+  # ④ 일괄 변경 실행
+  - bulk_change_skips_api_without_status_or_selection
+  - bulk_change_sends_option_items_with_carrier_and_tracking
+  - bulk_change_applies_changed_quantities_per_option
+  - bulk_change_falls_back_to_original_quantity_when_unspecified
+  - bulk_change_success_refetches_order_and_logs_and_clears_selection
+  - bulk_change_failure_shows_error_toast
+  - bulk_change_failure_keeps_confirm_modal_open
+  # ⑤ 관리자 메모 · 변경 수량
+  - admin_memo_patches_order_and_confirms
+  - admin_memo_skips_api_without_order_id
+  - admin_memo_failure_shows_error_toast
+  - change_quantity_stores_value_in_map
+  - change_quantity_clamps_between_one_and_max
+  - change_quantity_falls_back_to_max_on_non_numeric_input
+  - change_quantity_keeps_other_options_values
+  - change_quantity_ignores_call_without_option_id_or_max
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/orderDetailHandlers.test.ts

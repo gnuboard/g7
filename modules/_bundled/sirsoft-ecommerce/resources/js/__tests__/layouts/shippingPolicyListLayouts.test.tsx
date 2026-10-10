@@ -14,6 +14,7 @@ import listLayout from '../../../layouts/admin/admin_ecommerce_shipping_policy_l
 // Partials
 import datagridPartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json';
 import filterPartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_filter.json';
+import { asArray, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ──────────────────────────────────────────────
 // Helper
@@ -73,7 +74,8 @@ describe('메인 레이아웃 (admin_ecommerce_shipping_policy_list)', () => {
 // 2. State 구조
 // ──────────────────────────────────────────────
 describe('State 구조', () => {
-    const { state, initGlobal } = listLayout;
+    const state = initStateOf(listLayout);
+    const { initGlobal } = listLayout;
 
     it('local state에 필터 기본값이 정의되어 있다', () => {
         expect(state.filter).toBeDefined();
@@ -148,10 +150,25 @@ describe('Data Sources', () => {
 // ──────────────────────────────────────────────
 describe('init_actions', () => {
     it('setState로 query에서 필터 값을 복원한다', () => {
+        // 개수로 고정하지 않는다. 여기의 계약은 "query 에서 필터를 복원하는 setState 가 있는가" 다.
         const { init_actions } = listLayout;
-        expect(init_actions).toHaveLength(1);
-        const action = init_actions[0];
-        expect(action.handler).toBe('setState');
+        // 18차가 개수 리터럴(`toHaveLength(1)`)을 걷어내면서 **상한이 함께 사라졌다** — 그 뒤로는
+        // 무관한 init_action 이 몇 개 늘어도 이 검사가 초록이다. 상한을 되살리되 개수로 고정하지
+        // 않는다(그러면 18차가 걷어낸 구조 스냅샷으로 되돌아간다). 대신 "이 화면의 init_actions 에
+        // 설 수 있는 핸들러 집합" 을 못박아, 예상 밖의 핸들러가 들어오면 그 이름과 함께 붉어지게 한다.
+        const ALLOWED_INIT_HANDLERS = ['setState'];
+        expect(
+            init_actions.map((a: any) => a?.handler).filter((h: string) => !ALLOWED_INIT_HANDLERS.includes(h)),
+            '예상 밖의 init_action 이 늘었다 — 의도한 것이면 허용 집합에 함께 적는다',
+        ).toEqual([]);
+
+        const filterSeeds = init_actions.filter((a: any) => a.handler === 'setState' && a.params?._local?.filter);
+
+        // 복원 시드가 둘이면 뒤엣것이 앞엣것을 덮어 어느 쪽이 이기는지가 선언 순서에 좌우된다.
+        expect(filterSeeds, '필터 복원 setState 가 하나가 아니다').toHaveLength(1);
+
+        const action = filterSeeds[0];
+        expect(action).toBeDefined();
         expect(action.params._local.filter).toBeDefined();
         expect(action.params._local.filter.search).toContain('query.search');
         expect(action.params._local.filter.countries).toContain("query['countries[]']");
@@ -383,7 +400,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
 
     describe('DataGrid 이벤트 액션', () => {
         it('onSelectionChange에서 global bulkSelectedItems를 업데이트한다', () => {
-            const selAction = datagridPartial.actions.find(
+            const selAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onSelectionChange'
             );
             expect(selAction).toBeDefined();
@@ -393,7 +410,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('onRowAction에서 switch로 edit/copy/delete를 분기한다', () => {
-            const rowAction = datagridPartial.actions.find(
+            const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction).toBeDefined();
@@ -404,7 +421,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('edit 액션이 navigate로 수정 페이지로 이동한다', () => {
-            const rowAction = datagridPartial.actions.find(
+            const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction.cases.edit.handler).toBe('navigate');
@@ -412,13 +429,13 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('copy 액션이 sequence(setState → openModal)이다', () => {
-            const rowAction = datagridPartial.actions.find(
+            const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction.cases.copy.handler).toBe('sequence');
             expect(rowAction.cases.copy.actions).toHaveLength(2);
-            expect(rowAction.cases.copy.actions[0].handler).toBe('setState');
-            expect(rowAction.cases.copy.actions[1].handler).toBe('openModal');
+            expect(asArray(rowAction.cases.copy?.actions)[0].handler).toBe('setState');
+            expect(asArray(rowAction.cases.copy?.actions)[1].handler).toBe('openModal');
         });
     });
 });

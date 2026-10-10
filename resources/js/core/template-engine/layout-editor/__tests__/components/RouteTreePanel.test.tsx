@@ -265,24 +265,24 @@ describe('RouteTreePanel — 레이아웃 경로/파일명 노출', () => {
     };
   }
 
-  it('템플릿 라우트 — "{식별자} · layouts/{경로}.json"', () => {
+  it('템플릿 라우트 — "{식별자} · layouts/{경로}.g7.html"', () => {
     const node = routeNodeWithSource('/mypage/profile', 'mypage/profile', {
       kind: 'template',
       identifier: 'sirsoft-basic',
     });
     renderTree([makeGroupNode('template', '템플릿', [node])]);
     const pathEl = screen.getByTestId('g7le-route-tree-layout-path');
-    expect(pathEl.textContent).toBe('sirsoft-basic · layouts/mypage/profile.json');
+    expect(pathEl.textContent).toBe('sirsoft-basic · layouts/mypage/profile.g7.html');
   });
 
-  it('모듈 라우트 — "{식별자} · resources/layouts/{경로}.json"', () => {
+  it('모듈 라우트 — "{식별자} · resources/layouts/{경로}.g7.html"', () => {
     const node = routeNodeWithSource('/board', 'admin/admin_board_index', {
       kind: 'module',
       identifier: 'sirsoft-board',
     });
     renderTree([makeGroupNode('module:sirsoft-board', '게시판', [node])]);
     const pathEl = screen.getByTestId('g7le-route-tree-layout-path');
-    expect(pathEl.textContent).toBe('sirsoft-board · resources/layouts/admin/admin_board_index.json');
+    expect(pathEl.textContent).toBe('sirsoft-board · resources/layouts/admin/admin_board_index.g7.html');
   });
 
   it('플러그인 라우트 — resources/layouts prefix', () => {
@@ -292,10 +292,10 @@ describe('RouteTreePanel — 레이아웃 경로/파일명 노출', () => {
     });
     renderTree([makeGroupNode('plugin:sirsoft-pay_nicepayments', '결제', [node])]);
     const pathEl = screen.getByTestId('g7le-route-tree-layout-path');
-    expect(pathEl.textContent).toBe('sirsoft-pay_nicepayments · resources/layouts/user/checkout.json');
+    expect(pathEl.textContent).toBe('sirsoft-pay_nicepayments · resources/layouts/user/checkout.g7.html');
   });
 
-  it('공통 레이아웃(core/base) — 식별자 없이 "layouts/{경로}.json"', () => {
+  it('공통 레이아웃(core/base) — 식별자 없이 "layouts/{경로}.g7.html"', () => {
     const baseNode: RouteTreeNode = {
       path: '__base__/_user_base',
       layoutName: '_user_base',
@@ -307,7 +307,7 @@ describe('RouteTreePanel — 레이아웃 경로/파일명 노출', () => {
     };
     renderTree([makeGroupNode('base', '공통 레이아웃', [baseNode])]);
     const pathEl = screen.getByTestId('g7le-route-tree-layout-path');
-    expect(pathEl.textContent).toBe('layouts/_user_base.json');
+    expect(pathEl.textContent).toBe('layouts/_user_base.g7.html');
   });
 
   it('그룹 헤더(layoutName 없음)에는 경로를 표시하지 않음', () => {
@@ -323,7 +323,7 @@ describe('RouteTreePanel — 레이아웃 경로/파일명 노출', () => {
     });
     renderTree([makeGroupNode('template', '템플릿', [node])]);
     const pathEl = screen.getByTestId('g7le-route-tree-layout-path');
-    expect(pathEl.getAttribute('title')).toBe('sirsoft-basic · layouts/deep/nested/path/component.json');
+    expect(pathEl.getAttribute('title')).toBe('sirsoft-basic · layouts/deep/nested/path/component.g7.html');
   });
 });
 

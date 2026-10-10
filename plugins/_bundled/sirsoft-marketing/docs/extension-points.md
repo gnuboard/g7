@@ -5,12 +5,12 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 4종 / 호출 지점 2곳. 훅 이름이 상수·변수로 조립된 호출이 1곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 4종 / 호출 지점 3곳. 훅 이름이 상수·변수로 조립된 호출이 1곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-marketing.filter_consent_data` | filter | 마케팅 동의 데이터를 필터링하는 훅 | 선언 (호출 위치 미확인) |
-| `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:205` |
+| `sirsoft-marketing.filter_consent_data` | filter | 동의 항목을 일괄 저장하기 전에 동의 데이터를 가공하는 필터 훅 | `src/Services/MarketingConsentService.php:352` |
+| `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:334` |
 | `sirsoft-marketing.user.subscribed` | action | 사용자 마케팅 동의 필드가 동의(granted)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
 | `sirsoft-marketing.user.unsubscribed` | action | 사용자 마케팅 동의 필드가 철회(revoked)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
 <!-- @generated:hooks-published END -->
@@ -39,7 +39,7 @@
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
-| `core.auth.register` | action (미선언) | `MarketingConsentListener` | `afterRegister` | 10 |
+| `core.auth.after_register` | action (미선언) | `MarketingConsentListener` | `afterRegister` | 10 |
 | `core.auth.register_validation_rules` | filter | `MarketingConsentListener` | `addRegisterValidationRules` | 10 |
 | `core.plugin_settings.filter_save_data` | filter | `MarketingConsentListener` | `normalizeChannelsSaveData` | 10 |
 | `core.user.after_create` | action (미선언) | `MarketingConsentListener` | `afterCreate` | 10 |
@@ -99,11 +99,11 @@ Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::tabl
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/user-marketing-detail.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-form.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-profile-view.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-profile.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user-marketing-register.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/user-marketing-detail.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
+| `resources/extensions/user-marketing-form.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_form` |
+| `resources/extensions/user-marketing-profile-view.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile` |
+| `resources/extensions/user-marketing-profile.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile-edit` |
+| `resources/extensions/user-marketing-register.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `auth/register` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
@@ -112,10 +112,10 @@ Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::tabl
 
 | 조각 | 들어가는 자리 |
 |---|---|
-| `user-marketing-register.json` | 회원가입 폼 |
-| `user-marketing-form.json` | 관리자 회원 수정 폼 |
-| `user-marketing-detail.json` | 관리자 회원 상세 |
-| `user-marketing-profile.json` · `user-marketing-profile-view.json` | 마이페이지 (수정·보기) |
+| `user-marketing-register.g7.html` | 회원가입 폼 |
+| `user-marketing-form.g7.html` | 관리자 회원 수정 폼 |
+| `user-marketing-detail.g7.html` | 관리자 회원 상세 |
+| `user-marketing-profile.g7.html` · `user-marketing-profile-view.g7.html` | 마이페이지 (수정·보기) |
 
 대상 화면을 소유한 쪽(템플릿·코어)이 그 자리(슬롯)를 없애면 조각은 **오류 없이 사라집니다.**
 증상은 "가입 폼에 동의 항목이 안 보인다" 뿐이고 로그에는 아무것도 남지 않으므로, 템플릿이나
@@ -123,6 +123,11 @@ Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::tabl
 
 마이페이지 조각은 **동의 이력이 있는 회원에게 항상 노출**되어야 합니다. 동의를 받은 경로와
 철회 경로가 대칭이 아니면 그 동의는 법적 근거로 쓸 수 없습니다.
+
+조각 안의 채널 라벨은 `$localized(channel.label_i18n) || channel.label` 로 읽습니다. 예전의
+`$get(channel.label_i18n, _global.locale, channel.label)` 은 `_global.locale` 이 어디서도 세워지지 않아 어떤
+언어에서도 폴백 라벨만 냈습니다 — 오류도 로그도 없이 번역이 빠지는 형태라, 다국어 값은 엔진의 `$localized()`
+로만 읽습니다.
 <!-- @intent END -->
 
 ## 미들웨어

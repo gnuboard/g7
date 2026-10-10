@@ -16,6 +16,9 @@ return [
     'settings' => [
         'key_required' => '設定キーは必須です。',
         'value_present' => '設定値は必須です。',
+        'key_unknown' => '保存できない設定キーです: :key',
+        'key_server_managed' => 'この設定はサーバーが記録する値のため、直接保存できません。',
+        'empty_payload' => '保存する設定内容がありません。画面を再読み込みしてから、もう一度保存してください。',
     ],
     'shipping_carrier' => [
         'code_required' => '配送業者コードは必須です。',
@@ -221,6 +224,7 @@ return [
     'options_min' => 'オプションを1個以上追加してください。',
     'selling_price_lte_list' => '販売価格は定価より大きくすることはできません。',
     'option_selling_price_lte_list' => 'オプション販売価格は定価より大きくすることはできません。',
+    'claim_reason_code_format' => 'クレーム理由コードは英小文字で始まり、小文字・数字と単語間のアンダースコア（_）のみ使用できます（連続するアンダースコア・末尾のアンダースコアは不可）。すでに保存されているコードはそのままで構いません。',
     'product' => [
         'mileage_percent_max' => '定率のマイレージ付与率は100%を超えることはできません。',
         'selling_price_lte_list' => '販売価格は定価より高くすることはできません。',
@@ -238,6 +242,11 @@ return [
             'option_stock_quantity' => 'オプション在庫数量',
             'option_name' => 'オプション名',
             'option_code' => 'オプションコード',
+            'option_group_name' => 'オプショングループ名',
+            'additional_option_name' => '追加オプションのグループ名',
+            'additional_option_value_name' => '追加オプションの選択肢名',
+            'notice_item_name' => '商品情報提供告示の項目名',
+            'notice_item_content' => '商品情報提供告示の内容',
         ],
         'name' => [
             'required' => '商品名を入力してください。',
@@ -248,6 +257,7 @@ return [
         'product_code' => [
             'required' => '商品コードを入力してください。',
             'unique' => '既に使用中の商品コードです。',
+            'regex' => '商品コードには英字、数字、ハイフン(-)、アンダースコア(_)のみ使用できます。',
         ],
         'list_price' => [
             'required' => '定価を入力してください。',
@@ -690,6 +700,9 @@ return [
             'date' => '終了日は日付形式である必要があります。',
             'after_or_equal' => '終了日は開始日以降である必要があります。',
         ],
+        'date_basis' => [
+            'in' => '日付の基準には site（サイトのタイムゾーン）のみ指定できます。',
+        ],
         'option_status' => [
             'array' => 'オプションステータスは配列形式である必要があります。',
             'string' => 'オプションステータスは文字列である必要があります。',
@@ -743,6 +756,28 @@ return [
         'orderer_uuid' => [
             'uuid' => '注文者UUID形式が正しくありません。',
         ],
+        'claim_presence' => [
+            'in' => 'クレーム有無フィルターはnone、any、activeのいずれかである必要があります。',
+        ],
+        'claim_statuses' => [
+            'array' => 'クレーム状態フィルターは配列形式である必要があります。',
+            'in' => '正しいクレーム状態を選択してください。',
+        ],
+        'claim_cancel_types' => [
+            'array' => 'キャンセル種別フィルターは配列形式である必要があります。',
+            'in' => '正しいキャンセル種別を選択してください。',
+        ],
+        'claim_fault_types' => [
+            'array' => '帰責フィルターは配列形式である必要があります。',
+            'in' => '正しい帰責区分を選択してください。',
+        ],
+        'claim_requested_from' => [
+            'date' => 'クレーム申請日の開始は正しい日付である必要があります。',
+        ],
+        'claim_requested_to' => [
+            'date' => 'クレーム申請日の終了は正しい日付である必要があります。',
+            'after_or_equal' => 'クレーム申請日の終了は開始日以降である必要があります。',
+        ],
         'sort_by' => [
             'in' => '正しいソートフィールドを選択してください。',
         ],
@@ -788,6 +823,8 @@ return [
     ],
     'order' => [
         'payment_method_unavailable' => '現在ご利用いただけない決済手段です。他の決済手段を選択してください。',
+        'payment_method_not_selectable' => '選択できない決済手段です。',
+        'payment_method_not_allowed_for_currency' => ':currency 決済では選択できない決済手段です。',
         'ids' => [
             'required' => '変更する注文を選択してください。',
             'array' => '注文IDは配列形式である必要があります。',
@@ -844,6 +881,7 @@ return [
         'cash_receipt_identifier_required' => '現金領収証の発行に使用する番号を入力してください。',
         'refund_bank_required_with' => '返金口座は銀行·口座番号·預金者をすべて入力する必要があります。',
         'refund_bank_required_for_vbank' => '入金が完了した仮想口座注文は返金口座が必要です。',
+        'refund_bank_required_for_manual_transfer' => 'この注文の返金は口座への送金が必要です。返金先の口座を入力してください。',
     ],
     'order_bulk' => [
         'ids_required' => '変更する注文を選択してください。',
@@ -917,6 +955,29 @@ return [
         'shipping_coupon_not_found' => '存在しない送料クーポンです。',
     ],
     'shipping_policy' => [
+        'claim_settings' => [
+            'country_code' => [
+                'required' => '国コードを入力してください。',
+                'distinct' => '国コードが重複しています。',
+                'exists' => 'この配送ポリシーの国別設定に存在しない国コードです。',
+            ],
+            'claim_fee_mode' => [
+                'required' => 'クレーム送料の算定モードを選択してください。',
+                'enum' => '正しいクレーム送料の算定モードを選択してください。',
+            ],
+            'fee' => [
+                'numeric' => 'クレーム送料は数字である必要があります。',
+                'min' => 'クレーム送料は0以上である必要があります。',
+            ],
+            'recipient_name' => [
+                'required' => '回収先の受取人名を入力してください。',
+                'max' => '回収先の受取人名は最大100文字まで入力可能です。',
+            ],
+            'address1' => [
+                'required' => '回収先の基本住所を入力してください。',
+                'max' => '回収先の基本住所は最大255文字まで入力可能です。',
+            ],
+        ],
         'ids_required' => '変更する配送ポリシーを選択してください。',
         'ids_array' => '配送ポリシーIDは配列形式である必要があります。',
         'ids_min' => '最低1つ以上の配送ポリシーを選択してください。',
@@ -1209,13 +1270,20 @@ return [
             'min' => '注文金額は 0 以上である必要があります。',
         ],
     ],
-    // 公開アセットディスク (コアカタログ照会による検証)
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
-
     'attributes' => [
-        // 公開アセットストレージ
-        'basic_info.public_asset_disk' => '公開アセットディスク',
+        // 手動決済処理・再有効化の確認ウィンドウ3項目 (Q13・Q14)
+        'apply_stock_deduction' => '在庫差し引き',
+        'apply_mileage_deduction' => '使用マイレージ差し引き',
+        'record_paid_amount' => '決済金額の記録',
 
+        // 管理者会員一覧の拡張フィルター (#705)
+        'user_filter_mileage_min' => 'マイレージ残高(最小)',
+        'user_filter_mileage_max' => 'マイレージ残高(最大)',
+        'user_filter_shipping_country' => '配送先の国',
+        'user_filter_has_address' => '配送先の登録有無',
+
+        'basic_info.public_asset_disk' => '公開アセットディスク',
         'basic_info' => '基本情報',
         'basic_info.shop_name' => 'ショップ名',
         'basic_info.route_path' => 'ルートパス',
@@ -1353,11 +1421,34 @@ return [
         'claim_reason_type' => 'クレーム区分',
         'claim_reason_code' => 'クレーム理由コード',
         'claim_reason_name' => 'クレーム理由名',
-        'claim_reason_fault_type' => '責任区分',
+        'claim_reason_fault_type' => '帰責区分',
         'claim_reason_is_user_selectable' => 'ユーザー選択可否',
         'claim_reason_is_active' => '使用可否',
         'claim_reason_sort_order' => '並び順',
         'claim_reason_search' => '検索語',
+        'category_name' => 'カテゴリ名',
+        'brand_name' => 'ブランド名',
+        'coupon_name' => 'クーポン名',
+        'common_info_name' => '共通情報名',
+        'notice_template_name' => '商品グループ名',
+        'notice_template_field_name' => '項目名',
+        'notice_template_field_content' => '項目の内容',
+        'shipping_carrier_name' => '配送業者名',
+        'shipping_policy_name' => '配送ポリシー名',
+        'shipping.carriers.*.name' => '配送業者名',
+        'shipping.types.*.name' => '配送タイプ名',
+        'claim.exchange_reasons' => '交換理由',
+        'claim.exchange_reasons.*.code' => '交換理由コード',
+        'claim.exchange_reasons.*.name' => '交換理由名',
+        'claim.exchange_reasons.*.fault_type' => '交換理由帰責区分',
+        'claim.return_reasons' => '返品理由',
+        'claim.return_reasons.*.code' => '返品理由コード',
+        'claim.return_reasons.*.name' => '返品理由名',
+        'claim.return_reasons.*.fault_type' => '返品理由帰責区分',
+        'claim.refund_reasons' => '返金理由',
+        'claim.refund_reasons.*.code' => '返金理由コード',
+        'claim.refund_reasons.*.name' => '返金理由名',
+        'claim.refund_reasons.*.fault_type' => '返金理由帰責区分',
     ],
     'custom' => [
         'basic_info' => [
@@ -1477,6 +1568,7 @@ return [
                 'is_default' => [
                     'boolean' => '基本通貨の有無は真偽値である必要があります。',
                 ],
+                'exchange_rate_managed' => ':currency の為替レートは :provider プロバイダーが管理中です。画面を更新してください。',
             ],
             'base_locked_after_data' => '商品または注文が1件以上登録された後は、基本通貨を変更できません。',
         ],
@@ -1600,6 +1692,7 @@ return [
                 'is_default' => [
                     'boolean' => '既定の口座であるかどうかは真偽値である必要があります。',
                 ],
+                'dbank_requires_active_account' => '銀行振込を使用するには、使用中の入金口座(口座番号入力済み)が1つ以上必要です。',
             ],
             'auto_cancel_expired' => [
                 'boolean' => '未決済の自動キャンセルの可否は真偽値である必要があります。',
@@ -1622,13 +1715,24 @@ return [
                 'max' => 'カートの保管期間は最大365日まで設定可能です。',
             ],
             'stock_restore_on_cancel' => [
-                'boolean' => 'キャンセル時の在庫復旧の可否は真偽値である必要があります。',
+                'boolean' => 'キャンセル時の在庫復元の可否は真偽値である必要があります。',
             ],
         ],
         'claim' => [
             'refund_reasons' => [
                 'duplicate_code' => '重複した返金理由コードがあります。',
                 'name_required' => '返金理由名は必須項目です。',
+                'code_swap' => '他の返金理由がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
+            ],
+            'exchange_reasons' => [
+                'duplicate_code' => '重複した交換理由コードがあります。',
+                'name_required' => '交換理由名は必須項目です。',
+                'code_swap' => '他の交換理由がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
+            ],
+            'return_reasons' => [
+                'duplicate_code' => '重複した返品理由コードがあります。',
+                'name_required' => '返品理由名は必須項目です。',
+                'code_swap' => '他の返品理由がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
             ],
         ],
         'shipping' => [
@@ -1686,6 +1790,7 @@ return [
             ],
             'types' => [
                 'duplicate_code' => '重複した配送タイプのコードが存在します。',
+                'code_swap' => '他の配送タイプがまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
                 'name_required' => '配送タイプ名は必須項目です。',
                 'code' => [
                     'required_with' => '配送タイプコードは必須です。',
@@ -1707,6 +1812,7 @@ return [
             ],
             'carriers' => [
                 'duplicate_code' => '重複した配送業者のコードが存在します。',
+                'code_swap' => '他の配送業者がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
                 'name_required' => '配送業者名は必須項目です。',
                 'code' => [
                     'required_with' => '配送業者コードは必須です。',
@@ -1764,10 +1870,200 @@ return [
         'user_currency' => [
             'required' => '決済通貨を選択してください。',
             'invalid' => '登録された通貨のみ選択できます。',
+            'forbidden' => '会員の決済通貨を変更する権限がありません。',
         ],
         'user_shipping_country' => [
             'required' => '配送先国を選択してください。',
             'invalid' => '配送可能な国のみ選択できます。',
+            'forbidden' => '会員の配送国を変更する権限がありません。',
+        ],
+    ],
+    'claims' => [
+        'items' => [
+            'required' => '申請する商品を選択してください。',
+            'array' => '申請商品は配列形式である必要があります。',
+            'max' => '一度に申請できる商品は最大:max件です。',
+            'order_option_id_required' => '申請対象の注文商品を指定してください。',
+            'quantity_required' => '申請数量を入力してください。',
+            'quantity_min' => '申請数量は1以上である必要があります。',
+            'new_product_option_id_integer' => '交換するオプション ID は数字である必要があります。',
+            'custom_options_array' => 'カスタムオプションの入力値は配列形式である必要があります。',
+            'id_integer' => '申請商品行IDは数字である必要があります。',
+            'not_in_claim' => 'この申請書に属さない商品が含まれています。',
+            'not_in_order' => 'この注文に属さない商品が含まれています。',
+            'prohibited_with_refund' => '返金申請書基準と商品選択基準は同時に指定できません。いずれか一方のみを送信してください。',
+            'entry_object' => '申請商品項目は {id, quantity} 形式である必要があります。',
+            'duplicate_id' => '同じ商品を2回指定しました。1つの商品は1行で送信してください。',
+        ],
+        'amounts' => [
+            'numeric' => '金額は数字である必要があります。',
+            'min' => '金額は0以上である必要があります。',
+            'prohibited' => 'このクレーム類型では修正できない項目が含まれています。',
+        ],
+        'refund_method' => [
+            'in' => '選択された返金手段は使用できません。',
+        ],
+        'preview_claims' => [
+            'required' => 'プレビューする申請書を選択してください。',
+            'array' => '申請書リストは配列形式である必要があります。',
+            'max' => '一度にプレビューできる申請書は最大:max件です。',
+            'id_required' => '申請書IDを指定してください。',
+            'id_integer' => '申請書IDは数字である必要があります。',
+        ],
+        'reason_code' => [
+            'required' => '申請理由を選択してください。',
+            'exists' => '選択された理由は使用できません。',
+        ],
+        'reason_detail' => [
+            'max' => '詳細理由は:max文字以内で入力してください。',
+        ],
+        'charge_method' => [
+            'in' => '選択された請求方法は使用できません。',
+        ],
+        'redelivery_address' => [
+            'array' => '再配送先は住所項目を含むオブジェクトである必要があります。',
+            'country_code_size' => '再配送先の国コードは2桁である必要があります。',
+            'country_code_unchanged' => '交換の再配送先は注文の配送先と同じ国のみ指定できます。(交換の海外配送は未対応)',
+            'changed_by_user_boolean' => '再配送先の修正有無は true/false である必要があります。',
+        ],
+        'type' => [
+            'required' => 'クレーム種別を指定してください。',
+            'in' => 'サポートされていないクレーム種別です。',
+        ],
+        'status' => [
+            'in' => '選択したクレーム種別に存在しない申請状態です。',
+        ],
+        'payment_method' => [
+            'in' => '選択した決済手段はクレーム追加決済に使用できません。',
+        ],
+        'image_ids' => [
+            'array' => '添付画像リストは配列形式である必要があります。',
+            'max' => '添付画像は一度に:max枚まで指定できます。',
+            'integer' => '添付画像IDは数字である必要があります。',
+        ],
+        'refund_bank' => [
+            'array' => '返金口座は銀行・口座番号・口座名義を含むオブジェクトである必要があります。',
+            'incomplete' => '返金口座は銀行、口座番号、口座名義をすべて入力してください。',
+            'masked' => '伏せ字の口座番号や口座名義は保存できません。返金口座を入力し直してください。',
+        ],
+        'image' => [
+            'required' => '添付する画像を選択してください。',
+            'file' => '有効なファイルではありません。',
+            'image' => '画像ファイルのみ添付できます。',
+            'mimes' => 'サポートする画像形式: jpeg, png, jpg, gif, webp',
+            'max' => '画像サイズは:maxKB以下である必要があります。',
+        ],
+        'callback' => [
+            'required' => '決済承認情報がありません。',
+            'array' => '決済承認情報の形式が正しくありません。',
+        ],
+        'statuses' => [
+            'array' => 'ステータスフィルタは配列形式である必要があります。',
+        ],
+        'search_field' => [
+            'in' => 'サポートされていない検索項目です。',
+        ],
+        'search_keyword' => [
+            'max' => '検索語は:max文字以内で入力してください。',
+        ],
+        'fault_types' => [
+            'array' => '帰責フィルタは配列形式である必要があります。',
+            'prohibited' => 'この種別には帰責フィルタを使用できません。',
+            'in' => 'サポートされていない帰責区分です。',
+        ],
+        'charge_methods' => [
+            'array' => '請求方法フィルタは配列形式である必要があります。',
+            'prohibited' => 'この種別には請求方法フィルタを使用できません。',
+            'in' => 'サポートされていない請求方法です。',
+        ],
+        'requester_type' => [
+            'in' => '会員区分は member または guest である必要があります。',
+        ],
+        'admin_status' => [
+            'required' => '変更するステータスを選択してください。',
+            'in' => 'この種別では指定できないステータスです。',
+        ],
+        'reject_reason' => [
+            'max' => '差戻し理由は:max文字以内で入力してください。',
+            'required' => '却下理由を入力してください。購入者画面にそのままご案内されます。',
+        ],
+        'admin_memo' => [
+            'max' => '管理者メモは:max文字以内で入力してください。',
+        ],
+        'ids' => [
+            'required' => '対象の申請書を選択してください。',
+            'array' => '申請書IDリストは配列形式である必要があります。',
+            'min' => '対象の申請書を1件以上選択してください。',
+            'max' => '一度に処理できる申請書は最大:max件です。',
+            'integer' => '申請書IDは数字である必要があります。',
+        ],
+        'completion' => [
+            'required_if' => '完了処理には完了オプション(在庫復元・返金申請書の受付)が必要です。',
+            'array' => '完了オプションはオブジェクト形式である必要があります。',
+            'restore_stock_by_item_array' => '在庫復元の選択は商品行ごとのマップである必要があります。',
+            'restore_stock_by_item_boolean' => '在庫復元の選択値は true/false である必要があります。',
+            'create_refund_request_required' => '返金申請書の受付有無を選択してください。',
+            'create_refund_request_boolean' => '返金申請書の受付有無は true/false である必要があります。',
+        ],
+        'tracking' => [
+            'carrier_id_integer' => '配送会社IDは数字である必要があります。',
+            'carrier_id_exists' => '登録されていない配送会社です。',
+            'tracking_number_max' => '送り状番号は:max文字以内で入力してください。',
+            'carrier_id_required' => '回収中·発送中に変更するには配送業者を選択してください。',
+            'tracking_number_required' => '回収中·発送中に変更するには送り状番号を入力してください。',
+            'per_claim_required' => '回収中·発送中に変更するには、選択した申請書ごとに配送業者と送り状番号を入力してください。',
+            'direction_required' => '送り状方向(回収·再発送)を選択してください。',
+            'direction_in' => '送り状方向は回収·再発送のいずれかである必要があります。',
+            'deliver_carrier_required' => '到着処理する運送状の配送業者が不明です。',
+            'deliver_tracking_required' => '到着処理する運送状番号が不明です。',
+        ],
+        'min_amount' => [
+            'numeric' => '最小金額は数字である必要があります。',
+        ],
+        'max_amount' => [
+            'numeric' => '最大金額は数字である必要があります。',
+            'gte' => '最大金額は最小金額以上である必要があります。',
+        ],
+        'currency_code' => [
+            'in' => '使用されたことのない通貨です。',
+        ],
+        'charge_payment_methods' => [
+            'array' => '請求決済方法フィルターは配列である必要があります。',
+            'prohibited' => 'このタイプは請求決済方法フィルターを使用できません。',
+            'in' => '使用されたことのない請求決済方法です。',
+        ],
+        'per_page' => [
+            'integer' => 'ページあたりの項目数は数字である必要があります。',
+            'min' => 'ページあたりの項目数は :min 以上である必要があります。',
+            'max' => 'ページあたりの項目数は :max 以下である必要があります。',
+        ],
+        'page' => [
+            'integer' => 'ページ番号は数字である必要があります。',
+            'min' => 'ページ番号は :min 以上である必要があります。',
+            'max' => 'ページ番号は :max 以下である必要があります。',
+        ],
+        'withdraw_reason' => [
+            'required' => '撤回理由を入力してください。',
+            'max' => '撤回理由は2000文字以下で入力してください。',
+        ],
+        'request_source' => [
+            'in' => '受付出典は販売者受付·顧客受付のいずれかである必要があります。',
+            'prohibited' => 'キャンセルリストは受付出典でフィルタリングできません。',
+        ],
+        'collection_overdue' => [
+            'prohibited' => '回収遅延フィルターは交換リストでのみ使用できます。',
+        ],
+        'pending_refund' => [
+            'prohibited' => '返金未受付フィルターは交換·返品リストでのみ使用できます。',
+        ],
+        'exchange_mode' => [
+            'required' => '進行方式を選択してください。',
+            'in' => '進行方式は通常交換·先交換のいずれかである必要があります。',
+        ],
+        'unreturned' => [
+            'array' => '未回収完了指示フォーマットが正しくありません。',
+            'reason_string' => '未回収理由は文字列である必要があります。',
+            'reason_max' => '未回収理由は:max文字以下で入力してください。',
         ],
     ],
     'user_address' => [
@@ -1787,7 +2083,7 @@ return [
         'image_required' => '画像を選択してください。',
         'image_file' => '有効なファイル形式ではありません。',
         'image_image' => '画像ファイルのみアップロード可能です。',
-        'image_max' => '画像サイズは10MBを超えることはできません。',
+        'image_max' => '画像サイズは:maxMBを超えることはできません。',
     ],
     'guest_order' => [
         'order_number_required' => '注文番号を入力してください。',
@@ -1813,5 +2109,148 @@ return [
             'integer' => '商品 ID は数字である必要があります。',
             'item_min' => '商品 ID は1以上である必要があります。',
         ],
+    ],
+    'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
+    'exchange_rate_provider_unavailable' => '使用できない為替レートプロバイダーです。',
+    'privacy_retention_attributes' => [
+        'section' => '個人情報保有期間設定',
+        'enabled' => '注文個人情報保有期間自動削除',
+        'retention_years' => '注文個人情報保有期間',
+        'mode' => '保有期間経過注文処理方式',
+    ],
+    // 요청 필드 라벨 (이슈 #599) — 클레임·주문 목록·배송정책·주문서 FormRequest 의 attributes() 가 키별로 읽는다
+    'request_attributes' => [
+        'claim_type' => 'クレーム種別',
+        'items' => '対象商品',
+        'claim_item' => 'クレーム商品',
+        'order_option' => '注文商品',
+        'quantity' => '数量',
+        'cancel_quantity' => 'キャンセル数量',
+        'new_product_option' => '交換オプション',
+        'custom_options' => '追加入力オプション',
+        'reason_code' => '理由',
+        'reason_detail' => '詳細理由',
+        'reject_reason' => '拒否理由',
+        'withdraw_reason' => '撤回理由',
+        'admin_memo' => '管理者メモ',
+        'charge_method' => '請求方式',
+        'payment_method' => '決済手段',
+        'refund_priority' => '返金優先順位',
+        'refund_bank' => '返金口座',
+        'refund_bank_code' => '返金銀行',
+        'refund_bank_account' => '返金口座番号',
+        'refund_bank_holder' => '口座名義人',
+        'image_ids' => '添付画像',
+        'image_id' => '添付画像',
+        'add_image_ids' => '追加する添付画像',
+        'remove_image_ids' => '削除する添付画像',
+        'image' => '添付画像',
+        'redelivery_address' => '交換品の配送先',
+        'redelivery_recipient_name' => '受取人',
+        'redelivery_phone' => '受取人の連絡先',
+        'redelivery_zipcode' => '郵便番号',
+        'redelivery_address1' => '住所',
+        'redelivery_address2' => '詳細住所',
+        'redelivery_city' => '都市',
+        'redelivery_state' => '州/道',
+        'redelivery_country_code' => '配送国',
+        'redelivery_changed_by_user' => '配送先変更の有無',
+        'full_cancel' => '全体キャンセルの有無',
+        'auto_advance' => '自動進行の有無',
+        'claim_id' => 'クレーム',
+        'trackings' => '送り状一覧',
+        'tracking' => '送り状項目',
+        'carrier' => '配送業者',
+        'tracking_number' => '送り状番号',
+        'tracking_direction' => '送り状区分',
+        'refund_id' => '返金',
+        'claims' => '完了するクレーム',
+        'completion_item_ids' => '完了する商品',
+        'completion_item_id' => '完了する商品',
+        'restore_stock_by_item' => '商品別在庫復元',
+        'restore_stock_item' => '在庫復元の有無',
+        'unreturned_item_ids' => '未回収商品',
+        'unreturned_item_id' => '未回収商品',
+        'create_refund_request' => '返金申請書受付の有無',
+        'statuses' => 'ステータス',
+        'status_item' => 'ステータス',
+        'date_from' => '開始日',
+        'date_to' => '終了日',
+        'search_field' => '検索項目',
+        'search_keyword' => '検索キーワード',
+        'fault_types' => '帰責区分',
+        'fault_type' => '帰責区分',
+        'charge_methods' => '請求方式',
+        'requester_type' => '申請者区分',
+        'request_source' => '受付経路',
+        'collection_overdue' => '回収遅延',
+        'pending_refund' => '返金待ち',
+        'min_amount' => '最小金額',
+        'max_amount' => '最大金額',
+        'currency_code' => '通貨',
+        'charge_payment_methods' => '追加決済手段',
+        'charge_payment_method' => '追加決済手段',
+        'sort_order' => '並び順',
+        'refund_amount' => '返金額',
+        'refund_points_amount' => '返金マイレージ',
+        'refund_method' => '返金手段',
+        'force_without_refund_bank' => '返金口座なしで進行',
+        'claim_shipping_fee' => 'クレーム送料',
+        'exchange_mode' => '交換の進行方式',
+        'claim_addresses' => '返品・交換の回収先',
+        'country_settings' => '国別設定',
+        'country_code' => '国',
+        'claim_fee_mode' => '返品・交換送料の方式',
+        'return_fixed_fee' => '返品固定送料',
+        'exchange_fixed_fee' => '交換固定送料',
+        'save_shipping_address' => '保存する配送先',
+        'payment_callback' => '決済承認の応答',
+        'claim_number' => 'クレーム番号',
+        'claim_presence' => 'クレームの有無',
+        'claim_exchange_statuses' => '交換ステータス',
+        'claim_exchange_status' => '交換ステータス',
+        'claim_return_statuses' => '返品ステータス',
+        'claim_return_status' => '返品ステータス',
+        'claim_refund_statuses' => '返金ステータス',
+        'claim_refund_status' => '返金ステータス',
+        'claim_cancel_types' => 'キャンセル区分',
+        'claim_cancel_type' => 'キャンセル区分',
+        'claim_requested_from' => 'クレーム申請開始日',
+        'claim_requested_to' => 'クレーム申請終了日',
+        'claim_ids' => '対象クレーム',
+        'claim_status' => '変更後の状態',
+        'approve_on_receipt' => '受付と同時に承認',
+        'completion' => '完了処理オプション',
+        'unreturned_reasons' => '未回収理由',
+    ],
+    // 클레임 정책 설정 필드 라벨 (이슈 #599) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    'claim_settings_attributes' => [
+        'cancellable_statuses' => 'キャンセル可能注文ステータス',
+        'exchange_requestable_statuses' => '交換申請可能ステータス',
+        'return_requestable_statuses' => '返品申請可能ステータス',
+        'instant_cancel_statuses' => '自動遷移の対象ステータス',
+        'refund_request_statuses' => '返金申請可能ステータス',
+        'allowed_charge_methods' => '許可請求方式',
+        'charge_payment_methods' => '追加決済方法',
+        'auto_approve_zero_charge' => '追加請求なし自動承認',
+        'auto_approve_after_payment' => '追加決済完了後自動承認',
+        'auto_approve_refund_request' => '返金申請自動承認',
+        'auto_approve_refund_statuses' => '自動承認の対象ステータス',
+        'auto_approve_refund_payment_methods' => '返金自動承認の対象決済手段',
+        'auto_approve_refund_payment_methods_decided' => '返金自動承認決済手段の確定有無',
+        'max_images' => '最大添付枚数',
+        'image_max_size_kb' => '画像最大容量(KB)',
+        'request_period_days' => '申請可能期間(日)',
+        'advance_exchange_enabled' => '先交換を使用',
+        'advance_exchange_collection_due_days' => '既存商品返送期限(日)',
+        'complete_defaults' => '完了処理デフォルト値',
+        'complete_defaults_create_refund_request' => '完了処理デフォルト値 - 返金申請書受付',
+        'complete_defaults_restore_stock' => '完了処理デフォルト値 - 在庫復元',
+    ],
+
+    // 本人認証ポリシータブの検証メッセージ
+    'identity_policy' => [
+        'target_not_owned' => 'イーコマースの本人認証ポリシーはイーコマースの地点のみを対象にできます。フック・カスタム範囲は「sirsoft-ecommerce.」、ルート範囲は「api.modules.sirsoft-ecommerce.」で始まる必要があります。',
+        'nothing_to_update' => '変更する項目がありません。',
     ],
 ];

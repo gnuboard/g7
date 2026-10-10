@@ -1,0 +1,63 @@
+feature: 결제수단별 환불 자동 승인 게이트 (P16·P17)
+
+description: |
+  사람이 개입해야 환불되는 결제수단(무통장·가상계좌 등)은 결제완료 상품이라도 환불신청서가
+  `requested` 에서 정지하고 운영자가 승인 → [환불하기] 로 끝낸다. 자동으로 완료까지 보내면
+  신청서만 앞서 나가고 고객에게는 "환불 완료" 알림이 가는데 돈은 아직 나가지 않은 상태가 된다.
+
+  세 경로가 같은 규칙을 따른다 — 즉시취소 분기(`auto`) · 클레임 정책 탭 '환불신청 자동승인'
+  토글(D8) · 관리자 [주문취소] '자동 전이' 체크. 판정을 `willAutoAdvance()`·`willAutoApprove()`
+  **술어 안**에 두어 알림 억제와 실제 전이가 같은 값을 읽게 한다(호출부에 두면 갈린다).
+
+  허용 목록은 운영자가 환경설정 > 클레임 정책 탭에서 정하고(`claim.auto_approve_refund_payment_methods`,
+  기본 `card · point · free`), 플러그인이 카탈로그에 `auto_approve_refund: true` 를 선언한 수단은
+  운영자가 아직 결정한 적 없을 때만 자동 합류한다. 저장 시점에 화면이 보여 준 수단 전부를
+  `..._decided` 에 남겨, 운영자가 뺀 수단이 다음 조회에서 되살아나지 않게 한다.
+
+  지난 계획서의 前D4(계좌 환불은 승인까지 자동)·前D9(결제완료는 수단 구분 없이 즉시취소)를
+  대체한다.
+
+axes:
+  gate_case:
+    - stopped_method_auto_branch          # 정지 수단 + auto 분기 → requested 정지
+    - stopped_method_auto_approve_toggle  # 정지 수단 + D8 토글 ON → requested 정지
+    - stopped_method_admin_auto_advance   # 정지 수단 + 관리자 자동 전이 체크 → requested 정지
+    - stopped_method_user_api             # 회원 접수 API 의 분기·상태 응답
+    - stopped_method_guest_api            # 비회원 접수 API 의 분기·상태 응답
+    - vbank_paid_requires_refund_bank     # 입금완료 가상계좌는 계좌 없이 접수되지 않는다 (S1-D8)
+    - vbank_paid_with_refund_bank         # 계좌를 실으면 정상 접수된다 (대조군)
+    - allowed_method_auto_branch          # 허용 수단은 종전대로 완료까지 (비회귀)
+    - allowed_method_admin_auto_advance   # 관리자 경로의 허용 수단 (비회귀)
+    - operator_allows_stopped_method      # 운영자가 목록에 넣으면 그 수단도 자동 전이
+    - default_allow_list                  # 기본 목록 = card · point · free
+    - plugin_declared_method_joins        # 선언 수단의 자동 합류
+    - plugin_undeclared_method_stops      # 미선언 확장 수단은 합류하지 않는다
+    - operator_removed_declared_method    # 운영자 결정 이력이 선언을 이긴다
+    - save_records_decision_history       # 저장이 결정 이력을 남긴다
+
+effects:
+  - stopped_payment_method_holds_refund_at_requested          # 정지 수단은 접수에서 멈춘다
+  - refund_bank_required_before_intake_for_paid_vbank         # 입금완료 가상계좌는 계좌가 있어야 접수된다
+  # T2-D6 (#599 3차 실측 L-8) — 관리자 [환불하기]도 같은 술어로 계좌를 요구한다
+  - admin_refund_execution_requires_a_bank_account            # 계좌 없이 실행하면 422
+  - admin_refund_execution_records_the_bank_account_it_was_given  # 실행하며 적은 계좌가 신청서에 남는다
+  - admin_refund_execution_allows_forcing_without_a_bank_account  # 동의하면 직권 실행 (운영 결정)
+  - stopped_payment_method_sends_one_requested_notification   # 자동 전이가 없으니 접수 알림 1통
+  - stopped_payment_method_ignores_auto_approve_toggle        # D8 토글도 게이트를 못 넘는다
+  - stopped_payment_method_ignores_admin_auto_advance         # 관리자 자동 전이도 마찬가지
+  - allowed_payment_method_still_auto_completes               # 허용 수단 비회귀
+  - auto_approve_list_is_the_single_source_of_truth           # 설정 목록이 판정의 SSoT
+  - auto_approve_default_list_is_card_point_free              # 기본값
+  - plugin_declared_method_joins_until_operator_decides       # 선언 수단 자동 합류
+  - undeclared_extension_method_does_not_join                 # 미선언 기본값 false
+  - operator_decision_history_beats_plugin_declaration        # 결정 이력 우선
+  - auto_approve_save_records_operator_decision_history       # 저장이 이력을 남긴다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimCancellationRecordTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PaymentMethodResolverTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminRefundExecuteRequiresBankTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderCancellationControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsClaimTest.php

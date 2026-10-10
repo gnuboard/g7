@@ -1,0 +1,27 @@
+feature: 사용자 게시글 상세 조회수 1회 판정 키 — 회원은 회원 번호, 비로그인은 IP, 서버 내부 SEO 호출은 세지 않음 (7.1.0 실측 O-K3-1)
+
+description: |
+  사용자 상세 API 는 같은 사람이 조회수 캐시 유효시간(view_count_cache_ttl) 안에 다시 열어도 한 번만 센다.
+  로그인 회원은 회원 번호, 비로그인은 IP 로 판정한다(API 는 세션이 없는 무상태 요청이라 비로그인 식별은 IP 다).
+  종전에는 글 작성·수정 직후 SEO 캐시 재생성과 검색 봇 방문 렌더가 서버 자기 자신에게 상세 API 를 불러
+  그 내부 호출이 비로그인·서버 IP 로 조회수를 1 올렸다. 그래서 글을 쓰자마자 조회수 1 이 되고, 서버 IP 키가
+  먼저 잡혀 같은 IP 의 비로그인 방문이 「이미 봄」이 됐다. 이제 SEO 렌더러가 앱 키로 서명한 내부 호출 헤더를
+  붙이고, 서명이 맞는 요청은 조회수를 세지 않는다. 서명이 틀린 헤더는 일반 열람으로 센다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostViewCountIdentityTest.php
+  - tests/Unit/Seo/SeoRenderRequestTest.php
+
+axes:
+  viewer:
+    - seo_render
+    - forged_header
+    - member
+    - guest
+
+effects:
+  - view_count_skips_seo_render
+  - seo_render_does_not_preempt_guest_ip
+  - seo_render_signature_bound_to_app_key
+  - view_count_member_key
+  - view_count_guest_ip_key

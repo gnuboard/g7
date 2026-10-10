@@ -42,6 +42,12 @@ class CustomAssetService
     /** 업로드 파일의 최대 크기 (바이트) */
     public const MAX_UPLOAD_BYTES = 5242880;
 
+    /** 검색 — 파일당 매치 수 상한 */
+    public const SEARCH_MAX_MATCHES_PER_FILE = 20;
+
+    /** 검색 — 미리보기 문자열 길이 상한 */
+    public const SEARCH_PREVIEW_LENGTH = 200;
+
     /**
      * 확장의 사용자 추가 에셋 목록을 돌려줍니다.
      *
@@ -244,7 +250,7 @@ class CustomAssetService
      * @param  string  $extensionType  확장 타입
      * @param  string  $identifier  확장 식별자
      * @param  string  $relative  `custom/` 기준 상대 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CustomAssetOperationException 파일 부재·삭제 실패 시
      */
@@ -256,7 +262,171 @@ class CustomAssetService
             throw new CustomAssetOperationException('custom_assets.errors.delete_failed', ['path' => $relative]);
         }
 
+        $this->pruneEmptyFolders($extensionType, $identifier, dirname($absolute));
         $this->invalidate($extensionType, $identifier, 'delete', $relative);
+    }
+
+    /**
+     * 파일 이름을 바꿉니다 (= 이동).
+     *
+     * 원자 연산(`rename`)이다 — 복사 후 삭제로 구현하면 중간에 실패했을 때 같은 내용의 파일이
+     * 두 벌 남거나 원본만 사라진다.
+     *
+     * 대상 경로에 이미 파일이 있으면 **덮어쓰지 않고 막는다**. `rename()` 은 대상이 있어도
+     * 조용히 덮어쓰므로, 그대로 두면 운영자가 올린 다른 파일이 경고 없이 사라진다.
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $from  현재 `custom/` 기준 상대 경로
+     * @param  string  $to  새 `custom/` 기준 상대 경로
+     * @return array<string, mixed> 바뀐 파일 정보
+     *
+     * @throws CustomAssetOperationException 원본 부재·대상 충돌·쓰기 실패 시
+     */
+    public function rename(string $extensionType, string $identifier, string $from, string $to): array
+    {
+        $source = $this->resolveExisting($extensionType, $identifier, $from);
+        $target = $this->resolveWritable($extensionType, $identifier, $to);
+
+        if ($source === $target) {
+            return ['path' => $to, 'size' => (int) @filesize($source), 'modified_at' => date('c')];
+        }
+
+        if (file_exists($target)) {
+            throw new CustomAssetOperationException('custom_assets.errors.rename_target_exists', ['path' => $to]);
+        }
+
+        // 확장자가 바뀌면 서빙 규약과 편집 가능 여부가 함께 바뀐다 — `style.css` 를 `style.txt`
+        // 로 바꾸면 그 파일은 더 이상 실리지 않는데 화면에는 그대로 보인다.
+        $sourceExtension = strtolower(pathinfo($from, PATHINFO_EXTENSION));
+        $targetExtension = strtolower(pathinfo($to, PATHINFO_EXTENSION));
+
+        if ($sourceExtension !== $targetExtension) {
+            throw new CustomAssetOperationException('custom_assets.errors.rename_extension_changed', [
+                'from' => $sourceExtension,
+                'to' => $targetExtension,
+            ]);
+        }
+
+        $this->ensureDirectory(dirname($target));
+
+        if (! @rename($source, $target)) {
+            throw new CustomAssetOperationException('custom_assets.errors.write_failed', ['path' => $to]);
+        }
+
+        $this->pruneEmptyFolders($extensionType, $identifier, dirname($source));
+        $this->invalidate($extensionType, $identifier, 'rename', $to);
+
+        return [
+            'path' => $to,
+            'previous_path' => $from,
+            'size' => (int) @filesize($target),
+            'modified_at' => date('c'),
+        ];
+    }
+
+    /**
+     * 파일명·본문에서 검색어를 찾습니다.
+     *
+     * 본문을 여는 대상은 {@see EDITABLE_EXTENSIONS} 뿐이다 — 폰트·이미지를 텍스트로 훑으면
+     * 바이너리가 우연히 검색어와 일치해 쓸모없는 결과가 섞이고, 큰 파일을 통째로 메모리에 올린다.
+     * 파일명 매칭은 확장자와 무관하게 모든 파일을 대상으로 한다.
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $keyword  검색어
+     * @return array<int, array<string, mixed>> 검색 결과 (파일별 매치)
+     */
+    public function search(string $extensionType, string $identifier, string $keyword): array
+    {
+        $needle = mb_strtolower($keyword);
+
+        if ($needle === '') {
+            return [];
+        }
+
+        $directory = CustomAssets::directory($extensionType, $identifier);
+
+        if ($directory === null || ! is_dir($directory)) {
+            return [];
+        }
+
+        $results = [];
+
+        foreach ($this->list($extensionType, $identifier) as $file) {
+            $relative = (string) ($file['path'] ?? '');
+
+            if ($relative === '') {
+                continue;
+            }
+
+            $nameMatched = str_contains(mb_strtolower($relative), $needle);
+            $lines = [];
+
+            $extension = strtolower(pathinfo($relative, PATHINFO_EXTENSION));
+            $size = (int) ($file['size'] ?? 0);
+
+            if (in_array($extension, self::EDITABLE_EXTENSIONS, true) && $size <= self::MAX_TEXT_BYTES) {
+                $lines = $this->scanFileLines($directory.DIRECTORY_SEPARATOR.$relative, $needle);
+            }
+
+            if (! $nameMatched && $lines === []) {
+                continue;
+            }
+
+            $results[] = [
+                'path' => $relative,
+                'name_matched' => $nameMatched,
+                'match_count' => count($lines),
+                'lines' => $lines,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * 한 파일을 줄 단위로 훑어 매치를 모읍니다.
+     *
+     * @param  string  $absolute  절대 경로
+     * @param  string  $needle  소문자 검색어
+     * @return array<int, array{line: int, column: int, preview: string}> 매치 목록
+     */
+    private function scanFileLines(string $absolute, string $needle): array
+    {
+        if (! is_file($absolute) || ! is_readable($absolute)) {
+            return [];
+        }
+
+        $content = @file_get_contents($absolute);
+
+        if ($content === false) {
+            return [];
+        }
+
+        $matches = [];
+
+        foreach (explode("\n", str_replace("\r\n", "\n", $content)) as $index => $line) {
+            if (count($matches) >= self::SEARCH_MAX_MATCHES_PER_FILE) {
+                break;
+            }
+
+            $column = mb_strpos(mb_strtolower($line), $needle);
+
+            if ($column === false) {
+                continue;
+            }
+
+            $preview = trim($line);
+
+            if (mb_strlen($preview) > self::SEARCH_PREVIEW_LENGTH) {
+                $preview = mb_substr($preview, 0, self::SEARCH_PREVIEW_LENGTH).'…';
+            }
+
+            $matches[] = ['line' => $index + 1, 'column' => $column + 1, 'preview' => $preview];
+        }
+
+        return $matches;
     }
 
     /**
@@ -272,7 +442,7 @@ class CustomAssetService
      * @param  string  $identifier  확장 식별자
      * @param  string  $operation  수행한 작업 (로그용)
      * @param  string  $relative  대상 상대 경로 (로그용)
-     * @return void
+     * @return void 반환값 없음
      */
     private function invalidate(string $extensionType, string $identifier, string $operation, string $relative): void
     {
@@ -374,10 +544,46 @@ class CustomAssetService
     }
 
     /**
+     * 파일을 지우거나 옮겨 비게 된 폴더를 `custom/` 바로 아래까지 거슬러 올라가며 지웁니다.
+     *
+     * 목록은 파일만 보여 주므로 빈 폴더는 화면에 보이지 않은 채 디스크에 남는다(2026-10-06 실측). `custom/` 자체와
+     * 그 바깥은 건드리지 않고, 무엇이든 들어 있는 폴더(숨김 파일 포함)에서 멈춘다. 지우지 못해도 파일 작업은 이미
+     * 끝났으므로 예외를 내지 않는다.
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $directory  비었을 수 있는 폴더 절대 경로
+     * @return void 반환값 없음
+     */
+    private function pruneEmptyFolders(string $extensionType, string $identifier, string $directory): void
+    {
+        $root = CustomAssets::directory($extensionType, $identifier);
+        if ($root === null) {
+            return;
+        }
+
+        $root = rtrim(str_replace('\\', '/', $root), '/');
+        $current = rtrim(str_replace('\\', '/', $directory), '/');
+
+        while ($current !== $root && str_starts_with($current, $root.'/') && is_dir($current)) {
+            $entries = @scandir($current);
+            if ($entries === false || array_diff($entries, ['.', '..']) !== []) {
+                return;
+            }
+
+            if (! @rmdir($current)) {
+                return;
+            }
+
+            $current = rtrim(str_replace('\\', '/', dirname($current)), '/');
+        }
+    }
+
+    /**
      * 디렉토리를 보장합니다.
      *
      * @param  string  $directory  절대 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CustomAssetOperationException 생성 실패 시
      */

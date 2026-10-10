@@ -1,0 +1,25 @@
+<!-- 게시판 카드 조각 — 게시판 모아보기 화면이 반복해 찍는다. 반복 변수 board 를 이 조각이 선언하지 않고 부르는 쪽에서 받으므로 단독으로는 그려지지 않는다. -->
+<partial description="게시판 카드 (전체 게시판 목록용)">
+  <button class="block w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all cursor-pointer">
+    <responsive on="portable" class="block w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all cursor-pointer"/>
+    <on type="click">
+      <navigate path="/board/{{board.slug}}"/>
+    </on>
+    <!-- 헤더 (아이콘 + 제목 + 게시글 수) -->
+    <div class="flex items-start justify-between mb-2">
+      <div class="flex items-center gap-2">
+        <icon name="file-text" size="lg" class="text-gray-600 dark:text-gray-400 flex-shrink-0"/>
+        <h3 class="font-semibold text-gray-900 dark:text-white">{{board.name}}</h3>
+      </div>
+      <!-- 게시글 수 배지 -->
+      <span class="px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">$t:board.post_count|count={{board.posts_count ?? 0}}</span>
+    </div>
+    <!-- 설명 -->
+    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{{board.description ?? ''}}</p>
+    <!-- 게시판으로 이동 버튼 -->
+    <div class="flex items-center justify-end gap-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+      <span>$t:board.view_board</span>
+      <icon name="arrow-right" size="sm"/>
+    </div>
+  </button>
+</partial>

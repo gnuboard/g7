@@ -1,0 +1,16 @@
+feature: 프론트 한국어 언어 파일의 괄호 조사
+
+description: |
+  코어 lang/partial/ko, 번들 템플릿(sirsoft-admin_basic·sirsoft-basic) lang/partial/ko, 번들 모듈·플러그인(이커머스·GDPR)
+  resources/lang 의 한국어 문구 29곳이 받침을 알 수 없는 값 뒤에 「{{name}} 은(는)」「{entity}이(가)」「(으)로」 같은
+  괄호 조사를 남겨 화면에 그대로 보였다(7.1.0 실측 O-R2-5, 결정 ⑦ 의 같은 결함군). 값을 콜론 뒤로 옮기거나
+  종류 낱말·받침 무관 조사로 문장을 바꾸고, 같은 꼴이 다시 들어오지 않게 전 파일을 잠근다.
+
+axes:
+  particle_form: [bracket]
+
+effects:
+  - no_bracket_particle_in_frontend_korean_lang
+
+test_files:
+  - tests/Unit/Lang/FrontendKoreanParticleTest.php

@@ -23,6 +23,11 @@ class ModuleRolePermissionTest extends TestCase
     /** @var bool 테스트 전에 활성 디렉토리가 이미 존재했는지 */
     private bool $boardExistedBefore = false;
 
+    /**
+     * 활성 디렉토리 보호를 걸고 sirsoft-board 를 설치 가능한 상태로 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,6 +79,11 @@ class ModuleRolePermissionTest extends TestCase
         User::factory()->create(['email' => 'admin@test.com']);
     }
 
+    /**
+     * 확장 디렉토리 보호를 풀고 테스트가 만든 활성 디렉토리를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 확장 디렉토리 보호 해제 (원래 File 파사드 복원)
@@ -95,18 +105,24 @@ class ModuleRolePermissionTest extends TestCase
      *
      * 계층형 구조로 권한이 생성됨:
      * - 1레벨: 모듈 노드 (sirsoft-board)
-     * - 2레벨: 카테고리 노드 (sirsoft-board.boards, sirsoft-board.settings, sirsoft-board.reports)
-     * - 3레벨: 개별 권한 (boards: read/create/update/delete, settings: read/update, reports: view/manage)
+     * - 2레벨: 카테고리 노드 7개 (boards, settings, identity.policies, dashboard, reports, scraps, reactions)
+     * - 3레벨: 개별 권한 15개 (boards 4 · settings 2 · identity.policies 2 · dashboard 1 · reports 2 · scraps 2 · reactions 2)
+     *
+     * @scenario lifecycle=install
+     *
+     * @effects module_install_creates_hierarchical_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_module_installation_creates_permissions(): void
     {
         $this->moduleManager->installModule('sirsoft-board');
 
-        // 권한이 생성되었는지 확인 (계층형 구조: 모듈 1 + 카테고리 4 + 개별 권한 10 = 15개)
-        // 카테고리: boards, settings, identity.policies (beta.4 추가), reports
+        // 권한이 생성되었는지 확인 (계층형 구조: 모듈 1 + 카테고리 7 + 개별 권한 15 = 23개)
+        // 카테고리: boards, settings, identity.policies (beta.4 추가), dashboard, reports, scraps, reactions
         $permissions = Permission::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-board')->get();
-        $this->assertCount(15, $permissions);
+        $this->assertCount(23, $permissions);
 
         $identifiers = $permissions->pluck('identifier')->toArray();
         // 1레벨: 모듈 노드
@@ -134,21 +150,27 @@ class ModuleRolePermissionTest extends TestCase
 
     /**
      * 모듈 설치 시 권한이 지정된 role에 할당되는지 테스트
+     *
+     * @scenario lifecycle=install
+     *
+     * @effects module_install_assigns_permissions_to_declared_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_module_installation_assigns_permissions_to_roles(): void
     {
         $this->moduleManager->installModule('sirsoft-board');
 
-        // admin role에 모든 개별 권한(10개)이 할당되었는지 확인
-        // (boards 4 + settings 2 + identity.policies 2 + reports 2 = 10, beta.4 부터)
+        // admin role에 모든 개별 권한(15개)이 할당되었는지 확인
+        // (boards 4 + settings 2 + identity.policies 2 + dashboard 1 + reports 2 + scraps 2 + reactions 2 = 15)
         $adminRole = Role::where('identifier', 'admin')->first();
         $adminPermissions = $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get();
-        $this->assertCount(10, $adminPermissions);
+        $this->assertCount(15, $adminPermissions);
 
-        // manager role에 할당된 권한 확인 (boards: read, create, update + reports: view = 4개)
+        // manager role에 할당된 권한 확인 (boards: read, create, update + dashboard·reports·scraps·reactions: view = 7개)
         $managerRole = Role::where('identifier', 'manager')->first();
         $managerPermissions = $managerRole->permissions()->where('extension_identifier', 'sirsoft-board')->get();
-        $this->assertCount(4, $managerPermissions);
+        $this->assertCount(7, $managerPermissions);
 
         $managerIdentifiers = $managerPermissions->pluck('identifier')->toArray();
         $this->assertContains('sirsoft-board.boards.read', $managerIdentifiers);
@@ -159,6 +181,12 @@ class ModuleRolePermissionTest extends TestCase
 
     /**
      * 기존 role에 새 권한 추가 시 기존 권한이 유지되는지 테스트
+     *
+     * @scenario lifecycle=install
+     *
+     * @effects existing_role_permissions_are_preserved_on_install
+     *
+     * @return void 반환값 없음
      */
     public function test_existing_role_permissions_are_preserved(): void
     {
@@ -190,6 +218,12 @@ class ModuleRolePermissionTest extends TestCase
      *
      * 운영 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 권한 detach + 삭제.
      * deleteData=false 경로는 권한 보존 (재설치 시 사용자 역할 할당 복원 목적).
+     *
+     * @scenario lifecycle=uninstall
+     *
+     * @effects module_uninstall_detaches_permissions_from_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_module_uninstallation_detaches_permissions_from_roles(): void
     {
@@ -209,6 +243,12 @@ class ModuleRolePermissionTest extends TestCase
 
     /**
      * 모듈 제거 (deleteData=true) 시 권한이 삭제되는지 테스트
+     *
+     * @scenario lifecycle=uninstall
+     *
+     * @effects module_uninstall_deletes_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_module_uninstallation_deletes_permissions(): void
     {
@@ -226,6 +266,12 @@ class ModuleRolePermissionTest extends TestCase
 
     /**
      * 시스템 role은 모듈 제거 시에도 삭제되지 않는지 테스트
+     *
+     * @scenario lifecycle=uninstall
+     *
+     * @effects system_roles_survive_module_uninstall
+     *
+     * @return void 반환값 없음
      */
     public function test_system_roles_are_not_deleted_on_uninstall(): void
     {
@@ -240,6 +286,12 @@ class ModuleRolePermissionTest extends TestCase
      * getPermissions() 메서드가 roles 필드를 포함하는지 테스트
      *
      * 계층형 구조에서 개별 권한(3레벨)에 roles 필드가 있는지 확인
+     *
+     * @scenario lifecycle=declaration
+     *
+     * @effects permission_definitions_declare_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_get_permissions_includes_roles_field(): void
     {
@@ -287,22 +339,28 @@ class ModuleRolePermissionTest extends TestCase
      *
      * 계층형 구조에서 개별 권한(3레벨)만 role에 할당됨.
      * 모듈 노드(1레벨)와 카테고리 노드(2레벨)는 할당되지 않음.
+     *
+     * @scenario lifecycle=install
+     *
+     * @effects only_leaf_permissions_are_assigned_to_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_permissions_without_roles_field_are_not_assigned(): void
     {
         $this->moduleManager->installModule('sirsoft-board');
 
         // 계층형 구조에서 개별 권한(3레벨)만 role에 할당됨
-        // 모듈의 getPermissions()에서 정의된 개별 권한 10개만 할당되어야 함 (beta.4 부터)
+        // 모듈의 getPermissions()에서 정의된 개별 권한 15개만 할당되어야 함
         $adminRole = Role::where('identifier', 'admin')->first();
 
-        // admin role에 할당된 모듈 권한 개수 확인 (개별 권한 10개)
+        // admin role에 할당된 모듈 권한 개수 확인 (개별 권한 15개)
         $assignedPermissions = $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->count();
-        $this->assertEquals(10, $assignedPermissions);
+        $this->assertEquals(15, $assignedPermissions);
 
-        // 전체 모듈 권한 개수 확인 (모듈 1 + 카테고리 4 + 개별 10 = 15개)
+        // 전체 모듈 권한 개수 확인 (모듈 1 + 카테고리 7 + 개별 15 = 23개)
         $totalModulePermissions = Permission::where('extension_identifier', 'sirsoft-board')->count();
-        $this->assertEquals(15, $totalModulePermissions);
+        $this->assertEquals(23, $totalModulePermissions);
 
         // 개별 권한만 role에 할당되었는지 확인
         $assignedIdentifiers = $adminRole->permissions()

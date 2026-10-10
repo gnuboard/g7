@@ -1,0 +1,129 @@
+<!-- 주문 목록 — 일괄변경 확인 창. 목록에서 고른 주문들에 상태·택배사·송장을 한꺼번에 적용하기 전에
+  무엇이 바뀌는지 보여 준다. 고른 건수와 바꿀 값은 목록의 `_local` 이 아니라 `_global.bulkConfirmData`
+  로 읽는다 — 창은 별도 컨텍스트라 부모의 `_local` 을 보지 못하므로, 일괄변경 영역이 창을 열기 전에
+  값을 `_global` 로 옮겨 담는다(`_partial_bulk_action_section` 의 적용 버튼). -->
+<partial description="Order List - Bulk Action Confirm Modal">
+  <modal data-type="composite" data-ref="modal_bulk_confirm" title="$t:sirsoft-ecommerce.admin.order.bulk.confirm_title" size="md">
+    <div>
+      <div>
+        <p class="text-label">$t:sirsoft-ecommerce.admin.order.bulk.confirm_message|count={{(_global.bulkConfirmData?.selectedItems || []).length}}</p>
+        <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2">
+          <div data-if="{{_global.bulkConfirmData?.orderStatus}}" class="flex-center text-sm">
+            <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.bulk.confirm_status_label</span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{({'pending_order':'$t:sirsoft-ecommerce.admin.order.status.waiting','pending_payment':'$t:sirsoft-ecommerce.admin.order.status.payment_pending','payment_complete':'$t:sirsoft-ecommerce.admin.order.status.payment_complete','shipping_hold':'$t:sirsoft-ecommerce.admin.order.status.shipping_hold','preparing':'$t:sirsoft-ecommerce.admin.order.status.preparing','shipping_ready':'$t:sirsoft-ecommerce.admin.order.status.shipping_ready','shipping':'$t:sirsoft-ecommerce.admin.order.status.shipping','delivered':'$t:sirsoft-ecommerce.admin.order.status.delivered','cancelled':'$t:sirsoft-ecommerce.admin.order.status.cancelled','confirmed':'$t:sirsoft-ecommerce.admin.order.status.confirmed'})[_global.bulkConfirmData.orderStatus] ?? _global.bulkConfirmData.orderStatus}}</span>
+          </div>
+          <div data-if="{{_global.bulkConfirmData?.courierId}}" class="flex-center text-sm">
+            <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.bulk.confirm_carrier_label</span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{(active_carriers?.data ?? []).find(c => String(c.value) === String(_global.bulkConfirmData.courierId))?.label ?? _global.bulkConfirmData.courierId}}</span>
+          </div>
+          <div data-if="{{_global.bulkConfirmData?.trackingNumber}}" class="flex-center text-sm">
+            <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.bulk.confirm_tracking_label</span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{_global.bulkConfirmData.trackingNumber}}</span>
+          </div>
+          <p data-if="{{!_global.bulkConfirmData?.orderStatus &amp;&amp; !_global.bulkConfirmData?.courierId &amp;&amp; !_global.bulkConfirmData?.trackingNumber}}" class="text-sm text-yellow-600 dark:text-yellow-400">$t:sirsoft-ecommerce.admin.order.bulk.confirm_no_changes</p>
+          <p data-if="{{(_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') &amp;&amp; (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)}}" class="text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.bulk.carrier_required</p>
+        </div>
+        <!-- 수동 결제 처리 항목 (Q13·Q14) — 결제 전 주문을 결제완료 이후로 올리거나 취소 주문·상품을 되살릴 때만 나타난다.
+          무엇이 해당하는지는 서버 미리보기(`manual-paid-preview`)가 정한다 — 화면에서 다시 판정하지 않는다.
+          세 체크는 창을 열 때마다 모두 켜진 채 시작한다(기본값: 모두 체크). 해당 없는 항목은 숨긴다. -->
+        <div data-ref="manual_paid_loading" data-if="{{_global.manualPaidPreviewLoading === true}}" class="flex-center gap-2 text-hint mt-3">
+          <icon name="spinner" class="animate-spin" size="sm"/>
+          <span>$t:sirsoft-ecommerce.admin.order.manual_paid.loading</span>
+        </div>
+        <p data-ref="manual_paid_error" data-if="{{!!_global.manualPaidPreviewError}}" class="text-sm text-red-600 dark:text-red-400 mt-3">{{_global.manualPaidPreviewError}}</p>
+        <div data-ref="manual_paid_effects" data-if="{{_global.manualPaidPreviewLoading !== true &amp;&amp; _global.manualPaidPreview?.summary?.any_applicable === true}}" class="mt-3 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-3">
+          <div>
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.manual_paid.title</p>
+            <p class="text-hint">$t:sirsoft-ecommerce.admin.order.manual_paid.description|count={{_global.manualPaidPreview?.summary?.affected_order_count ?? 0}}</p>
+          </div>
+          <!-- 합계·상품 상태 복원 (Q26) — 취소 주문을 되살리면 취소된 상품도 함께 되살리고 주문 합계를 처음 주문 조건으로
+            다시 계산한다. 운영자가 고를 항목이 아니라(되살리면 함께 복원하는 것이 정상이므로) 체크박스 없이 안내만 한다.
+            쿠폰을 다른 주문이 이미 썼으면 되살릴 수 없어(Q27) 빨간 경고를 띄우고 적용 버튼을 잠근다. -->
+          <div data-ref="manual_paid_restoration" data-if="{{(_global.manualPaidPreview?.summary?.restoration?.applicable_count ?? 0) > 0}}" class="space-y-1">
+            <p class="text-body font-medium">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_label|count={{_global.manualPaidPreview?.summary?.restoration?.applicable_count ?? 0}}|quantity={{_global.manualPaidPreview?.summary?.restoration?.revived_quantity ?? 0}}</p>
+            <p class="text-hint">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_hint</p>
+            <p data-ref="manual_paid_restoration_conflict" data-if="{{(_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_coupon_conflict|order_numbers={{(_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).join(', ')}}</p>
+            <p data-ref="manual_paid_restoration_legacy" data-if="{{(_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0) > 0}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_legacy_snapshot|count={{_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0}}</p>
+          </div>
+          <label data-ref="manual_paid_stock" data-if="{{(_global.manualPaidPreview?.summary?.stock_deduction?.applicable_count ?? 0) > 0 }}" class="flex items-start gap-2 cursor-pointer select-none">
+            <input type="checkbox" name="apply_stock_deduction" class="checkbox mt-0.5" checked="{{_global.manualPaidOptions?.apply_stock_deduction !== false}}">
+              <on type="change">
+                <!-- 체크를 바꾸면 「재고 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_stock_deduction)에 싣는다 -->
+                <action handler="sirsoft-ecommerce.setManualPaidOption" optionKey="apply_stock_deduction" value="{{_global.manualPaidOptions?.apply_stock_deduction === false}}"/>
+              </on>
+            </input>
+            <div class="flex-1">
+              <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.manual_paid.stock_label|count={{_global.manualPaidPreview?.summary?.stock_deduction?.applicable_count ?? 0}}</span>
+              <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.manual_paid.stock_hint</span>
+              <span data-if="{{_global.manualPaidOptions?.apply_stock_deduction === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.stock_off_warning</span>
+            </div>
+          </label>
+          <label data-ref="manual_paid_mileage" data-if="{{(_global.manualPaidPreview?.summary?.mileage_deduction?.applicable_count ?? 0) > 0 }}" class="flex items-start gap-2 cursor-pointer select-none">
+            <input type="checkbox" name="apply_mileage_deduction" class="checkbox mt-0.5" checked="{{_global.manualPaidOptions?.apply_mileage_deduction !== false}}">
+              <on type="change">
+                <!-- 체크를 바꾸면 「사용 마일리지 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_mileage_deduction)에 싣는다 -->
+                <action handler="sirsoft-ecommerce.setManualPaidOption" optionKey="apply_mileage_deduction" value="{{_global.manualPaidOptions?.apply_mileage_deduction === false}}"/>
+              </on>
+            </input>
+            <div class="flex-1">
+              <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_label|count={{_global.manualPaidPreview?.summary?.mileage_deduction?.applicable_count ?? 0}}|amount={{_global.manualPaidPreview?.summary?.mileage_deduction?.total_amount_formatted ?? '-'}}</span>
+              <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_hint</span>
+              <span data-ref="manual_paid_mileage_short" data-if="{{_global.manualPaidOptions?.apply_mileage_deduction !== false &amp;&amp; (_global.manualPaidPreview?.summary?.mileage_deduction?.short_order_numbers ?? []).length > 0}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_short_warning|order_numbers={{(_global.manualPaidPreview?.summary?.mileage_deduction?.short_order_numbers ?? []).join(', ')}}</span>
+              <span data-if="{{_global.manualPaidOptions?.apply_mileage_deduction === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_off_warning</span>
+            </div>
+          </label>
+          <label data-ref="manual_paid_record" data-if="{{(_global.manualPaidPreview?.summary?.paid_amount_record?.applicable_count ?? 0) > 0 }}" class="flex items-start gap-2 cursor-pointer select-none">
+            <input type="checkbox" name="record_paid_amount" class="checkbox mt-0.5" checked="{{_global.manualPaidOptions?.record_paid_amount !== false}}">
+              <on type="change">
+                <!-- 체크를 바꾸면 「결제금액 기록」 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(record_paid_amount)에 싣는다 -->
+                <action handler="sirsoft-ecommerce.setManualPaidOption" optionKey="record_paid_amount" value="{{_global.manualPaidOptions?.record_paid_amount === false}}"/>
+              </on>
+            </input>
+            <div class="flex-1">
+              <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.manual_paid.record_label|count={{_global.manualPaidPreview?.summary?.paid_amount_record?.applicable_count ?? 0}}|amount={{_global.manualPaidPreview?.summary?.paid_amount_record?.total_amount_formatted ?? '-'}}</span>
+              <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.manual_paid.record_hint</span>
+              <span data-if="{{_global.manualPaidOptions?.record_paid_amount === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.record_off_warning</span>
+            </div>
+          </label>
+          <!-- 결제행에 입금이 이미 기록된 주문은 체크와 무관하게 헤더 결제금액을 맞춘다(S2-D4) — 체크박스 없이 안내만. -->
+          <p data-ref="manual_paid_auto_sync" data-if="{{(_global.manualPaidPreview?.summary?.paid_amount_record?.auto_sync_count ?? 0) > 0}}" class="text-hint">$t:sirsoft-ecommerce.admin.order.manual_paid.auto_sync_note|count={{_global.manualPaidPreview?.summary?.paid_amount_record?.auto_sync_count ?? 0}}</p>
+          <!-- 입금 전에 취소된 주문의 재활성(Q28) — 「결제금액 기록」을 켜 두면 복원 합계를 받은 것으로 기록한다. -->
+          <p data-ref="manual_paid_never_paid" data-if="{{(_global.manualPaidPreview?.summary?.never_paid_count ?? 0) > 0}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.never_paid_note|count={{_global.manualPaidPreview?.summary?.never_paid_count ?? 0}}</p>
+          <!-- PG 결제가 이미 취소된 주문의 재활성(Q24) — 이후 환불은 계좌·마일리지로만 가능하다는 경고만 한다(수단 강제 없음). -->
+          <p data-ref="manual_paid_pg_warning" data-if="{{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).length > 0}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled_orders|order_numbers={{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).join(', ')}}</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.order.bulk.confirm_cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!_global.bulkConfirmData?.orderStatus &amp;&amp; !_global.bulkConfirmData?.courierId &amp;&amp; !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') &amp;&amp; (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0 || _global.isProcessing}}">
+        <on type="click">
+          <!-- 일괄 적용. 버튼이 열리는 조건이 두 겹이라 잠금 식이 길다 — 바꿀 값이 하나라도 있어야 하고 대상이 비어 있지 않아야 한다 -->
+          <sequence>
+            <!-- 적용. 버튼이 열리는 조건이 두 겹이라 disabled 식이 길다 — 바꿀 값이 하나라도 있어야 하고,
+              배송준비·배송중으로 보낼 때는 택배사와 송장이 **둘 다** 있어야 한다(택배사만 골라 두면 막힌다).
+              실패해도 창을 닫지 않는다: 무엇이 틀렸는지 읽고 값을 고쳐 다시 시도할 자리가 이 창이다. -->
+            <set-state target="global" :isProcessing="true"/>
+            <action handler="sirsoft-ecommerce.executeOrderBulkAction">
+              <success>
+                <set-state target="global" :isProcessing="false"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <!-- 사유 토스트는 핸들러가 이미 띄운다 — 여기서 또 띄우면 같은 문구가 두 번 뜬다. -->
+                <set-state target="global" :isProcessing="false"/>
+              </fail>
+            </action>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isProcessing}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

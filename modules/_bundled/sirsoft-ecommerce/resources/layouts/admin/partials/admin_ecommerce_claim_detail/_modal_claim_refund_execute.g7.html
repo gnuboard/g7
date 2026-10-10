@@ -1,0 +1,118 @@
+<partial description="Claim Refund Execution Confirm Modal (D18) - detail screen only">
+  <!-- 환불 실행 확인 모달 (D18). 환불은 되돌릴 수 없는 처리라 실행 전에 무엇이 나가는지 한 번 더 보인다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 여는 핸들러가 `_global.claimRefundExecuteContext` 로 값을 넘긴다 — 그 하나를 모달 표시와 실행 본문이 함께 읽어야 '예고한 값 = 실행하는 값' 이 성립한다. 모달이 제 사본을 들면 왕복 중 입력이 바뀌었을 때 둘이 갈린다. -->
+  <modal data-type="composite" data-ref="modal_claim_refund_execute" title="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.title" size="md">
+    <div class="space-y-4">
+      <p data-ref="crm_001_description" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.description|number={{_global.claimRefundExecuteContext?.claimNumber ?? ''}}</p>
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
+        <div class="flex justify-between text-sm">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount</span>
+          <span data-ref="crm_002_pg_amount" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundAmountFormatted ?? ''}}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-purple-600 dark:text-purple-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount</span>
+          <span data-ref="crm_003_points_amount" class="text-purple-600 dark:text-purple-400">{{_global.claimRefundExecuteContext?.refundPointsAmountFormatted ?? ''}}</span>
+        </div>
+        <!-- 사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지가 고객이 낸 적 없는 돈이라 돌려주지 않는다(Q15) — 반환액 0 의 이유를 말하지 않으면 마일리지를 썼는데 왜 0 인지 알 수 없다. -->
+        <p data-ref="crm_012_points_not_deducted" data-if="{{_global.claimRefundExecuteContext?.pointsNotDeducted === true}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_not_deducted</p>
+        <div class="flex justify-between text-sm">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method</span>
+          <span data-ref="crm_004_method" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundMethodLabel ?? '-'}}</span>
+        </div>
+        <!-- 「마일리지로 환불」이고 현금 환불액이 있으면 그 현금이 카드·계좌가 아니라 회원 마일리지로 간다는 사실을 실행 직전에 다시 알린다(D1). -->
+        <p data-ref="crm_010_points_cash_credit_notice" data-if="{{_global.claimRefundExecuteContext?.refundMethod === 'points' &amp;&amp; Number(_global.claimRefundExecuteContext?.refundAmount ?? 0) > 0}}" class="text-xs text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.points_cash_credit</p>
+        <!-- 계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 줄은 **지금 고른 환불 수단으로 돈이 계좌로 나갈 때만** 선다(`refundAccountUsed` — 서버 수단별 판정): 「마일리지로 환불」·카드 취소에서는 저장 계좌가 있어도 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 그 계좌로 보내므로 선다. -->
+        <div data-if="{{_global.claimRefundExecuteContext?.refundAccountUsed === true &amp;&amp; !!_global.claimRefundExecuteContext?.refundBankName}}" class="flex justify-between text-sm">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name</span>
+          <span data-ref="crm_005_bank_name" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundBankName}}</span>
+        </div>
+        <!-- 계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 줄은 **지금 고른 환불 수단으로 돈이 계좌로 나갈 때만** 선다(`refundAccountUsed` — 서버 수단별 판정): 「마일리지로 환불」·카드 취소에서는 저장 계좌가 있어도 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 그 계좌로 보내므로 선다. -->
+        <div data-if="{{_global.claimRefundExecuteContext?.refundAccountUsed === true &amp;&amp; !!_global.claimRefundExecuteContext?.refundBankAccount}}" class="flex justify-between text-sm">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_account</span>
+          <span data-ref="crm_006_bank_account" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundBankAccount}}</span>
+        </div>
+        <!-- 계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 줄은 **지금 고른 환불 수단으로 돈이 계좌로 나갈 때만** 선다(`refundAccountUsed` — 서버 수단별 판정): 「마일리지로 환불」·카드 취소에서는 저장 계좌가 있어도 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 그 계좌로 보내므로 선다. -->
+        <div data-if="{{_global.claimRefundExecuteContext?.refundAccountUsed === true &amp;&amp; !!_global.claimRefundExecuteContext?.refundBankHolder}}" class="flex justify-between text-sm">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_holder</span>
+          <span data-ref="crm_007_bank_holder" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundBankHolder}}</span>
+        </div>
+        <!-- 교환으로 받은 상품의 환불이면 그 교환 때 낸 상위 옵션 차액도 낸 수단 그대로 돌려준다 — 별도 칼럼이라 위 두 금액에 들어 있지 않다. 줄로 보이고 아래 합계에 더한다(고객에게 실제로 나가는 총액). 실행 본문에는 싣지 않는다(서버 저장값). -->
+        <div data-if="{{(_global.claimRefundExecuteContext?.exchangeDifferenceTotal ?? 0) > 0}}" class="flex justify-between text-sm">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.settlement.exchange_difference_refund</span>
+          <span data-ref="crm_011_exchange_difference" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.exchangeDifferenceFormatted ?? ''}}</span>
+        </div>
+        <!-- 합계는 여는 핸들러가 부동소수 오차를 걷어 넘긴 값(`refundTotal` — 현금 + 마일리지 + 교환 차액)이다 — 여기서 더하면 0.1 + 0.2 가 0.30000000000000004 로 찍힌다. -->
+        <div class="flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-2">
+          <span class="text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.total</span>
+          <span data-ref="crm_005_total" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundTotalFormatted ?? ''}}</span>
+        </div>
+      </div>
+      <!-- 환불받을 계좌 (T2-D6 · #599 3차 실측 L-8) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다). -->
+      <div data-if="{{_global.claimRefundExecuteContext?.refundAccountRequired === true}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+        <div>
+          <p class="text-primary text-sm font-medium">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_input_title</p>
+          <p class="text-hint">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_input_hint</p>
+        </div>
+        <!-- 세 칸은 함께 와야 한다 — 은행만 바뀌고 계좌번호가 옛 값으로 남으면 운영자가 없는 계좌로 이체한다(접수·수정 경로와 같은 등식). 서버가 일부만 실린 계좌를 422 로 거절하고, 이 창은 셋이 다 차기 전에는 실행 버튼을 잠근다.
+          은행은 코드표에서 고른다 — 자유 입력이면 서버는 길이만 보므로(`max:10`) 없는 코드가 저장되고 은행명이 풀리지 않는다. 코드표는 셸의 `paymentSettings`(공개 결제 설정, 권한 게이트 없음)가 나른다 — 주문 상세 취소 모달과 같은 출처다. -->
+        <select data-ref="crm_009_bank_code" name="claimRefundExecuteBankCode" value="{{_global.claimRefundExecuteBankCode ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing || _global.claimRefundExecuteForce === true}}">
+          <on type="change">
+            <set-state target="global" claimRefundExecuteBankCode="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <input type="text" value="{{_global.claimRefundExecuteBankAccount ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_account_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing || _global.claimRefundExecuteForce === true}}">
+          <on type="change">
+            <!-- 환불 계좌번호 입력값을 _global 에 둔다 — 모달은 부모 _local 을 읽지 못해 실행 핸들러가 _global 에서 모은다 -->
+            <set-state target="global" claimRefundExecuteBankAccount="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <input type="text" value="{{_global.claimRefundExecuteBankHolder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_holder_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing || _global.claimRefundExecuteForce === true}}">
+          <on type="change">
+            <!-- 예금주 입력값을 _global 에 둔다 — 계좌번호와 같은 이유 -->
+            <set-state target="global" claimRefundExecuteBankHolder="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <!-- 계좌 없이 직권으로 완료를 찍는 동의 (운영 결정 2026-09-23) — 운영상 필요하기 때문에 길 자체는 남기되, **모르고 눌러 닫히는 것**과 알고 누르는 것을 가른다. 체크박스 한 칸 + 결과를 말하는 힌트라는 형태는 주문 상세의 「원 주문서도 결제완료로 처리」(`mark_order_complete`)와 같다. 체크하면 위 계좌 칸은 잠긴다 — 둘을 함께 보내면 무엇이 실행됐는지 창이 두 가지로 읽힌다. -->
+        <label class="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" name="force_without_refund_bank" class="mt-0.5" checked="{{_global.claimRefundExecuteForce ?? false}}" disabled="{{_global.isProcessing}}">
+            <on type="change">
+              <!-- 계좌 없이 완료하는 직권 동의 체크 상태 — 켜야만 계좌 없는 완료가 허용된다 -->
+              <set-state target="global" claimRefundExecuteForce="{{$event.target.checked}}"/>
+            </on>
+          </input>
+          <div>
+            <span class="text-primary text-sm font-medium block">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.force_without_bank</span>
+            <span class="text-hint block">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.force_without_bank_hint</span>
+          </div>
+        </label>
+      </div>
+      <p data-ref="crm_006_irreversible_notice" class="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-sm text-yellow-700 dark:text-yellow-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.warning</p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button data-ref="crm_007_cancel" type="button" class="btn btn-outline" disabled="{{_global.isProcessing}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <!-- 이 창에서 실제로 환불을 일으키는 유일한 버튼이다 — 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 버튼 비활성으로 막는다(서버의 409 는 그다음 방어선이다). -->
+        <button data-ref="crm_008_confirm" type="button" class="btn btn-primary" disabled="{{!_global.claimRefundExecuteContext || _global.isProcessing || (_global.claimRefundExecuteContext?.refundAccountRequired === true &amp;&amp; _global.claimRefundExecuteForce !== true &amp;&amp; !((_global.claimRefundExecuteBankCode ?? '').trim() &amp;&amp; (_global.claimRefundExecuteBankAccount ?? '').trim() &amp;&amp; (_global.claimRefundExecuteBankHolder ?? '').trim()))}}">
+          <on type="click">
+            <set-state target="global" :isProcessing="true"/>
+            <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. 모달은 닫지 않는다: 409(더블클릭)·422(상한 초과)는 운영자가 그 자리에서 확인해야 할 사유다. -->
+            <action handler="sirsoft-ecommerce.executeClaimRefund">
+              <success>
+                <set-state target="global" :isProcessing="false"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isProcessing="false"/>
+              </fail>
+            </action>
+          </on>
+          <icon data-if="{{_global.isProcessing}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isProcessing ? '$t:common.processing' : ''}}</span>
+          <span data-if="{{!_global.isProcessing}}">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.confirm</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

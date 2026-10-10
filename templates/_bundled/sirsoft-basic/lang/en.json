@@ -23,6 +23,9 @@
   "shop": {
     "$partial": "partial/en/shop.json"
   },
+  "claim": {
+    "$partial": "partial/en/claim.json"
+  },
   "mypage": {
     "$partial": "partial/en/mypage.json"
   },

@@ -1,0 +1,79 @@
+feature: 관리자 주문 컨트롤러 API 계약 (목록 필터·검색 · 상세 · 수정 · 일괄 송장 · 삭제 · 로그 · 메일 · 권한 경계)
+
+description: |
+  `Admin\OrderController` 의 엔드포인트 계약을 한곳에 세운다. 같은 테스트 파일(`Admin/OrderControllerTest`)을
+  이미 소유하던 셋은 각자의 관심사만 가져간다 — 상태 전이 게이트는 `mp04-order-status-transition`,
+  진행단계 배열은 `order-progress-stepper`, 회원/비회원 필터·비회원 조회 비밀번호는 `tests/scenarios/guest-order`.
+  나머지 «엔드포인트가 무엇을 받고 무엇을 돌려주는가» 는 어느 쪽 서술에도 속하지 않아 소유자가 없었다.
+
+  조용히 깨지는 지점은 셋이다.
+
+  ① **목록 필터가 빈 결과로 실패한다.** 상태·기간·주문번호 검색·최소 금액·배송 국가·주문 기기·배송 유형
+     필터가 조건을 무시하면 오류 없이 «전부» 가 오고, 조건을 잘못 걸면 «0건» 이 온다 — 어느 쪽도 500 이
+     아니라서 화면만 보고는 장애로 읽히지 않는다. 그래서 필터마다 건수를 못박는다. 다국어 옵션명 직렬화는
+     예외였다 — 현재 로케일 키가 없을 때 overloaded 속성 참조 경고가 운영에서 500 으로 승격된 회귀가 있었다.
+
+  ② **수정은 주문 행만이 아니라 배송지 행을 함께 바꾼다.** 수취인·주소·배송메모는 배송지 주소 행에,
+     관리자 메모는 주문 행에 저장된다. 일괄 송장 입력은 옵션마다 배송 행을 만들거나(없을 때) 기존 행을
+     갱신(있을 때)한다 — 새로 만들면 배송 현황이 행 수만큼 중복된다.
+
+  ③ **권한이 엔드포인트마다 다르다.** 조회는 `orders.read`, 수정·일괄·메일은 `orders.update`, 삭제는
+     `orders.delete` 다. 조회 권한만 가진 관리자가 수정·삭제에서 403 을 받는지, 비로그인이 401 을 받는지를
+     호출자 축으로 나눠 잰다.
+
+# axis 의미:
+#   caller — 요청을 보낸 주체의 권한 묶음. 엔드포인트별 권한 게이트(③)가 이 축으로 갈린다.
+#   «어느 엔드포인트인가» 는 축이 아니라 effects 항목 자체다 — 엔드포인트를 축으로 세우면
+#   (엔드포인트 × 호출자) 칸 대부분이 «게이트에 막혀 같은 403/401» 인 중복 조합이 된다.
+axes:
+  caller: [orders_read_admin, orders_update_admin, orders_delete_admin, no_permission_user, unauthenticated]
+
+effects:
+  # ① 목록 — 봉투 · 필터 · 검색 · 직렬화
+  - admin_order_index_returns_success_envelope_with_pagination
+  - admin_order_index_honors_per_page_and_reports_totals
+  - admin_order_index_filters_by_order_status
+  - admin_order_index_filters_by_date_range
+  - admin_order_index_searches_by_order_number
+  - admin_order_index_filters_by_min_amount
+  - admin_order_index_filters_by_shipping_country
+  - admin_order_index_filters_by_order_device
+  - admin_order_index_filters_by_shipping_type
+  - admin_order_index_carries_device_and_first_order_fields
+  - admin_order_index_serializes_multilingual_option_name_without_500
+  - admin_order_index_requires_authentication
+  - admin_order_index_requires_orders_read_permission
+  # 상세
+  - admin_order_show_resolves_by_order_number
+  - admin_order_show_resolves_by_numeric_id
+  - admin_order_show_is_404_for_unknown_order
+  # ② 수정 · 일괄 송장
+  - admin_order_update_saves_recipient_address_and_memos
+  - admin_order_update_validates_recipient_field_lengths
+  - admin_order_update_requires_orders_update_permission
+  - admin_order_bulk_shipping_creates_per_option_shipping_records
+  - admin_order_bulk_shipping_updates_existing_shipping_record
+  - admin_order_bulk_update_requires_ids
+  # 삭제
+  - admin_order_destroy_soft_deletes
+  - admin_order_destroy_requires_orders_delete_permission
+  # 로그
+  - admin_order_logs_returns_success_envelope
+  - admin_order_logs_accepts_pagination_and_sort_params
+  - admin_order_logs_requires_authentication
+  # 메일 (발송 경로 자체 — 채널 토글·발송 로그·수신자 판정은 알림 경유 테스트가 소유한다)
+  - admin_order_send_email_succeeds_when_mail_channel_ready
+  - admin_order_send_email_requires_email_and_message
+  - admin_order_send_email_rejects_invalid_email
+  - admin_order_send_email_requires_authentication
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderControllerTest.php
+
+notes: |
+  이 매니페스트는 역매핑 룰(test-scenario-reverse-mapping)이 테스트마다 @scenario/@effects 를 요구하면서
+  드러난 «소유자 없는 테스트 43건» 을 받기 위해 세웠다(#699). 전이·진행단계·비회원 관심사는 위 세
+  매니페스트가 계속 소유하고, 이 파일은 그 셋에 속하지 않는 엔드포인트 계약만 담는다.
+
+  E2E 미해당: API 계약 층이며, 같은 동작의 화면 축은 관리자 주문 목록·상세 레이아웃 매니페스트
+  (admin-order-list-layouts · admin-order-detail-layout-structure)가 맡는다.

@@ -1,4 +1,10 @@
 {
+  "extension_integrations": {
+    "title": "함께 쓰면 연동되는 확장",
+    "hint": "아래 확장이 설치돼 있으면 기능이 서로 연결됩니다. 없어도 이 확장은 그대로 동작합니다.",
+    "not_installed": "미설치",
+    "inactive": "비활성"
+  },
   "sidebar": {
     "no_accessible_menus": "접근 가능한 메뉴가 없습니다",
     "view_site": "사이트 보기"
@@ -16,6 +22,7 @@
   "notifications_delete_all_failed": "전체 알림 삭제에 실패했습니다.",
   "notifications_unread_only": "안 읽은 알림만",
   "new_notification_received": "새 알림이 도착했습니다",
+  "base_layout_title": "그누보드7 관리자",
   "base_layout_description": "그누보드7 관리자",
   "mobile_menu": "모바일 메뉴",
   "close_menu": "메뉴 닫기",
@@ -142,7 +149,8 @@
     },
     "asset_url_mode_drift_title": "에셋 파일 서빙 방식이 서버 환경과 다릅니다",
     "asset_url_mode_drift_description": "저장된 방식으로는 일부 주소가 서버에 가로채여 화면이 뜨지 않을 수 있습니다. 방문자 화면은 브라우저가 자동으로 보정하지만 검색엔진 봇에는 보정이 적용되지 않으므로, 환경설정에서 감지 결과를 저장해 주세요.",
-    "asset_url_mode_drift_action": "환경설정 > 일반에서 확인하기"
+    "asset_url_mode_drift_action": "환경설정 > 일반에서 확인하기",
+    "alert_action_no_permission": "이 경고를 처리할 권한이 없습니다. 권한이 있는 관리자에게 요청하세요."
   },
   "users": {
     "page_title": "사용자 관리",
@@ -156,7 +164,10 @@
       "all": "전체",
       "name": "이름",
       "email": "이메일",
-      "nickname": "닉네임"
+      "nickname": "닉네임",
+      "contact": "휴대폰/전화",
+      "identifier": "회원번호/고유ID",
+      "admin_memo": "관리자 메모"
     },
     "columns": {
       "id": "ID",
@@ -167,16 +178,24 @@
       "language": "언어",
       "status": "상태",
       "created_at": "가입일",
-      "last_login_at": "마지막 로그인"
+      "last_login_at": "마지막 로그인",
+      "nickname": "닉네임",
+      "email_verified_at": "이메일 인증일",
+      "identity_verified_at": "본인인증일"
     },
     "status": {
       "active": "활성",
-      "inactive": "비활성"
+      "inactive": "비활성",
+      "blocked": "차단",
+      "withdrawn": "탈퇴",
+      "pending_verification": "가입대기",
+      "dormant": "휴면"
     },
     "actions": {
       "view": "상세보기",
       "edit": "수정",
-      "delete": "삭제"
+      "delete": "삭제",
+      "delete_disabled_reason": "본인·최고관리자 계정이거나 삭제 권한이 없습니다. 탈퇴는 마이페이지에서 합니다."
     },
     "selected_count": "{count}개 선택됨",
     "bulk_activate": "활성화",
@@ -185,14 +204,48 @@
     "bulk_withdraw": "탈퇴 처리",
     "bulk_action_select": "일괄 작업 선택",
     "bulk_status_change": "상태 변경",
+    "bulk_roles": {
+      "add_button": "역할 추가",
+      "remove_button": "역할 제거",
+      "add_title": "역할 일괄 추가",
+      "remove_title": "역할 일괄 제거",
+      "add_desc": "선택한 회원 {{count}}명에게 역할을 추가합니다.",
+      "remove_desc": "선택한 회원 {{count}}명에게서 역할을 제거합니다.",
+      "roles_label": "역할",
+      "roles_placeholder": "역할을 선택하세요...",
+      "hint": "권한 범위 밖 회원과 최고관리자는 자동으로 제외됩니다. 내가 부여할 수 없는 권한이 담긴 역할이 하나라도 섞이면 아무것도 바꾸지 않고 거부됩니다.",
+      "apply": "적용",
+      "result_title": "처리 결과",
+      "result_summary": "{{updated}}명 변경, {{skipped}}명 제외",
+      "reason_grade": "최고관리자",
+      "reason_scope": "관리 권한 범위 밖",
+      "reason_last_admin": "마지막 관리자(본인)",
+      "reason_last_role": "역할이 하나도 남지 않음",
+      "remove_hint": "역할을 빼고 나면 역할이 하나도 남지 않는 회원과, 마지막 관리자인 나 자신의 관리자 역할은 건너뜁니다(회원은 역할을 하나 이상 가져야 합니다).",
+      "result_unchanged": "{{unchanged}}명은 이미 반영되어 변경 없음",
+      "reason_already_assigned": "이미 가진 역할",
+      "reason_not_assigned": "가지고 있지 않은 역할",
+      "close": "닫기"
+    },
     "pagination_info": "총 {{total}}명 중 {{from}}-{{to}}명 표시",
     "total_count": "총 {{count}}개",
+    "total_at_least": "총 {{count}}개 이상",
     "per_page": "{{count}}개",
     "sort": {
       "created_at_desc": "가입일시 최근순",
       "created_at_asc": "가입일시 오래된순",
       "last_login_at_desc": "마지막로그인 최근순",
-      "last_login_at_asc": "마지막로그인 오래된순"
+      "last_login_at_asc": "마지막로그인 오래된순",
+      "name_asc": "이름 오름차순",
+      "name_desc": "이름 내림차순",
+      "email_asc": "이메일 오름차순",
+      "email_desc": "이메일 내림차순",
+      "country_asc": "국가 오름차순",
+      "country_desc": "국가 내림차순",
+      "language_asc": "언어 오름차순",
+      "language_desc": "언어 내림차순",
+      "status_asc": "상태 오름차순",
+      "status_desc": "상태 내림차순"
     },
     "modals": {
       "delete_title": "사용자 삭제",
@@ -212,6 +265,8 @@
       "bulk_withdraw_success": "사용자가 탈퇴 처리되었습니다.",
       "bulk_withdraw_partial": "{updated}명을 탈퇴 처리했습니다. {failed}명은 처리하지 못했습니다 — {reason}",
       "bulk_withdraw_all_failed": "탈퇴 처리하지 못했습니다 — {reason}",
+      "bulk_status_partial": "{updated}명의 상태를 변경했습니다. {failed}명은 변경하지 못했습니다 — {reason}",
+      "bulk_status_all_failed": "상태를 변경하지 못했습니다 — {reason}",
       "withdraw_confirm_title": "탈퇴 처리 확인",
       "withdraw_confirm_lead": "상태를 '탈퇴'로 저장하면 이 회원은 실제로 탈퇴 처리됩니다. 되돌릴 수 없습니다.",
       "withdraw_confirm_effects_title": "함께 처리되는 항목",
@@ -242,6 +297,7 @@
         "role": "역할",
         "role_placeholder": "역할을 선택하세요",
         "role_no_options": "선택 가능한 역할이 없습니다",
+        "role_default_hint": "역할을 고르지 않으면 기본 역할(일반 사용자)로 등록됩니다.",
         "status": "상태",
         "current_status": "현재 상태",
         "email": "이메일",
@@ -297,7 +353,9 @@
         "active": "활성",
         "inactive": "비활성",
         "blocked": "차단",
-        "withdrawn": "탈퇴"
+        "withdrawn": "탈퇴",
+        "dormant": "휴면",
+        "pending_verification": "가입대기"
       },
       "timezone_options": {
         "Asia/Seoul": "아시아/서울 (UTC+9)",
@@ -313,7 +371,21 @@
       "validation_error": "입력 정보를 확인해주세요.",
       "error_loading_user": "사용자 정보를 불러오는 중 오류가 발생했습니다.",
       "no_edit_permission": "이 사용자의 정보를 수정할 권한이 없습니다.",
-      "go_to_detail": "상세보기로 이동"
+      "go_to_detail": "상세보기로 이동",
+      "password_policy": {
+        "admin_assigned_notice": "저장하면 이 회원은 다음 로그인 때 비밀번호를 바꿔야 합니다. 관리자가 정해 준 비밀번호는 재사용 검사를 하지 않습니다.",
+        "create_notice": "등록한 회원은 첫 로그인 때 비밀번호를 바꿔야 합니다.",
+        "current_password": "현재 비밀번호",
+        "current_password_hint": "내 계정의 비밀번호를 바꾸려면 현재 비밀번호를 입력해야 합니다.",
+        "expiry": "비밀번호 만료",
+        "expiry_inherit": "역할·사이트 설정 따름",
+        "expiry_apply": "적용",
+        "expiry_exempt": "제외",
+        "expiry_hint": "회원 개별 설정이 역할·사이트 설정보다 우선합니다.",
+        "status_applies": "현재 판정: 적용 · 만료 예정 {{date}} (D-{{days}})",
+        "status_expired": "현재 판정: 적용 · 만료됨",
+        "status_not_applies": "현재 판정: 적용 안 됨"
+      }
     },
     "detail": {
       "page_title": "사용자 정보 상세",
@@ -338,6 +410,7 @@
       "disabled": "비활성",
       "withdrawn_at": "탈퇴일",
       "blocked_at": "차단일",
+      "dormant_at": "휴면 전환일",
       "consent_type": {
         "terms": "이용약관",
         "privacy": "개인정보처리방침"
@@ -348,14 +421,83 @@
         "location_info": "위치정보",
         "profile_memo": "프로필/메모",
         "activity_info": "활동정보",
-        "consent_info": "동의이력"
+        "consent_info": "동의이력",
+        "notifications_info": "알림함"
       },
       "unlock": "잠금 해제",
       "unlock_success": "계정 잠금이 해제되었습니다.",
       "lock_status": "계정 잠금 상태",
       "locked_permanently_value": "잠김 (무기한 — 관리자 해제 필요)",
       "locked_until_value": "잠김 ({{until}} 까지)",
-      "not_locked_value": "정상"
+      "not_locked_value": "정상",
+      "notifications": {
+        "total": "총 알림",
+        "unread": "안 읽음",
+        "view_inbox": "알림함 보기"
+      },
+      "password": {
+        "title": "비밀번호",
+        "changed_at": "마지막 변경",
+        "expires_at": "만료 예정",
+        "not_applies": "적용 안 됨",
+        "expired": "만료됨 ({{date}})",
+        "expires_value": "{{date}} (D-{{days}})",
+        "change_required": "다음 로그인 때 변경 필요",
+        "yes": "예",
+        "no": "아니오",
+        "postponed_until": "연기 종료",
+        "policy": "만료 개별 설정"
+      }
+    },
+    "filter": {
+      "show_in_basic": "{{label}} — 기본 검색에 표시",
+      "status": "계정 상태",
+      "role": "권한 그룹",
+      "created_at": "가입일",
+      "last_login": "최근 로그인",
+      "admin_scope": "관리자 여부",
+      "lock_state": "계정 잠금",
+      "dormant_at": "휴면 전환일",
+      "status_changed": "상태 변경일",
+      "language": "언어",
+      "country": "국가",
+      "email_verified": "이메일 인증",
+      "identity_verified": "본인인증",
+      "detail_search": "상세검색",
+      "detail_title": "상세 검색 조건",
+      "role_placeholder": "권한 그룹 검색 — 비우면 전체",
+      "role_no_options": "일치하는 권한 그룹이 없습니다",
+      "never_logged_in": "로그인 이력 없음",
+      "country_select": "국가 선택",
+      "country_search": "국가 검색",
+      "admin_scope_options": {
+        "admin": "관리자만",
+        "member": "일반회원만"
+      },
+      "lock_state_options": {
+        "locked": "잠김",
+        "unlocked": "정상"
+      },
+      "status_changed_options": {
+        "withdrawn": "탈퇴일",
+        "blocked": "차단일"
+      },
+      "verified_options": {
+        "verified": "완료",
+        "unverified": "미완료"
+      },
+      "date_quick": {
+        "today": "오늘",
+        "week": "1주일",
+        "month": "1개월",
+        "3months": "3개월",
+        "6months": "6개월",
+        "1year": "1년"
+      }
+    },
+    "action": {
+      "reset": "초기화",
+      "edit_search": "검색편집"
     }
   },
   "language_packs": {
@@ -482,7 +624,7 @@
       },
       "update": {
         "title": "언어팩 업데이트",
-        "body": "현재 버전 {{current}} → 최신 버전 {{latest}}로 업데이트합니다.",
+        "body": "현재 {{current}} 버전을 최신 {{latest}} 버전으로 업데이트합니다.",
         "user_overrides_notice": "사용자가 수정한 번역은 그대로 유지됩니다."
       },
       "uninstall": {
@@ -535,14 +677,15 @@
       "update_success": "언어팩을 업데이트했습니다.",
       "update_failed": "언어팩 업데이트에 실패했습니다.",
       "refresh_cache_done": "언어팩 캐시를 갱신했습니다.",
-      "refresh_cache_failed": "캐시 갱신에 실패했습니다."
+      "refresh_cache_failed": "캐시 갱신에 실패했습니다.",
+      "preview_failed": "언어팩 미리보기에 실패했습니다."
     },
     "modals": {
       "install_bundled_title": "언어팩 설치",
-      "install_bundled_confirm": "번들 언어팩 \"{{identifier}}\" 을(를) 설치하시겠습니까?",
+      "install_bundled_confirm": "\"{{identifier}}\" 번들 언어팩을 설치하시겠습니까?",
       "install_bundled_core_required": "코어 언어팩(locale={{locale}}) 이 먼저 활성화되어 있어야 합니다.",
-      "install_blocked_target_not_installed": "대상 {{scope}} \"{{target}}\" 이(가) 설치되어 있지 않습니다.",
-      "install_blocked_target_inactive": "대상 {{scope}} \"{{target}}\" 이(가) 비활성 상태입니다. 먼저 활성화하세요.",
+      "install_blocked_target_not_installed": "대상 {{scope}} \"{{target}}\"의 설치가 필요합니다.",
+      "install_notice_target_inactive": "대상 {{scope}} \"{{target}}\"의 상태가 비활성이라 이 언어팩은 꺼진 채 설치됩니다. 그 확장을 켠 뒤 목록에서 켤 수 있습니다.",
       "install_blocked_target_version_too_old": "대상 {{scope}} \"{{target}}\" 의 버전이 요구 조건을 충족하지 않습니다."
     },
     "slot_conflict_modal": {
@@ -667,7 +810,7 @@
       "cascade_language_packs_hint": "번들로 제공되는 언어팩 후보입니다. 체크된 항목만 본 설치와 함께 자동 설치됩니다.",
       "cascade_lp_depends_on": "종속: {{target}}",
       "install_title": "모듈 설치 확인",
-      "install_confirm": "{{name}} 모듈을 설치하시겠습니까?",
+      "install_confirm": "「{{name}}」 설치를 진행하시겠습니까?",
       "install_description": "설치 후 모듈을 활성화하면 기능을 사용할 수 있습니다.",
       "vendor_mode_label": "Vendor 설치 방식",
       "vendor_mode_hint": "Composer 사용 불가 환경에서는 '번들'을 선택하세요.",
@@ -676,7 +819,7 @@
       "vendor_mode_bundled": "번들 Vendor 사용",
       "uninstall_title": "모듈 제거 확인",
       "uninstall_done_title": "모듈 제거 완료",
-      "uninstall_confirm": "{{name}} 모듈을 제거하시겠습니까?",
+      "uninstall_confirm": "「{{name}}」 제거를 진행하시겠습니까?",
       "uninstall_warning": "이 작업은 되돌릴 수 없습니다.",
       "delete_data_option": "모듈 데이터도 함께 삭제",
       "delete_data_warning": "모듈이 생성한 모든 데이터(게시물, 설정 등)가 함께 삭제되며, 삭제된 데이터는 복구할 수 없습니다.",
@@ -696,8 +839,7 @@
         "permissions": "권한",
         "menus": "관리자 메뉴",
         "notification_definitions": "알림 정의",
-        "identity_policies": "본인인증 정책",
-        "identity_message_definitions": "본인인증 메시지 정의"
+        "identity_policies": "본인인증 정책"
       },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
@@ -705,7 +847,7 @@
       "manual_install_title": "모듈 수동 설치",
       "manual_install_description": "파일 업로드 또는 GitHub 저장소에서 모듈을 설치할 수 있습니다.",
       "refresh_layouts_title": "레이아웃 갱신",
-      "refresh_layouts_confirm": "{{name}} 모듈의 레이아웃을 갱신하시겠습니까?",
+      "refresh_layouts_confirm": "「{{name}}」의 레이아웃을 갱신하시겠습니까?",
       "refresh_layouts_warning": "기존 레이아웃이 삭제되고 파일에서 다시 등록됩니다.",
       "refresh_layouts_description": "모듈 파일에 포함된 레이아웃으로 데이터베이스의 레이아웃이 교체됩니다. 기존에 수정한 레이아웃 내용은 모두 삭제됩니다.",
       "deactivate_warning_title": "모듈 비활성화 경고",
@@ -723,7 +865,7 @@
       "force_activate_description": "강제로 활성화하면 모듈이 정상적으로 동작하지 않을 수 있습니다.",
       "confirm_activate": "그래도 활성화",
       "update_title": "모듈 업데이트 확인",
-      "update_confirm": "{{name}} 모듈을 업데이트하시겠습니까?",
+      "update_confirm": "「{{name}}」 업데이트를 진행하시겠습니까?",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "GitHub에서 다운로드",
       "update_source_pending": "대기 중인 패키지에서 설치",
@@ -736,12 +878,18 @@
       "layout_strategy_overwrite": "모두 교체",
       "layout_strategy_overwrite_desc": "모든 레이아웃을 새 버전으로 교체합니다.",
       "layout_strategy_keep": "수정 유지",
-      "layout_strategy_keep_desc": "사용자가 수정한 레이아웃을 유지합니다.",
+      "layout_strategy_keep_desc": "고친 부분은 유지하고, 손대지 않은 부분은 새 버전으로 바꿉니다. 같은 곳을 양쪽이 고쳤으면 고친 내용을 남깁니다.",
       "modified_layouts_warning": "수정된 레이아웃이 {{count}}개 있습니다. '모두 교체'를 선택하면 수정 내용이 삭제됩니다.",
       "no_modified_layouts": "수정된 레이아웃이 없습니다.",
       "modified_layouts_check_failed": "수정 여부를 확인하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도하거나, 안전하게 '수정 유지'를 선택하세요.",
-      "modified_layouts_list_title": "유지될 수정 레이아웃 ({{count}}개)",
-      "modified_layouts_keep_notice": "위 레이아웃은 업데이트 후에도 현재 내용이 유지됩니다."
+      "modified_layouts_list_title": "수정한 레이아웃 ({{count}}개)",
+      "modified_layouts_keep_notice": "위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다.",
+      "reactivate_language_packs_title": "언어팩 다시 켜기",
+      "reactivate_language_packs_message": "이 모듈을 끌 때 함께 꺼졌던 언어팩입니다. 다시 켤까요?",
+      "reactivate_language_packs_success": "언어팩을 다시 켰습니다.",
+      "reactivate_language_packs_failed": "언어팩을 다시 켜지 못했습니다.",
+      "cascade_no_permission": "권한 없음",
+      "cascade_no_permission_hint": "권한이 없는 항목은 함께 설치할 수 없습니다. 필요하면 권한이 있는 관리자에게 요청하세요."
     },
     "tabs": {
       "file_upload": "파일 업로드",
@@ -864,11 +1012,11 @@
       "roles_description": "이 플러그인에서 등록하는 역할 목록입니다.",
       "no_roles": "등록되는 역할이 없습니다.",
       "hooks": "훅",
-      "hooks_description": "이 플러그인에서 참조하는 훅의 목록입니다.",
-      "no_hooks": "참조하는 훅이 없습니다.",
+      "hooks_description": "이 플러그인이 다른 확장에 제공하는 액션 훅 목록입니다. 이 플러그인이 구독하는 훅은 표시하지 않습니다.",
+      "no_hooks": "제공하는 훅이 없습니다.",
       "filters": "필터",
-      "filters_description": "이 플러그인에서 사용하는 필터의 목록입니다.",
-      "no_filters": "사용하는 필터가 없습니다.",
+      "filters_description": "이 플러그인이 다른 확장에 제공하는 필터 훅 목록입니다. 이 플러그인이 구독하는 필터는 표시하지 않습니다.",
+      "no_filters": "제공하는 필터가 없습니다.",
       "supported_languages": "지원 언어",
       "no_supported_languages": "지원 언어 정보가 없습니다.",
       "cascade_dependencies_title": "함께 설치할 의존 확장",
@@ -877,7 +1025,7 @@
       "cascade_language_packs_hint": "번들로 제공되는 언어팩 후보입니다. 체크된 항목만 본 설치와 함께 자동 설치됩니다.",
       "cascade_lp_depends_on": "종속: {{target}}",
       "install_title": "플러그인 설치 확인",
-      "install_confirm": "{{name}} 플러그인을 설치하시겠습니까?",
+      "install_confirm": "「{{name}}」 설치를 진행하시겠습니까?",
       "install_description": "설치 후 플러그인을 활성화하면 기능을 사용할 수 있습니다.",
       "vendor_mode_label": "Vendor 설치 방식",
       "vendor_mode_hint": "Composer 사용 불가 환경에서는 '번들'을 선택하세요.",
@@ -886,7 +1034,7 @@
       "vendor_mode_bundled": "번들 Vendor 사용",
       "uninstall_title": "플러그인 제거 확인",
       "uninstall_done_title": "플러그인 제거 완료",
-      "uninstall_confirm": "{{name}} 플러그인을 제거하시겠습니까?",
+      "uninstall_confirm": "「{{name}}」 제거를 진행하시겠습니까?",
       "uninstall_warning": "이 작업은 되돌릴 수 없습니다.",
       "delete_data_option": "플러그인 데이터도 함께 삭제",
       "delete_data_warning": "플러그인이 생성한 모든 데이터(설정, 로그 등)가 함께 삭제되며, 삭제된 데이터는 복구할 수 없습니다.",
@@ -906,8 +1054,7 @@
         "permissions": "권한",
         "menus": "관리자 메뉴",
         "notification_definitions": "알림 정의",
-        "identity_policies": "본인인증 정책",
-        "identity_message_definitions": "본인인증 메시지 정의"
+        "identity_policies": "본인인증 정책"
       },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
@@ -915,7 +1062,7 @@
       "manual_install_title": "플러그인 수동 설치",
       "manual_install_description": "파일 업로드 또는 GitHub 저장소에서 플러그인을 설치할 수 있습니다.",
       "refresh_layouts_title": "레이아웃 갱신 확인",
-      "refresh_layouts_confirm": "{{name}} 플러그인의 레이아웃을 갱신하시겠습니까?",
+      "refresh_layouts_confirm": "「{{name}}」의 레이아웃을 갱신하시겠습니까?",
       "refresh_layouts_description": "플러그인의 레이아웃 파일을 다시 읽어 데이터베이스에 동기화합니다.",
       "refresh_layouts_warning": "변경된 레이아웃은 업데이트되고, 삭제된 레이아웃은 데이터베이스에서도 삭제됩니다.",
       "deactivate_warning_title": "플러그인 비활성화 경고",
@@ -932,7 +1079,7 @@
       "force_activate_description": "강제로 활성화하면 플러그인이 정상적으로 동작하지 않을 수 있습니다.",
       "confirm_activate": "그래도 활성화",
       "update_title": "플러그인 업데이트 확인",
-      "update_confirm": "{{name}} 플러그인을 업데이트하시겠습니까?",
+      "update_confirm": "「{{name}}」 업데이트를 진행하시겠습니까?",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "GitHub에서 다운로드",
       "update_source_pending": "대기 중인 패키지에서 설치",
@@ -945,12 +1092,18 @@
       "layout_strategy_overwrite": "모두 교체",
       "layout_strategy_overwrite_desc": "모든 레이아웃을 새 버전으로 교체합니다.",
       "layout_strategy_keep": "수정 유지",
-      "layout_strategy_keep_desc": "사용자가 수정한 레이아웃을 유지합니다.",
+      "layout_strategy_keep_desc": "고친 부분은 유지하고, 손대지 않은 부분은 새 버전으로 바꿉니다. 같은 곳을 양쪽이 고쳤으면 고친 내용을 남깁니다.",
       "modified_layouts_warning": "수정된 레이아웃이 {{count}}개 있습니다. '모두 교체'를 선택하면 수정 내용이 삭제됩니다.",
       "no_modified_layouts": "수정된 레이아웃이 없습니다.",
       "modified_layouts_check_failed": "수정 여부를 확인하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도하거나, 안전하게 '수정 유지'를 선택하세요.",
-      "modified_layouts_list_title": "유지될 수정 레이아웃 ({{count}}개)",
-      "modified_layouts_keep_notice": "위 레이아웃은 업데이트 후에도 현재 내용이 유지됩니다."
+      "modified_layouts_list_title": "수정한 레이아웃 ({{count}}개)",
+      "modified_layouts_keep_notice": "위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다.",
+      "reactivate_language_packs_title": "언어팩 다시 켜기",
+      "reactivate_language_packs_message": "이 플러그인을 끌 때 함께 꺼졌던 언어팩입니다. 다시 켤까요?",
+      "reactivate_language_packs_success": "언어팩을 다시 켰습니다.",
+      "reactivate_language_packs_failed": "언어팩을 다시 켜지 못했습니다.",
+      "cascade_no_permission": "권한 없음",
+      "cascade_no_permission_hint": "권한이 없는 항목은 함께 설치할 수 없습니다. 필요하면 권한이 있는 관리자에게 요청하세요."
     },
     "tabs": {
       "file_upload": "파일 업로드",
@@ -979,6 +1132,9 @@
     "description": "관리자 사이드바 메뉴 구조를 관리하고 순서를 변경할 수 있습니다.",
     "add_menu": "메뉴 추가",
     "select_menu_hint": "왼쪽 목록에서 메뉴를 선택하세요",
+    "list_roles_label": "부여된 역할",
+    "list_roles_more": "외 {{count}}개",
+    "list_roles_none": "역할 없음",
     "menu_list_title": "관리자 메뉴 목록",
     "menu_info_title": "메뉴 정보",
     "new_menu_title": "새 메뉴 추가",
@@ -1007,7 +1163,7 @@
       "access_permission": "접근 권한",
       "permission": "접근 권한",
       "admin_only": "관리자",
-      "all_roles": "모든 역할",
+      "no_roles": "지정된 역할 없음 — 관리자만 복구 가능",
       "creator": "생성자",
       "creator_info": "생성자 정보",
       "created_by": "생성자",
@@ -1039,7 +1195,7 @@
       "roles": "접근 역할",
       "roles_placeholder": "역할을 선택하세요...",
       "roles_no_options": "선택 가능한 역할이 없습니다",
-      "roles_hint": "이 메뉴에 접근할 수 있는 역할을 선택합니다. 선택하지 않으면 모든 역할이 접근할 수 있습니다."
+      "roles_hint": "이 메뉴에 접근할 역할을 고릅니다. 관리자 역할은 항상 포함됩니다."
     },
     "modals": {
       "delete_title": "메뉴 삭제",
@@ -1054,6 +1210,27 @@
       "updated": "메뉴가 수정되었습니다.",
       "deleted": "메뉴가 삭제되었습니다.",
       "status_changed": "메뉴 상태가 변경되었습니다."
+    },
+    "bulk": {
+      "enter": "여러 개 선택",
+      "exit": "선택 모드 끝내기",
+      "panel_title": "선택한 메뉴에 역할 일괄 적용",
+      "selected_count": "선택한 메뉴 {{count}}개",
+      "more_count": "외 {{count}}개",
+      "empty_selection": "왼쪽 목록에서 역할을 적용할 메뉴를 체크하세요.",
+      "roles_label": "역할",
+      "roles_placeholder": "역할을 선택하세요...",
+      "action_label": "작업",
+      "action_add": "역할 추가",
+      "action_remove": "역할 제거",
+      "rule_hint": "하위 메뉴를 고르면 상위 메뉴에도 추가됩니다. 상위 메뉴에서 빼면 하위 메뉴에서도 빠집니다. 관리자 역할은 뺄 수 없습니다.",
+      "apply": "적용",
+      "clear": "선택 해제",
+      "confirm_title": "메뉴 역할 일괄 적용",
+      "confirm_add": "메뉴 {{count}}개에 다음 역할을 추가합니다: 「{{roles}}」",
+      "confirm_remove": "메뉴 {{count}}개에서 다음 역할을 제거합니다: 「{{roles}}」",
+      "confirm_auto_parent": "하위 메뉴만 고른 상위 메뉴 {{count}}개에도 함께 추가됩니다.",
+      "confirm_auto_child": "고른 상위 메뉴의 하위 메뉴 {{count}}개에서도 함께 빠집니다."
     }
   },
   "roles": {
@@ -1064,6 +1241,7 @@
     "refresh": "새로고침",
     "add_role": "역할 추가",
     "search_placeholder": "역할 검색...",
+    "protected_roles_hint": "코어·확장이 만든 역할(배지 표시)은 삭제할 수 없고, 수정·사용 여부 변경은 슈퍼 관리자만 할 수 있습니다.",
     "pagination_info": "총 {{total}}개 중 {{from}}-{{to}}개 표시",
     "columns": {
       "name": "역할명",
@@ -1104,11 +1282,24 @@
       "description": "설명",
       "description_placeholder": "역할에 대한 설명을 입력하세요",
       "is_active": "역할 활성화",
-      "is_active_hint": "비활성화된 역할은 새로운 사용자에게 할당할 수 없습니다",
+      "is_active_hint": "끄면 이 역할로 받은 권한이 즉시 회수되고, 새 사용자에게 할당할 수 없습니다.",
       "permissions_section": "권한 설정",
       "permissions_selected_suffix": "개 선택됨",
       "permissions_hint": "이 역할에 부여할 권한을 선택하세요. 그룹을 클릭하여 펼치거나 접을 수 있습니다.",
-      "no_permissions_in_type": "등록된 권한이 없습니다."
+      "no_permissions_in_type": "등록된 권한이 없습니다.",
+      "menus_section": "접근 가능 메뉴",
+      "menus_hint": "체크한 메뉴가 이 역할의 관리자 메뉴에 보입니다. 하위 메뉴를 고르면 상위 메뉴도 함께 선택되고, 상위 메뉴를 빼면 하위 메뉴도 함께 빠집니다.",
+      "menus_readonly_hint": "메뉴 수정 권한이 없어 볼 수만 있습니다.",
+      "menus_admin_locked_hint": "관리자 역할은 모든 메뉴에 항상 접근합니다.",
+      "menus_select_all": "전체 선택",
+      "menus_clear_all": "전체 해제",
+      "menus_inactive_badge": "비활성",
+      "password_expiry": "비밀번호 만료",
+      "password_expiry_inherit": "사이트 설정 따름",
+      "password_expiry_apply": "적용",
+      "password_expiry_exempt": "제외",
+      "password_expiry_hint": "이 역할을 가진 회원에게 적용할지 정합니다. 회원 개별 설정이 우선하고, 한 회원의 역할끼리 「적용」과 「제외」가 다르면 「적용」을 따릅니다.",
+      "is_active_locked_hint": "최고관리자 역할은 끌 수 없습니다. 끄면 모든 운영자의 관리 권한이 회수됩니다."
     },
     "modals": {
       "delete_title": "역할 삭제",
@@ -1324,7 +1515,8 @@
       "notification_definitions": "알림 설정",
       "language_packs": "언어팩",
       "identity": "본인인증",
-      "info": "정보"
+      "info": "정보",
+      "privacy": "개인정보"
     },
     "general": {
       "site_info": "사이트 정보",
@@ -1549,90 +1741,154 @@
       "require_password_special_char_hint": "켜면 새로 설정하는 비밀번호에 특수문자가 최소 1개 필요합니다.",
       "two_factor_auth": "2단계 인증",
       "two_factor_auth_label": "로그인 시 인증번호를 한 번 더 확인",
-      "two_factor_auth_hint": "켜면 비밀번호 확인 뒤 가입 메일로 인증번호를 보내고, 그 번호를 입력해야 로그인이 완료됩니다.",
-      "ip_throttle_floor_hint": "IP 단위 요청 제한은 이 값의 6배로 적용되며, 분당 최소 30회는 항상 보장됩니다."
+      "two_factor_auth_hint": "켜면 비밀번호 확인 뒤 인증번호를 한 번 더 확인합니다. 기본은 가입 메일로 보내며, 인증 앱 플러그인을 설치하면 앱 코드로도 받을 수 있습니다.",
+      "two_factor_scope": "적용 범위",
+      "two_factor_scope_all": "전체 회원",
+      "two_factor_scope_admin": "관리자만",
+      "two_factor_scope_hint": "관리자만으로 두면 일반 회원은 종전처럼 비밀번호만으로 로그인합니다.",
+      "ip_throttle_floor_hint": "IP 단위 요청 제한은 이 값의 6배로 적용되며, 분당 최소 30회는 항상 보장됩니다.",
+      "ip_restriction": {
+        "title": "접근 제한",
+        "desc": "허용한 IP 에서만 관리자 영역에 접근하게 합니다.",
+        "proxy_warning": "신뢰 프록시가 설정되지 않은 상태에서 X-Forwarded-For 같은 전달 헤더가 수신되고 있습니다. 이대로면 모든 방문자가 프록시 주소 하나로 보여 IP 제한이 오작동합니다 — 먼저 신뢰 프록시를 설정하세요.",
+        "enabled": "IP 접근 제한 사용",
+        "enabled_desc": "끄면 아래 목록과 규칙은 저장만 되고 적용되지 않습니다.",
+        "admin_allowed_ips": "관리자 영역 허용 IP",
+        "current_ip": "현재 접속 IP {{ip}}",
+        "add_current_ip": "현재 IP 추가",
+        "ip_placeholder": "IP 또는 CIDR 입력 후 Enter (예: 203.0.113.24, 10.0.0.0/8)",
+        "admin_allowed_ips_hint": "관리자 화면·관리자 API(확장 관리 화면 포함)·관리자 로그인에 적용됩니다. 비우면 이 항목은 적용되지 않습니다. 지금 접속한 IP 가 빠진 목록은 저장되지 않습니다.",
+        "rules": "라우트별 규칙",
+        "add_rule": "규칙 추가",
+        "rules_empty": "등록된 규칙이 없습니다.",
+        "rules_hint": "위에서부터 처음 맞는 규칙 하나만 적용됩니다. 패턴의 * 는 / 를 포함해 무엇이든 맞습니다.",
+        "rules_callback_warning": "관리자 영역 밖 경로를 막는 규칙은 결제 승인·입금 통보 같은 외부 서버의 요청까지 끊을 수 있습니다. 코어가 아는 결제·웹훅·본인인증 콜백 경로는 자동으로 빠지지만, 확장이 다른 경로로 받는 요청은 막힐 수 있습니다.",
+        "emergency_hint": "잠겼을 때 서버에서 해제: php artisan security:ip-restriction --disable",
+        "col_pattern": "URI 패턴",
+        "col_ips": "허용 IP",
+        "col_memo": "메모",
+        "col_enabled": "사용",
+        "modal": {
+          "create_title": "규칙 추가",
+          "edit_title": "규칙 편집",
+          "pattern": "URI 패턴",
+          "pattern_hint": "앞의 / 는 있어도 없어도 같습니다. * 는 / 를 포함해 무엇이든 맞습니다.",
+          "pattern_placeholder": "예: /api/admin/users*",
+          "ips": "허용 IP",
+          "memo": "메모",
+          "memo_placeholder": "예: 회원 관리는 본사망만",
+          "enabled": "이 규칙 사용",
+          "pattern_required": "URI 패턴을 입력하세요.",
+          "ips_required": "허용 IP 를 하나 이상 입력하세요.",
+          "apply": "적용",
+          "apply_hint": "적용한 규칙은 화면 아래 「저장」을 눌러야 실제로 저장됩니다."
+        }
+      },
+      "password_policy": {
+        "title": "비밀번호 정책",
+        "desc": "새로 정하는 비밀번호가 따라야 할 규칙과 재사용 제한입니다.",
+        "char_types": "문자 종류 조합",
+        "char_types_label": "영문·숫자·특수문자 중 2종류 이상 섞어 쓰게 함",
+        "char_types_hint": "예: abcd1234(영문+숫자)는 통과하고 abcdefgh(영문만)는 거절합니다.",
+        "block_identifier": "아이디 포함 금지",
+        "block_identifier_label": "이메일 앞부분(아이디)이 들어간 비밀번호 금지",
+        "block_identifier_hint": "이메일 @ 앞부분이 3자 이상일 때만 검사하며, 대소문자는 구분하지 않습니다.",
+        "block_repeated": "같은 문자 반복 금지",
+        "block_repeated_label": "같은 문자를 이어서 반복한 비밀번호 금지",
+        "block_repeated_hint": "예: 4로 두면 aaaa·1111 처럼 같은 문자가 4개 이어진 비밀번호를 쓸 수 없습니다. (3~6)",
+        "repeated_length_aria": "반복 금지 글자 수",
+        "block_sequential": "연속 문자 금지",
+        "block_sequential_label": "1234·abcd·qwer 처럼 이어지는 문자가 들어간 비밀번호 금지",
+        "block_sequential_hint": "숫자·알파벳·자판 배열을 거꾸로 이어 쓴 것(4321·dcba)도 막습니다. (3~6)",
+        "sequential_length_aria": "연속 금지 글자 수",
+        "length_suffix": "글자부터 금지",
+        "reuse": "재사용 금지",
+        "reuse_desc": "최근에 쓴 비밀번호를 다시 쓰지 못하게 합니다.",
+        "reuse_count": "다시 쓸 수 없는 최근 비밀번호 수",
+        "reuse_count_hint": "현재 비밀번호를 포함해 셉니다(1~10). 관리자가 회원 등록·수정 화면에서 정해 준 비밀번호는 검사하지 않고, 그 회원은 다음 로그인 때 비밀번호를 바꿔야 합니다."
+      },
+      "password_expiry": {
+        "title": "비밀번호 만료",
+        "desc": "정한 기간이 지난 비밀번호를 바꾸게 하고, 만료 전에 미리 안내합니다.",
+        "enabled": "비밀번호 만료 사용",
+        "enabled_desc": "켜면 그날부터 기간을 계산합니다. 껐다가 다시 켜면 다시 켠 날부터 계산합니다.",
+        "started_at": "기준 시작일",
+        "started_at_pending": "저장하면 그 시각부터 계산합니다.",
+        "started_at_hint": "켜기 전부터 쓰던 비밀번호도 이 날을 마지막 변경일로 보고 계산합니다.",
+        "days": "만료 기간 (일)",
+        "days_hint": "30~730일. 마지막으로 비밀번호를 바꾼 날부터 이 기간이 지나면 만료됩니다.",
+        "notice_days": "사전 안내 (만료 며칠 전)",
+        "notice_days_hint": "1~30일, 만료 기간보다 짧아야 합니다. 이 날 안내 메일과 사이트 알림을 한 번 보냅니다.",
+        "scope": "적용 범위",
+        "scope_all": "전체 회원",
+        "scope_admin": "관리자만",
+        "scope_selected": "지정한 역할·회원만",
+        "scope_hint": "역할 수정·회원 등록/수정 화면의 「비밀번호 만료」 설정이 이 범위보다 우선합니다.",
+        "scope_selected_hint": "역할 수정·회원 등록/수정 화면에서 「적용」으로 고른 역할·회원에게만 적용됩니다.",
+        "action": "만료 시 동작",
+        "action_force": "변경해야 로그인",
+        "action_remind": "다음에 변경 허용",
+        "action_force_hint": "만료일에 그 회원의 로그인이 모두 해제되고, 다시 로그인할 때 새 비밀번호를 정해야 합니다.",
+        "action_remind_hint": "로그인할 때 변경을 권하고, 「다음에 변경」을 고르면 정한 기간 뒤 다시 안내합니다. 로그인은 막지 않습니다.",
+        "remind_days": "다시 안내 (일 뒤)",
+        "remind_days_hint": "1~90일. 「다음에 변경」을 고른 회원에게 이 기간 뒤 다시 변경을 요구합니다.",
+        "batch_size": "1회 실행당 처리 상한 (명)",
+        "batch_size_hint": "사전 안내·만료 처리에 각각 적용됩니다. 만료가 가까운 회원부터 처리하고 남은 인원은 다음 실행에서 처리합니다. 0을 입력하면 제한 없이 처리합니다.",
+        "schedule_notice": "매일 05:15 에 스케줄러가 안내 메일과 사이트 알림을 보냅니다. 메일 설정과 알림 설정의 「비밀번호 만료 사전 안내」·「비밀번호 만료」가 켜져 있어야 발송됩니다. 개인정보 처리방침에 비밀번호 변경 주기를 미리 알려 두세요.",
+        "rows": {
+          "notice": "만료 사전 안내",
+          "expire": "만료 처리"
+        },
+        "target_count": "대상 {{count}}명",
+        "targets_title": {
+          "notice": "비밀번호 만료 사전 안내 대상",
+          "expire": "비밀번호 만료 처리 대상"
+        },
+        "run_disabled_hint": "비밀번호 만료를 켜고 저장해야 「지금 실행」을 쓸 수 있습니다.",
+        "last_completed": "마지막 직권 실행: {{at}} · {{by}} · {{count}}명 처리",
+        "run": {
+          "editor_label": "비밀번호 만료 직권 실행 확인",
+          "modal_title": {
+            "notice": "비밀번호 만료 사전 안내 — 직권 실행",
+            "expire": "비밀번호 만료 처리 — 직권 실행"
+          },
+          "confirm_desc": {
+            "notice": "스케줄러를 기다리지 않고 지금 한 번 안내를 보냅니다.",
+            "expire": "만료 알림을 보내고, 「변경해야 로그인」 설정이면 그 회원의 로그인을 모두 해제합니다."
+          },
+          "count_label": "처리 예정",
+          "count_value": "전체 대상 {{total}}명 중 이번 실행 {{count}}명",
+          "batch_label": "1회 처리 상한",
+          "batch_value": "{{count}}명",
+          "remaining_label": "남은 인원",
+          "remaining_value": "{{count}}명은 다음 실행에서 처리",
+          "expire_mode": "만료 알림 + 로그인 해제(변경해야 로그인 설정일 때)",
+          "disabled_notice": "비밀번호 만료가 꺼져 있어 실행할 수 없습니다. 켜고 저장한 뒤 실행하세요.",
+          "expire_warning": "로그인이 해제된 회원은 다시 로그인할 때 새 비밀번호를 정해야 합니다.",
+          "queue_hint": "실행은 큐에 접수되며, 끝나면 카드에 결과가 표시됩니다. 같은 대상에 접수된 작업이 끝나기 전에는 다시 실행할 수 없습니다."
+        }
+      },
+      "activity_log_retention": {
+        "title": "활동 로그(접속기록) 보관",
+        "desc": "관리자·회원의 접속과 작업 기록(활동 로그)을 보관할 기간입니다. 기간이 지난 기록은 매일 04:45 자동으로 삭제됩니다.",
+        "days": "보관 기간",
+        "days_suffix": "일",
+        "days_hint": "{{min}}~{{max}}일. 법정 최소 기간보다 짧게 정할 수 없습니다.",
+        "legal_notice": "법정 최소: 접속기록 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면 2년) · 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관합니다."
+      }
     },
     "identity": {
       "sub_tabs": {
         "basic": "기본",
         "providers": "프로바이더",
         "policies": "정책 관리",
-        "messages": "메시지 템플릿"
+        "messages": "메시지"
       },
       "messages": {
-        "title": "본인인증 메시지 템플릿",
-        "intro": "본인인증 메일에 사용할 제목과 본문을 직접 편집합니다. 한국어/영어를 모두 입력할 수 있고, 언제든 기본값으로 되돌릴 수 있습니다. 운영자가 추가한 정책에는 별도 메시지를 묶어 등록할 수 있습니다.",
-        "empty": "등록된 메시지 정의가 없습니다.",
-        "edit": "편집",
-        "btn_add_definition": "정의 추가",
-        "btn_reset": "기본값 복원",
-        "btn_delete": "삭제",
-        "status_active": "활성",
-        "status_inactive": "비활성",
-        "default_badge": "기본",
-        "body_preview": "본문 미리보기",
-        "total_count": "총 {count}건",
-        "per_page_label": "페이지당",
-        "channels": {
-          "mail": "메일"
-        },
-        "toggle_success": "메시지 정의 활성 상태가 변경되었습니다.",
-        "toggle_failed": "활성 상태 변경에 실패했습니다.",
-        "badges": {
-          "default": "기본값",
-          "customized": "사용자 수정"
-        },
-        "add_modal": {
-          "title": "메시지 정의 추가",
-          "errors_title": "입력 오류",
-          "provider": "프로바이더",
-          "scope_type": "범위 유형",
-          "policy_key": "정책 키",
-          "policy_key_placeholder": "운영자 정책을 선택하세요",
-          "policy_empty": "운영자 정책이 없습니다. 정책 탭에서 먼저 등록해 주세요.",
-          "name": "이름",
-          "subject": "제목",
-          "body": "본문",
-          "variables_title": "사용 가능한 변수",
-          "save_success": "메시지 정의가 추가되었습니다.",
-          "save_failed": "메시지 정의 추가에 실패했습니다."
-        },
-        "delete_modal": {
-          "title": "메시지 정의 삭제",
-          "target_label": "대상",
-          "confirm_message": "이 메시지 정의를 삭제하시겠습니까?",
-          "warning_message": "삭제하면 연결된 모든 채널 템플릿이 함께 제거됩니다. 이 작업은 되돌릴 수 없습니다.",
-          "btn_confirm": "삭제",
-          "btn_confirming": "삭제 중...",
-          "delete_success": "메시지 정의가 삭제되었습니다.",
-          "delete_failed": "메시지 정의 삭제에 실패했습니다."
-        },
-        "reset_modal": {
-          "title": "기본값 복원",
-          "target_label": "대상",
-          "confirm_message": "이 메시지 정의의 모든 채널 템플릿을 시드 기본값으로 복원하시겠습니까?",
-          "warning_message": "운영자 수정 내용이 모두 사라지며, 이 작업은 되돌릴 수 없습니다.",
-          "btn_confirm": "복원",
-          "btn_confirming": "복원 중...",
-          "reset_success": "메시지 정의가 기본값으로 복원되었습니다.",
-          "reset_failed": "기본값 복원에 실패했습니다."
-        },
-        "modal": {
-          "title": "메시지 템플릿 편집",
-          "errors_title": "입력 오류",
-          "variables_title": "사용 가능한 변수",
-          "subject": "제목",
-          "body": "본문",
-          "reset": "기본값으로 복원",
-          "reset_confirm": "운영자가 수정한 내용이 모두 시드 기본값으로 복원됩니다. 계속하시겠습니까?",
-          "reset_success": "기본값으로 복원되었습니다.",
-          "reset_failed": "복원에 실패했습니다.",
-          "save_success": "메시지 템플릿이 저장되었습니다.",
-          "save_failed": "저장에 실패했습니다.",
-          "preview": "미리보기",
-          "preview_failed": "미리보기를 불러오지 못했습니다.",
-          "subject_label": "제목",
-          "body_label": "본문"
+        "title": "본인인증 메시지",
+        "moved_notice": {
+          "body": "본인인증 메일 문구는 「환경설정 > 알림 설정」의 분류 「본인인증」에서 편집합니다. 메일 채널 켜기·끄기와 발송 로그도 그곳에서 함께 관리합니다.",
+          "link": "알림 설정에서 편집하기"
         }
       },
       "basic": {
@@ -1673,7 +1929,7 @@
       "common": {
         "optional": "선택사항",
         "unavailable_saved_value_prefix": "저장된 값 ",
-        "unavailable_saved_value_suffix": " 은(는) 현재 사용할 수 없습니다. 사용 가능한 값을 선택해 저장하세요."
+        "unavailable_saved_value_suffix": " (현재 사용할 수 없음). 사용 가능한 값을 선택해 저장하세요."
       },
       "storage": {
         "title": "파일 스토리지",
@@ -1916,7 +2172,17 @@
         "reset_password": "비밀번호 재설정",
         "password_changed": "비밀번호 변경 알림",
         "sitemap_regenerated": "사이트맵 재생성 완료",
-        "sitemap_regenerate_failed": "사이트맵 재생성 실패"
+        "sitemap_regenerate_failed": "사이트맵 재생성 실패",
+        "analytics_archive_failed": "방문자 통계 집계 실패",
+        "analytics_ledger_limit_exceeded": "방문자 통계 원장 임계 초과",
+        "analytics_visit_limit_exceeded": "방문당 액션 상한 초과",
+        "analytics_weekly_report": "방문자 통계 주간 리포트",
+        "analytics_monthly_report": "방문자 통계 월간 리포트",
+        "dormant_pre_notice": "휴면 전환 사전 안내",
+        "dormant_converted": "휴면 전환 완료",
+        "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내",
+        "password_expiry_notice": "비밀번호 만료 사전 안내",
+        "password_expired": "비밀번호 만료"
       },
       "channels_label": "채널:",
       "edit_modal": {
@@ -1933,6 +2199,52 @@
         "is_active_label": "활성화"
       },
       "recipients_label": "수신자:",
+      "category": {
+        "label": "분류",
+        "all": "전체",
+        "general": "일반 알림",
+        "identity": "본인인증"
+      },
+      "identity_scope": {
+        "default": "공통 기본",
+        "purpose": "인증 목적",
+        "policy": "정책"
+      },
+      "identity_recipient_fixed": "받는 사람: 인증을 요청한 사람에게만 보냅니다(수신자 규칙을 쓰지 않습니다).",
+      "identity_empty": "본인인증 문구가 없습니다.",
+      "btn_add_identity": "정책별 문구 추가",
+      "btn_delete": "삭제",
+      "identity_add": {
+        "title": "정책별 문구 추가",
+        "help": "운영자가 등록한 본인인증 정책에 전용 메일 문구를 붙입니다. 붙이지 않은 정책은 인증 목적별 문구 → 공통 기본 문구 순으로 씁니다.",
+        "errors_title": "입력 오류",
+        "policy_key": "정책",
+        "policy_key_placeholder": "운영자 정책을 선택하세요",
+        "policy_empty": "운영자 정책이 없습니다. 본인인증 > 정책 관리에서 먼저 등록해 주세요.",
+        "policy_all_defined": "모든 운영자 정책에 이미 전용 문구가 있습니다. 목록에서 해당 문구를 편집해 주세요.",
+        "variables_title": "사용 가능한 변수",
+        "name": "이름",
+        "subject": "제목",
+        "body": "본문",
+        "save_success": "정책별 문구가 추가되었습니다.",
+        "save_failed": "정책별 문구 추가에 실패했습니다."
+      },
+      "identity_delete": {
+        "title": "정책별 문구 삭제",
+        "target_label": "대상",
+        "confirm_message": "이 정책별 문구를 삭제하시겠습니까?",
+        "warning_message": "삭제하면 이 정책의 인증 메일은 인증 목적별 문구 또는 공통 기본 문구로 발송됩니다. 이 작업은 되돌릴 수 없습니다.",
+        "btn_confirm": "삭제",
+        "btn_confirming": "삭제 중...",
+        "delete_success": "정책별 문구가 삭제되었습니다.",
+        "delete_failed": "정책별 문구 삭제에 실패했습니다."
+      },
+      "channel_off_confirm": {
+        "title": "메일 채널을 끌까요?",
+        "message": "메일 채널을 끄면 본인인증 메일(회원가입·비밀번호 찾기·정보 변경 인증번호)과 관리자 2단계 인증 메일도 보내지 않습니다. OTP 앱을 등록하지 않은 관리자는 로그인할 수 없게 됩니다.",
+        "btn_cancel": "취소",
+        "btn_confirm": "메일 끄기"
+      },
       "recipients": {
         "title": "수신자 설정",
         "add_rule": "+ 수신자 규칙 추가",
@@ -1958,7 +2270,14 @@
         "no_recipients": "수신자 미설정",
         "role_search_placeholder": "역할을 검색하세요",
         "users_placeholder": "사용자를 검색하세요",
-        "users_no_options": "검색 결과가 없습니다"
+        "users_no_options": "검색 결과가 없습니다",
+        "role_no_options": "일치하는 역할이 없습니다",
+        "relation_placeholder": "관계를 선택하세요",
+        "relation_undeclared": "이 알림은 '{{relation}}' 관계를 지원하지 않습니다. 목록에서 다시 선택하세요 — 그대로 두면 저장되지 않습니다.",
+        "roles_selected_count": "역할 {count}개 선택됨",
+        "users_selected_count": "{count}명 선택됨",
+        "remove_selected": "선택 해제: {{name}}",
+        "remove_rule": "수신자 규칙 {{index}} 삭제"
       },
       "preview_modal": {
         "title": "알림 미리보기",
@@ -1997,7 +2316,7 @@
       "database_config": "데이터베이스 구성",
       "database_config_desc": "MySQL 연결 구성 정보입니다.",
       "config_type": "구성 타입:",
-      "write_only": "Write Only",
+      "write_only": "Write 단일",
       "read_write_split": "Read-Write 분리",
       "write_db": "Write DB",
       "read_db": "Read DB",
@@ -2052,9 +2371,111 @@
     "save_success": "설정이 저장되었습니다.",
     "save_error": "설정 저장에 실패했습니다.",
     "unsaved_changes": "저장되지 않은 변경사항이 있습니다.",
+    "unsaved_tab_modal": {
+      "title": "저장되지 않은 변경사항",
+      "message": "이 탭에서 고친 내용을 아직 저장하지 않았습니다. 다른 탭으로 옮기면 고친 내용이 사라지고 저장된 값으로 돌아갑니다.",
+      "btn_stay": "이 탭에 머무르기",
+      "btn_leave": "저장하지 않고 이동"
+    },
     "validation_error": "입력 정보를 확인해주세요",
     "app_key_regenerated": "어플리케이션 키가 재생성되었습니다.",
-    "cache_cleared": "모든 캐시가 삭제되었습니다."
+    "cache_cleared": "모든 캐시가 삭제되었습니다.",
+    "privacy": {
+      "consent_provider": {
+        "title": "동의 관리 제공자",
+        "desc": "방문자의 쿠키·추적 동의를 판단할 확장을 고릅니다. 다른 확장과 방문자 통계는 여기서 고른 제공자의 판단을 따릅니다.",
+        "label": "제공자",
+        "auto": "자동",
+        "auto_current": "자동 (현재: {{provider}})",
+        "ambiguous": "동의 관리 제공자가 2개 이상입니다. 하나를 고르기 전까지 모든 방문자의 동의는 「확인 불가」로 처리되어 외부 스크립트와 분석이 멈춥니다.",
+        "missing": "선택한 제공자가 비활성화되었습니다. 다른 제공자를 고르세요.",
+        "none_no_provider": "동의 관리 확장이 없습니다. 방문자 통계는 익명으로 수집됩니다.",
+        "none_unavailable": "선택한 제공자의 동의 수집이 꺼져 있습니다(예: GDPR 배너 사용 안 함). 동의 관리 없이 운영되며 방문자 통계는 익명으로 수집됩니다."
+      },
+      "policy_notice_title": "켜기 전에 개인정보 처리방침을 먼저 고치세요",
+      "policy_notice_desc": "아래 기능은 회원의 개인정보를 되돌릴 수 없게 파기하거나 계정 상태를 바꿉니다. 법은 사전 안내 후 운영할 것을 요구하므로, 처리방침에 보유기간·휴면 정책을 먼저 적고 공지한 뒤에 켜세요.",
+      "target_count": "대상 {{count}}명",
+      "withdrawn": {
+        "title": "탈퇴 회원 잔여정보 파기",
+        "desc": "탈퇴 시에는 분쟁 대응을 위해 이름·이메일의 원값이 접미사 형태로 남습니다. 보유기간이 지나면 그 잔여 정보까지 실제로 지웁니다.",
+        "enabled": "보유기간 경과 시 자동 파기",
+        "enabled_desc": "기본 꺼짐. 켜면 매일 새벽 배치가 대상을 처리합니다.",
+        "days": "탈퇴 후 보유기간 (일)",
+        "days_hint": "탈퇴일로부터 이 기간이 지난 회원이 대상입니다. 기본 365일.",
+        "irreversible_warning": "연락처·주소·자기소개와 본인인증 식별자까지 지워지며 되돌릴 수 없습니다. 이름은 「탈퇴회원」, 이메일은 식별 불가 형태로 바뀝니다."
+      },
+      "dormant": {
+        "title": "휴면 계정",
+        "desc": "장기 미접속 회원을 사전 안내 후 휴면으로 전환합니다. 휴면 회원이 로그인하면 그 자체를 본인확인으로 보고 곧바로 원래대로 되돌립니다.",
+        "enabled": "휴면 계정 전환",
+        "enabled_desc": "기본 꺼짐. 켜면 사전 안내 → 전환 순서로 진행됩니다.",
+        "days": "휴면 전환 기준 미접속 기간 (일)",
+        "days_hint": "마지막 활동(로그인 또는 앱·토큰 사용)으로부터 이 기간이 지나면 전환 대상입니다. 기본 730일.",
+        "notice_days": "사전 안내 기간 (일)",
+        "notice_days_hint": "전환 예정일 며칠 전에 안내를 보낼지 정합니다. 전환 기간보다 짧아야 하며, 안내를 보낸 뒤 이 기간이 지나야 실제로 전환됩니다.",
+        "withdraw_enabled": "휴면 기간이 지나면 탈퇴 처리",
+        "withdraw_enabled_desc": "기본 꺼짐. 켜면 휴면 상태가 오래 이어진 계정을 탈퇴 처리합니다.",
+        "withdraw_days": "휴면 후 탈퇴까지 기간 (일)",
+        "withdraw_days_hint": "휴면 전환일로부터 이 기간이 지나면 탈퇴 예정 안내를 보내고, 안내 기간이 지난 뒤 탈퇴 처리합니다. 기본 365일.",
+        "withdraw_warning": "탈퇴 처리된 계정은 되돌릴 수 없습니다. 관리자 계정은 자동 탈퇴 대상에서 제외됩니다.",
+        "restore_hint": "휴면 회원이 로그인하면 자동으로 해제되며, 별도의 신청 절차는 없습니다."
+      },
+      "targets": {
+        "view": "대상 보기",
+        "title": {
+          "withdrawn": "탈퇴 회원 잔여정보 파기 대상",
+          "pre_notice": "휴면 사전 안내 대상",
+          "convert": "휴면 전환 대상",
+          "withdraw_notice": "휴면 탈퇴 예고 대상",
+          "withdraw": "휴면 자동 탈퇴 대상"
+        },
+        "rows": {
+          "withdrawn": "탈퇴 회원 잔여정보",
+          "pre_notice": "휴면 전환 사전 안내",
+          "convert": "휴면 전환",
+          "withdraw_notice": "휴면 계정 탈퇴 예정 안내",
+          "withdraw": "휴면 계정 탈퇴 처리"
+        },
+        "hint": "건수와 명단은 저장된 설정 기준입니다. 기능이 꺼져 있어도 켜면 처리될 대상을 미리 보여 줍니다.",
+        "total": "총 {{count}}건",
+        "empty": "대상이 없습니다.",
+        "loading": "불러오는 중...",
+        "close": "닫기",
+        "editor_label": "개인정보 조치 대상 목록"
+      },
+      "manual_run": {
+        "section_desc": "스케줄러를 기다리지 않고 관리자가 지금 한 번 실행합니다. 자동 실행이 꺼져 있어도 저장된 설정값으로 처리됩니다.",
+        "run": "지금 실행",
+        "save_first_hint": "저장하지 않은 변경이 있습니다. 직권 실행은 저장된 설정으로 처리되므로 먼저 저장하세요.",
+        "status_active": "{{status}} — {{at}} 접수 · {{by}}",
+        "last_completed": "마지막 직권 실행: {{at}} · {{by}} · {{count}}건 처리",
+        "last_failed": "마지막 직권 실행 실패: {{at}} · {{by}} — {{error}}",
+        "unknown_requester": "알 수 없음",
+        "modal_title": "{{target}} — 직권 실행",
+        "confirm_desc": "스케줄러를 기다리지 않고 지금 한 번 실행합니다. 작업은 큐에 접수되어 차례로 처리되며, 끝나면 카드에 결과가 표시됩니다.",
+        "count_label": "처리 예정",
+        "count_value": "{{count}}건",
+        "loading": "건수를 세는 중...",
+        "mode_label": "처리 방식",
+        "modes": {
+          "anonymize": "익명화",
+          "delete": "삭제",
+          "erase_ip": "작성 IP 삭제"
+        },
+        "disabled_notice": "자동 실행은 꺼져 있습니다. 직권 실행은 토글과 무관하게 저장된 기간값으로 이번 한 번만 처리합니다.",
+        "skip_waiting": "대기기간 생략",
+        "skip_waiting_desc": "사전 안내를 받지 않았거나 안내 후 기간이 지나지 않은 회원도 기간만 지났으면 즉시 처리합니다. 법이 요구하는 사전 안내를 건너뛰므로 운영자 책임 아래에서만 사용하세요.",
+        "irreversible": "실행하면 되돌릴 수 없습니다. 처리 예정 건수와 대상 명단을 확인한 뒤 실행하세요.",
+        "queue_hint": "큐 워커가 동작해야 처리됩니다. 같은 대상에 접수된 작업이 끝나기 전에는 다시 실행할 수 없습니다.",
+        "cancel": "취소",
+        "execute": "실행",
+        "executing": "접수 중...",
+        "queued_toast": "실행을 큐에 접수했습니다. 처리가 끝나면 카드에 결과가 표시됩니다.",
+        "queue_failed": "실행을 접수하지 못했습니다.",
+        "preview_failed": "대상 건수를 불러오지 못했습니다.",
+        "editor_label": "개인정보 조치 직권 실행"
+      }
+    }
   },
   "templates": {
     "page_title": "템플릿 관리",
@@ -2176,11 +2597,11 @@
       "cascade_language_packs_hint": "번들로 제공되는 언어팩 후보입니다. 체크된 항목만 본 설치와 함께 자동 설치됩니다.",
       "cascade_lp_depends_on": "종속: {{target}}",
       "install_title": "템플릿 설치 확인",
-      "install_confirm": "{{name}} 템플릿을 설치하시겠습니까?",
+      "install_confirm": "「{{name}}」 설치를 진행하시겠습니까?",
       "install_description": "설치 후 활성화하면 관리자 인터페이스의 디자인이 변경됩니다.",
       "uninstall_title": "템플릿 제거 확인",
       "uninstall_done_title": "템플릿 제거 완료",
-      "uninstall_confirm": "{{name}} 템플릿을 제거하시겠습니까?",
+      "uninstall_confirm": "「{{name}}」 제거를 진행하시겠습니까?",
       "uninstall_warning": "이 작업은 되돌릴 수 없습니다.",
       "delete_data_option": "템플릿 데이터도 함께 삭제",
       "delete_data_warning": "템플릿이 생성한 모든 데이터(사용자 정의 스타일, 설정 등)가 함께 삭제되며, 삭제된 데이터는 복구할 수 없습니다.",
@@ -2190,18 +2611,18 @@
       "preserved_desc": "제거하기 전에 custom/ 디렉토리의 사본을 아래 경로에 보관했습니다. 확장을 다시 설치한 뒤 custom/ 으로 옮기면 그대로 다시 쓸 수 있습니다.",
       "tables_total": "총 {{size}}",
       "activate_title": "템플릿 변경 확인",
-      "activate_confirm": "{{name}} 템플릿을 활성화하시겠습니까?",
+      "activate_confirm": "「{{name}}」 활성화를 진행하시겠습니까?",
       "activate_description": "현재 사용 중인 템플릿의 레이아웃 설정은 자동으로 저장됩니다. 나중에 다시 활성화하면 저장된 레이아웃을 그대로 사용할 수 있습니다.",
       "deactivate_title": "템플릿 비활성화 확인",
-      "deactivate_confirm": "{{name}} 템플릿을 비활성화하시겠습니까?",
+      "deactivate_confirm": "「{{name}}」 비활성화를 진행하시겠습니까?",
       "manual_install_title": "템플릿 수동 설치",
       "manual_install_description": "파일 업로드 또는 GitHub 저장소에서 템플릿을 설치할 수 있습니다.",
       "refresh_layouts_title": "레이아웃 갱신",
-      "refresh_layouts_confirm": "{{name}} 템플릿의 레이아웃을 갱신하시겠습니까?",
+      "refresh_layouts_confirm": "「{{name}}」의 레이아웃을 갱신하시겠습니까?",
       "refresh_layouts_warning": "기존 레이아웃이 삭제되고 파일에서 다시 등록됩니다.",
       "refresh_layouts_description": "템플릿 파일에 포함된 레이아웃으로 데이터베이스의 레이아웃이 교체됩니다. 기존에 수정한 레이아웃 내용은 모두 삭제됩니다.",
       "update_title": "템플릿 업데이트 확인",
-      "update_confirm": "{{name}} 템플릿을 업데이트하시겠습니까?",
+      "update_confirm": "「{{name}}」 업데이트를 진행하시겠습니까?",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "GitHub에서 다운로드",
       "update_source_pending": "대기 중인 패키지에서 설치",
@@ -2214,12 +2635,12 @@
       "layout_strategy_overwrite": "모두 교체",
       "layout_strategy_overwrite_desc": "모든 레이아웃을 새 버전으로 교체합니다.",
       "layout_strategy_keep": "수정 유지",
-      "layout_strategy_keep_desc": "사용자가 수정한 레이아웃을 유지합니다.",
+      "layout_strategy_keep_desc": "고친 부분은 유지하고, 손대지 않은 부분은 새 버전으로 바꿉니다. 같은 곳을 양쪽이 고쳤으면 고친 내용을 남깁니다.",
       "modified_layouts_warning": "수정된 레이아웃이 {{count}}개 있습니다. '모두 교체'를 선택하면 수정 내용이 삭제됩니다.",
       "no_modified_layouts": "수정된 레이아웃이 없습니다.",
       "modified_layouts_check_failed": "수정 여부를 확인하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도하거나, 안전하게 '수정 유지'를 선택하세요.",
-      "modified_layouts_list_title": "유지될 수정 레이아웃 ({{count}}개)",
-      "modified_layouts_keep_notice": "위 레이아웃은 업데이트 후에도 현재 내용이 유지됩니다.",
+      "modified_layouts_list_title": "수정한 레이아웃 ({{count}}개)",
+      "modified_layouts_keep_notice": "위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다.",
       "activate_warning_title": "템플릿 활성화 경고",
       "activate_warning_message": "이 템플릿을 활성화하려면 필요한 의존성이 충족되어야 합니다.",
       "missing_modules": "필요한 모듈",
@@ -2268,7 +2689,13 @@
       "wysiwyg_select_layout_title": "위지윅 편집 - 레이아웃 선택",
       "wysiwyg_select_layout_description": "편집할 레이아웃을 선택하세요. 선택한 레이아웃이 새 탭에서 위지윅 편집 모드로 열립니다.",
       "wysiwyg_no_layouts": "등록된 레이아웃이 없습니다.",
-      "wysiwyg_note": "위지윅 편집 모드에서는 실제 화면 위에 편집 도구가 표시됩니다. 변경사항은 저장 버튼을 클릭해야 적용됩니다."
+      "wysiwyg_note": "위지윅 편집 모드에서는 실제 화면 위에 편집 도구가 표시됩니다. 변경사항은 저장 버튼을 클릭해야 적용됩니다.",
+      "reactivate_language_packs_title": "언어팩 다시 켜기",
+      "reactivate_language_packs_message": "이 템플릿을 끌 때 함께 꺼졌던 언어팩입니다. 다시 켤까요?",
+      "reactivate_language_packs_success": "언어팩을 다시 켰습니다.",
+      "reactivate_language_packs_failed": "언어팩을 다시 켜지 못했습니다.",
+      "cascade_no_permission": "권한 없음",
+      "cascade_no_permission_hint": "권한이 없는 항목은 함께 설치할 수 없습니다. 필요하면 권한이 있는 관리자에게 요청하세요."
     },
     "tabs_install": {
       "file_upload": "파일 업로드",
@@ -2305,9 +2732,9 @@
     },
     "layout_edit": {
       "title": "레이아웃 편집",
-      "description": "JSON 파일을 편집하여 페이지 레이아웃을 구성합니다",
+      "description": "화면 마크업(.g7.html)을 편집하여 페이지 레이아웃을 구성합니다",
       "page_title": "레이아웃 편집",
-      "page_description": "JSON 파일을 편집하여 페이지 레이아웃을 구성합니다",
+      "page_description": "화면 마크업(.g7.html)을 편집하여 페이지 레이아웃을 구성합니다",
       "preview": "미리보기",
       "save": "저장",
       "saving": "저장 중...",
@@ -2335,7 +2762,122 @@
       "preview_layout_select_title": "미리보기 레이아웃 선택",
       "preview_layout_select_description": "이 확장점은 여러 레이아웃에서 사용됩니다. 미리볼 레이아웃을 선택하세요.",
       "preview_layout_select_placeholder": "레이아웃을 선택하세요",
-      "preview_layout_confirm": "미리보기"
+      "preview_layout_confirm": "미리보기",
+      "tab_markup": "HTML",
+      "tab_json": "JSON (읽기 전용)",
+      "json_readonly_hint": "JSON 은 HTML 에서 생성된 산출물입니다(읽기 전용). 타이핑이 멈추면 1초 뒤 갱신됩니다.",
+      "json_stale": "컴파일 오류로 마지막 성공본 표시",
+      "markup_error_title": "컴파일 오류 — 저장이 막힙니다",
+      "markup_warning_title": "경고 {{count}}건 — 저장은 됩니다",
+      "go_to_line": "{{line}}번째 줄로 이동",
+      "info_toggle_show": "파일 정보 펼치기",
+      "info_toggle_hide": "파일 정보 접기",
+      "inlined_notice": "설치된 레이아웃을 편집합니다 — 조각(<include>·<modal src>)은 인라인된 상태이며 저장소 파일과 다를 수 있습니다. 저장 시 본문은 서버 정규형으로 갱신됩니다.",
+      "download_markup": ".g7.html 내려받기",
+      "copy_markup": "복사",
+      "copy_success": "마크업을 클립보드에 복사했습니다.",
+      "copy_failed": "클립보드 복사에 실패했습니다.",
+      "fragment_key_label": "조각 {{key}}",
+      "tree": {
+        "aria_label": "레이아웃 파일",
+        "unsaved": "저장되지 않음",
+        "unsaved_count": "저장되지 않은 파일 {{count}}개",
+        "pending_folder": "빈 폴더",
+        "empty": "편집 가능한 레이아웃이 없습니다",
+        "resize": "파일 목록 폭 조절"
+      },
+      "tabs": {
+        "aria_label": "열린 파일",
+        "close": "{{name}} 닫기"
+      },
+      "search": {
+        "placeholder": "파일·내용 검색",
+        "result_summary": "검색결과 {{matches}}건 · {{files}}파일",
+        "empty": "'{{keyword}}' 와 일치하는 파일·내용이 없습니다",
+        "clear": "검색 지우기",
+        "goto_line": "{{line}}행으로 이동"
+      },
+      "file": {
+        "new_file": "새 파일",
+        "new_folder": "새 폴더",
+        "new_file_title": "새 파일 만들기",
+        "new_folder_title": "새 폴더 만들기",
+        "rename": "이름변경",
+        "rename_title": "이름 바꾸기",
+        "delete": "삭제",
+        "delete_title": "파일을 삭제할까요?",
+        "delete_description": "삭제한 파일은 되살릴 수 있지만, 이 파일을 쓰던 화면은 그 즉시 열리지 않습니다.",
+        "create": "만들기",
+        "name_label": "이름",
+        "name_placeholder": "예: partials/admin_user_list/_modal_form",
+        "name_hint": "영문·숫자·밑줄(_)·붙임표(-)를 쓰고, 폴더는 슬래시(/)로 나눕니다. 확장자는 붙이지 않습니다.",
+        "created": "파일을 만들었습니다.",
+        "renamed": "이름을 바꿨습니다.",
+        "deleted": "파일을 삭제했습니다.",
+        "folder_created": "폴더를 만들었습니다. 이 안에 파일을 저장하면 확정됩니다.",
+        "reference_line": "{{line}}행",
+        "delete_anyway": "그래도 삭제",
+        "missing_title": "이 파일을 찾을 수 없습니다",
+        "missing_reloading": "이 파일을 찾을 수 없습니다. 목록을 새로 고칩니다.",
+        "missing_draft_notice": "이 파일은 더 이상 없습니다. 아래는 복원한 편집분이며 저장할 수 없습니다 — 새 이름으로 저장하거나 버리십시오.",
+        "save_as": "새 이름으로 저장",
+        "discard_draft": "버리기",
+        "missing_badge": "없는 파일"
+      },
+      "draft": {
+        "found": "저장하지 않은 편집 {{count}}건이 있습니다",
+        "restore": "복원",
+        "discard": "버리기",
+        "leave_warning": "저장하지 않은 편집이 있습니다.",
+        "leave_confirm": "저장하지 않은 편집 {{count}}건이 있습니다. 이 화면을 떠나면 사라집니다. 계속할까요?",
+        "close_confirm": "{{name}} 에 저장하지 않은 편집이 있습니다. 탭을 닫으면 사라집니다. 계속할까요?",
+        "close_title": "{{name}} 에 저장하지 않은 편집이 있습니다",
+        "close_question": "탭을 닫기 전에 어떻게 할까요?",
+        "close_save": "저장하고 닫기",
+        "close_discard": "저장하지 않고 닫기",
+        "close_cancel": "취소",
+        "close_saving": "저장하는 중… 저장이 끝나면 탭이 닫힙니다. 실패하면 이 창이 남습니다.",
+        "close_failed": "저장하지 못했습니다. 편집분은 그대로 있습니다 — 오류를 고쳐 다시 저장하거나 저장하지 않고 닫으세요.",
+        "restore_warning": "저장하지 않은 편집 {{count}}건이 있습니다. 판본을 되돌리면 편집기 위에 충돌 안내가 뜹니다."
+      },
+      "conflict": {
+        "title": "서버가 더 새롭습니다",
+        "description": "다른 곳에서 이 파일을 저장했습니다 (내 기준 v{{mine}} → 서버 v{{server}})",
+        "keep_mine": "내 것 유지",
+        "take_server": "서버 것으로",
+        "view_diff": "차이 보기",
+        "diff_title": "서버 본문과 내 편집의 차이",
+        "diff_legend": "왼쪽: 서버 v{{server}} · 오른쪽: 내 편집 (기준 v{{mine}})",
+        "diff_close": "닫기"
+      },
+      "wordwrap": {
+        "label": "줄바꿈",
+        "toggle": "자동 줄바꿈 켜기/끄기 (Alt+Z)"
+      },
+      "shortcuts": {
+        "title": "단축키",
+        "save": "저장",
+        "save_all": "모두 저장",
+        "preview": "미리보기",
+        "version_history": "판본 이력",
+        "exit": "나가기",
+        "new_file": "새 파일",
+        "quick_open": "파일 빠른 이동",
+        "search_content": "내용 검색",
+        "prev_tab": "이전 탭",
+        "next_tab": "다음 탭",
+        "close_tab": "탭 닫기",
+        "toggle_view": "HTML / JSON 전환",
+        "toggle_word_wrap": "자동 줄바꿈",
+        "font_size_up": "글자 크게",
+        "font_size_down": "글자 작게",
+        "find_in_file": "파일 내 찾기",
+        "help": "단축키 도움말",
+        "group_document": "문서",
+        "group_file": "파일",
+        "group_view": "보기",
+        "group_editor": "편집기"
+      }
     }
   },
   "activity_log": {
@@ -2501,6 +3043,65 @@
     "license_text": "라이선스",
     "view_license": "라이선스 보기"
   },
+  "member_notification": {
+    "page_title": "회원 알림함",
+    "page_description": "회원이 받은 알림(수신함)을 조회하고 삭제합니다.",
+    "search_placeholder": "검색어를 입력하세요",
+    "total_count": "총 {{count}}건",
+    "total_at_least": "총 {{count}}건 이상",
+    "col_created_at": "수신일시",
+    "col_member": "회원",
+    "col_type": "종류",
+    "col_subject": "제목",
+    "col_read_at": "읽음",
+    "deleted_member": "삭제된 회원",
+    "empty_message": "조회된 알림이 없습니다.",
+    "badge": {
+      "read": "읽음",
+      "unread": "안 읽음"
+    },
+    "filter": {
+      "search_type_all": "전체",
+      "search_type_recipient": "수신자",
+      "search_type_subject": "제목",
+      "search_type_body": "본문",
+      "read_label": "읽음 상태",
+      "read_all": "전체",
+      "read_unread": "안 읽음",
+      "read_read": "읽음",
+      "created_label": "수신 기간",
+      "member_filter_notice": "특정 회원의 알림만 표시하고 있습니다.",
+      "member_filter_clear": "회원 필터 해제",
+      "search_button": "검색",
+      "reset_button": "초기화"
+    },
+    "sort": {
+      "created_at_desc": "최신순",
+      "created_at_asc": "오래된순",
+      "read_at_desc": "읽음순"
+    },
+    "detail": {
+      "body_label": "본문",
+      "no_body": "본문 내용이 없습니다.",
+      "type_label": "알림 타입:",
+      "url_label": "연결 주소:"
+    },
+    "action": {
+      "view_member": "회원 정보 보기",
+      "filter_by_member": "이 회원의 알림만 보기"
+    },
+    "delete": {
+      "button": "삭제",
+      "selected_count": "{{count}}건 선택",
+      "bulk_button": "선택 삭제",
+      "confirm_title": "알림 삭제",
+      "confirm_message": "선택한 알림을 삭제하시겠습니까? 회원의 알림함에서도 사라지며 되돌릴 수 없습니다.",
+      "success": "알림이 삭제되었습니다.",
+      "bulk_confirm_title": "알림 일괄 삭제 확인",
+      "bulk_confirm_message": "선택한 알림을 모두 삭제하시겠습니까? 회원의 알림함에서도 사라지며 되돌릴 수 없습니다.",
+      "bulk_success": "선택한 알림이 모두 삭제되었습니다."
+    }
+  },
   "notification_log": {
     "page_title": "알림 발송 이력",
     "page_description": "시스템에서 발송한 알림의 이력을 확인합니다.",
@@ -2513,6 +3114,7 @@
     "status_skipped": "건너뜀",
     "search_placeholder": "수신자, 제목 검색",
     "total_count": "총 {{count}}건",
+    "total_at_least": "총 {{count}}건 이상",
     "col_channel": "채널",
     "col_recipient": "수신자",
     "col_sender": "발송자",
@@ -2697,6 +3299,7 @@
       "tab_all": "전체 인증 수단",
       "refresh": "새로고침",
       "total_count": "총 {{count}}건",
+      "total_at_least": "총 {{count}}건 이상",
       "search_type": {
         "auto": "자동",
         "user_id": "사용자 ID",
@@ -2770,6 +3373,716 @@
       }
     }
   },
+  "analytics": {
+    "common": {
+      "refresh": "새로고침",
+      "csv_download": "CSV 다운로드(엑셀용)",
+      "more": "더보기",
+      "empty_title": "선택 기간에 기록이 없습니다",
+      "empty_description": "수집 상태는 수집 진단 화면에서 확인할 수 있습니다.",
+      "visits": "방문",
+      "visitors": "방문자",
+      "pageviews": "페이지뷰",
+      "hits": "조회",
+      "bounce_rate": "이탈률",
+      "avg_time": "평균 체류",
+      "pages_per_visit": "방문당 페이지",
+      "label": "항목",
+      "extra": "부가",
+      "search_placeholder": "항목 검색 (Enter)",
+      "sort_label": "정렬",
+      "per_page": "쪽당 건수",
+      "empty_diagnostics_link": "수집 진단 열기",
+      "toggle_list": "목록 펼치기·접기",
+      "site_timezone_badge": "시각 기준: 사이트 표준시({timezone})",
+      "queue_backlog_badge": "큐 적재 대기 {count}건",
+      "ip_not_masked": "마스킹 전 기록"
+    },
+    "period": {
+      "presets": {
+        "today": "오늘",
+        "yesterday": "어제",
+        "7d": "7일",
+        "30d": "30일",
+        "90d": "90일",
+        "this_month": "이번 달",
+        "last_month": "지난달",
+        "this_year": "올해"
+      },
+      "from": "시작일",
+      "to": "종료일",
+      "unit_label": "단위",
+      "units": {
+        "auto": "자동",
+        "hour": "시",
+        "day": "일",
+        "week": "주",
+        "month": "월",
+        "year": "년"
+      },
+      "exclude_admin": "관리자 제외",
+      "exclude_member": "회원 제외",
+      "range_too_long": "한 번에 조회할 수 있는 기간은 {{days}}일까지입니다 — 시작일이나 종료일을 바꾸세요."
+    },
+    "alerts": {
+      "collection_disabled": "방문자 통계 수집이 꺼져 있습니다 — 숫자가 더 늘지 않습니다.",
+      "collection_disabled_link": "설정에서 켜기",
+      "consent_fallback": "동의 연동 모드인데 동의를 물어볼 플러그인이 없어 익명 모드로 모으고 있습니다.",
+      "consent_cookie_fallback": "동의 관리 플러그인이 켜져 있어, 쿠키(분석·기능)에 모두 동의한 방문자는 IP 저장 모드로, 그렇지 않은 방문자는 익명 모드(IP·방문자 쿠키 없음)로 모읍니다.",
+      "queue_backlog": "큐에 적재 대기 {{count}}건 — 워커가 돌고 있는지 확인하세요.",
+      "queue_backlog_link": "수집 진단 열기",
+      "geoip_off": "GeoIP 가 꺼져 있어 국가는 브라우저 언어로 추정하고, 지역·도시는 모으지 않습니다.",
+      "geoip_off_link": "고급 설정 열기",
+      "anonymous_mode": "익명 모드에서는 방문자 키가 날마다 바뀌어 같은 사람의 방문이 하루 안에서만 묶입니다.",
+      "unit_downgraded": "시간 단위 집계의 보존 기간 밖이라 일 단위로 보여 줍니다.",
+      "load_failed": "통계를 불러오지 못했습니다. 잠시 뒤 다시 시도하세요.",
+      "load_failed_retry": "다시 시도",
+      "site_timezone": "이 화면의 시각은 사이트 표준시({timezone}) 기준입니다 — 내 계정에 설정한 시간대와 다릅니다.",
+      "scheduler_missing": "스케줄러(cron)가 2시간 넘게 돌지 않았습니다. 화면을 열 때 집계로 숫자는 맞춰지지만, 어제 확정·오래된 데이터 정리·주간 보고서 메일은 멈춥니다.",
+      "scheduler_missing_link": "수집 진단 열기",
+      "archive_stale": "집계가 {{hours}}시간째 멈췄습니다(마지막 {{at}}). 스케줄러(cron)를 확인하거나 지금 집계하세요.",
+      "archive_never": "방문은 쌓였는데 아직 한 번도 집계하지 않았습니다. 스케줄러(cron)를 확인하거나 지금 집계하세요.",
+      "on_view_too_many": "오늘 방문이 {{max}}건을 넘어 화면을 열 때 집계하지 않았습니다. 숫자는 {{at}} 기준입니다 — 스케줄러(cron)를 등록하세요.",
+      "archive_now": "지금 집계"
+    },
+    "overview": {
+      "title": "방문자 통계 개요",
+      "description": "오늘·어제·최대·전체 방문자와 추이, 상위 페이지·유입·국가를 한눈에 봅니다.",
+      "realtime_now": "지금 {{count}}명 보는 중",
+      "realtime_link": "실시간 보기",
+      "kpi": {
+        "today": "오늘",
+        "yesterday": "어제",
+        "max": "최대",
+        "total": "전체",
+        "change_label": "어제 대비"
+      },
+      "trend_title": "추이",
+      "quality": {
+        "bounce_rate": "이탈률",
+        "avg_time": "평균 체류",
+        "pages_per_visit": "방문당 페이지",
+        "new_returning": "신규·재방문"
+      },
+      "top": {
+        "pages": "인기 페이지",
+        "referrers": "유입 경로",
+        "countries": "국가"
+      },
+      "visitors_daily_sum_note": "방문자(순)는 일별 순방문자 합계입니다 — 방문자 키가 날마다 바뀌어 여러 날에 걸친 순방문자는 셀 수 없습니다.",
+      "new_visitors": "신규",
+      "returning_visitors": "재방문",
+      "new_returning_unavailable": "익명 모드에서는 신규·재방문을 구분할 수 없습니다"
+    },
+    "pages": {
+      "title": "페이지",
+      "description": "어느 페이지가 얼마나 읽히고, 어디로 들어와 어디서 나가는지 봅니다.",
+      "tabs": {
+        "popular": "인기 페이지",
+        "entry": "진입 페이지",
+        "exit": "이탈 페이지",
+        "titles": "페이지 제목",
+        "durations": "체류시간 구간",
+        "depths": "본 페이지 수 구간"
+      }
+    },
+    "referrers": {
+      "keywords_https_hint": "대부분의 검색엔진은 HTTPS 로 옮기며 유입 주소에 검색어를 싣지 않습니다. 이 표가 거의 비어 있어도 수집이 잘못된 것은 아닙니다.",
+      "title": "유입 경로",
+      "description": "방문자가 어디서 왔는지 — 직접·검색·외부 사이트·캠페인.",
+      "tabs": {
+        "types": "유입 유형",
+        "sites": "유입 사이트",
+        "keywords": "검색어",
+        "campaigns": "캠페인",
+        "mediums": "캠페인 매체"
+      },
+      "type_share_title": "유입 유형 비율",
+      "urls_title": "{{host}} 의 유입 주소",
+      "urls_back": "유입 사이트 목록으로",
+      "urls_column": "유입 주소",
+      "urls_hint": "이 도메인에서 들어온 실제 주소입니다. 유입 URL 익명화를 켠 기간의 방문은 저장 시점에 도메인까지만 남아 한 줄로만 보입니다.",
+      "urls_empty_description": "선택한 기간에 이 도메인에서 들어온 기록이 없습니다.",
+      "mediums_empty": "utm_medium 이 붙은 방문이 없습니다."
+    },
+    "environment": {
+      "title": "환경",
+      "description": "브라우저·운영체제·기기·해상도·언어·로케일 분포.",
+      "tabs": {
+        "browsers": "브라우저",
+        "os": "운영체제",
+        "devices": "기기",
+        "resolutions": "해상도",
+        "languages": "브라우저 언어",
+        "locales": "사이트 로케일"
+      },
+      "device_share_title": "기기 비율"
+    },
+    "regions": {
+      "title": "지역",
+      "description": "국가·지역·도시별 방문. GeoIP 가 켜져 있어야 지역·도시가 채워집니다.",
+      "tabs": {
+        "countries": "국가",
+        "regions": "지역",
+        "cities": "도시"
+      }
+    },
+    "patterns": {
+      "title": "요일·시간대",
+      "description": "요일과 시간대별 평균 방문 패턴.",
+      "weekday_title": "요일별",
+      "hour_title": "시간대별",
+      "metric_label": "지표",
+      "weekdays": {
+        "0": "일",
+        "1": "월",
+        "2": "화",
+        "3": "수",
+        "4": "목",
+        "5": "금",
+        "6": "토"
+      },
+      "hourly_from": "시간대 패턴은 {{date}} 이후만 볼 수 있습니다 — 그 이전 시간 집계는 보존 기간이 지나 지워졌습니다.",
+      "average_note": "값은 합계가 아니라 기간 안 같은 요일·시간대의 평균입니다."
+    },
+    "actions": {
+      "title": "검색어·다운로드·전환",
+      "description": "내부 검색어, 내려받은 파일, 외부 링크, 확장이 기록한 전환(목표).",
+      "tabs": {
+        "search": "검색어",
+        "downloads": "다운로드",
+        "outlinks": "외부 링크",
+        "goals": "전환",
+        "dimensions": "확장별 분류",
+        "search_tabs": "검색 탭",
+        "events": "이벤트"
+      },
+      "no_result": "결과 없음",
+      "revenue": "매출",
+      "dimension_label": "분류 기준",
+      "dimension_placeholder": "분류 기준 선택",
+      "dimensions_hint": "설치된 확장이 알려 준 분류 기준(예: 게시판별)으로 방문을 나눠 봅니다. 확장을 끄거나 데이터를 남기고 지우면 「꺼진 확장」으로 표시되고, 쌓인 통계는 계속 볼 수 있습니다.",
+      "dimensions_empty_title": "볼 분류 기준을 고르세요",
+      "dimensions_empty_description": "위에서 분류 기준을 고르면 그 기준으로 나눈 상위 목록을 봅니다.",
+      "dimensions_none_title": "확장이 알려 준 분류 기준이 없습니다",
+      "dimensions_none_description": "켜진 확장 중 분류 기준을 알려 준 것이 없습니다. 확장이 분류 기준을 선언하면 여기서 고를 수 있습니다.",
+      "dimension_pii_suffix": "개인정보 — 통계 표 없음",
+      "dimension_pii_title": "개인정보 분류 기준은 통계 표로 만들지 않습니다",
+      "dimension_pii_description": "확장이 이 기준의 값을 개인정보로 표시했습니다. 값이 날짜별 통계에 영구히 남지 않도록 표를 만들지 않으며, 값은 방문 기록에만 남아 보존 기간이 지나거나 정보주체 삭제 요청 때 함께 지워집니다.",
+      "events_empty": "이벤트가 없습니다. 확장이 G7Core.analytics.trackEvent() 로 보낸 이름이 여기 쌓입니다."
+    },
+    "realtime": {
+      "title": "실시간",
+      "description": "지금 사이트를 보고 있는 방문자와 페이지.",
+      "count_label": "최근 {{minutes}}분",
+      "window_label": "창(분)",
+      "badge_ws": "실시간 연결됨",
+      "badge_polling": "{{seconds}}초마다 갱신",
+      "pages_title": "지금 보는 페이지",
+      "visitors_title": "최근 방문",
+      "empty": "최근 구간에 방문자가 없습니다",
+      "columns": {
+        "time": "시각",
+        "page": "페이지",
+        "country": "국가",
+        "device": "기기",
+        "type": "유형",
+        "visitor": "방문자"
+      }
+    },
+    "visitors": {
+      "title": "방문자",
+      "description": "사람 단위로 묶은 방문 기록. 한 사람을 고르면 활동 타임라인을 봅니다.",
+      "search_placeholder": "방문자 키·IP·회원 번호(#123 은 그 회원만) (Enter)",
+      "type_label": "유형",
+      "types": {
+        "all": "전체",
+        "guest": "게스트",
+        "member": "회원",
+        "admin": "관리자",
+        "bot": "봇"
+      },
+      "columns": {
+        "key": "방문자 키",
+        "member": "회원",
+        "type": "유형",
+        "visits": "방문",
+        "pageviews": "페이지뷰",
+        "last_visit": "마지막 방문",
+        "country": "국가",
+        "device": "기기"
+      },
+      "timeline_button": "타임라인",
+      "action": {
+        "view_member": "회원 정보 보기",
+        "search_by_member": "이 회원으로 검색"
+      }
+    },
+    "visitor_detail": {
+      "title": "방문자 상세",
+      "back": "목록으로",
+      "delete_button": "이 방문자 데이터 삭제",
+      "card": {
+        "title": "방문자",
+        "type": "유형",
+        "visits": "방문 수",
+        "country": "국가",
+        "device": "기기",
+        "browser": "브라우저 / OS",
+        "ip": "IP",
+        "first_visit": "첫 방문",
+        "last_visit": "마지막 방문",
+        "member": "회원",
+        "returning": "재방문",
+        "returning_yes": "다시 옴",
+        "returning_no": "첫 방문",
+        "ip_masked": "마스킹 {octets}옥텟",
+        "region": "지역",
+        "resolution": "해상도",
+        "browser_language": "브라우저 언어",
+        "locale": "사이트 언어"
+      },
+      "visit_info": {
+        "source": "기록 경로",
+        "source_beacon": "브라우저",
+        "source_server": "서버(스크립트 없음)",
+        "referrer": "유입",
+        "keyword": "유입 검색어",
+        "campaign": "캠페인",
+        "bounce": "이탈",
+        "bounce_yes": "한 페이지만 보고 떠남",
+        "bounce_no": "여러 페이지 봄",
+        "last_action": "마지막 활동"
+      },
+      "visits_title": "방문 이력",
+      "referrer_label": "유입 주소",
+      "visit_summary": "{{pages}}페이지 · {{minutes}}분 {{seconds}}초",
+      "conversions_badge": "{{count}}건",
+      "conversions_badge_label": "전환",
+      "conversions_title": "전환",
+      "timeline": {
+        "pageview": "페이지뷰",
+        "download": "다운로드",
+        "outlink": "외부 링크",
+        "event": "이벤트",
+        "goal": "전환",
+        "site_search": "검색",
+        "search_result_count": "결과 {{count}}건"
+      }
+    },
+    "bots": {
+      "title": "봇·크롤러",
+      "description": "검색엔진·크롤러가 얼마나, 어느 주소를 가져갔는지.",
+      "seo_cache_link": "SEO 캐시 설정",
+      "kpi": {
+        "hits": "봇 요청",
+        "names": "봇 종류"
+      },
+      "tabs": {
+        "bots": "봇",
+        "pages": "가져간 페이지"
+      },
+      "names_title": "봇별 집계",
+      "recent_title": "최근 요청",
+      "recent_hint": "고른 기간 안의 요청을 최근 순으로 50건까지 보여 줍니다.",
+      "columns": {
+        "bot": "봇",
+        "hits": "요청",
+        "url": "주소",
+        "cache_status": "캐시",
+        "time": "시각"
+      },
+      "cache_statuses": {
+        "hit": "캐시 사용",
+        "miss": "새로 만듦",
+        "bypass": "캐시 건너뜀",
+        "none": "캐시 없음"
+      }
+    },
+    "diagnostics": {
+      "declaration_warnings_title": "확장 선언 중 버려진 항목이 있습니다",
+      "declaration_warnings_description": "확장이 선언한 전환·분류 기준 중 형식이 맞지 않아 기록 대상에서 뺀 것과 그 사유입니다. 확장 개발자에게 전달하세요.",
+      "title": "수집 진단",
+      "description": "숫자가 늘지 않는 이유를 한 화면에서 찾습니다 — 수집·큐·집계·저장소.",
+      "cards": {
+        "collection": "수집",
+        "queue": "큐",
+        "archive": "집계",
+        "storage": "저장소"
+      },
+      "fields": {
+        "enabled_on": "켜짐",
+        "enabled_off": "꺼짐",
+        "anonymous_fallback": "익명 폴백",
+        "anonymous_for_unconsented": "미동의 방문자 익명",
+        "tracked_today": "오늘 방문자 {{count}}",
+        "last_tracked": "마지막 수집 {{at}}",
+        "queue_not_countable": "셀 수 없는 큐",
+        "pending_jobs": "대기 {{count}}건",
+        "failed_jobs": "실패 {{count}}건",
+        "backlogged": "적체",
+        "worker_hint": "대기 중인 작업이 남아 있습니다 — 집계·익명화는 워커(queue:work)가 있어야 돕니다. 방문 수집은 워커 없이도 기록됩니다.",
+        "last_hour_run": "시간 집계 {{at}}",
+        "last_day_run": "일 집계 {{at}}",
+        "lag_hours": "{{hours}}시간 지연",
+        "running": "실행 중 #{{id}}",
+        "visits_rows": "방문 {{count}}행",
+        "actions_rows": "액션 {{count}}행",
+        "storage_mb": "{{mb}} MB",
+        "over_limit": "경고 한계 초과",
+        "on": "켬",
+        "off": "끔",
+        "cloud_ranges": "클라우드 대역 차단",
+        "trusted_proxy_warning": "경고",
+        "scheduler_last_run": "스케줄러 마지막 실행 {{at}}",
+        "scheduler_missing": "스케줄러 미가동"
+      },
+      "progress_source": {
+        "ws": "진행률: 실시간",
+        "polling": "진행률: 폴링"
+      },
+      "exclusions_title": "오늘 제외 사유",
+      "exclusion_note": "캐시에 살아 캐시를 비우면 사라집니다",
+      "exclusion_columns": {
+        "reason": "사유",
+        "count": "건수"
+      },
+      "exclusions_empty": "오늘 제외된 요청이 없습니다",
+      "exclusion_reasons": {
+        "disabled": "수집 꺼짐",
+        "prefetch": "프리페치",
+        "dnt": "DNT",
+        "opt_out": "수집 제외",
+        "url_pattern": "URL 패턴",
+        "ip_rule": "IP 규칙",
+        "ua_rule": "UA 규칙",
+        "headless": "헤드리스",
+        "cloud_ip": "클라우드 IP",
+        "country": "국가 필터",
+        "bot": "봇",
+        "consent": "동의 없음",
+        "consent_revoked": "동의 철회"
+      },
+      "runs_title": "집계 실행 이력",
+      "run_columns": {
+        "type": "종류",
+        "period": "기간",
+        "status": "상태",
+        "progress": "진행률",
+        "processed": "처리 방문",
+        "trigger": "실행",
+        "started": "시작"
+      },
+      "run_types": {
+        "hour": "시간",
+        "day": "일",
+        "reaggregate": "재집계",
+        "anonymize": "익명화",
+        "purge": "전체 삭제",
+        "extension_purge": "확장 정리"
+      },
+      "run_triggers": {
+        "scheduled": "자동(예약)",
+        "manual": "수동",
+        "on_view": "화면 열 때"
+      },
+      "queue_connections": {
+        "sync": "즉시 실행(큐 없음)",
+        "database": "데이터베이스 큐",
+        "redis": "Redis 큐",
+        "sqs": "Amazon SQS 큐",
+        "beanstalkd": "Beanstalkd 큐"
+      },
+      "run_status": {
+        "running": "실행 중",
+        "success": "성공",
+        "failed": "실패",
+        "skipped": "건너뜀"
+      },
+      "buttons": {
+        "archive_hour": "지금 집계(시간)",
+        "finalize_yesterday": "어제 확정",
+        "reaggregate": "구간 재집계…"
+      },
+      "queued_toast": "재집계를 큐에 넘겼습니다. 이력에서 진행률을 확인하세요.",
+      "started_toast": "집계를 실행했습니다.",
+      "skipped_toast": "다른 집계가 도는 중이라 건너뛰었습니다.",
+      "failures_title": "최근 적재 실패",
+      "failures_24h": "최근 24시간 {{count}}건",
+      "failures_empty": "적재 실패가 없습니다",
+      "failure_columns": {
+        "time": "시각",
+        "reason": "사유",
+        "message": "메시지",
+        "url": "주소",
+        "ip": "IP",
+        "ip_masked": "IP (마스킹됨)"
+      },
+      "failure_reasons": {
+        "all": "전체 사유",
+        "validation": "형식 오류",
+        "max_actions": "액션 상한",
+        "db_error": "DB 오류",
+        "listener_exception": "리스너 예외",
+        "unknown_goal": "미등록 목표",
+        "unknown_dimension": "미등록 분류 기준"
+      }
+    },
+    "privacy_requests": {
+      "title": "정보주체 요청",
+      "description": "열람·삭제 요청을 받은 사람의 기록을 찾아 내보내거나 지웁니다.",
+      "anonymous_notice": "익명 모드로 모은 구간은 최근 이틀치만 IP 로 찾을 수 있습니다.",
+      "search": {
+        "subject_label": "찾을 기준",
+        "subject_ip": "IP 주소",
+        "subject_user": "회원 번호",
+        "subject_key": "방문자 키",
+        "value_label": "값",
+        "placeholder_ip": "203.0.113.9",
+        "placeholder_user": "회원 번호",
+        "placeholder_key": "방문자 키",
+        "period_label": "기간",
+        "button": "찾기"
+      },
+      "results_title": "찾은 기록",
+      "results_summary": "방문 {{visits}}건 · 액션 {{actions}}건",
+      "export_button": "JSON 내보내기",
+      "delete_button": "삭제",
+      "no_results": "조건에 맞는 기록이 없습니다",
+      "prompt_title": "찾을 사람을 지정하세요",
+      "prompt_description": "IP 주소, 회원 번호, 방문자 키 중 하나를 고르고 값을 넣은 뒤 찾기를 누르면 그 사람의 방문 기록이 여기에 나옵니다. 기간은 넣지 않아도 됩니다.",
+      "columns": {
+        "visit_at": "방문 시각",
+        "visitor_key": "방문자 키",
+        "ip": "IP",
+        "actions": "액션",
+        "ip_masked": "IP (마스킹됨)"
+      }
+    },
+    "settings": {
+      "title": "방문자 통계 설정",
+      "description": "수집·개인정보·봇·보존·리포트 설정. 저장하면 어느 탭이든 바꾼 값이 함께 반영됩니다.",
+      "tabs": {
+        "collection": "수집",
+        "privacy": "개인정보",
+        "bots": "봇·제외",
+        "retention": "보존·용량",
+        "reports": "리포트"
+      },
+      "saved": "설정을 저장했습니다.",
+      "save_error": "설정 저장에 실패했습니다.",
+      "validation_error": "입력값을 확인하세요",
+      "units": {
+        "minutes": "분",
+        "days": "일"
+      },
+      "collection": {
+        "enabled": "방문자 통계 수집",
+        "enabled_hint": "끄면 비콘은 204 로 받되 아무것도 기록하지 않습니다.",
+        "visit_timeout": "방문 만료",
+        "max_actions": "방문당 최대 액션",
+        "excluded_url_patterns": "제외 URL 패턴",
+        "excluded_url_patterns_placeholder": "/admin*",
+        "excluded_url_patterns_hint": "관리자 화면처럼 세지 않을 경로. 트래커도 같은 규칙으로 미리 거릅니다.",
+        "site_search": "내부 검색어 기록",
+        "site_search_hint": "검색 API 훅이 검색어와 결과 수를 기록합니다.",
+        "track_downloads": "내려받기 기록",
+        "track_outlinks": "외부 링크 클릭 기록",
+        "download_extensions": "내려받기로 볼 확장자",
+        "public_summary": "사용자 화면 방문자 카운터",
+        "public_summary_hint": "홈 하단 카운터가 읽는 공개 요약 API 를 켭니다."
+      },
+      "opt_out": {
+        "title": "내 방문은 세지 않기",
+        "hint": "이 브라우저의 방문을 통계에서 뺍니다 — 사이트를 손보는 동안 내 방문이 인기 페이지 1위가 되지 않게.",
+        "badge_on": "세는 중",
+        "badge_off": "제외됨",
+        "enable": "제외 켜기",
+        "disable": "제외 끄기"
+      },
+      "privacy": {
+        "consent_source_label": "동의 출처",
+        "consent_source_none": "없음",
+        "consent_source_needs_selection": "제공자 선택 필요",
+        "consent_source_choose": "개인정보 탭에서 고르기",
+        "mode_label": "개인정보 수준",
+        "modes": {
+          "full": {
+            "title": "전체 수집",
+            "description": "쿠키로 재방문을 알아보고 IP 를 마스킹해 저장합니다.",
+            "traits": "재방문 지표 ✅ · 쿠키 ✅ · IP 마스킹 저장"
+          },
+          "consent": {
+            "title": "동의 연동",
+            "description": "동의 관리 플러그인이 허락한 방문자만 쿠키·IP 를 씁니다.",
+            "traits": "재방문 지표 ✅(동의자) · 쿠키 동의 시 · IP 동의 시"
+          },
+          "anonymous": {
+            "title": "익명",
+            "description": "쿠키 없이 일자별 해시로만 묶고 IP 를 저장하지 않습니다.",
+            "traits": "재방문 지표 ❌ · 쿠키 ❌ · IP 미저장"
+          }
+        },
+        "respect_dnt": "DNT 존중",
+        "respect_dnt_hint": "브라우저의 추적 금지 신호를 받으면 세지 않습니다.",
+        "ip_mask_octets": "IP 마스킹",
+        "ip_mask": {
+          "0": "마스킹 없음",
+          "1": "마지막 1옥텟 (10.20.30.0)",
+          "2": "마지막 2옥텟 (10.20.0.0)",
+          "3": "마지막 3옥텟 (10.0.0.0)"
+        },
+        "ip_mask_hint": "마스킹이 없으면 도시까지 정확하고, 1옥텟은 도시가 대체로 유지됩니다. 2옥텟부터는 국가만 신뢰할 수 있고, 3옥텟은 국가도 부정확합니다.",
+        "anonymize_referrer": "유입 URL 익명화",
+        "referrer_modes": {
+          "none": "그대로",
+          "domain_only": "도메인만"
+        },
+        "visitor_cookie_days": "방문자 쿠키 유지",
+        "geo_before_mask": "마스킹 전에 지역 조회",
+        "geo_before_mask_hint": "마스킹 전 원 IP 로 지역을 구해 정확도를 지킵니다.",
+        "pseudonymize_user_id": "회원 번호 가명화",
+        "pseudonymize_user_id_hint": "회원 번호 대신 해시를 저장합니다.",
+        "consent_source_unknown": "확인 권한 없음"
+      },
+      "bots": {
+        "bot_detector_enabled": "SEO 봇 감지 사용",
+        "bot_detector_enabled_hint": "SEO 설정의 봇 판정을 함께 씁니다. 꺼도 통계 자체 분류기가 봇을 가립니다.",
+        "bot_tracking_enabled": "봇 요청 기록",
+        "bot_tracking_enabled_hint": "봇 방문을 사람과 따로 세어 봇 화면에 보여 줍니다.",
+        "block_headless": "자동화 브라우저 제외",
+        "exclude_prefetch": "프리페치 제외",
+        "exclude_prefetch_hint": "브라우저가 미리 가져온 요청은 실제 열람이 아닙니다.",
+        "excluded_ips": "제외 IP·대역",
+        "excluded_ips_hint": "CIDR 표기를 받습니다.",
+        "ip_allowlist": "허용 IP",
+        "ip_allowlist_hint": "여기 있는 주소는 다른 제외 규칙에 걸려도 셉니다.",
+        "excluded_user_agents": "제외 UA 문자열",
+        "block_cloud_ip_ranges": "클라우드 대역 차단",
+        "cloud_ranges_updated": "목록 갱신: {{at}}",
+        "cloud_ranges_refresh": "목록 갱신",
+        "country_filter_mode": "국가 필터",
+        "country_filter_modes": {
+          "none": "사용 안 함",
+          "include": "포함한 국가만",
+          "exclude": "지정 국가 제외"
+        },
+        "country_filter_geoip_hint": "GeoIP 를 켜야 국가 필터를 쓸 수 있습니다.",
+        "country_filter_codes": "국가 코드"
+      },
+      "retention": {
+        "retention_days": "원장 보존",
+        "retention_days_hint": "지난 방문·액션 원장을 지우는 기준. 일·월 집계는 영구 보존됩니다.",
+        "hourly_retention_days": "시간 집계 보존",
+        "bot_hits_retention_days": "봇 기록 보존(일)",
+        "failure_log_retention_days": "실패 로그 보존(일)",
+        "ledger_warning_actions": "액션 경고 행수",
+        "ledger_warning_visits": "방문 경고 행수",
+        "archive_chunk_size": "집계 청크(방문)",
+        "realtime_poll_seconds": "실시간 폴링(초)",
+        "realtime_window_minutes": "현재 접속자 창(분)",
+        "top_n": "상위 목록 건수",
+        "top_n_overview": "개요",
+        "top_n_dashboard": "대시보드",
+        "top_n_detail": "상세",
+        "top_n_hint": "개요 · 대시보드 · 상세 순서입니다.",
+        "storage_title": "저장소 현황",
+        "storage_unsupported": "이 데이터베이스 드라이버는 표 용량 통계를 제공하지 않습니다.",
+        "storage_permission_required": "저장소 현황은 방문자 통계 조회 권한이 있어야 보입니다.",
+        "storage_columns": {
+          "table": "표",
+          "rows": "행",
+          "size": "크기"
+        },
+        "purge_all": "모든 통계 데이터 삭제",
+        "archive_section": "집계",
+        "archive_on_view_enabled": "화면 열 때 집계",
+        "archive_on_view_enabled_hint": "화면을 열거나 새로고침할 때 1분 이상 지난 집계를 다시 계산합니다. 방문이 많은 사이트는 스케줄러(cron) 등록을 권장합니다.",
+        "archive_on_view_max_visits": "오늘 방문 상한",
+        "archive_on_view_max_visits_hint": "오늘 방문이 이 건수를 넘으면 화면을 열 때 집계하지 않습니다.",
+        "duration_bucket_bounds": "체류시간 구간 경계(초)",
+        "duration_bucket_bounds_hint": "초 단위 경계를 쉼표로 (기본 10,30,60,180,600,1800). 바꾸면 그 뒤 집계부터 적용되고, 지난 기간은 수집 진단의 구간 재집계로 다시 계산합니다.",
+        "pages_bucket_bounds": "본 페이지 수 구간 경계",
+        "pages_bucket_bounds_hint": "페이지 수 경계를 쉼표로 (기본 1,2,3,4,5,7,10,14,20). 바꾸면 그 뒤 집계부터 적용되고, 지난 기간은 수집 진단의 구간 재집계로 다시 계산합니다."
+      },
+      "reports": {
+        "weekly": "주간 리포트 메일",
+        "weekly_hint": "매주 월요일 08:00 에 admin 역할에게 보냅니다.",
+        "monthly": "월간 리포트 메일",
+        "monthly_hint": "매월 1일 08:00 에 admin 역할에게 보냅니다.",
+        "definitions_title": "알림 정의 상태",
+        "definitions_description": "리포트·경고 알림의 활성 여부와 채널. 문안 편집은 환경설정의 알림 정의 탭에서 합니다.",
+        "definition_inactive_alert": "리포트 메일은 켰는데 알림 정의가 꺼져 있어 메일이 가지 않습니다 — 아래에서 정의를 켜세요.",
+        "definitions_empty": "방문자 통계 알림 정의가 없습니다.",
+        "definitions_permission_required": "알림 정의는 알림 설정 권한이 있어야 보이고 바꿀 수 있습니다.",
+        "definition_active": "활성",
+        "definition_inactive": "비활성",
+        "edit_templates": "템플릿 편집",
+        "reset_button": "초기화",
+        "reset_confirm": "이 알림의 템플릿을 기본 문안으로 되돌릴까요?",
+        "reset_success": "템플릿을 초기화했습니다."
+      }
+    },
+    "modals": {
+      "retro": {
+        "title": "기존 데이터도 소급 적용할까요?",
+        "body": "방문 {{visits}}건·액션 {{actions}}건의 IP·유입 URL·회원 번호를 새 설정대로 바꿉니다. 되돌릴 수 없습니다.",
+        "hint": "집계 표는 건드리지 않습니다 — 개인을 가리키는 값이 없습니다.",
+        "confirm_label": "되돌릴 수 없음을 확인했습니다",
+        "apply": "소급 적용",
+        "skip": "건너뛰기",
+        "queued": "소급 익명화를 시작했습니다. 진행률은 수집 진단 화면의 이력에서 확인하세요."
+      },
+      "purge": {
+        "title": "모든 통계 데이터 삭제",
+        "body": "방문·액션 원장, 집계, 봇 기록, 실패 로그, 실행 이력, 솔트를 전부 지웁니다. 되돌릴 수 없습니다.",
+        "rows": "지금 방문 {{visits}}행 · 액션 {{actions}}행",
+        "confirm_label": "전부 삭제되며 되돌릴 수 없음을 확인했습니다",
+        "button": "전부 삭제",
+        "success": "모든 통계 데이터를 삭제했습니다."
+      },
+      "reaggregate": {
+        "title": "구간 재집계",
+        "hint": "원장 보존 기간이 지난 날은 건너뜁니다(집계는 그대로 남습니다). 몇 달치는 몇 분이 걸릴 수 있습니다.",
+        "from": "시작일",
+        "to": "종료일",
+        "force": "이미 확정된 날도 다시 집계",
+        "button": "재집계 시작"
+      },
+      "subject_delete": {
+        "title": "정보주체 기록 삭제",
+        "body": "찾은 방문의 액션·전환을 먼저 지우고 방문을 지웁니다. 집계는 그대로 두며 되돌릴 수 없습니다.",
+        "confirm_label": "되돌릴 수 없음을 확인했습니다",
+        "button": "삭제",
+        "success": "방문 {{visits}}건 · 액션 {{actions}}건을 삭제했습니다."
+      }
+    },
+    "dashboard_widget": {
+      "title": "방문자 통계",
+      "today": "오늘",
+      "yesterday": "어제",
+      "max": "최대",
+      "total": "전체",
+      "now": "지금 {{count}}명",
+      "detail": "자세히",
+      "collection_off": "수집 꺼짐",
+      "trend": "최근 7일 방문자"
+    },
+    "freshness": {
+      "scheduled": "마지막 집계 {{time}} · 매시 5분 자동 집계",
+      "on_view": "마지막 집계 {{time}} · 화면을 열거나 새로고침하면 1분 간격으로 다시 집계",
+      "plain_time": "마지막 집계 {{time}}",
+      "plain_date": "마지막 집계 {{month}}월 {{day}}일 {{time}}"
+    },
+    "row_trend": {
+      "open": "이 항목의 추이 보기",
+      "title": "{{label}} 추이",
+      "period": "{{from}} ~ {{to}}",
+      "unit_downgraded": "항목별 집계는 하루 단위라 시간 단위 대신 일 단위로 보여 줍니다.",
+      "empty": "이 기간에 기록이 없습니다.",
+      "error": "추이를 불러오지 못했습니다. 잠시 후 다시 열어 보세요."
+    }
+  },
   "modal_label": {
     "activity_log_list": {
       "delete_confirm_modal": "활동 로그 삭제 확인",
@@ -2803,15 +4116,13 @@
       "plugin_manifest_preview_drawer": "플러그인 매니페스트 미리보기"
     },
     "admin_settings": {
-      "modal_identity_message_definition_add": "본인인증 메시지 정의 추가",
-      "modal_identity_message_definition_delete": "본인인증 메시지 정의 삭제",
-      "modal_identity_message_definition_reset": "본인인증 메시지 기본값 복원",
-      "modal_identity_message_template_form": "본인인증 메시지 템플릿 편집",
-      "modal_identity_message_template_preview": "본인인증 메시지 템플릿 미리보기",
       "identity_policy_delete_modal": "본인인증 정책 삭제 확인",
       "identity_policy_form_modal": "본인인증 정책 편집",
-      "modal_mail_template_form": "메일 템플릿 편집",
+      "ip_restriction_rule_form_modal": "IP 접근 제한 규칙 편집",
+      "modal_notification_channel_off_confirm": "메일 채널 끄기 확인",
       "modal_notification_definition_reset": "알림 정의 기본값 복원",
+      "modal_notification_identity_definition_add": "본인인증 정책별 문구 추가",
+      "modal_notification_identity_definition_delete": "본인인증 정책별 문구 삭제",
       "modal_notification_template_form": "알림 템플릿 편집",
       "modal_notification_template_preview": "알림 템플릿 미리보기",
       "settings_cache_delete_modal": "캐시 삭제 확인",
@@ -2835,6 +4146,10 @@
       "template_update_modal": "템플릿 업데이트",
       "template_manifest_preview_drawer": "템플릿 매니페스트 미리보기"
     },
+    "member_notification_list": {
+      "delete_confirm_modal": "회원 알림 삭제 확인",
+      "bulk_delete_confirm_modal": "회원 알림 일괄 삭제 확인"
+    },
     "notification_log_list": {
       "delete_confirm_modal": "알림 로그 삭제 확인",
       "bulk_delete_confirm_modal": "알림 로그 일괄 삭제 확인"
@@ -2845,7 +4160,8 @@
       "delete_confirm_modal": "회원 삭제 확인",
       "error_modal": "오류 안내",
       "bulk_block_confirm_modal": "회원 일괄 차단",
-      "bulk_withdraw_confirm_modal": "회원 일괄 탈퇴"
+      "bulk_withdraw_confirm_modal": "회원 일괄 탈퇴",
+      "bulk_roles_modal": "회원 역할 일괄 변경"
     },
     "admin_identity_logs": {
       "identity_log_detail_modal": "본인인증 로그 상세",
@@ -2876,15 +4192,25 @@
     },
     "identity_challenge_modal": "본인인증",
     "admin_menu_list": {
-      "delete_confirm_modal": "메뉴 삭제 확인"
+      "delete_confirm_modal": "메뉴 삭제 확인",
+      "bulk_roles_confirm_modal": "메뉴 역할 일괄 적용 확인"
     },
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "미리보기 레이아웃 선택",
       "extension_version_history_modal": "확장 버전 이력",
-      "version_history_modal": "레이아웃 버전 이력"
+      "version_history_modal": "레이아웃 버전 이력",
+      "file_form_modal": "파일 이름 입력 창",
+      "file_delete_modal": "파일 삭제 확인 창"
     },
     "changelog_modal": "코어 변경 이력",
     "license_modal": "코어 라이선스",
-    "notification_delete_all_confirm_modal": "알림 전체 삭제 확인"
+    "notification_delete_all_confirm_modal": "알림 전체 삭제 확인",
+    "analytics": {
+      "retro_anonymize_modal": "소급 익명화 확인",
+      "purge_all_modal": "모든 통계 데이터 삭제 확인",
+      "reaggregate_modal": "구간 재집계",
+      "subject_delete_modal": "정보주체 기록 삭제 확인",
+      "row_trend_modal": "항목 추이"
+    }
   }
 }

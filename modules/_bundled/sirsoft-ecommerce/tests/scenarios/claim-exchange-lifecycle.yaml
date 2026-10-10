@@ -1,0 +1,216 @@
+feature: claim_exchange_lifecycle
+
+description: |
+  교환 신청서의 금액 구성과 그 뒤의 생애 — 차액 3분기 · 청구 방식 · 추가옵션 (#599 S15a)
+
+  계획서 §9-1 이 이름으로 선언해 두고 14 세션 동안 만들어지지 않았던 도메인 조합축이다.
+  화면 단위 매니페스트(`user-claim-exchange-apply` · `admin-claim-detail` 등)는 "이 화면이
+  무엇을 그리는가" 를 재고, 이 매니페스트는 **서비스가 어떤 금액을 동결하는가**를 잰다.
+
+  조용히 갈리는 지점은 넷이다.
+
+  ① **차액은 상품별로 남기되 청구는 합계로 상계한다**(D29). 고가·저가가 섞인 신청서에서
+     상품별 음수 차액만 더해 환불하면, 구매자는 이미 상계된 순액을 청구받았는데 상계로 사라진
+     양수 차액만큼 더 나간다. 그래서 신청 시점에 **순액을 동결**하고 완료 때 그 값까지만
+     접수한다 — 음수 차액의 합이 아니다.
+
+  ② **청구 방식은 차액이 아니라 총 청구액이 정한다.** 동가 교환이어도 왕복 배송비가 남으면
+     방식을 골라야 하고, 저가 교환이어도 배송비를 별도 결제로 낼 수 있다. 반대로 총 청구액이
+     0 이 되면 고른 방식은 지워진다. 두 값을 하나로 보면 "동가면 청구 없음" 같은 규칙이
+     생겨나는데 그것은 배송비를 0 으로 두는 상점에서만 맞는 말이다.
+
+  ③ **환불금 차감은 돌려줄 차액이 회수비를 덮어야 성립한다.** 고가·동가 교환은 환불이 0 이라
+     뺄 곳이 없고, 저가 교환도 차액이 배송비보다 작으면 성립하지 않는다. 혼합 신청서는
+     **상계 후 순액**이 판정 기준이다 — 음수 차액 합으로 판정하면 통과한 신청서가 완료 때
+     `claim_refund_not_applicable` 로 막힌다.
+
+  ④ **추가옵션은 옵션 차액과 같은 식에 들어간다**(D6 — `(옵션가 + 추가옵션 단위합계) × 수량`).
+     교환 차액이 이 항을 빠뜨리면 구매자가 3,000원짜리 선물 포장을 새로 골라도 상점은 0원을
+     청구하고, 반대로 원 주문에 있던 유료 추가옵션을 교환에서 빼면 그만큼이 돌아가지 않는다.
+     이름과 금액은 신청 시점에 동결해야 하며, 남기지 않으면 신청 후 화면에 추가옵션이 아예
+     나오지 않는다(선택 ID 만으로는 이름을 복원할 수 없다).
+
+# axis 의미:
+#   price_delta        — 옵션 차액 3분기(동가·고가·저가)와 한 신청서 안에서 둘이 섞이는 네 번째
+#                        경우. `mixed` 는 값이 아니라 **상계 규칙**이 발화하는 자리라 별도 값이다.
+#   charge_method      — 청구 방식. `none` 은 "청구액이 0 이라 방식을 고르지 않는다" 는 뜻이다.
+#                        `pay_on_approval` 은 금액 구성이 신청 시점 결제와 같고 **결제 행이 언제
+#                        생기는가**만 다르지만, 그 시점 차이가 신청서의 상태(접수 직후 결제대기로
+#                        가는가, 신청 그대로 남는가)를 가르므로 이 축의 값으로 센다. 결제 행의
+#                        생애(승인·실패·환급)는 `claim-additional-payment.yaml` 의 `timing` 이 잇는다.
+#   additional_options — 2026-09-01 전수조사가 §8-3 에 신설한 축(교환 추가옵션). `unchanged` 는
+#                        원 주문 그대로, `picked` 는 새로 고름(+), `dropped` 는 원래 있던 유료
+#                        옵션을 빼서 돌려받음(−), `foreign` 은 남의 상품 선택지를 보낸 경우(0)다.
+#
+# 귀책(`fault`)은 이 매니페스트의 축이 아니다 — 교환에서 귀책이 정하는 것은 왕복 배송비가
+# 청구되는가 하나뿐이고, 그 판정은 `claim-shipping-fee-calculation.yaml` 이 부과정책 6종과의
+# 곱으로 이미 전수한다. 여기서는 "판매자 귀책이면 차액만 남는다" 를 이름 붙은 effect 로 고정한다.
+axes:
+  price_delta: [equal, higher, lower, mixed]
+  charge_method: [pay_on_request, pay_on_approval, deduct_from_refund, none]
+  additional_options: [unchanged, picked, dropped, foreign]
+
+exclusions:
+  - { price_delta: higher, charge_method: none, reason: "고가 교환은 언제나 양수 청구를 남긴다 — 방식 없이 접수하면 서비스가 claim_charge_method_required 로 거절하므로 신청서가 만들어지지 않는다" }
+  - { additional_options: [picked, dropped, foreign], price_delta: [higher, lower, mixed], reason: "추가옵션 항은 옵션 차액과 곱해지지 않는다 — 서비스가 (신규 옵션가 + 새 추가옵션 합계) − (원 옵션가 + 원 추가옵션 합계) 를 한 번에 내므로 차액 3분기마다 판정이 갈리지 않는다. 동가 교환에서 그 항만 남겨야 금액을 만든 것이 추가옵션인지 옵션 차액인지 구분된다" }
+  - { additional_options: picked, charge_method: [deduct_from_refund, none], reason: "새로 고른 유료 추가옵션은 언제나 추가 청구를 만든다 — 돌려줄 차액이 없어 환불금 차감이 성립하지 않고, 청구가 0 인 상태도 아니다. 받는 시점 두 가지(신청·승인)는 남긴다" }
+  - { additional_options: [dropped, foreign], charge_method: [pay_on_request, pay_on_approval, deduct_from_refund], reason: "원 추가옵션을 빼면 환불 차액만 남고 남의 상품 선택지는 금액을 만들지 않는다 — 두 경우 모두 청구액이 0 이라 방식을 고르지 않는다" }
+
+effects:
+  # 차액 3분기와 상계 (D4 · D29)
+  - exchange_same_product_request_has_zero_difference
+  - exchange_higher_priced_option_charges_the_difference
+  - exchange_lower_priced_option_freezes_a_refundable_difference
+  - exchange_mixed_items_are_netted_into_one_charge
+  - exchange_mixed_net_refund_is_frozen_at_request_time
+  - exchange_new_option_must_belong_to_the_same_product
+  - exchange_new_option_without_stock_is_rejected
+  - exchange_same_option_is_rejected_when_inactive    # 동일옵션 경로도 판매중지 옵션을 거절한다
+  - exchange_new_option_must_be_purchasable_now       # 지금 살 수 없는 상품(품절·판매중지·출시예정·미노출·등급제한)은 교환 대상이 못 된다
+  # 배송비 · 청구 방식
+  - exchange_round_trip_fee_and_total_charge_are_frozen
+  - exchange_seller_fault_charges_only_the_difference
+  - exchange_charge_method_is_required_when_a_charge_remains
+  - exchange_charge_method_is_cleared_when_nothing_is_charged
+  - exchange_charge_method_outside_the_allowed_list_is_rejected
+  - exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
+  - exchange_deduct_from_refund_requires_a_covering_refundable_difference
+  - exchange_multi_currency_amounts_come_from_the_order_snapshot
+  - exchange_preview_matches_the_requested_amounts
+  # 추가옵션 (§8-3 신설 축 — D6 · D12)
+  - exchange_additional_options_picked_are_charged
+  - exchange_additional_options_dropped_are_returned
+  - exchange_additional_option_names_and_prices_are_frozen
+  - exchange_additional_options_of_another_product_are_ignored
+  - exchange_preview_and_request_charge_the_same_additional_options
+  # 신청 자격 · 신청자 · 재발송지
+  # 비회원 판정은 주문의 주인(`order.user_id`)이 정한다 — `requested_by` 가 아니다.
+  # 옛 이름(`exchange_guest_request_has_no_requester`)은 "신청자 칸이 비면 비회원" 을 뜻했는데,
+  # 그 칸은 운영자 대리 접수·시스템 자동 처리도 비운다(§4-3-1). 2026-09-12 실측에서 회원 주문의
+  # 운영자 접수 건이 「비회원」으로 표시돼 확정한 이름이다.
+  - exchange_guest_flag_reads_the_order_owner
+  - exchange_request_period_is_measured_from_delivery
+  - exchange_redelivery_address_defaults_to_the_order_shipping_address
+  - exchange_redelivery_address_must_stay_in_the_same_country
+  - exchange_redelivery_address_keeps_the_international_city_and_state # 해외 주문 재발송지의 도시·주 (S2-D8)
+  - exchange_auto_approval_needs_a_zero_charge
+  - exchanged_source_row_is_not_counted_twice_in_the_comparison_quantity # 교환완료 원 행은 비교 카드 상품수량에서 빠진다(S3-D16)
+
+  # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결 (#599 후속 B1·B2)
+  - exchange_preview_two_pass_keeps_refund_math
+  # S3-D3 재정의(2026-09-17 실측 주문 1497): 저가 옵션 교환 완료 뒤 후속 행 취소 환불액이 승계 단가로 나와
+  # 차액이 두 번 나갔다. 재계산에서만 후속 행을 신규 옵션 단가로 본다 — 다른 상품 취소는 종전과 같고,
+  # 차액이 돌아가지 않은 교환(접수하지 않음)은 승계 단가 그대로다.
+  - exchanged_successor_row_refunds_at_new_option_price
+  - exchanged_successor_pricing_keeps_other_item_refunds
+  - exchanged_successor_pricing_requires_a_refunded_difference
+  - exchange_request_freezes_calculation_snapshots
+  - exchange_substitution_inherits_shipping_policy_and_coupons
+  # #599 후속 D13 — 차액 환불완료 시 취소신청서가 생긴다
+  - exchange_refund_completion_records_a_cancellation
+  - exchange_refund_option_rows_announce_their_creation   # 그 취소신청서의 옵션 행도 함께 선언된다
+  # 클레임 공용 어휘 (ClaimEnumsTest) — 교환·반품 도입이 공용 Enum 에 더한 유형·값·라벨
+  - claim_type_covers_exchange_return_refund_cancel
+  - claim_type_attachable_excludes_cancel
+  - claim_shipping_fee_mode_is_fixed_or_original_policy
+  - claim_enum_labels_are_all_translated
+  - claim_reason_type_gains_exchange_and_return
+  - sequence_type_gains_claim_numbers_with_prefixes
+  - sequence_type_every_case_has_a_default_config
+  - adjustment_type_gains_exchange_and_return
+
+sub_flows:
+  - id: transition_gate
+    description: |
+      상태 전이 — 정상 13단계 · 철회 · 반려 · 보류 해제. 완료는 전이로 도달할 수 없고
+      완료 처리(D26)만이 옮긴다. 상품 단위 전이는 전 항목이 같은 상태일 때만 헤더를 옮긴다.
+    effects:
+      - exchange_transition_follows_the_status_gate
+      - exchange_logistics_stages_can_be_skipped_forward     # 회수·재발송 단계 앞 건너뛰기 (#599 후속)
+      - exchange_approval_and_redelivery_order_are_not_skipped
+      - tracking_save_does_not_move_the_status
+      - exchange_completion_is_not_reachable_by_a_plain_transition
+      - exchange_on_hold_is_stamped_and_released_through_the_gate
+      - exchange_withdraw_reverts_the_order_option
+      - exchange_withdraw_is_blocked_after_approval
+      - exchange_reject_reverts_each_item_to_its_own_original_status
+      - exchange_item_level_transition_moves_the_header_only_when_items_agree
+      # 상태 어휘·전이표 (ClaimEnumsTest — Enum 단위로 게이트 자체를 고정한다)
+      - exchange_status_vocabulary_has_fourteen_cases
+      - exchange_status_final_statuses_are_completed_rejected_withdrawn
+      - exchange_status_withdrawable_only_before_approval
+      - exchange_status_forward_transitions_follow_the_lifecycle
+      - exchange_payment_pending_keeps_its_exits
+      - exchange_on_hold_can_be_approved_or_rejected
+      - exchange_approved_cannot_be_rejected
+      - exchange_status_transition_table_is_pinned_row_by_row
+      - exchange_terminal_states_have_no_transitions
+      - exchange_self_transition_is_a_noop
+      - exchange_withdraw_gate_matches_is_withdrawable
+      - exchange_status_labels_are_type_prefixed_and_translated
+
+  - id: stock_and_redelivery
+    description: |
+      재고는 승인 시점에 **신규 옵션**에서 차감되고, 원 옵션 재고는 완료 시점에 운영자가
+      체크한 상품만 복원된다. 재발송 송장 등록이 후속 주문옵션 행을 만든다.
+    effects:
+      - exchange_approval_deducts_the_new_option_stock
+      - exchange_approval_fails_when_the_new_option_ran_out
+      - exchange_completion_restores_original_stock_only_for_checked_items
+      - exchange_redelivery_tracking_creates_the_successor_option
+      - exchange_redelivery_arrival_keeps_a_successor_the_buyer_confirmed   # 발송중 교환품을 먼저 구매확정해도 도착·완료가 막히지 않는다
+      - exchange_completion_keeps_the_earned_mileage   # 확정된 적립은 교환완료로도 회수하지 않는다
+
+  - id: completion_refund
+    description: |
+      저가 교환의 환불은 완료 처리에서 **접수를 고를 때만** 만들어진다(D26). 왕복 배송비는
+      신청서 전체에서 한 번만 빠지고, 차액은 주문이 실제로 낸 수단 비율로 나뉜다.
+    effects:
+      - exchange_completion_refund_is_filed_only_when_asked
+      - exchange_round_trip_fee_is_deducted_once_across_refund_rounds
+      - exchange_refund_request_splits_by_what_the_order_paid
+
+  - id: update_request
+    description: 승인 전까지의 신청서 수정 — 사유가 바뀌면 배송비를 다시 계산한다.
+    effects:
+      - exchange_update_request_recalculates_the_fee_when_the_reason_changes
+      - exchange_update_request_is_blocked_after_approval
+
+  - id: partial_rejection_reprice
+    description: |
+      상품 단위 반려·철회 뒤 청구 재산정(S5) — 차액은 살아 있는 상품으로 다시 나누고, 결제 대기 건·
+      기수납액이 그 값에 맞춰진다. 반려된 상품의 차액까지 고객이 결제하던 결함.
+    effects:
+      - exchange_partial_rejection_reprices_the_charge_for_living_items
+
+  # ── 아래는 `sub_flows` 리스트에 문자열로 놓여 있던 잔여 항목이다. 그 자리는 YAML 상
+  #    「하위 흐름 하나」의 자리라 커버리지 규칙이 **선언으로 세지 않았고**, 그래서 테스트가
+  #    쓰던 이름들이 「소유 매니페스트에 없다」로 잡혔다. 실제로 테스트가 쓰는 것은 위
+  #    `effects:` 로 올렸고(2026-09-23), 여기에는 **아직 어느 테스트도 검증하지 않는** 것만
+  #    남긴다 — 올리면 그 자리에서 미검증으로 잡히므로, 테스트가 생길 때 함께 올린다.
+  #    (#599 후속 D13 활동로그 축 — 교환 완료 → 차액 환불 → 취소신청서)
+  - exchanged_items_keep_the_exchanged_status           # 상품 상태는 `exchanged` 를 유지한다
+  - exchange_originated_refund_fires_the_requested_hook # 교환 차액 환불신청서도 접수 훅을 쏜다 (B8)
+  - exchange_header_transition_logs_item_transitions    # 헤더 전이가 끌고 간 상품 전이 (C1)
+  - exchange_partial_completion_logs_item_transitions   # 부분 완료 라운드도 남는다 (C3)
+  - exchange_redelivery_new_option_is_logged            # 재발송 신규 주문상품 (A6)
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderExchangeServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/CalculationSnapshotPresenterTest.php
+
+notes: |
+  **선언이 만든 칸 넷은 이 세션이 채웠다.** 착수 시점 `OrderExchangeServiceTest` 는 123케이스로
+  차액 3분기와 청구 방식 각각을 이미 덮고 있었으나, 둘을 나란히 놓은 표에서는 네 칸이 비어
+  있었다 — 동가 × 신청시점결제 / 동가 × 환불금차감 / 저가 × 신청시점결제 / 상계 × 환불금차감.
+  넷 다 서비스가 실제로 처리하는 조합이고, 그중 셋은 배송비가 0 이 아닌 상점에서만 나타난다
+  (기존 테스트가 대부분 배송비 0 인 기본 정책을 썼기 때문에 보이지 않았다).
+
+  **`pay_on_approval` 은 2026-09-02 확정으로 축이 됐다.** 처음에는 금액 구성이 신청 시점
+  결제와 같다는 이유로 축에서 뺐으나, 그 시점 차이는 신청서가 접수 직후 어떤 상태로 남는지를
+  가른다 — 승인 시점 결제는 결제 행을 만들지 않아 신청 상태 그대로이고, 신청 시점 결제는
+  결제대기로 옮겨 간다. 착수 시점 `OrderExchangeServiceTest` 123케이스에는 이 열이 통째로
+  없었다(반품에만 있었다). 다섯 칸 전부 이 세션이 새로 썼다. 결제 행의 생애(승인·실패·환급)는
+  여전히 `claim-additional-payment.yaml` 의 `timing` 이 소유한다 — 두 매니페스트가 같은 규칙을
+  각각 곱으로 세우지 않는다.

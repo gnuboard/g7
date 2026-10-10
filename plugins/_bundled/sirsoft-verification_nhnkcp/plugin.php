@@ -8,6 +8,7 @@ use Plugins\Sirsoft\VerificationNhnkcp\Listeners\AssertNoDuplicateKcpIdentity;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CompleteKcpRecordAfterRegister;
+use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ProvideNecessaryStorageKeysListener;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\RegisterKcpProviderListener;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ValidateKcpSettingsListener;
 
@@ -156,6 +157,7 @@ class Plugin extends AbstractPlugin
             CleanKcpRecordOnUserDelete::class,
             AssertNoDuplicateKcpIdentity::class,
             ValidateKcpSettingsListener::class,
+            ProvideNecessaryStorageKeysListener::class,
         ];
     }
 

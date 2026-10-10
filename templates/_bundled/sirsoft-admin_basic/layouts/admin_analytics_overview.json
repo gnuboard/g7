@@ -1,0 +1,1008 @@
+{
+    "comment": "방문자 통계 첫 화면. 개요 한 응답(`analytics_overview`)이 KPI·추이·품질 지표·상위 목록을 한꺼번에\n  싣고, 실시간 한 줄은 별도 소스(`analytics_realtime`)를 설정된 주기로 폴링해 채운다. 상단 경고와 큐 적체는\n  진단 소스(`analytics_status`)를 `background` 로 받아 첫 그림을 늦추지 않는다.\n  기간·단위·제외는 전부 질의 키라 「더보기」로 다른 통계 화면에 가도 같은 기간이 따라간다(`mergeQuery`).\n  폴링 타이머 id 는 이 화면만의 `analytics_overview_realtime` 이다 — 같은 id 는 교체되므로 재진입해도 두 개가\n  돌지 않고, 실시간 화면과 id 를 나눠 써야 화면을 옮길 때 떠나는 화면의 정리가 새 화면의 타이머를 끄지 않는다.",
+    "version": "1.0.0",
+    "layout_name": "admin_analytics_overview",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.analytics.overview.title"
+    },
+    "data_sources": [
+        {
+            "id": "analytics_overview",
+            "label_key": "$t:editor.data_source.analytics_overview",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/overview",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "unit": "{{query.unit}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}"
+            },
+            "fallback": {
+                "unavailable": true,
+                "data": {
+                    "kpi": {
+                        "today": 0,
+                        "yesterday": 0,
+                        "max": {
+                            "value": 0,
+                            "date": null
+                        },
+                        "total": 0,
+                        "change_pct": null
+                    },
+                    "series": {
+                        "unit": "day",
+                        "unit_downgraded": false,
+                        "points": []
+                    },
+                    "top": {
+                        "pages": [],
+                        "referrers": [],
+                        "countries": []
+                    },
+                    "realtime": {
+                        "count": 0,
+                        "visitors": []
+                    },
+                    "meta": {
+                        "collection_enabled": true,
+                        "mode": "full",
+                        "consent_source": "none",
+                        "geoip_enabled": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "개요 한 장 — KPI 4·시계열·상위 3열·실시간 스냅샷·수집 메타. 403 은 빈 카드 대신 에러 화면. 그 밖의 실패는\n    엔진이 fallback 을 채우는데, 그 안의 `unavailable` 표식을 보고 본문 대신 오류 카드를 띄운다 — 0 과\n    「선택 기간에 기록이 없습니다」로 그리면 서버 실패가 빈 기간처럼 보인다. 실제 응답에는 이 키가 없다.\n    기간 한도(366일) 초과는 기간 바가 원인을 알리므로 이 카드를 겹쳐 띄우지 않는다."
+        },
+        {
+            "id": "analytics_realtime",
+            "label_key": "$t:editor.data_source.analytics_realtime",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/realtime",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "count": 0,
+                    "visitors": []
+                }
+            },
+            "errorHandling": {
+                "comment": "보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_overview`)가\n         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다.\n         30초마다 다시 부르므로 삼키지 않으면 폴링마다 토스트가 쌓인다.",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "현재 접속자. 원장을 직접 읽으므로 가볍고, 설정된 주기(기본 30초)로 아래 init 타이머가 다시 부른다."
+        },
+        {
+            "id": "analytics_status",
+            "label_key": "$t:editor.data_source.analytics_status",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "collection": {
+                        "enabled": true
+                    },
+                    "queue": {
+                        "backlogged": false,
+                        "pending_jobs": 0
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를\n         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을\n         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2).",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "수집·큐 상태. 상단 경고 세 줄이 읽는다 — 첫 그림에 필수가 아니라 background 다."
+        }
+    ],
+    "initLocal": {
+        "periodPath": "/admin/analytics",
+        "periodSource": "analytics_overview",
+        "showUnit": true,
+        "openTop": {
+            "pages": true,
+            "referrers": false,
+            "countries": false
+        }
+    },
+    "computed": {
+        "csvUrl": "{{'/api/admin/analytics/series?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.unit ? '&unit=' + query.unit : '') + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('')}}",
+        "csvFilename": "{{'analytics-series-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
+        "periodFrom": "{{query.from || analytics_overview?.data?.meta?.from || _local.periodComputed?.from || ''}}",
+        "periodTo": "{{query.to || query.from || analytics_overview?.data?.meta?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_overview?.data?.freshness ?? null}}"
+    },
+    "permissions": [
+        "core.analytics.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "analytics_overview"
+        ]
+    },
+    "init_actions": [
+        {
+            "comment": "질의 → 기간 바 재수화. 프리셋이면 그 프리셋의 날짜 범위를 계산해 달력 두 칸에 보여 준다(resultTo).",
+            "handler": "setAnalyticsPeriod",
+            "params": {
+                "preset": "{{query.preset || '7d'}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "periodComputed"
+            }
+        },
+        {
+            "comment": "실시간 줄 폴링. 주기는 설정값(초)이다. 같은 id 로 재등록되므로 재진입에도 타이머는 하나다.",
+            "handler": "startInterval",
+            "params": {
+                "id": "analytics_overview_realtime",
+                "intervalMs": "{{Math.max(10, Number(_global.settings?.analytics?.realtime_poll_seconds ?? 30)) * 1000}}",
+                "actions": [
+                    {
+                        "handler": "refetchDataSource",
+                        "params": {
+                            "dataSourceId": "analytics_realtime"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "analytics_overview_content",
+                "type": "basic",
+                "name": "Div",
+                "lifecycle": {
+                    "onUnmount": [
+                        {
+                            "comment": "화면을 떠나면 폴링을 멈춘다 — 다른 화면에서 실시간 요청이 계속 나가면 안 된다.",
+                            "handler": "stopInterval",
+                            "params": {
+                                "id": "analytics_overview_realtime"
+                            }
+                        }
+                    ]
+                },
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.analytics.overview.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:admin.analytics.overview.description"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_status_alerts.json"
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_period_bar.json"
+                    },
+                    {
+                        "id": "overview_load_failed",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{analytics_overview?.unavailable === true && !(!!query.from && Math.round((Date.parse(query.to || query.from) - Date.parse(query.from)) / 86400000) + 1 > 366)}}",
+                        "props": {
+                            "className": "alert-danger mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-error-soft flex-1"
+                                        },
+                                        "text": "$t:admin.analytics.alerts.load_failed"
+                                    },
+                                    {
+                                        "id": "overview_retry_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "analytics_overview"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "text-sm font-medium underline text-red-800 dark:text-red-200"
+                                        },
+                                        "text": "$t:admin.analytics.alerts.load_failed_retry"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "unit_downgraded_alert",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{analytics_overview?.data?.series?.unit_downgraded === true}}",
+                        "props": {
+                            "className": "alert-info mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "circle-info",
+                                            "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-info-soft"
+                                        },
+                                        "text": "$t:admin.analytics.alerts.unit_downgraded"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_realtime_bar.json"
+                    },
+                    {
+                        "id": "kpi_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{analytics_overview?.unavailable !== true}}",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_overview"
+                        },
+                        "props": {
+                            "className": "mb-2"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_analytics/_partial_kpi_row.json"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "trend_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{analytics_overview?.unavailable !== true}}",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_overview"
+                        },
+                        "props": {
+                            "className": "admin-card mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-between mb-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.analytics.overview.trend_title"
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "props": {
+                                            "color": "gray",
+                                            "size": "sm",
+                                            "text": "{{$t('admin.analytics.period.units.' + (analytics_overview?.data?.series?.unit ?? 'day'))}}"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "모바일은 220, 그 위로는 260 — 계획서 §4.11 와이어프레임의 높이다. 차트는 감싸개를 채운다.",
+                                "id": "trend_chart_frame",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "h-[220px] sm:h-[260px]"
+                                },
+                                "children": [
+                                    {
+                                        "id": "trend_chart",
+                                        "type": "composite",
+                                        "name": "LineChart",
+                                        "if": "{{(analytics_overview?.data?.series?.points ?? []).length > 0}}",
+                                        "props": {
+                                            "labels": "{{(analytics_overview?.data?.series?.points ?? []).map(p => String(p.ts ?? '').replace('T', ' ').slice(5, 16))}}",
+                                            "datasets": "{{[{label: $t('admin.analytics.common.visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}, {label: $t('admin.analytics.common.visits'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visits ?? 0), color: '#0EA5E9'}, {label: $t('admin.analytics.common.pageviews'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.pageviews ?? 0), color: '#F59E0B'}, {label: $t('admin.analytics.overview.new_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.new_visitors ?? 0), color: '#10B981'}, {label: $t('admin.analytics.overview.returning_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.returning_visitors ?? 0), color: '#F43F5E'}]}}",
+                                            "height": "100%",
+                                            "showLegend": true,
+                                            "showYGrid": true,
+                                            "showYAxis": true
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "trend_empty",
+                                "type": "composite",
+                                "name": "EmptyState",
+                                "if": "{{!analytics_overview?.loading && (analytics_overview?.data?.series?.points ?? []).length === 0}}",
+                                "props": {
+                                    "iconName": "chart-line",
+                                    "title": "$t:admin.analytics.common.empty_title",
+                                    "description": "$t:admin.analytics.common.empty_description",
+                                    "className": "py-8"
+                                }
+                            },
+                            {
+                                "comment": "방문자 키가 일자마다 바뀌므로(config_id) 여러 날에 걸친 진짜 순방문자는 원리적으로 셀 수\n             없다. 기간을 넓히면 같은 사람이 날마다 다시 세어진다 — 그 정의를 화면에 밝힌다(계획서 D11).",
+                                "id": "visitors_daily_sum_note",
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-label-subtle mt-3"
+                                },
+                                "text": "$t:admin.analytics.overview.visitors_daily_sum_note"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "quality_row",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{analytics_overview?.unavailable !== true}}",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_overview"
+                        },
+                        "props": {
+                            "className": "grid grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "quality_bounce",
+                                "type": "composite",
+                                "name": "StatCard",
+                                "props": {
+                                    "value": "{{(function(pts) { const v = pts.reduce((s, p) => s + (p.visits ?? 0), 0); const b = pts.reduce((s, p) => s + (p.bounces ?? 0), 0); return v > 0 ? (Math.round(b / v * 1000) / 10) + '%' : '0%'; })(analytics_overview?.data?.series?.points ?? [])}}",
+                                    "label": "$t:admin.analytics.overview.quality.bounce_rate",
+                                    "iconName": "arrow-right-from-bracket"
+                                }
+                            },
+                            {
+                                "id": "quality_time",
+                                "type": "composite",
+                                "name": "StatCard",
+                                "props": {
+                                    "value": "{{(function(pts) { const v = pts.reduce((s, p) => s + (p.visits ?? 0), 0); const t = pts.reduce((s, p) => s + ((p.avg_time ?? 0) * (p.visits ?? 0)), 0); const avg = v > 0 ? Math.round(t / v) : 0; return Math.floor(avg / 60) + ':' + String(avg % 60).padStart(2, '0'); })(analytics_overview?.data?.series?.points ?? [])}}",
+                                    "label": "$t:admin.analytics.overview.quality.avg_time",
+                                    "iconName": "clock"
+                                }
+                            },
+                            {
+                                "id": "quality_pages",
+                                "type": "composite",
+                                "name": "StatCard",
+                                "props": {
+                                    "value": "{{(function(pts) { const v = pts.reduce((s, p) => s + (p.visits ?? 0), 0); const pv = pts.reduce((s, p) => s + (p.pageviews ?? 0), 0); return v > 0 ? (Math.round(pv / v * 10) / 10) : 0; })(analytics_overview?.data?.series?.points ?? [])}}",
+                                    "label": "$t:admin.analytics.overview.quality.pages_per_visit",
+                                    "iconName": "file-lines"
+                                }
+                            },
+                            {
+                                "comment": "신규·재방문 — 선택 기간 점의 합. 익명 모드처럼 쿠키가 없어 가를 수 없는 칸은 서버가 null 로 주고, 기간 전체가\n          null 이면 숫자 대신 「—」와 「구분할 수 없습니다」를 보인다(0 으로 적으면 「신규 0명」이라는 거짓이 된다).\n          방문이 아예 없는 기간도 점이 null 이므로, 방문이 있을 때만 「—」·구분 불가를 말하고 기록이 없으면 0 · 0 이다(7.1.0 실측 E-D9).\n          비율 막대를 넣으려고 StatCard 대신 직접 만들지만, 틀(카드·아이콘·큰 수치·라벨)은 옆 세 카드와 같은 클래스를 써서\n          한 줄 안에서 높이·여백·그림자가 어긋나지 않게 한다. 큰 수치는 「신규 · 재방문」 순서의 두 숫자, 막대는 신규 비율.",
+                                "id": "quality_new_returning",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "stat-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-between mb-md"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "stats-icon stats-icon-blue"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "users",
+                                                            "className": "icon-lg"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "stats-value-lg"
+                                        },
+                                        "text": "{{(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null) ? Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.new_visitors ?? 0), 0)).toLocaleString() + ' · ' + Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.returning_visitors ?? 0), 0)).toLocaleString() : ((analytics_overview?.data?.series?.points ?? []).some(p => (p.visits ?? 0) > 0) ? '—' : '0 · 0')}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "stats-label"
+                                        },
+                                        "text": "$t:admin.analytics.overview.quality.new_returning"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null)}}",
+                                        "props": {
+                                            "className": "stats-sublabel"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "h-2 w-full rounded bg-rose-200 dark:bg-rose-900 overflow-hidden"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "h-2 bg-emerald-500 dark:bg-emerald-400",
+                                                            "style": "{{'width: ' + (function(pts) { const n = pts.reduce((s, p) => s + (p.new_visitors ?? 0), 0); const r = pts.reduce((s, p) => s + (p.returning_visitors ?? 0), 0); return n + r > 0 ? Math.round(n / (n + r) * 100) : 0; })(analytics_overview?.data?.series?.points ?? []) + '%'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{(analytics_overview?.data?.series?.points ?? []).some(p => (p.visits ?? 0) > 0) && !(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null)}}",
+                                        "props": {
+                                            "className": "stats-sublabel text-hint text-xs"
+                                        },
+                                        "text": "$t:admin.analytics.overview.new_returning_unavailable"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "top_lists",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{analytics_overview?.unavailable !== true}}",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_overview"
+                        },
+                        "props": {
+                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "top_pages_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-between mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "section-heading"
+                                                },
+                                                "text": "$t:admin.analytics.overview.top.pages"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "인기 페이지 전체 — 지금 질의(기간·단위·제외)를 병합해 페이지 리포트로 간다. 기본 탭이 이 목록과 같은 페이지 주소 집계다.",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/pages",
+                                                            "mergeQuery": true,
+                                                            "query": {}
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                },
+                                                "text": "$t:admin.analytics.common.more"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일).",
+                                        "id": "top_pages_card_toggle",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "openTop.pages": "{{!_local.openTop?.pages}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "md:hidden w-full flex-between gap-2 text-sm text-label-subtle pb-2",
+                                            "aria-expanded": "{{!!_local.openTop?.pages}}",
+                                            "aria-controls": "top_pages_body"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.analytics.common.toggle_list"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{_local.openTop?.pages ? 'chevron-up' : 'chevron-down'}}",
+                                                    "size": "sm"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "top_pages_body",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "id": "top_pages_body",
+                                            "className": "{{_local.openTop?.pages ? 'block' : 'hidden md:block'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(analytics_overview?.data?.top?.pages ?? []).length === 0}}",
+                                                "props": {
+                                                    "className": "text-label-subtle py-4 text-center"
+                                                },
+                                                "text": "$t:admin.analytics.common.empty_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{analytics_overview?.data?.top?.pages ?? []}}",
+                                                    "item_var": "row",
+                                                    "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-body truncate",
+                                                            "title": "{{row.label ?? ''}}"
+                                                        },
+                                                        "text": "{{row.label_display ?? row.label ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-heading whitespace-nowrap"
+                                                        },
+                                                        "text": "{{(row.visits ?? 0) | number}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "top_referrers_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-between mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "section-heading"
+                                                },
+                                                "text": "$t:admin.analytics.overview.top.referrers"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "유입 전체 — 같은 조건으로 유입 리포트의 사이트 탭을 연다. 개요의 상위 유입은 사이트(도메인) 단위라 유형 탭이 아니라\n                     이 탭이 짝이다.",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/referrers",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "tab": "sites"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                },
+                                                "text": "$t:admin.analytics.common.more"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일).",
+                                        "id": "top_referrers_card_toggle",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "openTop.referrers": "{{!_local.openTop?.referrers}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "md:hidden w-full flex-between gap-2 text-sm text-label-subtle pb-2",
+                                            "aria-expanded": "{{!!_local.openTop?.referrers}}",
+                                            "aria-controls": "top_referrers_body"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.analytics.common.toggle_list"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{_local.openTop?.referrers ? 'chevron-up' : 'chevron-down'}}",
+                                                    "size": "sm"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "top_referrers_body",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "id": "top_referrers_body",
+                                            "className": "{{_local.openTop?.referrers ? 'block' : 'hidden md:block'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(analytics_overview?.data?.top?.referrers ?? []).length === 0}}",
+                                                "props": {
+                                                    "className": "text-label-subtle py-4 text-center"
+                                                },
+                                                "text": "$t:admin.analytics.common.empty_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{analytics_overview?.data?.top?.referrers ?? []}}",
+                                                    "item_var": "row",
+                                                    "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-body truncate",
+                                                            "title": "{{row.label ?? ''}}"
+                                                        },
+                                                        "text": "{{row.label_display ?? row.label ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-heading whitespace-nowrap"
+                                                        },
+                                                        "text": "{{(row.visits ?? 0) | number}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "top_countries_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-between mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "section-heading"
+                                                },
+                                                "text": "$t:admin.analytics.overview.top.countries"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "국가 전체 — 같은 조건으로 지역 리포트를 연다(기본 탭이 국가다).",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/regions",
+                                                            "mergeQuery": true,
+                                                            "query": {}
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                },
+                                                "text": "$t:admin.analytics.common.more"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고\n               md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일).",
+                                        "id": "top_countries_card_toggle",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "openTop.countries": "{{!_local.openTop?.countries}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "md:hidden w-full flex-between gap-2 text-sm text-label-subtle pb-2",
+                                            "aria-expanded": "{{!!_local.openTop?.countries}}",
+                                            "aria-controls": "top_countries_body"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.analytics.common.toggle_list"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{_local.openTop?.countries ? 'chevron-up' : 'chevron-down'}}",
+                                                    "size": "sm"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "top_countries_body",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "id": "top_countries_body",
+                                            "className": "{{_local.openTop?.countries ? 'block' : 'hidden md:block'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(analytics_overview?.data?.top?.countries ?? []).length === 0}}",
+                                                "props": {
+                                                    "className": "text-label-subtle py-4 text-center"
+                                                },
+                                                "text": "$t:admin.analytics.common.empty_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{analytics_overview?.data?.top?.countries ?? []}}",
+                                                    "item_var": "row",
+                                                    "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-body truncate",
+                                                            "title": "{{row.label ?? ''}}"
+                                                        },
+                                                        "text": "{{row.label_display ?? row.label ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-heading whitespace-nowrap"
+                                                        },
+                                                        "text": "{{(row.visits ?? 0) | number}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "확장이 개요에 자기 위젯(전환 요약 등)을 덧붙이는 자리",
+                        "type": "extension_point",
+                        "name": "analytics_overview_widgets",
+                        "props": {
+                            "className": "space-y-4"
+                        },
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    }
+}

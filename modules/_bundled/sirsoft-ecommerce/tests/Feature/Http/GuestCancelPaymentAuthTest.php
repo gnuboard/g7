@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 비회원 결제취소 기록 인증 회귀 테스트 (KVE-2026-2041).
@@ -19,10 +20,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 공유하는데, 소유권 검증이 `user_id !== null` 일 때만 수행됐다. 비회원 주문(user_id=null)은
  * 그 분기를 통과해 **주문번호만 아는 익명 요청**이 결제를 cancelled 로 영속 변경할 수 있었다.
  * 보호된 게스트 경로(`guest/orders/*`)와 동일하게 X-Guest-Order-Token 을 요구해야 한다.
- *
- * @group ecommerce
- * @group security
  */
+#[Group('ecommerce')]
+#[Group('security')]
 class GuestCancelPaymentAuthTest extends ModuleTestCase
 {
     private const PASSWORD = 'guest12';
@@ -31,6 +31,9 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 결제취소 기록 엔드포인트 URL 을 만듭니다.
+     *
+     * @param  Order  $order  결제를 취소할 주문
+     * @return string 결제취소 기록 요청 경로
      */
     private function cancelPaymentUrl(Order $order): string
     {
@@ -40,7 +43,8 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
     /**
      * 결제 대기 상태의 비회원 주문 + 유효 토큰을 만듭니다.
      *
-     * @return array{0: Order, 1: string}
+     * @param  string  $orderNumber  생성할 주문번호
+     * @return array{0: Order, 1: string} 생성한 주문과 게스트 인증 토큰
      */
     private function makeGuestOrderWithToken(string $orderNumber): array
     {
@@ -69,6 +73,12 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 비회원 주문에 토큰 없이 익명 요청하면 404 이고 결제 상태가 변하지 않는다.
+     *
+     * @scenario authorization=missing_token
+     *
+     * @effects rejected_payment_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_order_without_token_is_rejected(): void
     {
@@ -89,6 +99,10 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 위조/무효 토큰도 차단된다.
+     *
+     * @scenario authorization=invalid_token
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_order_with_invalid_token_is_rejected(): void
     {
@@ -109,6 +123,10 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 다른 비회원 주문으로 발급된 토큰은 재사용할 수 없다.
+     *
+     * @scenario authorization=other_order_token
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_token_of_other_order_is_rejected(): void
     {
@@ -130,6 +148,12 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 유효한 게스트 토큰이면 정상 취소된다 (정상 흐름 불변).
+     *
+     * @scenario authorization=valid_token
+     *
+     * @effects authorized_payment_cancelled
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_order_with_valid_token_succeeds(): void
     {
@@ -151,6 +175,10 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 회원 주문의 소유자는 게스트 토큰 없이 그대로 통과한다 (회귀 방지).
+     *
+     * @scenario authorization=member_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_member_owner_still_succeeds_without_guest_token(): void
     {
@@ -179,6 +207,10 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 회원 주문에 타인이 접근하면 404 (기존 동작 보존).
+     *
+     * @scenario authorization=member_other
+     *
+     * @return void 반환값 없음
      */
     public function test_member_order_of_another_user_is_rejected(): void
     {
@@ -206,6 +238,10 @@ class GuestCancelPaymentAuthTest extends ModuleTestCase
 
     /**
      * 존재하지 않는 주문번호는 404 (정보 노출 차단 — 동일 문구).
+     *
+     * @scenario authorization=unknown_order
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_order_number_is_rejected(): void
     {

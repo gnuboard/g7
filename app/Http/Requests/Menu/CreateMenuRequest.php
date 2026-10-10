@@ -4,9 +4,9 @@ namespace App\Http\Requests\Menu;
 
 use App\Extension\HookManager;
 use App\Models\Menu;
-use App\Models\Module;
 use App\Models\Role;
 use App\Rules\LocaleRequiredTranslatable;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,6 +16,8 @@ class CreateMenuRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 권한 검증 결과 (항상 true)
      */
     public function authorize(): bool
     {
@@ -25,7 +27,7 @@ class CreateMenuRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -74,9 +76,26 @@ class CreateMenuRequest extends FormRequest
     }
 
     /**
+     * 검증 항목 표시 이름을 반환합니다.
+     *
+     * 다국어 칸은 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다.
+     * 없으면 칸 이름 없이 「한국어(ko) 값은 필수입니다」만 나왔다(2026-10-07 실측).
+     *
+     * @return array<string, string> 필드 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('validation.menu.attributes.name'),
+        ];
+    }
+
+    /**
      * 검증 전 데이터 전처리
      *
      * 역호환성을 위해 문자열로 입력된 name을 다국어 배열로 자동 변환합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {

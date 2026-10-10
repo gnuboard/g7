@@ -11,6 +11,7 @@ use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 카운트 동기화 통합 테스트 (이슈 #269 - #11)
@@ -24,21 +25,30 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * - soft-delete 시 카운트가 즉시 감소하는지
  * - blind 처리 시 카운트가 유지되는지 (upgrade step SQL 기준에 맞춤)
  * - 첨부 임시 업로드 → linkTempAttachments 시 drift 가 발생하지 않는지
- *
- * @group board
- * @group count-sync
  */
+#[Group('board')]
+#[Group('count-sync')]
 class CountSyncIntegrationTest extends ModuleTestCase
 {
     private Board $board;
 
     private string $slug = 'count-integration';
 
+    /**
+     * 트랜잭션 격리를 쓰지 않고 시험이 직접 정리합니다(다른 개수 동기 시험과 같은 관행).
+     *
+     * @return void 반환값 없음
+     */
     public function beginDatabaseTransaction(): void
     {
         // 수동 정리 모드 (다른 count 테스트와 동일한 관행)
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +67,11 @@ class CountSyncIntegrationTest extends ModuleTestCase
         Queue::fake();
     }
 
+    /**
+     * 테스트가 남긴 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         DB::table('board_attachments')->where('board_id', $this->board->id)->delete();
@@ -69,6 +84,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
     /**
      * 큐 워커가 없는 환경에서도 댓글 생성 직후 DB 카운트가 즉시 반영되어야 합니다.
      * (sync: true 옵션 실증 — 이슈 #269 작업 3 핵심)
+     *
+     * @scenario concern=count_sync, condition=comment_change
+     *
+     * @effects comment_counts_update_immediately_without_queue_worker
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_counts_update_immediately_without_queue_worker(): void
     {
@@ -100,6 +121,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
 
     /**
      * 댓글을 여러 개 연달아 생성해도 모든 생성이 즉시 누적 반영되어야 합니다.
+     *
+     * @scenario concern=count_sync, condition=comment_change
+     *
+     * @effects multiple_comments_accumulate_count
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_comments_accumulate_count(): void
     {
@@ -122,6 +149,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
 
     /**
      * 댓글 soft delete 시 카운트가 즉시 감소해야 합니다.
+     *
+     * @scenario concern=count_sync, condition=comment_change
+     *
+     * @effects comment_delete_decrements_counts_immediately
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_delete_decrements_counts_immediately(): void
     {
@@ -147,6 +180,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
     /**
      * 블라인드 처리는 카운트를 변경하지 않아야 합니다.
      * (upgrade step SQL 기준: deleted_at IS NULL 만 필터, status 무관)
+     *
+     * @scenario concern=count_sync, condition=comment_change
+     *
+     * @effects comment_blind_does_not_change_counts
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_blind_does_not_change_counts(): void
     {
@@ -174,6 +213,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
 
     /**
      * 대댓글 생성 시 부모 댓글의 replies_count 가 즉시 반영되어야 합니다.
+     *
+     * @scenario concern=count_sync, condition=comment_change
+     *
+     * @effects comment_reply_increments_parent_replies_count
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_reply_increments_parent_replies_count(): void
     {
@@ -207,6 +252,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
     /**
      * 게시글 생성 시 boards.posts_count 가 즉시 반영되어야 합니다.
      * PostService 를 통한 경로는 after_create 훅을 발화 → Listener 가 COUNT 재계산.
+     *
+     * @scenario concern=count_sync, condition=post_change
+     *
+     * @effects post_create_increments_board_posts_count
+     *
+     * @return void 반환값 없음
      */
     public function test_post_create_increments_board_posts_count(): void
     {
@@ -231,6 +282,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
     /**
      * drift 상태에서 댓글 생성 훅이 발화되면 카운트가 정확히 재동기화되어야 합니다.
      * (Listener 는 증분 연산이 아닌 COUNT(*) 재계산 방식이라 drift 복구 가능)
+     *
+     * @scenario concern=count_sync, condition=drift_recovery
+     *
+     * @effects drift_state_is_recovered_by_listener_on_next_event
+     *
+     * @return void 반환값 없음
      */
     public function test_drift_state_is_recovered_by_listener_on_next_event(): void
     {
@@ -263,6 +320,12 @@ class CountSyncIntegrationTest extends ModuleTestCase
     /**
      * 게시글 상세 API 응답의 comment_count 필드가 댓글 생성 직후 최신값이어야 합니다.
      * (UI 헤더 바인딩이 실제 최신 카운트를 받는지 실증)
+     *
+     * @scenario concern=count_sync, condition=comment_change
+     *
+     * @effects post_api_response_exposes_up_to_date_comment_count
+     *
+     * @return void 반환값 없음
      */
     public function test_post_api_response_exposes_up_to_date_comment_count(): void
     {
@@ -311,6 +374,9 @@ class CountSyncIntegrationTest extends ModuleTestCase
 
     /**
      * 테스트용 게시글을 직접 INSERT 합니다.
+     *
+     * @param  array<string, mixed>  $overrides  덮어쓸 컬럼
+     * @return int 넣은 게시글 ID
      */
     private function insertPost(array $overrides = []): int
     {

@@ -22,6 +22,11 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
 
     private KcpIdentityRecordRepositoryInterface $recordRepository;
 
+    /**
+     * 본인확인 기록 저장소를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,9 +35,13 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
     }
 
     /**
+     * 인증한 회원은 이름·생년월일·휴대폰이 가려진 카드 정보를 받는다.
+     *
      * @scenario record_exists=true,auth=authenticated
      *
      * @effects verified_user_receives_masked_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_verified_user_receives_masked_fields(): void
     {
@@ -54,9 +63,13 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
     }
 
     /**
+     * 응답에는 동일인 식별값(CI/DI)과 평문 개인정보가 들어가지 않는다.
+     *
      * @scenario record_exists=true,auth=authenticated
      *
      * @effects response_excludes_identity_identifiers
+     *
+     * @return void 반환값 없음
      */
     public function test_response_excludes_identity_identifiers_and_plain_values(): void
     {
@@ -77,9 +90,13 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
     }
 
     /**
+     * 본인확인 기록이 없는 회원은 빈 data 를 받는다.
+     *
      * @scenario record_exists=false,auth=authenticated
      *
      * @effects user_without_record_receives_null_data
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_record_receives_null_data(): void
     {
@@ -92,20 +109,63 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
     }
 
     /**
+     * 응답 안내 문장은 이 플러그인의 번역 문구로 나간다 — 원문 키(`messages.success`)가 그대로 나가면 안 된다.
+     *
+     * 코어에는 `messages` 번역 묶음이 없어 종전 키는 어느 언어에서도 번역되지 않았다(2026-10-07 실측 O-M2-5).
+     *
+     * @param  string  $locale  회원 언어
+     * @param  bool  $withRecord  본인확인 기록 유무
+     * @param  string  $expected  기대 안내 문장
+     *
+     * @scenario record_exists=true,auth=authenticated
+     *
+     * @effects response_message_is_translated
+     *
+     * @return void 반환값 없음
+     */
+    #[DataProvider('messageLocaleProvider')]
+    public function test_response_message_is_translated_for_user_language(string $locale, bool $withRecord, string $expected): void
+    {
+        $user = User::factory()->create(['language' => $locale]);
+        if ($withRecord) {
+            $this->seedRecord($user->id);
+        }
+
+        $response = $this->actingAs($user, 'sanctum')->getJson(self::ENDPOINT);
+
+        $response->assertStatus(200);
+        $this->assertSame($expected, $response->json('message'));
+    }
+
+    /**
+     * 언어별 기대 안내 문장.
+     *
+     * @return array<string, array{string, bool, string}> 회원 언어 / 기록 유무 / 기대 문장
+     */
+    public static function messageLocaleProvider(): array
+    {
+        return [
+            'ko 기록 있음' => ['ko', true, '본인확인 정보를 불러왔습니다.'],
+            'ko 기록 없음' => ['ko', false, '본인확인 정보를 불러왔습니다.'],
+            'en 기록 있음' => ['en', true, 'Identity verification information loaded.'],
+            'en 기록 없음' => ['en', false, 'Identity verification information loaded.'],
+        ];
+    }
+
+    /**
+     * 비로그인 요청은 401 로 막힌다.
+     *
      * @scenario auth=guest,record_exists=false
      *
      * @effects guest_request_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_request_is_rejected(): void
     {
         $this->getJson(self::ENDPOINT)->assertStatus(401);
     }
 
-    /**
-     * 본인확인 record 를 심는다.
-     *
-     * @param  int  $userId  사용자 ID
-     */
     /**
      * 짧은 이름의 마스킹 경계 — 두 글자는 성만, 한 글자는 가릴 곳이 없어 그대로 둔다.
      *
@@ -118,6 +178,8 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
      * @scenario record_exists=true,auth=authenticated
      *
      * @effects verified_user_receives_masked_fields
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('shortNameProvider')]
     public function test_short_names_are_masked_within_boundary(string $name, string $expected): void
@@ -146,6 +208,13 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 본인확인 기록을 심는다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  string  $name  실명 평문
+     * @return void 반환값 없음
+     */
     private function seedRecord(int $userId, string $name = '홍길동'): void
     {
         $this->recordRepository->upsertForUser($userId, [

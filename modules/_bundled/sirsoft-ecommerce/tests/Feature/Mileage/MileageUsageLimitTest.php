@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -27,16 +28,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 1) 임시주문 생성/수정 (TempOrderService) — 결제금액 확정 직후
  * 2) 주문 확정 (OrderProcessingService) — 임시주문 생성 이후의 설정 변경·조작 차단
  *
- * @scenario actor=member, change_mode=api
- *
- * @effects mileage_usage_limit_enforced_on_temp_order,
- *   mileage_usage_limit_enforced_on_order_create,
- *   mileage_preview_not_blocked_by_limit
+ * 시나리오 매핑은 테스트 메서드마다 둔다(SSoT: tests/scenarios/mp05-mileage-use-points.yaml).
  */
 class MileageUsageLimitTest extends ModuleTestCase
 {
     private string $settingsDir;
 
+    /**
+     * 설정 파일을 기록할 테스트 전용 설정 디렉터리를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +49,11 @@ class MileageUsageLimitTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 테스트가 기록한 마일리지·통화 설정 파일을 지워 다음 테스트에 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach (['mileage.json', 'language_currency.json'] as $file) {
@@ -60,9 +67,13 @@ class MileageUsageLimitTest extends ModuleTestCase
     }
 
     /**
-     * 마일리지 통화 규칙을 설정 파일로 기록합니다.
+     * 마일리지 통화 규칙을 설정 파일로 기록하고 설정 서비스 캐시를 비웁니다.
+     *
+     * 설정 서비스는 싱글톤이라 파일만 고치면 같은 테스트의 다음 요청이 옛 한도를 읽는다.
+     * 운영에서는 요청마다 파일을 다시 읽으므로, 기록 직후 `clearCache()` 로 그 조건을 재현한다.
      *
      * @param  array  $ruleOverrides  통화 규칙 오버라이드
+     * @return void 반환값 없음
      */
     private function writeMileageRule(array $ruleOverrides = []): void
     {
@@ -89,13 +100,19 @@ class MileageUsageLimitTest extends ModuleTestCase
         file_put_contents($this->settingsDir.'/language_currency.json', json_encode([
             'default_currency' => 'KRW',
         ], JSON_PRETTY_PRINT));
+
+        // 설정 서비스는 싱글톤이라 한 테스트 안의 요청들이 같은 인스턴스의 캐시를 본다. 파일만 고치면
+        // 「임시주문 뒤 한도를 낮춘다」 시나리오의 두 번째 요청이 옛 한도를 읽는다 — 운영에서는 요청마다
+        // 새 프로세스가 파일을 다시 읽으므로, 테스트도 기록 직후 캐시를 비워 그 조건을 재현한다.
+        app(EcommerceSettingsService::class)->clearCache();
     }
 
     /**
-     * 회원에게 마일리지를 지급합니다.
+     * 회원에게 마일리지를 지급합니다 (관리자 지급 lot 한 건).
      *
      * @param  int  $userId  회원 ID
      * @param  int  $amount  지급 금액
+     * @return MileageTransaction 생성된 지급 거래
      */
     private function grantMileage(int $userId, int $amount): MileageTransaction
     {
@@ -120,6 +137,7 @@ class MileageUsageLimitTest extends ModuleTestCase
      * @param  User|null  $user  회원 (null 이면 비회원 장바구니)
      * @param  int  $sellingPrice  판매가
      * @param  string|null  $cartKey  비회원 장바구니 키
+     * @return Cart 생성된 장바구니 항목
      */
     private function setupCart(?User $user, int $sellingPrice = 10000, ?string $cartKey = null): Cart
     {
@@ -148,9 +166,10 @@ class MileageUsageLimitTest extends ModuleTestCase
     }
 
     /**
-     * 회원 주문 생성 페이로드를 구성합니다.
+     * 회원 주문 생성(무통장입금) 페이로드를 구성합니다.
      *
      * @param  int  $expectedTotalAmount  결제예정금액
+     * @return array 주문 생성 요청 본문
      */
     private function memberOrderPayload(int $expectedTotalAmount): array
     {
@@ -188,6 +207,12 @@ class MileageUsageLimitTest extends ModuleTestCase
      * 정률 상한(max_use_percent)을 초과하는 사용 요청은 422 로 차단됩니다.
      *
      * 수정 전: 잔액만 확인해 201 로 통과 → 결제금액 전액을 마일리지로 충당 가능.
+     *
+     * @scenario entry_point=member_store, usage_policy=percent_limited, balance_state=has_balance, request_amount=exact
+     *
+     * @effects percent_limit_exceeded_returns_422, mileage_usage_limit_enforced_on_temp_order
+     *
+     * @return void 반환값 없음
      */
     public function test_use_points_exceeding_max_use_percent_returns_422(): void
     {
@@ -211,6 +236,12 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 정률 상한과 정확히 같은 금액은 통과합니다 (경계).
+     *
+     * @scenario entry_point=member_store, usage_policy=percent_limited, balance_state=has_balance, request_amount=below
+     *
+     * @effects percent_limit_boundary_passes, mileage_usage_limit_enforced_on_temp_order
+     *
+     * @return void 반환값 없음
      */
     public function test_use_points_exactly_max_use_percent_passes(): void
     {
@@ -230,6 +261,12 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 정액 상한(max_use_value)을 초과하는 사용 요청은 422 로 차단됩니다.
+     *
+     * @scenario entry_point=member_store, usage_policy=fixed_limited, balance_state=has_balance, request_amount=below
+     *
+     * @effects fixed_limit_exceeded_returns_422, mileage_usage_limit_enforced_on_temp_order
+     *
+     * @return void 반환값 없음
      */
     public function test_use_points_exceeding_max_use_value_returns_422(): void
     {
@@ -249,6 +286,12 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 사용 단위(use_unit)에 맞지 않는 사용 요청은 422 로 차단됩니다.
+     *
+     * @scenario entry_point=member_store, usage_policy=unit_restricted, balance_state=has_balance, request_amount=below
+     *
+     * @effects use_unit_violation_returns_422, mileage_usage_limit_enforced_on_temp_order
+     *
+     * @return void 반환값 없음
      */
     public function test_use_points_violating_use_unit_returns_422(): void
     {
@@ -268,6 +311,12 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 최소 사용액(min_use_amount) 미만 사용 요청은 422 로 차단됩니다.
+     *
+     * @scenario entry_point=member_store, usage_policy=min_amount_required, balance_state=has_balance, request_amount=below
+     *
+     * @effects below_min_use_amount_returns_422, mileage_usage_limit_enforced_on_temp_order
+     *
+     * @return void 반환값 없음
      */
     public function test_use_points_below_min_use_amount_returns_422(): void
     {
@@ -286,7 +335,13 @@ class MileageUsageLimitTest extends ModuleTestCase
     }
 
     /**
-     * 임시주문 수정(PUT) 경로에서도 동일하게 차단됩니다.
+     * 임시주문 수정(PUT) 경로에서도 정률 상한 초과가 동일하게 차단됩니다.
+     *
+     * @scenario entry_point=member_update, usage_policy=percent_limited, balance_state=has_balance, request_amount=exact
+     *
+     * @effects percent_limit_exceeded_returns_422, mileage_usage_limit_enforced_on_temp_order
+     *
+     * @return void 반환값 없음
      */
     public function test_use_points_exceeding_limit_on_update_returns_422(): void
     {
@@ -317,6 +372,13 @@ class MileageUsageLimitTest extends ModuleTestCase
      * 임시주문 생성 후 한도 설정이 강화되면 주문 확정 시점에 차단됩니다.
      *
      * 임시주문 단계 검증만 두면 "먼저 담아둔 임시주문"으로 정책을 우회할 수 있습니다.
+     * 한도를 낮춘 두 번째 기록은 `writeMileageRule()` 이 설정 캐시를 비우므로 주문 확정 요청이 새 한도를 읽는다.
+     *
+     * @scenario entry_point=member_order, usage_policy=percent_limited, balance_state=has_balance, request_amount=exact
+     *
+     * @effects order_create_blocked_when_limit_tightened, mileage_usage_limit_enforced_on_order_create
+     *
+     * @return void 반환값 없음
      */
     public function test_order_create_blocked_when_limit_tightened_after_temp_order(): void
     {
@@ -350,6 +412,12 @@ class MileageUsageLimitTest extends ModuleTestCase
      *
      * 통화·프로모션·배송정책과 동일하게, 이후 관리자가 한도를 바꿔도 그 주문이 어떤 정책
      * 아래 성립했는지 재현 가능해야 합니다.
+     *
+     * @scenario entry_point=member_order, usage_policy=percent_limited, balance_state=has_balance, request_amount=exact
+     *
+     * @effects order_create_passes_within_limit, order_snapshots_mileage_usage_policy, mileage_usage_limit_enforced_on_order_create
+     *
+     * @return void 반환값 없음
      */
     public function test_order_create_passes_and_snapshots_usage_policy(): void
     {
@@ -401,6 +469,12 @@ class MileageUsageLimitTest extends ModuleTestCase
      * 한도를 초과하게 된 임시주문이 있어도 체크아웃 조회는 200 을 유지합니다.
      *
      * 조회 경로에서 던지면 설정 변경 직후 사용자의 주문서 화면이 통째로 붕괴합니다.
+     *
+     * @scenario usage_policy=percent_limited, balance_state=has_balance, request_amount=exact
+     *
+     * @effects checkout_preview_unaffected_by_limit, mileage_preview_not_blocked_by_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_preview_still_returns_200_when_limit_tightened(): void
     {
@@ -428,6 +502,12 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 비회원의 마일리지 사용 요청은 예외 없이 조용히 0 으로 처리됩니다.
+     *
+     * @scenario entry_point=guest, usage_policy=percent_limited, balance_state=zero, request_amount=exceed
+     *
+     * @effects guest_use_points_ignored_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_use_points_is_silently_ignored(): void
     {
@@ -447,6 +527,12 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 한도 미설정(기본 통화 규칙: 하한 0 / 단위 1 / 100%) 사이트는 기존과 동일하게 통과합니다.
+     *
+     * @scenario entry_point=member_store, usage_policy=unrestricted, balance_state=has_balance, request_amount=below
+     *
+     * @effects unrestricted_policy_keeps_previous_behavior
+     *
+     * @return void 반환값 없음
      */
     public function test_unrestricted_settings_keep_previous_behavior(): void
     {
@@ -473,6 +559,12 @@ class MileageUsageLimitTest extends ModuleTestCase
      * 사용 가능 최대가 최소 사용액에 못 미치면 안내값은 0 이어야 합니다.
      *
      * 안내값이 하한을 모르면 "화면이 허용한 값인데 결제에서 거부" 가 됩니다.
+     *
+     * @scenario usage_policy=min_amount_required, balance_state=has_balance
+     *
+     * @effects max_usable_zero_when_cap_below_min_use
+     *
+     * @return void 반환값 없음
      */
     public function test_max_usable_is_zero_when_cap_below_min_use_amount(): void
     {

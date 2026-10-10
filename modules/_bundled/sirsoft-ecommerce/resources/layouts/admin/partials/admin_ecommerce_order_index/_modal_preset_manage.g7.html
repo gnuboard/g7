@@ -1,0 +1,42 @@
+<!-- 저장해 둔 검색 조건(프리셋)을 이름 바꾸거나 지우는 창.
+  **아직 시안이다** — 목록의 두 항목은 마크업에 박힌 예시이고, 수정·삭제 아이콘에 액션이 붙어 있지
+  않다.
+  같은 이름의 창이 주문 목록 화면(`admin_ecommerce_order_list`)에도 있고 그쪽이 배선된 정본이다. -->
+<partial description="Search Preset Management Modal">
+  <modal data-type="composite" data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title" size="sm">
+    <p class="text-secondary text-sm mb-6">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description</p>
+    <div>
+      <div class="flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.order.preset.today_payment</span>
+        <div class="flex-center gap-2">
+          <button aria-label="$t:common.edit" type="button" class="btn btn-icon btn-ghost">
+            <icon name="edit" class="text-base"/>
+          </button>
+          <button aria-label="$t:common.delete" type="button" class="btn btn-icon btn-ghost">
+            <icon name="trash-can" class="text-base"/>
+          </button>
+        </div>
+      </div>
+      <div class="flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.order.preset.bank_pending</span>
+        <div class="flex-center gap-2">
+          <button aria-label="$t:common.edit" type="button" class="btn btn-icon btn-ghost">
+            <icon name="edit" class="text-base"/>
+          </button>
+          <button aria-label="$t:common.delete" type="button" class="btn btn-icon btn-ghost">
+            <icon name="trash-can" class="text-base"/>
+          </button>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary w-full mt-4">
+      <on type="click">
+        <close-modal/>
+      </on>
+      <on type="click">
+        <open-modal target="modal_preset_save"/>
+      </on>
+      $t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_preset
+    </button>
+  </modal>
+</partial>

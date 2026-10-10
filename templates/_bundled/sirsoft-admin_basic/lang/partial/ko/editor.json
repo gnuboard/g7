@@ -1127,6 +1127,18 @@
     },
     "sh_description": {
       "label": "설명"
+    },
+    "ecg_view_mode": {
+      "label": "보기 방식"
+    },
+    "ecg_min_card_width": {
+      "label": "카드 최소 폭(px)"
+    },
+    "ecg_max_columns": {
+      "label": "최대 열 수"
+    },
+    "ecg_pagination": {
+      "label": "페이지네이션"
     }
   },
   "component": {
@@ -1183,6 +1195,7 @@
     "product_card": "상품 카드",
     "template_card": "템플릿 카드",
     "bar_chart": "막대 차트",
+    "line_chart": "선 차트",
     "donut_chart": "도넛 차트",
     "html_content": "HTML 콘텐츠",
     "html_editor": "HTML 에디터",
@@ -1202,6 +1215,7 @@
     "multilingual_tag_input": "다국어 태그 입력",
     "language_selector": "언어 선택기",
     "permission_tree": "권한 트리",
+    "menu_access_tree": "메뉴 접근 트리",
     "category_tree": "카테고리 트리",
     "extension_badge": "확장 배지",
     "user_profile": "사용자 프로필",
@@ -1215,7 +1229,8 @@
     "theme_toggle": "테마 전환",
     "notification_center": "알림 센터",
     "column_selector": "컬럼 선택기",
-    "section_header": "섹션 헤더"
+    "section_header": "섹션 헤더",
+    "extension_card_grid": "확장 카드 그리드"
   },
   "action": {
     "go_to_page": {
@@ -1292,6 +1307,20 @@
     "init_filter_visibility": {
       "label": "필터 표시 초기화",
       "param_storage_key": "저장 키"
+    },
+    "persist_view_mode": {
+      "label": "보기 방식 저장 (저장 후 되읽기)",
+      "param_storage_key": "브라우저 저장 키",
+      "param_state_key": "전역 상태 키",
+      "param_value": "저장할 값 (리터럴)"
+    },
+    "set_analytics_period": {
+      "label": "통계 기간 프리셋",
+      "param_preset": "기간",
+      "preset_today": "오늘",
+      "preset_7d": "7일",
+      "preset_30d": "30일",
+      "preset_this_month": "이번 달"
     }
   },
   "computed": {
@@ -1423,6 +1452,7 @@
     "settings_mail": "메일 탭",
     "settings_upload": "업로드 탭",
     "settings_security": "보안 탭",
+    "settings_security_ip_restriction": "보안 탭 — IP 접근 제한",
     "settings_drivers": "드라이버 탭",
     "settings_advanced": "고급 탭",
     "settings_notification_definitions": "알림 정의 탭",
@@ -1453,6 +1483,7 @@
       "seo": "SEO 탭",
       "notification_definitions": "알림 정의 탭",
       "identity_policies": "본인인증 정책 탭",
+      "privacy_retention": "개인정보 보유기간 탭",
       "basic_info": "기본 정보 탭",
       "language_currency": "언어·통화 탭",
       "order_settings": "주문 설정 탭",
@@ -1462,8 +1493,55 @@
       "mileage": "마일리지 탭",
       "deposit": "예치금 탭",
       "template_user": "사용자 템플릿 탭",
-      "template_admin": "관리자 템플릿 탭"
-    }
+      "template_admin": "관리자 템플릿 탭",
+      "connection": "연결 탭",
+      "alimtalk_templates": "알림톡 템플릿 탭",
+      "settings": "설정 탭",
+      "history": "실행 이력 탭"
+    },
+    "extensions_list_view_gallery": "확장 목록 — 갤러리 보기",
+    "extensions_list_view_list": "확장 목록 — 목록 보기",
+    "bizppurio_templates_not_ready": "알림톡 템플릿 탭 — 준비 안 됨",
+    "bizppurio_template_new": "알림톡 템플릿 — 신규 작성",
+    "bizppurio_template_rejected": "알림톡 템플릿 — 반려·부가정보",
+    "bizppurio_template_image": "알림톡 템플릿 — 강조 이미지",
+    "bizppurio_template_item_list": "알림톡 템플릿 — 아이템 리스트",
+    "bizppurio_sms_edit": "대체 문자 본문 편집",
+    "bizppurio_cancel_approval": "승인 취소 확인",
+    "bizppurio_rejection_view": "반려 사유 열람",
+    "bizppurio_delete_confirm": "템플릿 삭제 확인",
+    "read_only": "읽기 전용 (권한 없음)",
+    "notification_template_edit": "알림 템플릿 편집",
+    "notification_template_preview": "알림 템플릿 미리보기",
+    "policy_history_open": "정책 버전 이력 펼침",
+    "cookie_category_expanded": "쿠키 분류 상세 펼침",
+    "filtered_by_search": "검색 필터 적용됨",
+    "policy_version_snapshot": "정책 버전 스냅샷",
+    "rows_selected": "행 선택됨 (일괄 작업)",
+    "delete_confirm": "삭제 확인",
+    "withdraw_confirm": "탈퇴 확인 창",
+    "bulk_delete_confirm": "일괄 삭제 확인",
+    "editor_preview_open": "편집기 미리보기 펼침",
+    "marketing_channel_edit": "마케팅 채널 수정",
+    "marketing_channel_create": "마케팅 채널 추가",
+    "marketing_channel_deactivate": "마케팅 채널 되살리기 확인",
+    "totp_enrolled": "등록 완료",
+    "totp_not_enrolled": "미등록 (시작 안내)",
+    "totp_enrolling": "발급 중 (QR·확인 코드)",
+    "totp_backup_codes": "백업 코드 표시",
+    "totp_error": "인증 코드 오류",
+    "postcode_layer_mode": "레이어 방식",
+    "postcode_popup_mode": "팝업 방식",
+    "hello_plugin_log_disabled": "로그 기록 끔",
+    "bulk_publish_confirm": "일괄 발행 확인",
+    "bulk_unpublish_confirm": "일괄 발행 취소 확인",
+    "version_restore_confirm": "버전 되돌리기 확인",
+    "version_preview": "버전 미리보기",
+    "modal_filled": "창 내용 채움",
+    "uninstall_done": "제거 완료",
+    "read_normal": "일반 게시글",
+    "attachments_replies_open": "첨부·답글 펼침",
+    "screen_filled": "화면 상태 채움"
   },
   "cell_border": {
     "side_all": "전체",
@@ -1561,6 +1639,7 @@
     "tree_data": "트리 데이터",
     "images": "이미지",
     "menu_items": "메뉴 항목",
+    "role_options": "역할 이름표",
     "items": "항목",
     "filters": "필터",
     "suggestions": "추천 검색어",
@@ -1578,6 +1657,7 @@
     "options": "선택지",
     "selected_tags": "선택된 태그",
     "selected_permissions": "선택된 권한",
+    "selected_menus": "선택된 메뉴",
     "admin_sidebar_menu": "사이드바 메뉴",
     "admin_footer_quick_links": "바로가기 링크",
     "notification_items": "알림 항목",
@@ -1614,7 +1694,7 @@
     "dashboard_templates": "대시보드 템플릿",
     "extension_versions": "확장 버전 이력",
     "identityLogs": "본인인증 로그",
-    "identityMessages": "본인인증 메시지",
+    "identityPolicyDefinitions": "본인인증 정책별 문구가 있는 정책",
     "identityProviders": "본인인증 제공자",
     "identityPurposes": "본인인증 목적",
     "installed_modules": "설치된 모듈",
@@ -1625,6 +1705,7 @@
     "language_packs": "언어팩 목록",
     "layout_extensions": "레이아웃 확장",
     "layout_files": "레이아웃 파일",
+    "layout_search": "레이아웃 내용 검색",
     "layout_versions": "레이아웃 버전 이력",
     "menus": "메뉴 목록",
     "moduleDetail": "모듈 상세",
@@ -1632,6 +1713,7 @@
     "modules": "모듈 목록",
     "notificationChannels": "알림 채널",
     "notificationDefinitions": "알림 정의",
+    "memberNotifications": "회원 알림함",
     "notificationLogs": "알림 로그",
     "notification_unread_count": "읽지 않은 알림 수",
     "notification_ws": "알림 (실시간)",
@@ -1643,12 +1725,13 @@
     "policies": "정책 목록",
     "role": "역할",
     "role_check": "역할 확인",
+    "role_menus_tree": "접근 가능 메뉴 트리",
     "roles": "역할 목록",
     "schedule_history": "스케줄 이력",
     "schedules": "스케줄 목록",
     "settings": "환경설정",
-    "sitemap_status": "Sitemap 생성 상태",
     "sitemap_progress_ws": "Sitemap 생성 진행 (실시간)",
+    "sitemap_status": "Sitemap 생성 상태",
     "staticCacheStatus": "초기 화면 정적 파일 상태",
     "systemInfo": "시스템 정보",
     "templateDetail": "템플릿 상세",
@@ -1658,6 +1741,34 @@
     "tokenValidation": "토큰 검증",
     "trustedProxy": "신뢰 프록시 진단",
     "user": "사용자",
-    "users": "사용자 목록"
+    "users": "사용자 목록",
+    "analytics_overview": "방문자 통계 개요",
+    "analytics_realtime": "현재 접속자",
+    "analytics_realtime_ws": "현재 접속자 방송",
+    "analytics_status": "방문자 통계 수집 상태",
+    "analytics_report": "방문자 통계 리포트",
+    "analytics_registered": "등록된 확장 분류 기준·전환",
+    "analytics_referrer_urls": "유입처 전체 주소",
+    "analytics_patterns": "요일·시간대 패턴",
+    "analytics_visitors": "방문자 목록",
+    "analytics_visitor": "방문자 상세",
+    "analytics_bots": "봇 집계",
+    "analytics_diagnostics": "방문자 통계 진단",
+    "analytics_archive_runs": "집계 실행 이력",
+    "analytics_collect_failures": "적재 실패 로그",
+    "analytics_archive_progress_ws": "재집계 진행률 방송",
+    "analytics_settings": "방문자 통계 설정",
+    "analytics_opt_out": "내 방문 제외 상태",
+    "analytics_storage": "방문자 통계 저장소",
+    "analytics_notification_definitions": "방문자 통계 알림 정의",
+    "analytics_subjects": "정보주체 기록",
+    "dashboard_analytics": "대시보드 방문자 통계",
+    "privacyPreview": "개인정보 처리 대상 건수",
+    "privacyManualRuns": "개인정보 조치 직권 실행 상태",
+    "privacyTargets": "개인정보 조치 대상 목록",
+    "analytics_row_trend": "방문자 통계 한 항목 추이",
+    "passwordExpiryPreview": "비밀번호 만료 대상 건수",
+    "passwordExpiryManualRuns": "비밀번호 만료 직권 실행 상태",
+    "user_check": "회원 등록 권한 확인"
   }
 }

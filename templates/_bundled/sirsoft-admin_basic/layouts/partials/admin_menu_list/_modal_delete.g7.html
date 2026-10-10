@@ -1,0 +1,39 @@
+<!-- 관리자 메뉴 항목 하나를 지우기 전 되묻는 창. 하위 항목이 딸린 메뉴를 지울 때 그것들이 어떻게
+  되는지는 서버가 정하며, 이 창은 그 사정을 보여 주지 않는다.
+  **실패 갈래가 없다** — 지우지 못했을 때 창은 이미 닫혀 있고 아무 안내도 뜨지 않아, 화면에서는
+  성공과 구분되지 않는다. -->
+<partial description="메뉴 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_menu_list.delete_confirm_modal">
+  <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:admin.menus.modals.delete_title" size="sm">
+    <div>
+      <p class="text-label">$t:admin.menus.modals.delete_confirm</p>
+      <div class="flex-center gap-3 justify-end">
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal target="delete_confirm_modal"/>
+          </on>
+          $t:common.cancel
+        </button>
+        <!-- 메뉴 삭제. 하위 메뉴가 딸려 있으면 서버가 막으므로 여기서는 요청만 보내고 사유는 응답 안내로 전한다 -->
+        <button class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors">
+          <on type="click">
+            <close-modal target="delete_confirm_modal"/>
+            <api-call :auth_required="true" target="/api/admin/menus/{{_global.selectedMenuId}}" method="DELETE">
+              <success>
+                <parallel>
+                  <toast type="success" message="$t:admin.menus.messages.deleted"/>
+                  <refetch-data-source dataSourceId="menus"/>
+                  <refetch-data-source dataSourceId="admin_menu"/>
+                  <set-state target="global" :selectedMenuId="null" :selectedMenu="null" panelMode="view"/>
+                </parallel>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          $t:common.delete
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

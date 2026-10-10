@@ -15,6 +15,9 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
 {
     use CalculatesJsonContentDiff;
 
+    /**
+     * @param  TemplateLayoutExtensionVersion  $model  버전 모델
+     */
     public function __construct(
         private TemplateLayoutExtensionVersion $model
     ) {}
@@ -30,9 +33,10 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
      * @param  array  $content  저장할 content 스냅샷
      * @param  array|null  $previousContent  직전 버전 content (변경 요약 기준). null 이면 변경 요약 0
      * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
+     * @param  array<string, mixed>  $summaryExtra  계산된 변경 요약에 덧붙일 키 (예: 확장 업데이트 병합의 `source`·`applied`·`conflicts`)
      * @return TemplateLayoutExtensionVersion 생성된 버전
      */
-    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null, ?int $createdBy = null): TemplateLayoutExtensionVersion
+    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null, ?int $createdBy = null, array $summaryExtra = []): TemplateLayoutExtensionVersion
     {
         $nextVersion = $this->getNextVersion($extensionId);
 
@@ -40,6 +44,9 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
         $changesSummary = $previousContent !== null
             ? $this->calculateChanges($previousContent, $content)
             : ['added' => 0, 'removed' => 0, 'char_diff' => 0];
+
+        // 병합 출처 같은 부가 정보는 계산된 요약 뒤에 붙인다 — 재계산 커맨드가 카운트만 다시 쓰고 이 키는 보존한다.
+        $changesSummary = array_merge($changesSummary, $summaryExtra);
 
         return $this->model->create([
             'extension_id' => $extensionId,

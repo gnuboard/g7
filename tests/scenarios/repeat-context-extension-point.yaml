@@ -1,0 +1,37 @@
+feature: 반복 컨텍스트 안 확장점 — 셀 템플릿의 extension_point 가 행마다 그려진다
+
+description: |
+  모듈이 목록의 한 칸(DataGrid `cellChildren` 등)에 확장점을 열고, 다른 확장이 그 확장점에 표시를 주입하는
+  구조의 프런트 계약이다. 백엔드(`LayoutExtensionService`)는 셀 템플릿 안 확장점에도 주입 children 을 합쳐
+  내려 주지만(7.1.0+), 프런트 반복 렌더러 `renderItemChildren` 이 확장점을 컴포넌트 이름으로 찾다가
+  「컴포넌트를 찾을 수 없습니다」 경고와 함께 통째로 버리고 있었다(#703 B2 — 관리자 주문 목록 결제수단
+  칸의 테스트 결제 배지가 한 번도 그려지지 않음, 브라우저 실측 콘솔 경고 80건).
+
+  이제 확장점은 행 컨텍스트로 children 을 평가해 그리고, 호스트 `<div>` 규칙(허용 DOM 속성·layout 클래스)은
+  `DynamicRenderer` 와 공용 헬퍼 `buildExtensionPointHostProps` 로 공유한다(engine-v1.73.0).
+
+axes:
+  surface: [injected_children, host_attributes, empty_point, point_condition]
+
+effects:
+  - repeat_context_extension_point_renders_injected_children_per_row
+  - repeat_context_extension_point_host_keeps_only_dom_attributes
+  - empty_repeat_context_extension_point_renders_without_warning
+  - repeat_context_extension_point_respects_own_condition
+
+scenarios:
+  - surface: injected_children
+    effect: repeat_context_extension_point_renders_injected_children_per_row
+    description: 주입 children 의 if·텍스트가 각 행의 컨텍스트로 평가된다
+  - surface: host_attributes
+    effect: repeat_context_extension_point_host_keeps_only_dom_attributes
+    description: 호스트에는 className 과 허용 DOM 속성만 남고 확장 페이로드 props 는 실리지 않는다
+  - surface: empty_point
+    effect: empty_repeat_context_extension_point_renders_without_warning
+    description: 주입이 없는 확장점은 빈 래퍼만 남고 「컴포넌트를 찾을 수 없습니다」 경고가 나지 않는다
+  - surface: point_condition
+    effect: repeat_context_extension_point_respects_own_condition
+    description: 확장점 자체의 if 가 거짓이면 그리지 않는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/renderItemChildren-extensionPoint.test.ts

@@ -61,6 +61,58 @@ class ProductCollection extends BaseApiCollection
 - `deleted_at` - 삭제 시간
 - 비밀번호, 토큰 등 인증 정보
 
+### 회원 이메일은 공개 응답에 싣지 않는다
+
+목록·상세·댓글·리뷰처럼 인증 없이 열람되는 경로에 회원 이메일을 직렬화하면, 화면이 그 값을
+그리지 않더라도 **응답 본문에서 회원 주소록을 그대로 수집**할 수 있다. 화면 소비처가 관리자
+화면뿐이라는 사실은 방어가 아니다 — 응답은 화면과 무관하게 나간다.
+
+판정은 `BaseApiResource::canExposeMemberEmail($request, $ownerId)` 하나로 한다. 근거는 둘뿐이다:
+
+| 조건 | 결과 |
+| --- | --- |
+| 요청이 도달한 컨트롤러가 `AdminBaseController` 하위 | 노출 |
+| 열람자가 그 이메일의 주인(`$ownerId === Auth::id()`) | 노출 |
+| 그 외 (라우트 특정 불가 포함) | **차단** |
+
+```php
+// ❌ 공개 경로에서도 그대로 나간다
+'email' => $this->user->email,
+
+// ✅ 관리자 응답·본인 열람에만
+'email' => $this->canExposeMemberEmail($request, $this->user_id) ? $this->user->email : null,
+```
+
+관리자 라우트는 이미 권한 미들웨어를 통과한 뒤이므로 컨트롤러가 판정 근거로 충분하다.
+헤더·쿼리처럼 **클라이언트가 보내는 값으로 판정하면 그 게이트가 곧 우회로**가 된다.
+
+이메일 외의 개인 연락처(휴대폰·주소 등)를 새로 직렬화할 때도 같은 기준을 적용한다.
+
+**Resource 를 거치지 않는 배열도 같다.** Repository·Service 가 손수 조립해 그대로 응답에 싣는
+배열에는 이 게이트가 닿지 않는다. 특히 그 배열을 캐시에 저장하면 캐시는 호출자 권한과 무관하게
+채워지므로 — 관리자가 먼저 부르면 그 결과를 모든 비로그인 요청이 받는다 — 응답 시점 게이트로는
+막을 수 없다. 캐시되는 배열에는 이메일을 애초에 넣지 않는다(키는 두고 값 `null`).
+
+### 관리자 내부 메모는 고객·회원 응답에 싣지 않는다
+
+주문 관리자 메모, 마일리지 처리 메모와 처리 관리자처럼 **운영자가 내부용으로 남긴 값**은
+고객·회원이 자기 주문·자기 마일리지를 조회할 때도 보여서는 안 된다. 관리자 화면과 고객 화면이
+같은 Resource 를 쓰면 게이트 없이 그대로 새어 나간다.
+
+판정은 `canExposeAdminNote($request)` 로 한다. 근거는 이메일 게이트와 같은 "도달 컨트롤러가
+`AdminBaseController` 하위인가" 하나이며, **본인 예외가 없다**는 점만 다르다.
+
+```php
+// ❌ 고객 주문 상세도 이 Resource 를 쓴다
+'admin_memo' => $this->admin_memo,
+
+// ✅ 관리자 응답에만 (필드는 유지, 값만 null)
+'admin_memo' => $this->canExposeAdminNote($request) ? $this->admin_memo : null,
+```
+
+`whenLoaded()` 는 로딩 게이트일 뿐 권한 게이트가 아니다. 지금 회원 경로가 관계를 eager-load
+하지 않아 안 나가는 값도, 누가 `with()` 를 추가하는 순간 새기 시작한다 — 권한 게이트를 함께 건다.
+
 ### 관계 데이터 처리
 
 관계 데이터는 `whenLoaded`를 사용하여 조건부로 포함합니다:
@@ -77,6 +129,36 @@ public function toArray($request): array
     ];
 }
 ```
+
+### 파일 크기 표시 — formatFileSize()
+
+파일 크기를 사람이 읽는 문자열(`size_formatted` 등)로 내보낼 때는 `BaseApiResource::formatFileSize(?int $bytes): string` 을 쓴다. 리소스마다 변환을 복제하면 단위·자릿수가 화면마다 갈린다(같은 파일이 한 화면에서는 `1.5 MB`, 다른 화면에서는 `1.46MB`).
+
+| 규칙 | 값 |
+| --- | --- |
+| 단위 | `B` · `KB` · `MB` · `GB` (1024 진법, `GB` 가 상한) |
+| 자릿수 | 소수 둘째 자리 반올림 (`round($value, 2)`), 끝자리 0 은 생략 |
+| `null` · `0` | `0 B` |
+| 가시성 | `protected` — 하위 리소스가 상속해 호출 |
+
+```php
+'size' => $size,
+'size_formatted' => $this->formatFileSize($size),
+```
+
+> **하위 호환 (7.1.0)**: 코어 레이아웃 리소스(`LayoutResource` · `LayoutListResource` · `LayoutExtensionResource`)는 전에는 리소스마다 둔 `private formatFileSize()` 로 **소수 첫째 자리 · `MB` 상한** 이었다. 공용 메서드로 합치면서 이 세 응답의 `size_formatted` 값이 바뀐다. 키와 타입은 그대로다.
+>
+> | 바이트 | 종전 | 7.1.0 |
+> | ---: | --- | --- |
+> | 1,536 | `1.5 KB` | `1.5 KB` |
+> | 1,500 | `1.5 KB` | `1.46 KB` |
+> | 12,345 | `12.1 KB` | `12.06 KB` |
+> | 1,234,567 | `1.2 MB` | `1.18 MB` |
+> | 1,073,741,824 | `1024 MB` | `1 GB` |
+>
+> 화면이나 외부 연동이 `size_formatted` 문자열을 파싱하고 있었다면 원시 값 `size`(바이트)를 쓰도록 옮긴다.
+>
+> **확장 리소스 주의**: `BaseApiResource` 를 상속한 확장 리소스가 같은 이름의 메서드를 직접 두고 있으면 부모와 선언이 맞아야 한다. `private` 로 두거나(가시성 축소) 매개변수를 `int` 로 좁히면(`?int` 보다 좁음) PHP 가 클래스를 읽는 순간 치명 오류를 낸다. 자체 메서드를 지우고 부모 것을 쓰거나, `protected function formatFileSize(?int $bytes): string` 으로 선언을 맞춘다.
 
 ---
 
@@ -589,7 +671,7 @@ class UserResource extends BaseApiResource
 
 ## 관련 문서
 
-- [index.md](./index.md) - 백엔드 가이드 인덱스
+- [README.md](./README.md) - 백엔드 가이드 인덱스
 - [controllers.md](./controllers.md) - 컨트롤러에서 리소스 사용
 - [response-helper.md](./response-helper.md) - API 응답 규칙
 - [service-repository.md](./service-repository.md) - Eager Loading으로 N+1 방지

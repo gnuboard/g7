@@ -1,0 +1,18 @@
+feature: 순차 반품 회차 환불신청서의 통화별 금액 맵 (S3-D13)
+
+description: |
+  2회차 이후 반품 환불신청서는 「누적 − 앞 회차」로 자기 몫을 낸다. 통화별 맵을 반올림 없이 빼 `9.660000000000002` 꼬리가
+  저장됐고, 마일리지 몫을 현금으로 옮길 때 통화별 현금 맵은 옮기기 전 값으로 남았다(실측: RF20261007-0007263118 —
+  refund_amount 23,000 · mc KRW 13,000).
+
+axes:
+  delta:
+    - rounded
+    - points_moved_to_cash
+
+effects:
+  - sequential_return_currency_map_is_rounded_per_currency # 통화별 맵 차분을 통화 자릿수로 끊는다
+  - moved_points_to_cash_moves_currency_map # 마일리지→현금 이동 뒤 통화별 현금·마일리지 맵이 같은 금액을 말한다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SequentialReturnRefundCurrencyMapTest.php

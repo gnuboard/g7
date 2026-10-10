@@ -90,6 +90,19 @@ Input 컴포넌트는 한글 등 IME(Input Method Editor) 조합 입력을 올�
 ```
 
 **검색 입력 필드 예시** (keypress 사용):
+```html
+<input data-ref="search_input" type="text" placeholder="검색어 입력...">
+  <on type="change">
+    <set-state target="global" searchQuery="{{$event.target.value}}"/>
+  </on>
+  <on type="keypress" key="Enter">
+    <navigate path="/search?q={{_global.searchQuery}}"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "search_input",
@@ -175,7 +188,7 @@ export const Foo = ({ /* 도메인 prop */, editorAttrs }: FooProps) => (
 
 - 사용자 페이지(비편집)에서는 `editorAttrs` 미주입 → `{...editorAttrs}` 가 no-op → DOM 구조/속성 불변 (프리뷰 ↔ 사용자 페이지 패리티 유지).
 - `editorAttrs` 만 spread 하므로 도메인 prop 누출/HTML 동명 prop 타입 충돌이 없다. (`React.HTMLAttributes` 상속 + `{...rest}` 방식은 도메인 prop 누출 위험으로 채택 안 함.)
-- 자동 검출: 정적 검사가 nesting.draggable 의 composite/layout 컴포넌트가 `editorAttrs` 를 받지 않으면 차단한다. 의도적 면제는 파일 헤더 `// editor-attrs:allow <사유>`.
+- 자동 검출: 자동 검증이 nesting.draggable 의 composite/layout 컴포넌트가 `editorAttrs` 를 받지 않으면 차단한다. 모듈·플러그인 editor-spec `componentPalette` 에 올린 확장 컴포넌트도 같은 검사를 받는다 — 기본 판본(`resources/js/components/`), 템플릿 전용 판본(`for/<템플릿>/`), 템플릿 대체본(`src/components/overrides/<확장>/`) 모두. 의도적 면제는 파일 헤더 `// editor-attrs:allow <사유>`.
 
 ### 요소 id 패스스루 (코어 일괄 ID)
 

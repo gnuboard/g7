@@ -3,12 +3,15 @@
 namespace Modules\Sirsoft\Board\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 전체 게시판 통합 최근 게시글 조회 요청을 검증합니다.
  */
 class RecentPostsRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /** 조회 상한 */
     public const MAX_LIMIT = 20;
 

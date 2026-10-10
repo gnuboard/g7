@@ -10,6 +10,7 @@ use Modules\Sirsoft\Page\Http\Requests\ReorderPageAttachmentsRequest;
 use Modules\Sirsoft\Page\Http\Requests\UploadPageAttachmentRequest;
 use Modules\Sirsoft\Page\Http\Resources\PageAttachmentResource;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자 페이지 첨부파일 컨트롤러
@@ -19,6 +20,9 @@ use Modules\Sirsoft\Page\Services\PageAttachmentService;
  */
 class PageAttachmentController extends AdminBaseController
 {
+    /**
+     * @param  PageAttachmentService  $attachmentService  첨부 업로드·삭제·순서 서비스
+     */
     public function __construct(
         private PageAttachmentService $attachmentService,
     ) {
@@ -59,6 +63,9 @@ class PageAttachmentController extends AdminBaseController
                 ['code' => 'attachment_limit_exceeded'],
                 $e->getMessageParams()
             );
+        } catch (AccessDeniedHttpException $e) {
+            // 대상 페이지의 수정 권한·스코프 밖 — 서버 오류가 아니라 권한 없음으로 안내한다
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.upload_failed', 500, $e->getMessage());
         }
@@ -83,6 +90,8 @@ class PageAttachmentController extends AdminBaseController
             return $this->success('sirsoft-page::messages.attachment.delete_success');
         } catch (ModelNotFoundException $e) {
             return $this->notFound('sirsoft-page::messages.attachment.not_found');
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.delete_failed', 500, $e->getMessage());
         }
@@ -105,8 +114,32 @@ class PageAttachmentController extends AdminBaseController
             $this->attachmentService->reorder($orders);
 
             return $this->success('sirsoft-page::messages.attachment.reorder_success');
+        } catch (ModelNotFoundException) {
+            // 범위 검사가 대상 첨부를 하나씩 찾으므로, 없는 ID 는 500 이 아니라 404 로 끊는다(삭제와 같은 응답).
+            return $this->notFound('sirsoft-page::messages.attachment.not_found');
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.reorder_failed', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * 첨부 상한·허용 형식을 반환합니다. (화면 전용 경량 조회)
+     *
+     * 페이지 작성 화면은 **신규 작성 시 읽을 상세가 없어** 상한을 실어 줄 봉투가 없다.
+     * 그래서 화면이 리터럴로 적고 있었고, 운영자가 설정을 바꾸면 화면만 옛 값으로 남아
+     * 서버가 거절할 때까지 아무 안내도 없었다.
+     *
+     * 별도 FormRequest 를 두지 않는다 — 파라미터가 없고 본문도 없다.
+     *
+     * @return JsonResponse 공개 설정
+     */
+    public function settings(): JsonResponse
+    {
+        return $this->success(
+            'sirsoft-page::messages.attachment.settings_success',
+            $this->attachmentService->publicLimits()
+        );
     }
 }

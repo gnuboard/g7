@@ -18,12 +18,15 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class StoreBanksRequestTest extends ModuleTestCase
 {
     /**
-     * 은행명 검증은 "현재 앱 로케일" 필드만 필수로 본다. 테스트 데이터가 ko/en 을 제공하므로
-     * 환경 로케일(예: ja)에 관계없이 결정적이도록 ko 로 고정한다.
+     * 은행명 검증은 사이트 기본 언어(`app.site_locale`) 필드만 필수로 본다. 테스트 데이터가 ko/en 을 제공하므로
+     * 환경 설정(예: ja)에 관계없이 결정적이도록 사이트 기본 언어·요청 언어를 ko 로 고정한다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
         parent::setUp();
+        config(['app.site_locale' => 'ko']);
         app()->setLocale('ko');
     }
 
@@ -31,6 +34,7 @@ class StoreBanksRequestTest extends ModuleTestCase
      * 검증 수행
      *
      * @param  array  $data  검증 대상 데이터
+     * @return \Illuminate\Validation\Validator 검증기
      */
     protected function validate(array $data): \Illuminate\Validation\Validator
     {
@@ -43,6 +47,15 @@ class StoreBanksRequestTest extends ModuleTestCase
     // banks 배열 검증
     // ──────────────────────────────────────────────
 
+    /**
+     * 올바른 은행 목록은 통과한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_banks_accepts_valid_data(): void
     {
         $validator = $this->validate([
@@ -58,6 +71,15 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 빈 은행 목록도 통과한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_banks_accepts_empty_array(): void
     {
         $validator = $this->validate([
@@ -70,6 +92,15 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 은행 목록이 null 이어도 통과한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_banks_accepts_null(): void
     {
         $validator = $this->validate([
@@ -86,6 +117,15 @@ class StoreBanksRequestTest extends ModuleTestCase
     // banks.*.code 검증
     // ──────────────────────────────────────────────
 
+    /**
+     * 은행이 있으면 은행 코드가 필수다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_code_required_when_banks_present(): void
     {
         $validator = $this->validate([
@@ -100,6 +140,15 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 은행 코드 길이 상한을 넘으면 실패한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_code_max_length(): void
     {
         $validator = $this->validate([
@@ -118,6 +167,15 @@ class StoreBanksRequestTest extends ModuleTestCase
     // banks.*.name 검증
     // ──────────────────────────────────────────────
 
+    /**
+     * 은행이 있으면 은행명이 필수다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_name_required_when_banks_present(): void
     {
         $validator = $this->validate([
@@ -132,6 +190,15 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 은행명은 언어별 배열이어야 한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_name_must_be_array(): void
     {
         $validator = $this->validate([
@@ -146,6 +213,15 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 언어별 은행명 길이 상한을 넘으면 실패한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_list_shape_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_name_locale_max_length(): void
     {
         $validator = $this->validate([
@@ -164,6 +240,15 @@ class StoreBanksRequestTest extends ModuleTestCase
     // 현재 로케일 기준 은행명 필수 검증
     // ──────────────────────────────────────────────
 
+    /**
+     * 사이트 기본 언어 은행명만 있어도 통과한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_name_required_locale_is_site_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_name_current_locale_only_is_valid(): void
     {
         // 기본 로케일(ko)만 입력해도 통과해야 함
@@ -181,6 +266,15 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 다른 언어 은행명이 null 이어도 통과한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_name_required_locale_is_site_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_name_other_locale_null_is_valid(): void
     {
         // 현재 로케일(ko) 입력, 다른 로케일은 null (ConvertEmptyStringsToNull 시뮬레이션)
@@ -198,6 +292,15 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 사이트 기본 언어 은행명이 없으면 실패한다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_name_required_locale_is_site_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_bank_name_current_locale_missing_fails(): void
     {
         // 현재 로케일(ko)이 없고 다른 로케일만 있으면 실패해야 함
@@ -215,9 +318,19 @@ class StoreBanksRequestTest extends ModuleTestCase
         );
     }
 
-    public function test_bank_name_en_locale_required_when_locale_is_en(): void
+    /**
+     * 요청 언어가 영어여도 사이트 기본 언어 은행명만 있으면 영어 은행명을 요구하지 않는다.
+     *
+     * @scenario area=banks_modal
+     *
+     * @effects bank_name_required_locale_is_site_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bank_name_site_locale_required_even_when_request_locale_is_en(): void
     {
-        // 로케일이 en일 때는 영문 은행명이 필수
+        // 필수 언어는 요청 언어가 아니라 사이트 기본 언어다(제품 결정 2026-10-08) — 요청 언어 en 이어도 ko 은행명만 있으면 통과
+        config(['app.site_locale' => 'ko']);
         app()->setLocale('en');
 
         $validator = $this->validate([
@@ -226,9 +339,9 @@ class StoreBanksRequestTest extends ModuleTestCase
             ],
         ]);
 
-        $this->assertTrue(
+        $this->assertFalse(
             $validator->errors()->has('banks.0.name.en'),
-            '로케일이 en일 때 영문 은행명이 없으면 실패해야 합니다'
+            '요청 언어가 en 이어도 사이트 기본 언어(ko) 은행명이 있으면 영문 은행명을 요구하지 않아야 합니다'
         );
     }
 }

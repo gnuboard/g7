@@ -1,15 +1,18 @@
+/**
+ * KG이니시스 결제 플러그인 엔트리
+ *
+ * ActionDispatcher 에 핸들러를 등록하여 레이아웃에서 "sirsoft-pay_kginicis.requestPayment" 형태로 호출할 수 있게 한다.
+ * 화면 덧붙임(주문 상세·주문 완료·관리자 주문 상세의 영수증·입금 안내·간편결제 이름)은 레이아웃 조각
+ * (resources/extensions/*.g7.html)이 맡고, 주문서 결제수단 제한은 서버 훅(RestrictPaymentMethodsForCurrencyListener)이
+ * 맡는다 — 이 엔트리는 화면을 엿보거나 남의 요청을 가로채지 않는다.
+ */
+// 설정 화면 안내 글자색(접두 의미 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 import { handlerMap } from './handlers';
-import { installOrderResponseInterceptor } from './orderResponseInterceptor';
-import { installMypageOrderShowInjector } from './mypageOrderShowInjector';
-import { installAdminOrderPaymentDisplayInjector } from './adminOrderPaymentDisplayInjector';
-import { installOrderCompleteReceiptInjector } from './orderCompleteReceiptInjector';
-import { installVbankInfoInjector } from './vbankInfoInjector';
 import {
     installPaymentCloseMessageListener,
     reportStandardPaymentFailureOnReturn,
 } from './paymentCloseMessageListener';
-import { installCheckoutJpyPaymentMethodRestrictor } from './checkoutJpyPaymentMethodRestrictor';
-import { installAdminPaymentMethodBrandInjector } from './adminPaymentMethodBrandInjector';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 
@@ -86,16 +89,6 @@ function initPlugin(): void {
     }
 }
 
-// fetch 인터셉터: 체크아웃 페이지에서 kginicis 주문 응답을 가로채 결제창 호출
-// (체크아웃 템플릿이 코어 영역이라 수정 불가하므로 클라이언트 사이드 우회)
-installOrderResponseInterceptor();
-installCheckoutJpyPaymentMethodRestrictor();
-
-installMypageOrderShowInjector();
-installAdminOrderPaymentDisplayInjector();
-installAdminPaymentMethodBrandInjector();
-installOrderCompleteReceiptInjector();
-installVbankInfoInjector();
 installPaymentCloseMessageListener();
 
 // 결제 실패로 돌아온 화면이면 서버에 보고한다. 브라우저 리턴 콜백(PC·모바일·해외결제)은

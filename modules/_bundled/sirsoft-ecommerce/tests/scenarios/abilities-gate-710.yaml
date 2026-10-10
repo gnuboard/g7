@@ -1,0 +1,116 @@
+feature: 7.1.0 abilities 게이트 — 쓰기 버튼·서버 권한 축 정렬 (이커머스)
+
+description: |
+  7.1.0 출시 전 점검에서 찾은 「권한이 없는데 버튼이 살아 있는」 결함과 「접수 권한만으로 다른 권한의 일을
+  하는」 서버 결함을 함께 닫는다. 화면은 응답의 abilities 키로 잠그고, 서버는 같은 권한으로 403 을 낸다.
+
+  설계에서 못박은 것:
+    - 직권 취소 「환불까지 한 번에 처리」 = 환불 실행 권한(`claims.execute-refund`). 직권 접수·예전 주문 취소 API 모두.
+      관리자 주문 응답은 `abilities.can_execute_refund` 를 싣는다(결제 플러그인 [환불 재시도]도 이 키를 쓴다).
+    - 직권 교환·반품 「접수와 함께 승인」 = 클레임 상태 변경 권한(`claims.update-status`). 권한이 없으면 접수 전에 403.
+    - 취소 창 예상금액 조회 = 접수와 같은 `claims.create`.
+    - 회원·비회원 [취소·환불 신청]이 즉시 취소 분기(`auto`)면 `user-orders.cancel` 도 요구한다.
+    - 「주문 삭제」(`orders.delete`) 권한을 정의하고 admin 역할에 기본 부여한다(업그레이드 스텝이 기존 설치를 보정).
+    - 응답에 키가 없던 곳(리뷰 목록·문의·회원 클레임·구매 흐름·회원 상세 통화/국가)에 키를 싣는다.
+    - 상품 폼은 등록·복사 진입도 수정 진입처럼 입력칸까지 잠근다 — 폼 계산값 `isReadOnly` 가 수정 진입은 상품 can_update,
+      등록·복사 진입은 목록 컬렉션 can_create 를 보고, 권한 응답이 아직 없으면 잠긴 쪽으로 시작한다(제품 결정 2026-10-10).
+    - 배송정책 폼도 같은 기준이다 — `isReadOnly` 가 등록·복사 진입에서 목록 응답(`policy_abilities`)의 can_create 를 본다.
+      쿠폰 폼은 수정 진입이 수정 권한 없으면 403 화면으로 접히므로, 등록 진입도 목록 응답(`coupon_abilities`)의
+      can_create=false 면 폼을 그리기 전에 403 화면으로 접고 [저장]은 응답 키가 없어도 잠긴 쪽이다.
+    - 레이아웃 게이트는 굽기 산출 `.json` 을 정적으로 대조한다(브라우저 실측은 통합 단계).
+    - 환경설정 「본인인증 정책」 탭은 이커머스 권한 `identity.policies.read`/`.update` 로 동작한다(제품 결정 2026-10-10).
+      이커머스 모듈 경로(/api/modules/sirsoft-ecommerce/admin/identity-policies)가 같은 권한으로 403 을 내고 이커머스 몫 정책만
+      다룬다(다른 출처 정책 ID 는 404). 화면은 조회 권한이 없으면 「권한 없음」, 수정 권한이 없으면 읽기 전용 안내 + 쓰기 잠금.
+      운영자 정책의 대상은 이커머스 지점으로 묶는다 — 훅·사용자 지정 범위는 `sirsoft-ecommerce.`, 경로 범위는
+      `api.modules.sirsoft-ecommerce.` 로 시작해야 하고, 아니면 추가·수정이 422(target)다.
+
+axes:
+  surface: [admin, user]
+  permission: [granted, missing]
+
+effects:
+  - abilities_probe_per_page_satisfies_list_request_minimum
+  - admin_auto_refund_requires_execute_refund
+  - admin_cancel_refund_without_auto_advance_is_accepted
+  - admin_legacy_cancel_auto_refund_requires_execute_refund
+  - admin_order_exposes_can_execute_refund
+  - admin_approve_on_receipt_requires_update_status
+  - admin_request_without_approval_is_filed
+  - admin_estimate_refund_follows_claims_create
+  - user_instant_cancel_requires_user_orders_cancel
+  - user_review_branch_needs_only_request_permission
+  - user_claimable_options_expose_abilities
+  - user_claim_flags_follow_permissions
+  - admin_temp_image_upload_accepts_create_permission
+  - admin_temp_image_upload_denies_read_only
+  - user_purchase_responses_expose_can_order
+  - order_delete_permission_upgrade_grants_admin
+  - order_delete_permission_upgrade_respects_override
+  - admin_review_list_exposes_collection_abilities
+  - public_review_exposes_is_owner
+  - review_image_delete_follows_the_route_permission
+  - user_currency_field_follows_the_manage_permission
+  - user_shipping_country_field_follows_the_manage_permission
+  - admin_cancel_auto_refund_checkbox_locked
+  - admin_claim_approve_checkbox_locked
+  - admin_order_detail_write_buttons_locked
+  - admin_settings_seo_tab_locked
+  - admin_drag_handles_hidden
+  - admin_settings_toggles_locked
+  - admin_review_controls_locked
+  - admin_inquiry_actions_locked
+  - admin_cart_wishlist_delete_locked
+  - admin_coupon_issue_cancel_locked
+  - admin_extra_fee_template_actions_locked
+  - admin_shipping_policy_create_mode_update_axis
+  - admin_copy_and_coupon_link_axis
+  - admin_product_area_controls_locked
+  - admin_product_form_create_mode_inputs_locked
+  - admin_product_form_create_mode_inputs_open
+  - admin_product_form_create_mode_fail_closed
+  - admin_product_form_edit_mode_follows_update
+  - admin_shipping_policy_form_create_mode_inputs_locked
+  - admin_shipping_policy_form_create_mode_inputs_open
+  - admin_shipping_policy_form_create_mode_fail_closed
+  - admin_shipping_policy_form_edit_mode_follows_update
+  - admin_coupon_form_create_mode_folds_to_403
+  - admin_coupon_form_create_mode_open
+  - admin_coupon_form_create_mode_fail_closed
+  - admin_coupon_form_edit_mode_follows_update
+  - admin_route_permissions_are_defined
+  - admin_mockup_batch_button_locked
+  - admin_user_preference_fields_locked
+  - user_claim_buttons_locked_by_abilities
+  - address_search_button_follows_host_readonly
+  - user_claim_pay_button_locked
+  - user_purchase_buttons_locked
+  - checkout_address_modal_follows_abilities
+  - identity_policy_list_requires_module_read
+  - identity_policy_list_scoped_to_module
+  - identity_policy_abilities_follow_module_update
+  - identity_policy_write_requires_module_update
+  - identity_policy_write_scoped_to_module
+  - identity_permission_granted_to_admin_by_default
+  - identity_policy_target_limited_to_module
+  - identity_tab_uses_module_permission_route
+  - identity_provider_options_need_no_core_permission
+  - identity_tab_shows_no_permission_notice
+  - identity_tab_read_only_locks_writes
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminClaimGatePermissionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/InstantCancelPermissionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/UserClaimAbilitiesTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CreateModeImageUploadPermissionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderCreateAbilityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/ReviewAbilitiesTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/GrantOrderDeletePermissionToAdminTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/UserPreferenceManageAbilityTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-abilities-gate-710.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormCreateModeReadOnly.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyFormCreateModeReadOnly.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponFormCreateModeGate.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/abilitiesProbePerPage.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/user-template-abilities-gate-710.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/EcommerceIdentityPolicyPermissionGateTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-identity-policy-gate.test.ts

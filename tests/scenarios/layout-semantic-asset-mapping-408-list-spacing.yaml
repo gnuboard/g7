@@ -16,7 +16,7 @@ description: |
     - iteration admin-card 7 파일에서 className 을 "admin-card" → "admin-card mb-3"
       으로 override (자산 mb-6 보다 작게 — 목록 내 카드 간격 압축):
       · admin_basic _tab_notification_definitions / _tab_identity_messages /
-        _tab_mail_templates
+        _tab_mail_templates(7.1.0 에서 include 0 인 죽은 조각이라 파일째 제거)
       · board _tab_notification_definitions
       · ecommerce _modal_download_history / _partial_product_datagrid /
         _tab_notification_definitions

@@ -1,0 +1,93 @@
+<!-- 회원 목록에서 고른 회원들에게 역할을 한꺼번에 더하거나 빼는 창(모드 값 하나로 추가/제거를 겸한다).
+  서버가 최고관리자·권한 범위 밖·마지막 관리자(본인)를 걸러 내고 그 사유를 돌려주므로, 제외된 회원이 있으면 창을 닫지 않고
+  결과(변경 수·제외 수·사유 최대 5행)를 보여 준다. 이미 원하는 상태라 바뀌지 않은 회원(unchanged)도 따로 세어 같은 카드에 보인다 —
+  그렇지 않으면 고른 수와 「N명 변경, M명 제외」 의 합이 어긋난다. 내가 부여할 수 없는 역할이 섞이면 요청 전체가 거부(403)되고
+  창 안에 문구가 남는다. -->
+<partial description="회원 역할 일괄 변경 모달" editor_label="$t:admin.modal_label.user_list.bulk_roles_modal">
+  <modal data-type="composite" data-ref="bulk_roles_modal" title="{{_global.userBulkRoleMode === 'remove' ? '$t:admin.users.bulk_roles.remove_title' : '$t:admin.users.bulk_roles.add_title'}}" size="md">
+    <div class="space-y-4">
+      <!-- 안내 문구는 적용 전에만 — 적용하면 선택이 비워져 「0명에게…」로 바뀌므로 결과 화면에서는 결과 카드가 대신 말한다 -->
+      <p data-if="{{!_global.userBulkRoleResult && _global.userBulkRoleMode !== 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.add_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      <p data-if="{{!_global.userBulkRoleResult && _global.userBulkRoleMode === 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.remove_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      <div data-ref="bulk_roles_field" data-if="{{!_global.userBulkRoleResult}}">
+        <label class="form-label">$t:admin.users.bulk_roles.roles_label</label>
+        <tag-input data-type="composite" data-ref="bulk_roles_input" value="{{_global.userBulkRoleIds ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}" placeholder="$t:admin.users.bulk_roles.roles_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue">
+          <on type="change">
+            <!-- 적용할 역할 — 태그 입력이 준 배열을 통째로 담는다 -->
+            <set-state target="global" userBulkRoleIds="{{$event.target.value}}"/>
+          </on>
+        </tag-input>
+      </div>
+      <div data-ref="bulk_roles_hint" data-if="{{!_global.userBulkRoleResult}}" class="flex gap-2 text-tertiary">
+        <icon name="info-circle" size="sm" class="mt-0.5 flex-shrink-0"/>
+        <span>$t:admin.users.bulk_roles.hint</span>
+      </div>
+      <!-- 제거에만 생기는 건너뜀(역할이 하나도 남지 않게 되는 회원·마지막 관리자인 나)을 적용 전에 알린다 -->
+      <div data-ref="bulk_roles_remove_hint" data-if="{{!_global.userBulkRoleResult && _global.userBulkRoleMode === 'remove'}}" class="flex gap-2 text-tertiary">
+        <icon name="info-circle" size="sm" class="mt-0.5 flex-shrink-0"/>
+        <span>$t:admin.users.bulk_roles.remove_hint</span>
+      </div>
+      <div data-ref="bulk_roles_error" data-if="{{!!_global.userBulkRoleError}}" class="alert-danger text-sm">{{_global.userBulkRoleError}}</div>
+      <div data-ref="bulk_roles_result" data-if="{{!!_global.userBulkRoleResult}}" class="admin-card">
+        <h4 class="text-heading mb-2">$t:admin.users.bulk_roles.result_title</h4>
+        <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">$t:admin.users.bulk_roles.result_summary|updated={{_global.userBulkRoleResult?.updated_count ?? 0}}|skipped={{_global.userBulkRoleResult?.skipped_count ?? 0}}</p>
+        <ul class="text-sm space-y-1">
+          <li data-each="skip in {{(_global.userBulkRoleResult?.skipped ?? []).slice(0, 5)}}" class="flex justify-between gap-3 text-gray-600 dark:text-gray-400">
+            <span class="truncate">{{(users?.data?.data ?? []).find(u => u.uuid === skip.uuid)?.name ?? skip.uuid}}</span>
+            <span class="flex-shrink-0">{{skip.reason === 'grade' ? $t:admin.users.bulk_roles.reason_grade : (skip.reason === 'scope' ? $t:admin.users.bulk_roles.reason_scope : (skip.reason === 'last_role' ? $t:admin.users.bulk_roles.reason_last_role : $t:admin.users.bulk_roles.reason_last_admin))}}</span>
+          </li>
+        </ul>
+        <!-- 이미 원하는 상태라 바뀌지 않은 회원 — 변경도 제외도 아니므로 따로 센다 -->
+        <div data-ref="bulk_roles_unchanged" data-if="{{(_global.userBulkRoleResult?.unchanged_count ?? 0) > 0}}" class="mt-3">
+          <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">$t:admin.users.bulk_roles.result_unchanged|unchanged={{_global.userBulkRoleResult?.unchanged_count ?? 0}}</p>
+          <ul class="text-sm space-y-1">
+            <li data-each="same in {{(_global.userBulkRoleResult?.unchanged ?? []).slice(0, 5)}}" class="flex justify-between gap-3 text-gray-600 dark:text-gray-400">
+              <span class="truncate">{{(users?.data?.data ?? []).find(u => u.uuid === same.uuid)?.name ?? same.uuid}}</span>
+              <span class="flex-shrink-0">{{same.reason === 'not_assigned' ? $t:admin.users.bulk_roles.reason_not_assigned : $t:admin.users.bulk_roles.reason_already_assigned}}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>{{_global.userBulkRoleResult ? $t:admin.users.bulk_roles.close : $t:common.cancel}}</span>
+      </button>
+      <button data-ref="bulk_roles_apply" data-if="{{!_global.userBulkRoleResult}}" type="button" disabled="{{_global.isProcessing || (_global.userBulkRoleIds ?? []).length === 0}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —
+               제외되거나 이미 반영되어 바뀌지 않은 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을
+               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아
+               300ms 디바운스로 연타를 한 번으로 모은다. -->
+          <sequence :debounce="300">
+            <set-state target="global" :isProcessing="true" :userBulkRoleError="null"/>
+            <api-call :auth_required="true" target="/api/admin/users/bulk-roles" method="PATCH">
+              <success>
+                <sequence>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]" userBulkRoleResult="{{response.data}}"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <close-modal if="{{(response.data?.skipped_count ?? 0) === 0 && (response.data?.unchanged_count ?? 0) === 0}}"/>
+                  <refetch-data-source dataSourceId="users"/>
+                </sequence>
+              </success>
+              <fail>
+                <set-state target="global" :isProcessing="false" userBulkRoleError="{{error.errors?.role_ids?.[0] ?? error.errors?.uuids?.[0] ?? error.message ?? '$t:errors.server_error'}}"/>
+              </fail>
+              <error-handling>
+                <on-code code="403">
+                  <set-state target="global" :isProcessing="false" userBulkRoleError="{{error.message ?? '$t:auth.permission_denied'}}"/>
+                </on-code>
+              </error-handling>
+              <body uuids="{{_global.selectedIds_admin_users ?? []}}" role_ids="{{_global.userBulkRoleIds ?? []}}" mode="{{_global.userBulkRoleMode ?? 'add'}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
+        <span>{{_global.isProcessing ? $t:common.processing : $t:admin.users.bulk_roles.apply}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

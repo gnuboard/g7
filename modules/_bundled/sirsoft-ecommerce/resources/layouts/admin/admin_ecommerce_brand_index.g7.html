@@ -1,0 +1,88 @@
+<!-- 브랜드 관리 (운영자) — 왼쪽 목록에서 고른 브랜드를 오른쪽 패널에서 보고 고치며, 신규 등록도
+  같은 패널을 등록 모드로 바꿔서 처리한다. 두 패널은 별도 조회 없이 `brands` 한 응답을 나눠 쓴다. -->
+<layout name="admin_ecommerce_brand_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.brand.title" description="$t:sirsoft-ecommerce.admin.brand.description"/>
+  <!-- 목록·상세 양쪽이 함께 쓰는 단일 출처. 검색·정렬은 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 다시 받고, 저장 후에도 `refetchOnMount` 로 최신값을 되받는다. 폼(form) 초기값은 여기 init-local 로 두지 않는다 — 데이터 소스의 init-local 은 기본값이 아니라 「응답 경로 → 폼 경로」 매핑이라 빈 값("")이 응답 전체로 읽혀, 목록을 받을 때마다 입력 중인 이름 칸을 목록 응답으로 덮었다. 빈 폼은 「추가」 버튼이 심는다 -->
+  <data-source id="brands" label_key="$t:sirsoft-ecommerce.editor.data_source.brands" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/brands" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+    <params sort="{{query.sort}}" search="{{query.search}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="selectedBrandId" :value="null"/>
+    <field name="selectedBrand" :value="null"/>
+    <field name="panelMode" value="view"/>
+    <field name="deleteModal">
+      <field name="isOpen" :value="false"/>
+      <field name="brandId" :value="null"/>
+      <field name="brandName" value=""/>
+      <field name="productsCount" :value="0"/>
+    </field>
+    <field name="editingModal">
+      <field name="isOpen" :value="false"/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.brands.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>brands</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="brand_page_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.brand.title</h1>
+          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.brand.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+            <on type="click">
+              <!-- 검색·정렬 쿼리를 떨어뜨린 처음 상태로 되돌린다 — 같은 경로 이동이라 목록이 다시 조회된다 -->
+              <navigate path="/admin/ecommerce/brands" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
+          </button>
+          <button data-ref="add_brand_button" disabled="{{brands?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 오른쪽 패널을 등록 모드로 전환 — 선택·이전 입력·오류를 먼저 비운 뒤 빈 폼을 새로 심는다(비우기와 심기를 나눈 것은 부분 갱신이 남긴 잔값을 막기 위해서다) -->
+              <sequence>
+                <set-state target="global" :selectedBrandId="null" :selectedBrand="null" panelMode="create"/>
+                <set-state target="local" :form="null" :errors="null" :isSaving="false"/>
+                <set-state target="local">
+                  <field name="form">
+                    <field name="name">
+                      <field name="ko" value=""/>
+                      <field name="en" value=""/>
+                    </field>
+                    <field name="is_active" :value="true"/>
+                  </field>
+                </set-state>
+              </sequence>
+            </on>
+            <icon name="plus" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.brand.list.add</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
+        <include src="partials/admin_ecommerce_brand_index/_panel_brand_list.g7.html"/>
+        <include src="partials/admin_ecommerce_brand_index/_panel_detail.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 삭제 확인 — 소속 상품이 있으면 삭제를 막고 그 수를 함께 알린다 -->
+  <modal src="partials/admin_ecommerce_brand_index/_modal_delete_confirm.g7.html"/>
+  <!-- 편집 중 다른 브랜드를 고르거나 등록으로 넘어갈 때, 저장하지 않은 입력을 버릴지 묻는다 -->
+  <modal src="partials/admin_ecommerce_brand_index/_modal_editing_confirm.g7.html"/>
+</layout>

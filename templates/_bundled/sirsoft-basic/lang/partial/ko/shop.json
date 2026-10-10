@@ -190,6 +190,7 @@
     "return_policy": "교환/반품 안내",
     "add_to_cart": "장바구니 담기",
     "buy_now": "바로 구매",
+    "no_purchasable_option": "지금은 구매할 수 있는 옵션이 없는 상품입니다.",
     "sold_out": "품절",
     "sold_out_suffix": "(품절)",
     "sold_out_option": "품절된 옵션입니다.",
@@ -214,7 +215,7 @@
     "additional_options": "추가옵션",
     "required": "필수",
     "select_options_guide": "옵션을 선택해주세요",
-    "select_option_suffix": "을(를) 선택해주세요",
+    "select_option_suffix": " 선택",
     "select_upper_option_first": "상위 옵션을 먼저 선택하세요",
     "please_select_options": "옵션을 선택해주세요",
     "cart_added": "장바구니에 담았습니다.",
@@ -262,6 +263,7 @@
     "items_deleted": "선택한 상품이 삭제되었습니다",
     "option_updated": "옵션이 변경되었습니다",
     "change_option": "옵션 변경",
+    "delete_item": "상품 삭제",
     "subtotal": "소계",
     "option": "옵션",
     "order_summary": "주문 요약",
@@ -405,6 +407,7 @@
     "submit": "결제하기",
     "processing": "결제 중...",
     "points_used": "마일리지 사용",
+    "amount_before_points": "마일리지 차감 전 금액",
     "discount_coupon": "할인/쿠폰",
     "discount_section_title": "할인/쿠폰 적용",
     "coupon_select": "쿠폰 선택",
@@ -473,6 +476,7 @@
     "save_address": "배송지 저장",
     "new_address_label": "새 배송지",
     "save_shipping_address_checkbox": "입력한 배송지를 저장합니다",
+    "update_selected_address_checkbox": "고친 내용으로 저장된 배송지를 갱신합니다",
     "vbank_payment": "가상계좌",
     "vbank_payment_desc": "가상계좌 발급 후 입금",
     "vbank_info": "주문 완료 후 가상계좌가 발급됩니다.",
@@ -480,6 +484,7 @@
     "dbank_payment": "무통장입금",
     "dbank_payment_desc": "지정 계좌로 직접 입금",
     "dbank_info": "아래 계좌를 선택하여 입금해주세요.",
+    "no_payment_methods": "지금 선택할 수 있는 결제 방법이 없습니다. 상점에 문의해 주세요.",
     "dbank_select_account": "입금할 계좌 선택",
     "dbank_due_notice": "입금 기한: {{days}}일 이내",
     "dbank_no_accounts": "등록된 입금 계좌가 없습니다.",
@@ -557,7 +562,8 @@
     "free": "무료",
     "save_shipping_address": "이 배송지를 저장하기",
     "address_saved": "배송지가 저장되었습니다.",
-    "address_save_failed": "배송지 저장에 실패했습니다."
+    "address_save_failed": "배송지 저장에 실패했습니다.",
+    "address_name_exists": "「배송지」라는 이름의 배송지가 이미 저장돼 있어 저장하지 않았습니다. 마이페이지 › 배송지 관리에서 확인하세요."
   },
   "coupon_download": {
     "modal_title": "쿠폰 다운로드",
@@ -616,5 +622,15 @@
   "guest_order_show": {
     "page_title": "비회원 주문 상세",
     "back_to_lookup": "주문 조회로 돌아가기"
-  }
+  },
+  "guest_claim_show": {
+    "page_title": "비회원 신청 내역 상세",
+    "page_description": "비회원 주문의 교환·반품·취소/환불 신청 내용을 확인합니다."
+  },
+  "guest_claim_apply": {
+    "page_title": "비회원 클레임 신청",
+    "page_description": "비회원 주문의 교환·반품·취소/환불을 신청합니다.",
+    "edit_page_title": "비회원 신청 내용 수정"
+  },
+  "order_permission_denied": "주문 권한이 없어 주문할 수 없습니다. 판매자에게 문의해 주세요."
 }

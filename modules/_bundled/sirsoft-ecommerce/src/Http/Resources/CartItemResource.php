@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 
 /**
  * 장바구니 아이템 리소스
@@ -45,8 +46,8 @@ class CartItemResource extends BaseOrderItemResource
             'product_option' => $productOption ? $this->formatOptionInfo($productOption) : null,
 
             // 판매 가능 여부 플래그 (U13②/U4 — 비정상 항목은 합계 제외되며 프론트가 구분 표시)
-            'available' => $product ? $product->isPurchasable() : false,
-            'unavailable_reason' => $product ? $this->resolveUnavailableReason($product) : null,
+            'available' => $product ? ($product->isPurchasable() && (! $productOption || $productOption->is_active)) : false,
+            'unavailable_reason' => $product ? $this->resolveUnavailableReason($product, $productOption) : null,
 
             // 선택된 배송국가로 배송 가능한지 (D1 — layer 1, 카트 표시/주문 차단 플래그)
             'is_shippable_to_selected_country' => $product
@@ -75,13 +76,16 @@ class CartItemResource extends BaseOrderItemResource
      * 판매중이 아니면 판매상태 값(suspended/sold_out/coming_soon), 판매중이지만
      * 전시중지(hidden)면 전시상태 값(hidden), 구매 가능하면 null 을 반환합니다.
      *
+     * 상품은 판매 중이지만 담은 옵션이 판매 중지(비활성)면 판매중지(suspended)로 본다.
+     *
      * @param  Product  $product  상품 모델
+     * @param  ProductOption|null  $productOption  담은 옵션
      * @return string|null 구매 불가 사유 (구매 가능 시 null)
      */
-    protected function resolveUnavailableReason($product): ?string
+    protected function resolveUnavailableReason($product, $productOption = null): ?string
     {
         if ($product->isPurchasable()) {
-            return null;
+            return ($productOption && ! $productOption->is_active) ? ProductSalesStatus::SUSPENDED->value : null;
         }
 
         if ($product->sales_status !== ProductSalesStatus::ON_SALE) {

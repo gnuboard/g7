@@ -42,6 +42,18 @@ effects:
   - navigation_boundary_null              # 47-3: 첫/마지막 글 prev/next null
   - list_return_preserves_query           # 45-1: 행 클릭→상세→목록 복귀 시 query 보존
   - navigation_preserves_list_query       # 75: 이전글/다음글 leg 도 목록 상태(page/search/category)를 승계
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - returns_empty_when_post_not_found
+  - returns_empty_when_no_adjacent_posts
+  - returns_adjacent_posts_when_available
+  - controller_does_not_invoke_getpost
+  - controller_degrades_gracefully_when_getadjacent_throws
+  - controller_does_not_log_warning_on_success
+  - returns_error_for_nonexistent_board
+  - returns_error_for_inactive_board
+  - asc_order_flips_prev_next_direction
+  - notice_posts_excluded_from_navigation
+  - newest_post_has_no_prev
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostNavigationTest.php

@@ -1,0 +1,39 @@
+feature: 구매확정 경고는 실제로 닫히는 것만 말한다
+
+description: |
+  마이페이지 주문상세의 [구매확정] 모달은 세 동작을 한 묶음으로 막힌다고 경고했다.
+
+    구매확정 후에는 취소/교환/환불이 불가능합니다.
+
+  **셋 중 둘이 사실이 아니다.** `UserClaimService::claimableOptions()` 는 교환·반품
+  가능 상태를 `claim.exchange_requestable_statuses` · `claim.return_requestable_statuses`
+  에서 읽고, 기본값은 둘 다 `[delivered, confirmed]` 다. 즉 구매확정한 상품도 교환·반품은
+  그대로 신청할 수 있다. 닫히는 것은 취소·환불뿐이다 —
+  `branchForStatus(confirmed)` 가 null 이라 refund 가 유형 목록에서 빠진다.
+
+  #599 통합실측 세션2 에서 주문 107 의 사과(옵션 231)를 구매확정한 직후
+  `claimable-options` 가 `claimable_types: ["exchange","return"]` 을 그대로 돌려주는 것을
+  확인했다 — 화면 경고와 정반대다.
+
+  사실과 반대인 경고는 **정당한 반품을 단념시킨다**. 배송완료 상품을 구매확정하면
+  반품 길이 막힌다고 읽히기 때문이다. 구매확정은 되돌릴 수 없으므로 한 번 오해하면
+  회복 경로도 없다.
+
+  계약: 경고 문구는 교환·반품이 막힌다고 말하지 않는다. 단어 자체를 금지하지는 않는다 —
+  「교환·반품은 그대로 신청할 수 있습니다」처럼 **가능하다고** 말하는 문장은 정당하므로,
+  「교환 … 불가능」 형태의 선언만 잠근다.
+
+  문구가 기대는 전제(설정 기본값)도 함께 잠근다. 일관성만 잠그면 전제가 바뀌었을 때
+  문구가 조용히 맞는 말이 되어 버려, 무엇이 정본인지 알 수 없게 된다.
+
+axes:
+  surface:
+    - claim_contract
+    - warning_copy
+
+effects:
+  - confirmed_status_keeps_exchange_and_return_open
+  - warning_does_not_claim_exchange_or_return_blocked
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/ConfirmPurchaseWarningAccuracyTest.php

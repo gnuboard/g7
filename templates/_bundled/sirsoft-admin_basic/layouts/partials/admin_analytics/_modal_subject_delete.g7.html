@@ -1,0 +1,63 @@
+<!-- 정보주체 기록 삭제 확인 창. 정보주체 요청 화면(검색 조건)과 방문자 상세(방문자 키) 두 곳이 같은 창을
+  쓴다 — 지울 기준은 `_global.analyticsSubject` 에 담아 온다. 액션·전환을 먼저 지우고 방문을 지우며
+  집계는 건드리지 않는다. 되돌릴 수 없어 체크 없이는 버튼이 잠긴다. 끝난 뒤 갈 곳은 부르는 쪽이
+  `analyticsSubjectAfter` 로 정한다(`visitors` 면 목록으로, 아니면 검색 결과를 다시 받는다). -->
+<partial description="방문자 통계 — 정보주체 기록 삭제 확인 창" editor_label="$t:admin.modal_label.analytics.subject_delete_modal">
+  <modal data-type="composite" data-ref="analytics_subject_delete_modal" title="$t:admin.analytics.modals.subject_delete.title" size="sm">
+    <div class="py-2 space-y-3">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.analytics.modals.subject_delete.body</p>
+      <!-- 정보주체 요청 화면은 쓰지 않는 칸을 '' 로 채운다 — `??` 는 빈 문자열에서 멈춰 대상이 공란이 되므로 `||` 로 건너뛴다. -->
+      <p class="text-label-subtle font-mono break-all">{{_global.analyticsSubject?.visitor_key || _global.analyticsSubject?.ip || (_global.analyticsSubject?.user_id ? '#' + _global.analyticsSubject.user_id : '')}}</p>
+      <label class="inline-clickable">
+        <input type="checkbox" class="checkbox" checked="{{_global.analyticsSubjectConfirm === true}}">
+          <on type="change">
+            <!-- 확인 체크 — 켜야 삭제 버튼이 풀린다. 여는 두 화면이 매번 꺼진 값으로 열어, 앞선 요청의 체크가 다음 사람에게 넘어가지 않는다. -->
+            <set-state target="global" analyticsSubjectConfirm="{{$event.target.checked}}"/>
+          </on>
+        </input>
+        <span class="text-label">$t:admin.analytics.modals.subject_delete.confirm_label</span>
+      </label>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsSubjectDeleting}}">
+        <on type="click">
+          <!-- 취소 — 체크를 걷고 닫는다. 지울 기준(`analyticsSubject`)은 여는 쪽이 매번 새로 채우므로 여기서 비우지 않는다. -->
+          <sequence>
+            <set-state target="global" :analyticsSubjectConfirm="false"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="subject_delete_button" type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.analyticsSubjectConfirm !== true || _global.analyticsSubjectDeleting}}">
+        <on type="click">
+          <!-- 삭제 실행 — 여는 쪽이 넣어 둔 기준(주소·회원·방문자 키 중 하나)과 기간을 보낸다. 빈 칸은 `|| undefined` 로 본문에서
+               빼 빈 문자열을 조건으로 보내지 않는다. 끝나면 여는 쪽이 정한 곳(`analyticsSubjectAfter`)으로 — 방문자 상세면 목록으로 가고,
+               정보주체 화면이면 결과를 다시 받는다. -->
+          <sequence>
+            <set-state target="global" :analyticsSubjectDeleting="true"/>
+            <api-call :auth_required="true" target="/api/admin/analytics/privacy/subjects" method="DELETE">
+              <body :confirm="true" ip="{{_global.analyticsSubject?.ip || undefined}}" user_id="{{_global.analyticsSubject?.user_id || undefined}}" visitor_key="{{_global.analyticsSubject?.visitor_key || undefined}}" from="{{_global.analyticsSubject?.from || undefined}}" to="{{_global.analyticsSubject?.to || undefined}}"/>
+              <success>
+                <set-state target="global" :analyticsSubjectDeleting="false" :analyticsSubjectConfirm="false"/>
+                <close-modal/>
+                <toast type="success" message="$t:admin.analytics.modals.subject_delete.success|visits={{(response?.data?.deleted?.visits ?? 0) | number}}|actions={{(response?.data?.deleted?.actions ?? 0) | number}}"/>
+                <!-- 액션의 조건은 `if` 다 — `data-if` 는 노드 렌더 조건이라 액션에 붙이면 엔진이 평가하지 않아 두 갈래가 다 돈다. -->
+                <navigate if="{{_global.analyticsSubjectAfter === 'visitors'}}" path="/admin/analytics/visitors" :mergeQuery="true">
+                  <query/>
+                </navigate>
+                <refetch-data-source if="{{_global.analyticsSubjectAfter !== 'visitors'}}" dataSourceId="analytics_subjects"/>
+              </success>
+              <fail>
+                <set-state target="global" :analyticsSubjectDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.analyticsSubjectDeleting}}" name="spinner" :spin="true" class="text-sm"/>
+        <span>$t:admin.analytics.modals.subject_delete.button</span>
+      </button>
+    </div>
+  </modal>
+</partial>

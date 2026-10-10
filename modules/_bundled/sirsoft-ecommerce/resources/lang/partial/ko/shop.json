@@ -217,7 +217,7 @@
     "additional_options": "추가옵션",
     "required": "필수",
     "select_options_guide": "옵션을 선택해주세요",
-    "select_option_suffix": "을(를) 선택해주세요",
+    "select_option_suffix": " 선택",
     "select_upper_option_first": "상위 옵션을 먼저 선택하세요",
     "please_select_options": "옵션을 선택해주세요",
     "cart_added": "장바구니에 담았습니다.",

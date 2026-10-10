@@ -1,7 +1,11 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 자식의 중복 private formatFileSize() 를 제거해 부모 BaseApiResource 의 공용 포맷터를 상속하게 한 내부 수정(S3-D11 — 가시성 축소로 인한 FatalError 해소). 응답 키(size_formatted)·상태코드·payload 형태 모두 불변 — `api:docgen --scope=core --check` drift 없음 확인.
+
 namespace App\Http\Resources;
 
+use App\Models\TemplateLayout;
+use App\Services\LayoutMarkupService;
 use App\Support\LayoutDescription;
 use Illuminate\Http\Request;
 
@@ -47,6 +51,26 @@ class LayoutResource extends BaseApiResource
     }
 
     /**
+     * `?with_markup=1` 응답에 싣는 마크업 페이로드 — 컨트롤러가 변환 서비스로 만들어 주입한다(없으면 미부착).
+     *
+     * @var array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null}|null
+     */
+    protected ?array $markup = null;
+
+    /**
+     * 마크업 페이로드를 주입합니다 (`?with_markup=1`).
+     *
+     * @param  array<string, mixed>  $markup  변환 결과
+     * @return $this
+     */
+    public function withMarkup(array $markup): static
+    {
+        $this->markup = $markup;
+
+        return $this;
+    }
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  현재 요청 객체
@@ -56,6 +80,18 @@ class LayoutResource extends BaseApiResource
     {
         $content = $this->getValue('content', []);
         $contentJson = is_array($content) ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
+
+        // 편집기 JSON 탭이 처음 여는 본문 — 배열 캐스트를 거친 `$content` 는 `{}` 와 `[]` 를 같게 만들어
+        // 저장된 `{}` 가 `[]` 로 보인다(한 글자 치면 컴파일 결과로 `{}` 로 바뀌어 탭이 스스로 어긋난다).
+        // 행 원본 문자열을 빈 map 을 보존해 다시 인코딩한다 — 컴파일 응답과 같은 인코더라 표기도 같다.
+        if ($this->resource instanceof TemplateLayout) {
+            $raw = $this->resource->getRawOriginal('content');
+
+            if (is_string($raw) && $raw !== '') {
+                $service = app(LayoutMarkupService::class);
+                $contentJson = $service->encodeJson($service->decodeStoredContent($raw));
+            }
+        }
         $name = $this->getValue('name');
 
         return [
@@ -88,6 +124,9 @@ class LayoutResource extends BaseApiResource
                 ? (int) $this->getValue('current_version')
                 : null,
 
+            // `?with_markup=1` — 코드 편집기 HTML 탭용 역변환 결과 (기본 응답은 무변경)
+            ...($this->markup ?? []),
+
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
             // created_by, updated_by는 보안상 제외
@@ -104,22 +143,5 @@ class LayoutResource extends BaseApiResource
         return [
             'can_update' => 'core.templates.layouts.edit',
         ];
-    }
-
-    /**
-     * 파일 크기를 사람이 읽기 쉬운 형태로 변환
-     *
-     * @param  int  $bytes  바이트 크기
-     * @return string 포맷된 크기 (예: "12.5 KB")
-     */
-    private function formatFileSize(int $bytes): string
-    {
-        if ($bytes < 1024) {
-            return $bytes.' B';
-        } elseif ($bytes < 1048576) {
-            return round($bytes / 1024, 1).' KB';
-        } else {
-            return round($bytes / 1048576, 1).' MB';
-        }
     }
 }

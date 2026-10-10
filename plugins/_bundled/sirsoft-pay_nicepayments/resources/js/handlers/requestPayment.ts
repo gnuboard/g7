@@ -1,12 +1,19 @@
+// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기)
+import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
+import { translateNicepay as t } from '../translate';
 
 interface G7ApiResponse {
     data?: unknown;
 }
 
+interface G7ApiRequestOptions {
+    headers?: Record<string, string>;
+}
+
 interface G7CoreApi {
-    get: (url: string) => Promise<G7ApiResponse>;
-    post?: (url: string, data?: Record<string, unknown>) => Promise<G7ApiResponse>;
+    get: (url: string, options?: G7ApiRequestOptions) => Promise<G7ApiResponse>;
+    post: <T = G7ApiResponse>(url: string, data?: Record<string, unknown>, options?: G7ApiRequestOptions) => Promise<T>;
 }
 
 interface G7CoreToast {
@@ -23,16 +30,6 @@ interface G7Core {
     state?: G7CoreStateApi;
 }
 
-interface TemplateLocalState {
-    paymentMethod?: string;
-}
-
-interface TemplateApp {
-    globalState?: {
-        _local?: TemplateLocalState;
-    };
-}
-
 interface PgPaymentData {
     order_number: string;
     order_name: string;
@@ -47,6 +44,60 @@ interface PgPaymentData {
     customer_email?: string;
     customer_phone?: string;
     goods_cl?: string; // 휴대폰결제 상품 유형: '0'=디지털컨텐츠, '1'=실물
+    /**
+     * 클레임 추가결제일 때만 서버가 싣는 「결제창을 닫으면 돌아갈 신청서 상세」 주소
+     * (`ClaimPaymentRedirect::cancelled` — 회원/비회원 경로·`?claim_payment=cancelled` 포함).
+     */
+    claim_cancel_return_url?: string;
+    /**
+     * 가상계좌 주문의 입금 기한(쇼핑몰 자동취소 기한 — ISO 8601, 한국 시각). 결제창에 계좌 만료 시각으로 넘긴다.
+     * 없으면 나이스 기본 기한으로 계좌가 열린다.
+     */
+    vbank_due_at?: string;
+}
+
+/**
+ * 주문 입금 기한(ISO 8601, 한국 시각)을 나이스 `VbankExpDate` 형식(YYYYMMDDHHmm)으로 바꿉니다.
+ *
+ * 서버가 한국 시각(+09:00)으로 싣으므로 글자 자리만 잘라 쓴다 — 브라우저 시간대로 다시 환산하지 않는다.
+ *
+ * @param dueAt 주문 입금 기한
+ * @returns YYYYMMDDHHmm, 형식이 맞지 않으면 null
+ */
+function toVbankExpDate(dueAt: string | undefined): string | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dueAt ?? '');
+    return m ? `${m[1]}${m[2]}${m[3]}${m[4]}${m[5]}` : null;
+}
+
+/**
+ * 나이스 가상계좌 결제창의 입금자명(예금주명) 한도 — EUC-KR 10바이트(한글 5자).
+ *
+ * 가상계좌 결제창은 구매자명(BuyerName)을 입금자명 기본값으로 쓰고, 한도를 넘으면 「10bytes 이하」로 거절한다.
+ */
+const VBANK_DEPOSITOR_MAX_BYTES = 10;
+
+/**
+ * 문자열을 EUC-KR 바이트 한도 안으로 글자 단위로 자릅니다(한글 1자 = 2바이트, ASCII = 1바이트).
+ *
+ * 글자 중간에서 자르지 않는다 — 다음 글자가 한도를 넘으면 그 앞에서 멈춘다.
+ *
+ * @param value 원래 문자열
+ * @param maxBytes 바이트 한도
+ * @returns 한도 안의 앞부분
+ */
+function cutToEucKrBytes(value: string, maxBytes: number): string {
+    let bytes = 0;
+    let result = '';
+    for (const ch of value) {
+        const size = ch.charCodeAt(0) <= 0x7f ? 1 : 2;
+        if (bytes + size > maxBytes) {
+            break;
+        }
+        bytes += size;
+        result += ch;
+    }
+
+    return result;
 }
 
 interface RequestPaymentParams {
@@ -58,7 +109,8 @@ interface ClientConfig {
     mid: string;
     sdk_url: string;
     sign_data_url: string;
-    close_report_url?: string;
+    /** PG 로 보내는 결과 수신 주소(ReturnURL) — 서버가 사이트 주소로 만든 절대 URL */
+    callback_url?: string;
     useEscrow?: boolean;
 }
 
@@ -78,7 +130,6 @@ declare global {
         nicepayClose: (resultCode: string, resultMsg: string) => void;
         goPay: (form: HTMLFormElement) => void;
         G7Core: G7Core;
-        __templateApp?: TemplateApp;
     }
 }
 
@@ -101,19 +152,6 @@ export const KNOWN_SDK_HOSTS: readonly string[] = ['web.nicepay.co.kr'];
  * @param fallback 번역 엔진 부재 시 사용할 문구
  * @returns 번역된 문자열
  */
-function t(key: string, fallback: string): string {
-    const translate = (window as any)?.G7Core?.t;
-
-    if (typeof translate !== 'function') {
-        return fallback;
-    }
-
-    const full = `sirsoft-pay_nicepayments.${key}`;
-    const result = translate(full);
-
-    return typeof result === 'string' && result !== full ? result : fallback;
-}
-
 /**
  * SDK URL 이 신뢰 호스트인지 확인하고, 아니면 예외를 던집니다.
  *
@@ -197,7 +235,6 @@ function createPaymentForm(action: string, fields: Record<string, string>): HTML
     return form;
 }
 
-const CALLBACK_PATH = '/plugins/sirsoft-pay_nicepayments/payment/callback';
 
 // 나이스페이 v3 모바일 결제창 endpoint — 폼을 직접 POST 하면 NicePay 모바일 페이지로 전체 redirect.
 // PC 와 달리 SDK 불필요. 결제 완료 후 ReturnURL 로 redirect.
@@ -242,7 +279,12 @@ function isMobileDevice(): boolean {
  *
  * 체크아웃 레이아웃에서 주문 생성 API 성공 후 호출됩니다:
  *   handler: "sirsoft-pay_nicepayments.requestPayment"
- *   params: { pgPaymentData: response.data.pg_payment_data }
+ *   params: { pgPaymentData: response.data.pg_payment_data, paymentMethod?: string }
+ *
+ * 결제수단은 액션 인자로만 받는다 — `paymentMethod` 를 명시하면 그 값, 아니면 서버가 저장해 내려준
+ * `pgPaymentData.payment_method`(확장 수단이면 확장 ID 그대로, #475). 둘 다 없으면 결제를 시작하지 않는다.
+ * 종전에는 엔진 내부(`window.__templateApp`)의 화면 상태와 'card' 기본값까지 뒤져, 잘못된 수단으로 결제창이
+ * 열릴 수 있었다(#639).
  *
  * 호출 순서:
  *   1. Client Config API 호출 → MID, SDK URL, SignData URL 획득
@@ -259,19 +301,22 @@ function isMobileDevice(): boolean {
 export async function requestPaymentHandler(action: PaymentAction, _context?: unknown): Promise<void> {
     const { pgPaymentData, paymentMethod: paramPaymentMethod } = action.params ?? {};
 
-    const localState = window.__templateApp?.globalState?._local;
-    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
-    const paymentMethod = paramPaymentMethod
-        ?? pgPaymentData?.payment_method
-        ?? localState?.paymentMethod
-        ?? 'card';
-
     if (!pgPaymentData) {
         console.error('[sirsoft-pay_nicepayments] pgPaymentData is required');
         return;
     }
 
     const G7Core = window.G7Core;
+
+    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
+    const paymentMethod = paramPaymentMethod || pgPaymentData.payment_method;
+
+    if (typeof paymentMethod !== 'string' || paymentMethod === '') {
+        console.error('[sirsoft-pay_nicepayments] payment method is required (paymentMethod or pgPaymentData.payment_method)');
+        G7Core?.state?.setLocal?.({ isSubmittingOrder: false });
+        G7Core?.toast?.error?.(t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
+        return;
+    }
 
     try {
         // 1. Client Config 가져오기
@@ -290,7 +335,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             await loadScript(config.sdk_url);
 
             if (typeof window.goPay !== 'function') {
-                G7Core?.toast?.error?.('나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+                G7Core?.toast?.error?.(t('payment.error.sdk_load_failed', '나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.'));
                 G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
                 return;
             }
@@ -298,34 +343,26 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
         // 3. 서버에서 EdiDate + SignData 생성
         //    공개 엔드포인트지만 서버에서 주문번호, 결제 전 상태, 금액, 구매자 컨텍스트를 검증한다.
-        const signDataUrl = window.location.origin + config.sign_data_url;
-        const authToken = (typeof localStorage !== 'undefined') ? localStorage.getItem('auth_token') : null;
-        const signDataHeaders: Record<string, string> = {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-        };
-        if (authToken) {
-            signDataHeaders['Authorization'] = `Bearer ${authToken}`;
-        }
-        const signDataRes = await fetch(signDataUrl, {
-            method: 'POST',
-            credentials: 'include',
-            headers: signDataHeaders,
-            body: JSON.stringify({
+        //    회원 Bearer 와 401 처리는 G7Core.api 가 맡는다(같은 출처 요청에만 싣는다). 실패 응답은 예외로 올라와
+        //    아래 catch 가 결제 오류로 안내한다.
+        // 실패한 같은 주문을 다시 결제할 때 서버는 주문을 결제대기로 되살린다. 그 복구는 주문 소유자만
+        // 할 수 있으므로 비회원은 공개 상태 계약(_global.guestOrderToken)의 조회 토큰을 싣는다.
+        const signData = await G7Core.api.post<SignDataResponse>(
+            config.sign_data_url,
+            {
                 amt: pgPaymentData.amount,
                 moid: pgPaymentData.order_number,
                 buyer_email: pgPaymentData.customer_email ?? '',
                 buyer_phone: pgPaymentData.customer_phone ?? '',
-            }),
-        });
+            },
+            { headers: { 'X-Requested-With': 'XMLHttpRequest', ...buildGuestOrderTokenHeaders() } },
+        );
 
-        if (!signDataRes.ok) {
+        if (!signData?.signData || !signData?.ediDate) {
             throw new Error('SignData 생성에 실패했습니다.');
         }
 
-        const signData: SignDataResponse = await signDataRes.json();
-        const callbackUrl = window.location.origin + CALLBACK_PATH;
+        const callbackUrl = requireSiteAbsoluteUrl(config.callback_url);
 
         // 4. 결제 폼 생성
         // 간편결제는 PayMethod='CARD' + DirectShowOpt='CARD' + 방식별 directive 필드 조합.
@@ -361,6 +398,19 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             MallReserved: '',
             MallReserved1: '',
         };
+
+        // 가상계좌 계좌 만료 시각 = 주문 입금 기한(쇼핑몰 자동취소 기한). 넘기지 않으면 나이스 기본 기한으로 열리고
+        // 콜백이 그 값(VbankExpDate)으로 주문 기한을 덮어써 주문서 안내와 어긋난다.
+        const vbankExpDate = payMethod === 'VBANK' ? toVbankExpDate(pgPaymentData.vbank_due_at) : null;
+        if (vbankExpDate) {
+            formFields.VbankExpDate = vbankExpDate;
+        }
+
+        // 가상계좌 결제창은 구매자명을 입금자명 기본값으로 쓰고 EUC-KR 10바이트를 넘으면 결제를 거절한다 —
+        // 한글 6자 이상 주문자가 가상계좌로 결제할 수 없었다. 다른 결제수단은 원래 이름을 그대로 넘긴다.
+        if (payMethod === 'VBANK') {
+            formFields.BuyerName = cutToEucKrBytes(formFields.BuyerName, VBANK_DEPOSITOR_MAX_BYTES);
+        }
 
         // 휴대폰결제: 상품 유형 덮어쓰기 (0:디지털컨텐츠, 1:실물)
         if (payMethod === 'CELLPHONE') {
@@ -409,10 +459,10 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         try {
             // 비회원 주문은 X-Guest-Order-Token 이 없으면 서버가 주문을 찾지 못한다.
             // 헤더를 빼면 과세/비과세 금액이 조회되지 않아 결제사에 세금 구분이 빠진 채 전달된다.
-            const guestToken = G7Core?.state?.get?.('_global')?.guestOrderToken;
+            const guestHeaders = buildGuestOrderTokenHeaders();
             const orderRes = await G7Core.api.get(
                 `/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`,
-                guestToken ? { headers: { 'X-Guest-Order-Token': guestToken } } : undefined,
+                Object.keys(guestHeaders).length > 0 ? { headers: guestHeaders } : undefined,
             );
             const od = orderRes?.data as Record<string, unknown> | null | undefined;
             if (od) {
@@ -467,11 +517,8 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             paymentClosed = true;
             const closeReason = [_resultCode, resultMsg].filter(Boolean).join(': ') || 'nicepay-window-closed';
             void reportPaymentWindowClosed({
-                closeReportUrl: config.close_report_url,
                 oid: pgPaymentData.order_number,
                 price: Number(pgPaymentData.amount),
-                buyer_email: pgPaymentData.customer_email ?? '',
-                buyer_phone: pgPaymentData.customer_phone ?? '',
                 payment_method: paymentMethod,
             }, closeReason);
             window.removeEventListener('popstate', handlePopState);
@@ -482,6 +529,16 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             if (form.parentNode) form.parentNode.removeChild(form);
             (window as unknown as Record<string, unknown>)['__sirsoftNicepayPaymentInProgress'] = false;
             G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
+
+            // 클레임 추가결제 — 서버가 준 신청서 상세(`?claim_payment=cancelled`)로 돌아간다.
+            // 머물면 신청서 화면의 [결제하기]가 「결제 진행 중…」에 묶이고 취소 안내도 없다
+            // (신청서 화면의 진행 표시는 결제창이 열린 동안 일부러 끄지 않는다 — 돌아온 화면이 다시 읽는다).
+            const claimReturnUrl = pgPaymentData.claim_cancel_return_url;
+            if (typeof claimReturnUrl === 'string' && claimReturnUrl !== '') {
+                window.location.href = claimReturnUrl;
+                return;
+            }
+
             if (resultMsg) G7Core?.toast?.error?.(resultMsg);
         };
 
@@ -501,6 +558,27 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         console.error('[sirsoft-pay_nicepayments] requestPayment error', error);
         (window as unknown as Record<string, unknown>)['__sirsoftNicepayPaymentInProgress'] = false;
         G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
-        G7Core?.toast?.error?.('결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        G7Core?.toast?.error?.(t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
     }
+}
+
+/**
+ * PG 로 보낼 결과 수신 주소가 서버가 내려준 절대 URL 인지 확인하고 그대로 돌려줍니다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 조립하지 않는다 — 별칭·하위 도메인·포트로
+ * 접속한 사용자의 결제 결과가 그 주소로 간다. 서버(client-config)가 사이트 주소로 만든 값만 쓰고,
+ * 상대 경로가 오면(구버전 서버) 결제를 시작하지 않는다.
+ *
+ * @param url 서버가 내려준 주소
+ * @returns 절대 URL
+ * @throws Error http(s) 절대 URL 이 아닌 경우
+ */
+export function requireSiteAbsoluteUrl(url: unknown): string {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    throw new Error(
+        t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+    );
 }

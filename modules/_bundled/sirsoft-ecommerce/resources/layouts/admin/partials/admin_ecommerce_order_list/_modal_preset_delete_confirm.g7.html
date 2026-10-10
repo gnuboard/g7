@@ -1,0 +1,38 @@
+<!-- 주문 목록 — 검색조건 프리셋 삭제 확인 창. 지울 프리셋의 id·이름은 관리 창이 `_global` 에 담아 두고
+  이 창이 그것을 읽는다(창끼리도 서로의 `_local` 을 보지 못한다). 이름까지 넘겨받는 이유는 확인
+  문장에 넣어야 하는데 이 창이 프리셋 목록을 따로 조회하지 않기 때문이다. -->
+<partial description="Order List - Preset Delete Confirm Modal">
+  <modal data-type="composite" data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.order.modal.preset_delete.title" size="sm">
+    <p class="text-body">$t:sirsoft-ecommerce.admin.order.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <!-- 프리셋 삭제. 성공하면 프리셋 목록만 다시 부르고 창을 닫는다 — 지운 것은 검색조건이지 주문이 아니므로 주문 목록은 건드리지 않는다 -->
+          <sequence>
+            <set-state target="global" :isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}" method="DELETE">
+              <success>
+                <set-state target="global" :isDeleting="false"/>
+                <refetch-data-source dataSourceId="presets"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.deleted"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

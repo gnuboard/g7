@@ -1,0 +1,29 @@
+feature: SEO 데이터 소스 해석기 — 봇 화면을 만들 때 레이아웃 데이터 소스를 서버 자신의 API 로 불러 ds id 에 담는다
+
+description: |
+  SEO 렌더러는 레이아웃의 데이터 소스 중 SEO 대상(seo_data_sources)만 골라, 엔드포인트의 라우트·쿼리·전역 표현식과
+  params 를 해석한 뒤 사이트 주소(APP_URL)로 내부 HTTP 호출을 보내고 응답을 ds id 에 담는다. 실패(시간 초과·404·500)는
+  fallback(없으면 빈 배열)으로 대신한다. 호출에는 Accept-Language 와, 서버 자신의 렌더 호출임을 알리는 앱 키 서명 헤더
+  (X-G7-Seo-Render)를 싣는다 — 받는 쪽(게시판 조회수 등)이 열람 집계에서 뺀다(7.1.0 실측 O-K3-1).
+
+test_files:
+  - tests/Unit/Seo/DataSourceResolverTest.php
+
+axes:
+  aspect:
+    - response_mapping
+    - failure_fallback
+    - endpoint_resolution
+    - params_resolution
+    - request_headers
+
+effects:
+  - response_mapped_to_ds_id
+  - non_seo_source_not_called
+  - failure_returns_fallback
+  - route_params_substituted
+  - endpoint_expressions_resolved
+  - params_sent_as_query
+  - empty_params_omitted
+  - locale_header_sent
+  - seo_render_marker_header_sent

@@ -1,0 +1,440 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "클레임 신청서 작성 - 교환상품 변경 모달 (D29)",
+        "editor_label": "$t:user.modal_label.mypage_claims.change_product_modal"
+    },
+    "comment": "교환 방식은 신청서 전체가 아니라 상품마다 정하는 속성이다(D29). 이 모달은 어느 상품인지(index)를 파라미터로 받아 그 항목만 갱신한다 — index 없이 열면 언제나 첫 상품이 바뀌고 오류 없이 조용히 잘못된 신청서가 저장된다. 상태는 페이지 로컬(_local)에 두어 적용 핸들러가 읽는 값과 화면이 그리는 값이 같은 저장소를 보게 한다.",
+    "id": "modal_claim_change_product",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:claim.change_product.title",
+        "size": "md"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4 space-y-4"
+            },
+            "children": [
+                {
+                    "comment": "로딩",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.changeProductLoading === true}}",
+                    "props": {
+                        "className": "py-8 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "spinner",
+                                "className": "text-xl text-gray-400 dark:text-gray-500 animate-spin"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "교환 방식 선택 — 동일상품 / 옵션변경",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.changeProductLoading !== true}}",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "comment": "동일상품 교환 — 같은 옵션의 새 상품으로 바꿔 받는다. 고른 방식은 모달 안에서만 바뀌고 신청서 줄에는 [적용]을 눌러야 반영된다.",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setClaimChangeProductMode",
+                                            "params": {
+                                                "mode": "same"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "claimChangeProductMode",
+                                        "value": "same",
+                                        "checked": "{{_local.changeProductMode !== 'change'}}",
+                                        "className": "text-blue-600"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:claim.change_product.same_option"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "comment": "옵션 변경 교환 — 같은 상품의 다른 옵션으로 받는다. 이 방식을 고르면 옵션·추가옵션 칸이 열리고, 재고가 있는 조합이 잡혀야 [적용]이 풀린다.",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setClaimChangeProductMode",
+                                            "params": {
+                                                "mode": "change"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "claimChangeProductMode",
+                                        "value": "change",
+                                        "checked": "{{_local.changeProductMode === 'change'}}",
+                                        "className": "text-blue-600"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:claim.change_product.option_change"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "옵션 선택 — 같은 상품의 옵션만 고를 수 있다(서버도 같은 규칙으로 거절한다).",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.changeProductLoading !== true && _local.changeProductMode === 'change' && (_local.changeProductProduct?.option_groups ?? []).length > 0}}",
+                    "props": {
+                        "className": "space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:claim.change_product.select_option"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{_local.changeProductProduct?.option_groups ?? []}}",
+                                "item_var": "claimOptionGroup",
+                                "index_var": "claimOptionGroupIdx"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "mb-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "block text-sm text-gray-600 dark:text-gray-400 mb-1"
+                                            },
+                                            "text": "{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}"
+                                        },
+                                        {
+                                            "comment": "옵션 그룹은 차례로 고른다 — 앞 그룹을 골라야 다음 그룹이 풀리고, 고를 때마다 지금까지의 선택 조합으로 실제 옵션을 다시 찾아 아래 요약(가격·재고)에 세운다.",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "changeProductSelections": "{{Object.assign({}, _local.changeProductSelections ?? {}, { [claimOptionGroup.name_localized]: $event.target.value })}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "갱신된 선택으로 매칭 옵션을 찾는다 (stale state 방지 — 템플릿 공용 핸들러 재사용)",
+                                                            "handler": "findMatchingOption",
+                                                            "params": {
+                                                                "selectedOptions": "{{Object.assign({}, _local.changeProductSelections ?? {}, { [claimOptionGroup.name_localized]: $event.target.value })}}",
+                                                                "optionGroups": "{{_local.changeProductProduct?.option_groups ?? []}}",
+                                                                "options": "{{_local.changeProductProduct?.options ?? []}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "changeProductMatched": "{{$prev.matchedOption}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "w-full",
+                                                "value": "{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}",
+                                                "placeholder": "$t:shop.select",
+                                                "disabled": "{{claimOptionGroupIdx > 0 && !_local.changeProductSelections?.[_local.changeProductProduct?.option_groups[claimOptionGroupIdx - 1]?.name_localized]}}",
+                                                "options": "{{[{ value: '', label: $t('shop.select') }, ...(claimOptionGroup.values_localized ?? claimOptionGroup.values ?? []).map(v => ({ value: v, label: v }))]}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "커스텀(추가) 옵션 — 선택지가 직접입력을 허용할 때만 입력칸이 열린다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.changeProductLoading !== true && _local.changeProductMode === 'change' && (_local.changeProductProduct?.additional_options ?? []).length > 0}}",
+                    "props": {
+                        "className": "space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:claim.change_product.custom_options"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{_local.changeProductProduct?.additional_options ?? []}}",
+                                "item_var": "claimAddGroup"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "block text-sm text-gray-600 dark:text-gray-400 mb-1"
+                                            },
+                                            "text": "{{claimAddGroup.name}}"
+                                        },
+                                        {
+                                            "comment": "추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다.",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "changeProductAdditionalSelections": "{{$event.target.value === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalSelections ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalSelections ?? {}, { [claimAddGroup.id]: Number($event.target.value) })}}",
+                                                        "changeProductAdditionalTexts": "{{Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id)))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "w-full",
+                                                "value": "{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}",
+                                                "placeholder": "$t:shop.additional_option_placeholder",
+                                                "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(claimAddGroup.values ?? []).map(v => ({ value: v.id, label: v.name }))]}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{(claimAddGroup.values ?? []).find(v => v.id === Number(_local.changeProductAdditionalSelections?.[claimAddGroup.id]))?.allow_custom_text === true}}",
+                                            "props": {
+                                                "className": "mt-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "직접입력 글 — 공백만 남기면 그 그룹의 글을 아예 지워 빈 글이 신청서에 실리지 않게 한다. 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다.",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "type": "input",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "changeProductAdditionalTexts": "{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: $event.target.value })}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "maxLength": 255,
+                                                        "value": "{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}",
+                                                        "placeholder": "$t:shop.additional_option_custom_text_placeholder",
+                                                        "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "고른 조합을 지금 살 수 없을 때의 안내 (T2-D10 · #599 3차 실측 L-4). 옵션 찾기(`findMatchingOption`)는 판매중지(`is_active=false`) 옵션을 건너뛰므로, 모든 그룹을 골랐는데도 찾은 옵션이 없으면 **그 조합은 지금 교환받을 수 없다**는 뜻이다. 종전에는 이 경우 가격 줄도 안내도 없이 [적용]만 조용히 잠겨, 같은 화면의 재고 0(「선택한 옵션의 재고가 없습니다.」)과 달리 왜 안 되는지 알 수 없었다. 서버도 같은 조합을 거절한다(T2-D11 — 교환 대상은 지금 살 수 있는 옵션만).",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.changeProductMode === 'change' && !_local.changeProductMatched && (_local.changeProductProduct?.option_groups ?? []).length > 0 && (_local.changeProductProduct?.option_groups ?? []).every(g => !!_local.changeProductSelections?.[g.name_localized])}}",
+                    "props": {
+                        "className": "p-3 rounded-lg bg-red-50 dark:bg-red-900/20"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-red-600 dark:text-red-400 font-medium"
+                            },
+                            "text": "$t:claim.change_product.unavailable"
+                        }
+                    ]
+                },
+                {
+                    "comment": "선택된 옵션 요약 — 재고가 없으면 서버가 exchange_target_out_of_stock 으로 거절하므로 여기서 먼저 드러낸다. 차액은 신청서 요약(서버 미리보기)이 확정하므로 여기서는 안내만 한다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.changeProductMode === 'change' && !!_local.changeProductMatched}}",
+                    "props": {
+                        "className": "p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{_local.changeProductMatched?.option_name_localized ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-bold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{_local.changeProductMatched?.selling_price_formatted ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_local.changeProductMatched?.stock_quantity ?? 0) <= 0}}",
+                            "props": {
+                                "className": "mt-1 text-xs text-red-600 dark:text-red-400 font-medium"
+                            },
+                            "text": "$t:claim.change_product.out_of_stock"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:claim.change_product.difference_notice"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "모달 푸터",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex gap-3 px-4 pb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    },
+                    "text": "$t:claim.change_product.cancel"
+                },
+                {
+                    "comment": "[적용] — 모달을 연 그 상품 줄에만 교환 방식·옵션·추가옵션을 써 넣고 창을 닫는다. 옵션 차액은 이어서 부르는 미리보기가 신청서 요약에서 확정한다.",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sirsoft-ecommerce.applyClaimChangeProduct",
+                            "params": {
+                                "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                                "isGuest": "{{_local.isGuest === true}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                        "disabled": "{{_local.changeProductMode === 'change' && (!_local.changeProductMatched || (_local.changeProductMatched?.stock_quantity ?? 0) <= 0)}}"
+                    },
+                    "text": "$t:claim.change_product.apply"
+                }
+            ]
+        }
+    ]
+}

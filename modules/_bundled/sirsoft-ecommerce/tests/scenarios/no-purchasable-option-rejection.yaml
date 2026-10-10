@@ -1,0 +1,39 @@
+feature: 구매할 수 있는 옵션이 없는 상품의 담기·바로 구매 거절 (422)
+
+description: |
+  옵션 행이 하나도 없는 상품(예: 옵션 없이 등록된 샘플 상품)을 상품 상세에서 바로 구매하면
+  `POST /checkout` 이 `Failed to create checkout.` 500 으로 끝났다. 서버는 옵션 없음 예외를
+  던졌지만 체크아웃 컨트롤러가 그 예외를 잡지 않아 일반 예외 분기로 빠졌다.
+
+  옵션을 지정하지 않은 담기·바로 구매는 판매 중인(활성) 옵션 중 첫 번째를 쓴다. 옵션 행이 없거나
+  전부 비활성이면 `CartOperationException('no_purchasable_option')` 을 던지고, 담기·체크아웃
+  컨트롤러가 이를 422 + 번역된 안내로 돌려준다. 담기 쪽 응답은 메시지 키에 모듈 도메인을 한 번 더
+  붙여 번역이 키 원문으로 나가던 결함도 함께 고쳤다.
+
+# axis 의미:
+#   진입 경로(장바구니 담기 / 바로 구매 체크아웃) × 상품의 옵션 행 상태(없음 / 전부 비활성 / 활성 옵션 있음).
+#   활성 옵션 있음(active_present)은 비활성 옵션을 건너뛰는 회귀 가드다.
+#   명시 옵션 판매 중지(explicit_inactive)의 장바구니 담기 쪽에는 「담은 뒤 판매 중지 → 장바구니 표시·주문서 거절」 경로도
+#   함께 둔다 — 진입은 담기이고, 효과(cart_marks_inactive_option_unavailable)로 구분한다.
+axes:
+  entry: [cart_add, direct_checkout]
+  option_rows: [none, all_inactive, active_present, explicit_inactive]
+
+effects:
+  - direct_checkout_rejects_without_purchasable_option   # 바로 구매 → 500 이 아닌 422(no_purchasable_option)
+  - cart_add_rejects_without_purchasable_option          # 담기 → 422(no_purchasable_option)
+  - rejection_message_is_translated                      # 응답 message 가 키 원문이 아닌 번역 문구
+  - rejection_creates_nothing                            # 임시 주문·장바구니 행을 만들지 않는다
+  - default_option_skips_inactive_options                # 옵션 미지정 시 비활성 옵션을 건너뛴다
+  - no_purchasable_option_maps_to_422_message_key        # 예외 사유 → 422 + 메시지 키
+  - explicit_inactive_option_rejected_as_unavailable     # 옵션 id 를 지정한 판매 중지 옵션도 담기·바로 구매·주문서에서 판매 불가로 거절
+  - cart_marks_inactive_option_unavailable               # 담은 뒤 판매 중지된 옵션은 장바구니에서 구매 불가(suspended)로 표시
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/NoPurchasableOptionRejectionTest.php
+
+notes: |
+  화면 쪽(상품 상세 구매 카드)은 판매 중인 옵션이 없으면 바로 구매·장바구니 버튼을 비활성화하고
+  사유 안내를 보인다 — 사용자 템플릿(sirsoft-basic)의 레이아웃 원문 검사가 담당한다.
+  옵션을 명시해(`product_option_id`) 비활성 옵션을 담거나, 담은 뒤 옵션이 판매 중지된 경로도 판매 불가로
+  막는다(explicit_inactive) — 상품 판매 상태와 같은 「판매 중지(suspended)」 사유로 다룬다.

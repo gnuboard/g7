@@ -11,7 +11,7 @@
 2. 토큰 자동 갱신: 401 응답 시 자동 처리
 3. 컨텍스트 분리: admin/user 분리 관리
 4. 로그인: login 핸들러 또는 AuthManager.login()
-5. 이벤트: auth:login, auth:logout 이벤트 구독 가능
+5. 이벤트: on(event, handler) 로 login, logout, tokenRefreshed, authStateChange 구독 (해제 함수 반환)
 ```
 
 ---
@@ -24,6 +24,8 @@
 - [API 엔드포인트](#api-엔드포인트)
 - [토큰 자동 갱신](#토큰-자동-갱신)
 - [로그인 시 로케일 처리](#로그인-시-로케일-처리)
+- [2단계 인증 로그인 (engine-v1.65.0+)](#2단계-인증-로그인-engine-v1650)
+- [비밀번호 변경 요구 로그인 (engine-v1.77.0+)](#비밀번호-변경-요구-로그인-engine-v1770)
 - [사용 예시](#사용-예시)
 - [이벤트 처리](#이벤트-처리)
 - [주의사항](#주의사항)
@@ -98,10 +100,10 @@ private getAuthType(route: Route, pathname: string): AuthType {
 
 ## API 엔드포인트
 
-| 구분 | 로그인 | 인증번호 확인 | 인증번호 재발송 | 사용자 정보 | 로그아웃 | 토큰 갱신 |
-|------|--------|--------------|----------------|------------|---------|----------|
-| **관리자** | `/auth/admin/login` | `/auth/admin/login/two-factor` | `/auth/admin/login/two-factor/resend` | `/admin/auth/user` | `/admin/auth/logout` | `/admin/auth/refresh` |
-| **일반사용자** | `/auth/login` | `/auth/login/two-factor` | `/auth/login/two-factor/resend` | `/user/auth/user` | `/user/auth/logout` | `/user/auth/refresh` |
+| 구분 | 로그인 | 인증번호 확인 | 인증번호 재발송 | 비밀번호 변경 단계 (완료 / 연기) | 사용자 정보 | 로그아웃 | 토큰 갱신 |
+|------|--------|--------------|----------------|------------------------------|------------|---------|----------|
+| **관리자** | `/auth/admin/login` | `/auth/admin/login/two-factor` | `/auth/admin/login/two-factor/resend` | `/auth/admin/login/password-change` / `…/postpone` | `/admin/auth/user` | `/admin/auth/logout` | `/admin/auth/refresh` |
+| **일반사용자** | `/auth/login` | `/auth/login/two-factor` | `/auth/login/two-factor/resend` | `/auth/login/password-change` / `…/postpone` | `/user/auth/user` | `/user/auth/logout` | `/user/auth/refresh` |
 
 **공통**:
 
@@ -189,16 +191,36 @@ if (localeChanged && window.__templateApp) {
 
 ---
 
+## 부팅·새로고침 때 회원 언어 맞춤 (engine-v1.79.0+)
+
+로그인 상태의 화면 언어는 **회원이 설정한 언어(DB `users.language`)** 를 기준으로 한다. 서버는 로그인 회원의 요청 언어로 `users.language` 를 쓰므로(SetLocale 미들웨어), 화면 언어가 이 브라우저에 남은 `g7_locale` 로 따로 정해지면 화면 문구와 서버 문구(필수 언어 검증, 확장 목록 이름)가 섞인다.
+
+- **부팅·새로고침**: `TemplateApp.init()` 이 인증 프리로드(`preloadAuth`)를 마친 뒤, 첫 렌더 전에 회원 언어가 화면 언어와 다르면 `g7_locale` 을 회원 언어로 바꾸고 엔진을 그 언어로 다시 초기화한다(`alignLocaleWithMemberLanguage`). 사이트가 지원하지 않는 언어(`appConfig.supportedLocales` 에 없음)면 바꾸지 않는다.
+- **언어 선택**: 다른 언어를 고르면 종전처럼 화면을 바꾸고 회원 언어를 저장한다. **같은 언어를 다시 골라도** `changeLocale()` 이 화면은 그대로 두고 로그인 회원의 언어를 저장한다(세션 중 다른 기기에서 바뀐 회원 언어를 이 화면 언어로 되돌린다). 관리자 헤더 `LanguageSelector` 는 다른 언어를 고르면 직접 저장한 뒤 `G7Core.locale.change(locale, { persist: false })` 로 화면만 바꿔 저장 요청이 한 번만 나가고, 같은 언어 재선택은 `G7Core.locale.change(locale)` 에 넘긴다.
+- **비로그인**: 종전대로 `g7_locale` → 서버가 내려준 값(`Accept-Language`) → `'ko'` 순이다.
+
+---
+
 ## 2단계 인증 로그인 (engine-v1.65.0+)
 
 보안 환경설정의 「2단계 인증」이 켜져 있으면 서버는 비밀번호가 맞아도 토큰을 발급하지 않고
-인증 요청(challenge)만 돌려줍니다. 즉, **로그인 응답은 두 가지 형태의 200** 입니다.
+인증 요청(challenge)만 돌려줍니다. 비밀번호 변경 단계(engine-v1.77.0+, 아래 절)까지 더하면 **로그인 응답은 세 가지 형태의 200** 입니다.
 
 ```typescript
 export type LoginResult =
-  | { status: 'authenticated'; user: AuthUser }
-  | { status: 'two_factor_required'; challenge: TwoFactorChallenge };
+  | { status: 'authenticated'; user: AuthUser; extras?: LoginExtras }
+  | { status: 'two_factor_required'; challenge: TwoFactorChallenge }
+  | { status: 'password_change_required'; challenge: PasswordChangeChallenge }; // engine-v1.77.0+
+
+/** 서버가 로그인 응답에 함께 실은 안내 필드 (engine-v1.76.0+). 토큰·사용자·단계 표지를 뺀 나머지 필드다. */
+export type LoginExtras = Record<string, unknown>;
+
+/** 2단계 인증 확인 결과 (engine-v1.76.0+, 비밀번호 변경 단계 형태는 engine-v1.77.0+) */
+export type TwoFactorSession = Exclude<LoginResult, { status: 'two_factor_required' }>;
 ```
+
+`extras` 는 서버가 응답에 안내 필드를 실었을 때만 붙는다(지금 코어가 싣는 것은 `dormancy_restored`, 비밀번호 변경을 미룬 로그인의 `postponed_until` 이다). 휴면 계정이 로그인으로 풀리면 `dormancy_restored: true` 가
+실려, 화면이 「휴면 상태가 해제되었습니다」 안내를 띄울 수 있다.
 
 `AuthManager.login()` 은 이 판별 유니온을 돌려줍니다. 한 형태만 가정하면 challenge 응답에서
 `data.user.*` 접근이 예외가 되고, `data.token`(undefined)을 저장하면 `"undefined"` 문자열이 남아
@@ -207,7 +229,8 @@ export type LoginResult =
 | 메서드 | 하는 일 |
 |--------|---------|
 | `login(type, credentials, options?)` | 비밀번호 확인. `LoginResult` 반환 |
-| `completeTwoFactor(type, { challengeId, code }, options?)` | 인증번호 확인 → 토큰 발급 → `AuthUser` 반환 |
+| `completeTwoFactor(type, { challengeId, code }, options?)` | 인증번호 확인 → 토큰 발급 → `AuthUser` 반환. 비밀번호 변경 단계가 오면 세션을 열지 않고 오류를 던집니다 |
+| `completeTwoFactorSession(type, { challengeId, code }, options?)` | `completeTwoFactor` 와 같은 확인을 하고 `TwoFactorSession` 반환 — `authenticated`(`user` + 서버 안내 필드 `extras`) 또는 `password_change_required`(engine-v1.77.0+) (engine-v1.76.0+) |
 | `resendTwoFactor(type, { challengeId }, options?)` | 인증번호 재발송 → **새** `TwoFactorChallenge` 반환 |
 
 레이아웃에서는 액션 핸들러 `login` / `loginTwoFactor` / `loginTwoFactorResend` 로 사용합니다
@@ -231,6 +254,60 @@ export type LoginResult =
 서버는 기존 challenge 를 **취소하고 새로 발행**합니다. 유효한 코드를 여러 개 동시에 살려 두면
 대입 시도의 표적이 넓어지기 때문입니다. 따라서 클라이언트는 응답의 `challenge_id` 로 반드시
 교체하고 입력란을 비워야 합니다.
+
+---
+
+## 비밀번호 변경 요구 로그인 (engine-v1.77.0+)
+
+비밀번호가 만료됐거나(보안 환경설정 「비밀번호 만료」) 관리자가 정해 준 비밀번호면, 서버는 비밀번호와
+(켜져 있으면) 2단계 인증이 모두 맞아도 토큰 대신 **비밀번호 변경 단계**를 돌려줍니다. 순서는 항상
+자격증명 → 2단계 인증 → 비밀번호 변경입니다 — 변경 단계가 2단계 인증보다 앞에 오면 비밀번호만 훔친
+사람이 2단계 인증 없이 비밀번호를 바꿔 계정을 가져갑니다.
+
+```typescript
+export interface PasswordChangeChallenge {
+  challengeId: string;
+  reason: 'expired' | 'admin_assigned';   // 사용 기간 만료 / 관리자가 정해 준 비밀번호
+  canPostpone: boolean;                    // '다음에 변경' 가능 여부 (만료 + '다음에 변경 허용' 설정일 때만)
+  postponeDays: number | null;             // 미루면 다시 안내할 때까지의 일수
+  expiredAt: string | null;                // 만료 시각 (관리자 지정이면 null)
+  expiresAt: string | null;                // 이 challenge 가 무효가 되는 시각 (발급 후 10분)
+}
+```
+
+| 메서드 | 하는 일 |
+|--------|---------|
+| `completePasswordChange(type, { challengeId, password, passwordConfirmation }, options?)` | 새 비밀번호로 로그인 완료. 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급. `LoginResult`(authenticated) |
+| `postponePasswordChange(type, { challengeId }, options?)` | 변경을 미루고 로그인 완료. `extras.postponed_until` 포함 |
+
+레이아웃 핸들러와 `response` 모양:
+
+| 핸들러 | 변경 단계일 때 `response` | 로그인 완료일 때 `response` |
+|--------|--------------------------|---------------------------|
+| `login` | `{ user: null, two_factor_required: false, password_change_required: true, challenge_id, reason, can_postpone, postpone_days, expired_at, expires_at }` | `{ user, two_factor_required: false, password_change_required: false, dormancy_restored? }` |
+| `loginTwoFactor` | 위와 같음(`two_factor_required` 없음) | `{ user, password_change_required: false, dormancy_restored? }` |
+| `loginPasswordChange` (body `challenge_id`·`password`·`password_confirmation`) | — | `{ user, password_change_required: false, dormancy_restored? }` |
+| `loginPasswordChangePostpone` (body `challenge_id`) | — | `{ user, password_change_required: false, postponed_until, dormancy_restored? }` |
+
+`dormancy_restored` 는 휴면이 그 로그인으로 풀렸을 때만 실립니다. 네 핸들러 모두 결과의 `extras` 를 `response` 에
+펼쳐 전달합니다(engine-v1.76.0 전에는 엔진이 버려 휴면 해제 안내가 뜨지 않았습니다).
+
+실패(422)는 `error.errors` 로 구분합니다 — 규칙 위반·현재 비밀번호와 같은 값·최근 사용 비밀번호는
+`errors.password`, 식별자 만료·무효(시간 초과, 이미 사용, 다른 로그인 경로의 식별자)는 `errors.challenge_id` 입니다.
+후자는 **처음부터 다시 로그인**해야 합니다 — 2단계 인증 코드도 이미 소비됐습니다.
+
+### 레이아웃 작성 규칙
+
+- 세 단계(자격증명 / 2단계 인증 / 비밀번호 변경)의 블록 `if` 는 서로 **상보적**입니다. 제출 시퀀스의 `login`·
+  `loginTwoFactor`·`loginPasswordChange` 도 상호배타 `if` 를 갖습니다.
+- `login`·`loginTwoFactor` 성공 분기는 **`response.password_change_required` 를 먼저** 봅니다. 「2단계 인증이 아니면
+  로그인 성공」(`navigate if="{{!response.two_factor_required}}"`)으로 판정하면 변경 단계 응답(`user: null`, 토큰 없음)을
+  성공으로 오판해 이동하고, 보호 화면이 다시 로그인으로 돌려보냅니다.
+- 같은 시퀀스·`onSuccess` 안에서 방금 저장한 단계 상태를 다시 읽지 않습니다 — `{{response.*}}` 만 씁니다.
+- 변경 단계 상태도 `init_actions` 에서 초기화합니다(화면을 떠났다 오면 처음부터).
+- 「다음에 변경」 버튼은 `can_postpone` 일 때만 그립니다. 「처음부터 다시」 는 두 단계 상태를 모두 비웁니다.
+- `errors.challenge_id` 422 를 받으면 안내 후 자격증명 단계로 돌아갑니다.
+- 최종 성공 지점(로그인·2단계 인증·변경·연기)마다 `response.dormancy_restored` 토스트와 이동을 같은 모양으로 둡니다.
 
 ---
 
@@ -279,20 +356,62 @@ AuthManager는 이벤트 기반으로 인증 상태 변경을 알립니다:
 ```typescript
 const authManager = AuthManager.getInstance();
 
-// 인증 상태 변경 감지
-authManager.on('authStateChange', (state) => {
-  console.log('Auth state:', state.isAuthenticated, state.user);
+// 최초 상태는 getState() 로 읽는다 (on 은 지난 이벤트를 다시 보내지 않는다)
+render(authManager.getState());
+
+// 인증 상태 변경 감지 — on() 은 해제 함수를 돌려준다
+const offState = authManager.on('authStateChange', (state) => {
+  render(state);
 });
 
-// 로그아웃 감지
-authManager.on('logout', () => {
-  console.log('User logged out');
+// 로그아웃 감지 — 인자는 로그아웃 직전 상태
+const offLogout = authManager.on('logout', (previousState) => {
+  console.log('User logged out', previousState.type);
 });
+
+// 화면을 떠날 때 해제
+offState();
+offLogout();
 ```
 
+React 컴포넌트에서는 effect 정리 함수로 해제합니다.
+
+```tsx
+useEffect(() => {
+  const authManager = G7Core.AuthManager.getInstance();
+  setAuth(authManager.getState());
+
+  return authManager.on('authStateChange', (state) => setAuth(state));
+}, []);
+```
+
+**메서드**:
+
+| 메서드 | 설명 |
+|--------|------|
+| `on(event, handler)` | 핸들러를 등록하고 해제 함수를 반환 |
+| `off(event, handler)` | 등록한 핸들러를 해제 (등록 때와 같은 참조) |
+| `getState()` | 현재 인증 상태의 사본 (`{ isAuthenticated, user, type }`) |
+
 **사용 가능한 이벤트**:
-- `authStateChange`: 인증 상태가 변경될 때
-- `logout`: 사용자가 로그아웃할 때
+
+| 이벤트 | 발생 시점 | 핸들러 인자 |
+|--------|-----------|-------------|
+| `login` | 로그인 또는 2단계 인증 완료로 세션이 열릴 때 | 새 인증 상태 |
+| `logout` | `logout()` 이 끝날 때 (서버 호출 실패여도 발생) | 로그아웃 직전 상태 |
+| `tokenRefreshed` | 토큰 갱신에 성공했을 때 | 없음 |
+| `authStateChange` | 인증 상태가 바뀔 때 (아래 참고) | 현재 인증 상태 |
+
+`authStateChange` 는 다음 경우에 발생합니다.
+
+- 로그인으로 세션이 열릴 때 (`login` 바로 뒤)
+- `checkAuth()` 가 사용자 정보를 받았을 때 (이미 인증 상태였어도 발생)
+- `logout()` 이 끝날 때 (`logout` 바로 뒤, 한 번만)
+- 토큰이 없거나 인증 확인이 실패해 인증 상태에서 비인증 상태로 바뀔 때 (비인증에서 비인증으로는 발생하지 않음)
+
+**최초 상태는 `getState()` 로 읽습니다.** 첫 인증 확인은 확장 번들이 실리기 전에 끝날 수 있고, `on()` 은 이미 지나간 이벤트를 다시 보내지 않습니다. 구독을 건 시점의 상태는 `getState()` 로 먼저 읽고, 이후 변경만 이벤트로 받습니다.
+
+**해제를 빠뜨리지 않습니다.** 화면을 오가며 구독을 걸고 풀지 않으면 화면을 떠난 뒤에도 핸들러가 남아 쌓입니다.
 
 ---
 
@@ -350,7 +469,7 @@ AuthManager.getInstance().updateConfig(
 ): void
 ```
 
-`AuthConfig` 의 갱신 가능 필드: `loginPath`, `defaultPath`, `loginEndpoint`, `logoutEndpoint`, `refreshEndpoint`, `userEndpoint`, `unauthorizedRedirect`.
+`AuthConfig` 의 갱신 가능 필드: `loginPath`, `defaultPath`, `loginEndpoint`, `logoutEndpoint`, `refreshEndpoint`, `userEndpoint`, `unauthorizedRedirect`, `guestOnlyPaths`(engine-v1.78.1).
 
 ### 호출 위치 — 템플릿 부트스트랩만
 
@@ -378,6 +497,17 @@ AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' })
 ```typescript
 const locale = window.G7Core?.locale || 'ko';
 AuthManager.getInstance().updateConfig('user', { loginPath: `/${locale}/login` });
+```
+
+### 코드 예시 3 — 로그인 전용 화면 경로 (`guestOnlyPaths`)
+
+로그인 이동 주소(`getLoginRedirectUrl`)는 로그인 전용 화면(로그인·가입·비밀번호 찾기·재설정)을 복귀 경로(`?redirect=`)로 싣지 않는다 — 실으면 로그인을 마친 뒤 다시 로그인 폼에 떨어진다. 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣는다. 기본값은 관리자 `/admin/login`·`/admin/forgot-password`·`/admin/reset-password`, 사용자 `/login`·`/register`·`/forgot-password`·`/reset-password` 이고 `loginPath` 는 항상 포함된다. 이 화면들의 경로를 바꾼 템플릿은 `loginPath` 와 함께 갱신한다.
+
+```typescript
+AuthManager.getInstance().updateConfig('user', {
+  loginPath: '/account/signin',
+  guestOnlyPaths: ['/account/signin', '/account/join', '/account/forgot', '/account/reset'],
+});
 ```
 
 ### 호출 금지 — 모듈/플러그인
@@ -409,10 +539,18 @@ AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' })
 
 레이아웃 fetch 가 토큰 만료 등으로 401 재시도까지 실패하면, 코어 `TemplateApp.showRouteError` 가드가 자동으로 로그인 페이지로 리다이렉트한다 — `getLoginRedirectUrl(authType, returnUrl, 'session_expired')` 호출하여 `?reason=session_expired` 쿼리 포함. 로그인 레이아웃의 `init_actions` 에서 해당 reason 을 감지해 안내 토스트를 표시한다.
 
+```html
+<on type="click">
+  <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 로그인 레이아웃 init_actions 예시
 {
-  "if": "{{route?.query?.reason}} === 'session_expired'",
+  "if": "{{query?.reason === 'session_expired'}}",
   "handler": "toast",
   "params": {
     "type": "warning",

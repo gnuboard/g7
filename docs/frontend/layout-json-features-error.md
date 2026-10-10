@@ -28,11 +28,30 @@
 
 ### 레이아웃 레벨 설정
 
+```html
+<layout name="_admin_base" version="1.0.0">
+  <error-handling>
+    <on-code code="403">
+      <toast type="warning" message="$t:errors.forbidden"/>
+    </on-code>
+    <on-code code="404">
+      <show-error-page target="content"/>
+    </on-code>
+    <on-code code="500">
+      <show-error-page target="content"/>
+    </on-code>
+  </error-handling>
+  <div class="admin-shell"/>
+</layout>
+
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
   "layout_name": "_admin_base",
-  "extends": null,
   "errorHandling": {
     "403": {
       "handler": "toast",
@@ -48,7 +67,9 @@
     }
   },
   "data_sources": [],
-  "components": []
+  "components": [
+    { "type": "basic", "name": "Div", "props": { "className": "admin-shell" } }
+  ]
 }
 ```
 
@@ -56,6 +77,7 @@
 
 템플릿의 `template.json`에서 전역 에러 핸들링을 정의할 수 있습니다.
 
+<!-- pair:skip template.json 매니페스트의 errorHandling 절 — 레이아웃 소스가 아니다 -->
 ```json
 {
   "id": "sirsoft-admin_basic",
@@ -120,6 +142,19 @@ API 에러 발생
 
 ### sequence/parallel 지원
 
+```html
+<error-handling>
+  <on-code code="500">
+    <parallel>
+      <toast type="error" message="$t:errors.server_error"/>
+      <open-modal target="error_report_modal"/>
+    </parallel>
+  </on-code>
+</error-handling>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "errorHandling": {
@@ -151,6 +186,8 @@ API 에러 발생
 | `{{error.errors}}` | 필드별 에러 (422) |
 | `{{error.data}}` | 전체 응답 데이터 |
 
+> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 작성 권장 경로가 아니다.
+
 ### 시스템 기본값
 
 `errorHandling` 설정이 어디에도 없을 경우 사용되는 기본값:
@@ -180,6 +217,10 @@ const DEFAULT_ERROR_HANDLING = {
 };
 ```
 
+- 오류 처리 문맥에는 `{{auth.loginPath}}` 가 실린다 — 템플릿 인증 종류(관리자/사용자)의 로그인 화면에 현재 주소를 복귀 경로로 붙인 주소다(engine-v1.78.2). 액션 오류 처리에서는 실행 문맥 데이터가 같은 `auth` 키를 주면 그쪽이 이긴다.
+- 경로가 빈 값으로 풀린 `navigate` 는 실행하지 않고 경고 로그만 남긴다.
+- 세션 만료로 로그인 화면으로 옮기는 중(문서 이탈 중)에 끝난 실패는 오류 처리(토스트·이동)를 돌리지 않는다.
+
 ### 레이아웃 상속 시 병합 규칙
 
 `errorHandling`은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
@@ -187,6 +228,43 @@ const DEFAULT_ERROR_HANDLING = {
 - **에러 코드 기반 병합**: 동일한 에러 코드에 대해 자식 레이아웃이 부모를 오버라이드
 - **추가**: 부모에 없는 에러 코드는 자식에서 추가됨
 - **default 상속**: 자식에 default가 없으면 부모의 default 사용
+
+```html
+<!-- 부모 레이아웃 (_admin_base.json) -->
+<error-handling>
+  <on-code code="403">
+    <toast message="권한 없음"/>
+  </on-code>
+  <on-code code="500">
+    <show-error-page target="full"/>
+  </on-code>
+</error-handling>
+
+<!-- 자식 레이아웃 (admin_user_list.json) -->
+<error-handling>
+  <on-code code="403">
+    <open-modal target="forbidden_modal"/>
+  </on-code>
+  <on-code code="404">
+    <toast message="사용자를 찾을 수 없습니다"/>
+  </on-code>
+</error-handling>
+
+<!-- 병합 결과 -->
+<error-handling>
+  <on-code code="403">
+    <open-modal target="forbidden_modal"/>
+  </on-code>
+  <on-code code="404">
+    <toast message="사용자를 찾을 수 없습니다"/>
+  </on-code>
+  <on-code code="500">
+    <show-error-page target="full"/>
+  </on-code>
+</error-handling>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 부모 레이아웃 (_admin_base.json)
@@ -233,6 +311,22 @@ fallback이 있어도 errorHandling은 건너뛰지 않음
 특정 에러 코드가 **상위 레벨(레이아웃/템플릿)로 전파되지 않도록** 의도적으로 차단할 때 사용합니다.
 
 **대표 사례**: 비회원의 `/api/auth/user` 401 응답은 정상 동작이므로, 레이아웃의 `errorHandling.401`(showErrorPage 등)로 전파되면 안 됩니다.
+
+```html
+<data-source id="current_user" type="api" endpoint="/api/auth/user" :auth_required="true">
+  <fallback>
+    <field name="data" :value="[]"/>
+  </fallback>
+  <error-handling>
+    <on-code code="401">
+      <!-- 비회원 401은 정상 — 전파 방지 -->
+      <suppress/>
+    </on-code>
+  </error-handling>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -283,6 +377,21 @@ fallback이 있어도 errorHandling은 건너뛰지 않음
 - 에러 페이지 레이아웃에서 헤더/로그인 상태 표시가 정상 동작
 - `initGlobal`의 문자열/배열/객체(`{ key, path }`) 형태 모두 지원
 
+```html
+<data-source id="current_user" endpoint="/api/auth/user" :auth_required="true" initGlobal="currentUser">
+  <fallback>
+    <field name="data" :value="[]"/>
+  </fallback>
+  <error-handling>
+    <on-code code="401">
+      <suppress/>
+    </on-code>
+  </error-handling>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -320,6 +429,20 @@ extends로 상속받은 레이아웃의 errorHandling도 병합됨
 데이터 소스 및 apiCall 핸들러의 `onSuccess`/`onError`에서 배열 형태로 여러 액션을 순차 실행할 수 있습니다. 이는 `sequence` 핸들러와 동일한 동작이며, `$prev`/`$results` 컨텍스트 변수를 지원합니다.
 
 ### 배열형 onSuccess
+
+```html
+<on type="click">
+  <api-call target="/api/admin/settings" method="POST" body="{{_local.formData}}">
+    <success>
+      <set-state target="local" :isSaving="false" :hasChanges="false"/>
+      <toast type="success" message="$t:common.save_success"/>
+      <refetch-data-source dataSourceId="settings"/>
+    </success>
+  </api-call>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

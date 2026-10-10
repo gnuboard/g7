@@ -65,10 +65,22 @@ $errors = [];
 $formData = [];
 $error = null;
 
+// 설치 소유권 잠금 — 다른 브라우저 세션이 소유한 설치에는 어떤 단계 화면·POST 처리도 열지 않고
+// 복구 토큰 입력 화면만 보여준다. 같은 세션은 토큰 없이 그대로 재개한다.
+$ownershipLocked = installer_state_is_claimed($state)
+    && ! installer_session_is_owner($state)
+    && ! isInstallationCompleted();
+
 // Step 3 기본값 설정
-if ($currentStep === 3) {
+if (! $ownershipLocked && $currentStep === 3) {
     $defaults = DEFAULT_INSTALL_CONFIG;
-    $defaults['app_url'] = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'];
+    // 서버가 아는 Host 는 프록시 뒤에서 내부 주소일 수 있다 — 저장된 값이 없으면 화면 스크립트가
+    // 운영자가 실제로 보고 있는 주소로 채운다(data-autofill). Host 헤더가 없어도 경고 없이 빈 값.
+    $requestHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    $defaults['app_url'] = $requestHost === ''
+        ? ''
+        : (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http').'://'.$requestHost;
+    $defaults['app_url_autofill'] = ! isset($state['config']['app_url']);
     $defaults['admin_language'] = getCurrentLanguage();
     // state.json에서 비밀번호 제외된 config 복원 (폼에 비밀번호를 사전 입력하지 않음).
     // state 에는 이미 비밀이 기록되지 않지만(이슈 #465), 레거시 state.json 이 남아 있는
@@ -83,12 +95,14 @@ if ($currentStep === 3) {
     $formData = array_merge($defaults, $savedConfig);
 }
 
-// 설치 흐름 검증
-validateInstallationFlow($currentStep, $state);
+if (! $ownershipLocked) {
+    // 설치 흐름 검증
+    validateInstallationFlow($currentStep, $state);
 
-// POST 요청 처리
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    handlePostRequest($currentStep, $currentLang, $formData, $errors, $error);
+    // POST 요청 처리
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        handlePostRequest($currentStep, $currentLang, $formData, $errors, $error);
+    }
 }
 
 // 번역 로드
@@ -101,7 +115,9 @@ if ($currentStep < 0 || $currentStep > 6) {
     $currentStep = 0;
 }
 
-$stepFile = __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? 'welcome').'.php';
+$stepFile = $ownershipLocked
+    ? __DIR__.'/views/ownership-recovery.php'
+    : __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? 'welcome').'.php';
 ?>
 <!DOCTYPE html>
 <html lang="<?= $currentLang ?>">
@@ -130,7 +146,7 @@ $stepFile = __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? '
     <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/css/installer.css?v=<?= time() ?>">
 </head>
 <body>
-    <?php if ($currentStep > 0) { ?>
+    <?php if ($currentStep > 0 && ! $ownershipLocked) { ?>
     <!-- Installer Header Bar -->
     <div class="installer-header-bar">
         <div class="installer-header-content">
@@ -173,6 +189,9 @@ $stepFile = __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? '
     <script>
         window.INSTALLER_BASE_URL = '<?= INSTALLER_BASE_URL ?>';
         window.CURRENT_STEP = <?= $currentStep ?>;
+        // 상태변경 API 요청 검증 토큰 (세션 CSRF) — 소유 토큰 원문은 페이지에 싣지 않는다
+        window.INSTALLER_CSRF = <?= installer_json_encode(installer_csrf_token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        window.INSTALLER_OWNERSHIP_LOCKED = <?= $ownershipLocked ? 'true' : 'false' ?>;
         window.INSTALLER_LANG = <?= installer_json_encode($translations ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         window.INSTALLER_STATE_LOCALE = <?= installer_json_encode($state['g7_locale'] ?? null) ?>;
         // DB 최고권한 계정 목록 — 서버 상수를 그대로 내려보내 JS 에 목록을 중복 정의하지 않는다.

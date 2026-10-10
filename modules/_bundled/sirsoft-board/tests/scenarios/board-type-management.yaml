@@ -1,0 +1,22 @@
+feature: 게시판 유형 관리 API (목록·생성·수정·삭제·접근·폼 데이터)
+
+description: |
+  관리자 게시판 유형 관리 API 의 기본 동작을 묶는다 — 목록은 id 순, 생성은 slug 형식·중복·한국어 이름 필수 검증,
+  수정은 없는 유형이면 404, 삭제는 쓰지 않는 유형만 지우고 사용 중·기본 유형·없는 유형은 거부, 비로그인 접근 차단,
+  게시판 폼 데이터에 유형 목록 포함. 삭제 실패의 상태코드·문구 구분은 board-type-exception-status.yaml 이 맡는다.
+
+axes:
+  operation: [list, create, update, delete, access, form_data]
+
+exclusions: []
+
+effects:
+  - board_types_listed_in_id_order
+  - board_type_created_after_validation
+  - board_type_updated_or_not_found
+  - unused_board_type_deleted_and_protected_types_refused
+  - unauthenticated_access_blocked
+  - board_form_data_includes_board_types
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardTypeManagementTest.php

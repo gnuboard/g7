@@ -1,7 +1,7 @@
 # 템플릿 시스템 기초
 
 > **위치**: `docs/extension/template-basics.md`
-> **관련 문서**: [index.md](./index.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
+> **관련 문서**: [README.md](./README.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
 
 ---
 
@@ -43,6 +43,16 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 - 다국어 및 권한 기반 렌더링
 
 ---
+
+## 확장 컴포넌트 오버라이드
+
+템플릿은 확장(모듈/플러그인)이 제공한 컴포넌트를 자기 구현으로 갈아끼울 수 있다. 구현체는 `src/components/overrides/{확장식별자}/{이름}.tsx` 에 두고 `components.json` 의 `overrides[]` 에 대상·버전 제약을 선언한다 — 디렉토리명이 곧 대상 식별자이며, 레이아웃 오버라이드(`layouts/overrides/{확장식별자}/`)와 같은 규약이다.
+
+대체는 같은 이름 아래에서 일어나므로 **마크업 표면은 바뀌지 않는다** — 레이아웃은 오버라이드가 붙든 떨어지든 그대로다. 버전 제약이 대상과 맞지 않으면 대체본을 폐기하고 **원본이 자리를 지킨다**(화면이 조용히 사라지지 않는다).
+
+이 대체 권한은 템플릿에만 있다. 반대 방향(확장이 템플릿 컴포넌트를 대체)은 열려 있지 않다.
+
+규약 전문: **[extension-components.md](extension-components.md)**
 
 ## 템플릿 타입
 
@@ -200,6 +210,16 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 
 ## 템플릿 메타데이터 (template.json)
 
+### icon 필드 (선택)
+
+템플릿도 자기 아이콘을 담을 수 있습니다. 보통은 `assets/icon.svg` 를 두면 되고, 다른
+경로를 쓸 때만 `template.json` 에 `"icon": "assets/brand/mark.svg"` 를 적습니다.
+규격과 표시 자리는 [확장 아이콘](extension-icons.md)에 있습니다.
+
+> `preview` · `thumbnail` · `screenshots` 는 **지원하지 않습니다.** 과거 일부 템플릿이
+> 선언했지만 코드가 읽지 않던 값이라 제거했습니다. 아이콘은 위 관례를 쓰세요.
+
+
 **위치**: `/templates/_bundled/[vendor-template]/template.json`
 
 ### 구조
@@ -234,6 +254,10 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 }
 ```
 
+`assets.css` 는 화면 HTML 이 링크할 템플릿 CSS 목록입니다. 사용자·관리자 화면과 검색엔진용 화면 모두 **선언했고 설치본에 파일이 있는** 경로만 링크하며(`dist/` 를 뗀 자산 주소, 예: `templates/_bundled/sirsoft-basic/dist/css/components.css` → `/api/templates/assets/{id}?file=css/components.css`), CSS 를 쓰지 않는 템플릿은 `"css": []` 로 두면 CSS 링크가 실리지 않습니다.
+
+> **7.1.0 부터 달라진 점(직접 만든 템플릿 확인)**: 7.0.x 까지는 `assets.css` 선언과 무관하게 화면이 늘 `?file=css/components.css` 를 링크했습니다. 7.1.0 부터는 선언한 파일만 링크하고, 선언이 없거나 비어 있으면 대신 넣어 주는 기본값이 없습니다. 직접 만든 템플릿이 `templates/{템플릿 식별자}/dist/css/components.css` 를 산출하면서 `assets.css` 에 적지 않았다면 7.1.0 으로 올린 뒤 그 CSS 가 화면에 실리지 않아 스타일이 빠집니다. `template.json` 의 `assets.css` 에 `"dist/css/components.css"` 처럼 산출 경로를 적고 템플릿을 다시 설치·업데이트하세요. 번들 템플릿은 CSS 를 산출하는 두 템플릿(`sirsoft-admin_basic`·`sirsoft-basic`)이 선언돼 있고 나머지는 CSS 산출물이 없어 조치가 필요 없습니다.
+
 ### 필수 필드
 
 | 필드 | 설명 |
@@ -245,6 +269,14 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 | `license` | 라이선스 유형 (예: `"MIT"`) — API 리소스의 `license` 필드로 노출 |
 | `type` | "admin" 또는 "user" |
 | `locales` | 지원 언어 배열 (`config('app.supported_locales')`와 매칭) |
+
+### 공개 전역 상태와 선택 연동 (state_contracts · integrations)
+
+템플릿도 다른 확장이 읽으라고 내놓는 전역 값을 `state_contracts` 로 선언하고(예: 기본 템플릿의 `shopBase` — 쇼핑몰 경로),
+있으면 연동되는 확장을 `integrations` 로 선언합니다. 형식과 규칙은 플러그인과 같습니다 —
+[전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts),
+[선택 연동](plugin-development.md#2-의존성-dependency). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
+교체될 템플릿의 선언이 충돌 검사에서 빠집니다.
 
 ### 외부 리소스 (externals)
 
@@ -330,17 +362,27 @@ templates/_bundled/[vendor-template]/
 ├── seo-config.json             # SEO 컴포넌트→HTML 매핑 설정 (선택)
 ├── LICENSE                     # 라이선스 전문 (MIT) — API 엔드포인트 `GET /api/admin/templates/{identifier}/license`로 제공
 ├── layouts/
-│   ├── dashboard.json        # 일반 레이아웃
-│   ├── _admin_base.json      # 베이스 레이아웃
+│   ├── dashboard.g7.html     # 일반 레이아웃 (소스 SSoT)
+│   ├── _admin_base.g7.html   # 베이스 레이아웃 (소스 SSoT)
 │   └── errors/               # 에러 레이아웃 전용
-│       ├── 404.json
-│       ├── 403.json
-│       └── 500.json
+│       ├── 404.g7.html
+│       ├── 403.g7.html
+│       └── 500.g7.html
 ```
+
+레이아웃 소스 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 아래 예시의 JSON 은 그 산출 런타임 계약 키다 ([layout-json.md](../frontend/layout-json.md)).
 
 ### 에러 레이아웃 구조
 
 에러 레이아웃도 일반 레이아웃과 동일하게 `extends` + `slots` 패턴을 사용합니다:
+
+```html
+<slot name="content">
+  <empty-state icon="alert-triangle" title="$t:errors.404.title" description="$t:errors.404.description"/>
+</slot>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -375,7 +417,7 @@ templates/_bundled/[vendor-template]/
 
 ```
 중요: registerLayouts()는 특정 디렉토리만 스캔
-✅ 포함: layouts/*.json (루트) + layouts/errors/*.json
+✅ 포함: layouts/*.{g7.html,json} (루트) + layouts/errors/*.{g7.html,json}
 ❌ 제외: layouts/partials/ 등 기타 하위 디렉토리
 ```
 
@@ -383,9 +425,9 @@ templates/_bundled/[vendor-template]/
 
 | 디렉토리 | 스캔 여부 | 용도 |
 |----------|----------|------|
-| `layouts/*.json` | ✅ 스캔 | 일반 레이아웃 |
-| `layouts/errors/*.json` | ✅ 스캔 | 에러 페이지 레이아웃 |
-| `layouts/partials/*.json` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
+| `layouts/*.{g7.html,json}` | ✅ 스캔 | 일반 레이아웃 |
+| `layouts/errors/*.{g7.html,json}` | ✅ 스캔 | 에러 페이지 레이아웃 |
+| `layouts/partials/*.{g7.html,json}` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
 
 ### 이유
 
@@ -393,26 +435,42 @@ templates/_bundled/[vendor-template]/
 - 직접 라우팅되지 않으므로 DB에 별도 등록 불필요
 - 에러 레이아웃은 `ErrorPageHandler`에서 직접 조회하므로 DB 등록 필요
 
-### TemplateManager.php 구현
+### 구현 위치 — `ValidatesLayoutFiles::collectLayoutSources()`
+
+스캔은 `TemplateManager` 가 직접 하지 않는다. 세 Manager(템플릿·모듈·플러그인)가 공유하는
+`App\Extension\Traits\ValidatesLayoutFiles` 의 `collectLayoutSources()` 가 단일 지점이며,
+**`.g7.html` 소스가 있으면 그것을 우선**하고 짝 마크업이 없는 `.json` 만 직접 읽는다.
 
 ```php
-// 루트 layouts 디렉토리의 JSON 파일만 스캔
-$layoutFiles = File::glob("{$layoutsPath}/*.json");
+// ① 같은 전략으로 두 확장자를 각각 수집 (루트 + errors/)
+$jsonFiles   = File::glob("{$layoutsPath}/*.json");          // + errors/*.json
+$markupFiles = $this->scanMarkupLayoutFiles($layoutsPath, $recursive);  // *.g7.html
 
-// errors/ 디렉토리만 추가 스캔 (에러 페이지 레이아웃용)
-$errorsPath = "{$layoutsPath}/errors";
-if (File::exists($errorsPath)) {
-    $errorLayoutFiles = File::glob("{$errorsPath}/*.json");
-    $layoutFiles = array_merge($layoutFiles, $errorLayoutFiles);
+// ② 마크업이 먼저 소스가 되고, 그 짝 `.json` 경로를 색인해 둔다
+foreach ($markupFiles as $markupFile) {
+    $markupJsonSiblings[preg_replace('/\.g7\.html$/i', '.json', $markupFile)] = true;
+    $sources[] = ['path' => $markupFile, 'markup' => true];
+}
+
+// ③ 짝 `.g7.html` 이 있는 `.json` 은 건너뛴다 (소스 SSoT 가 이긴다)
+foreach ($jsonFiles as $jsonFile) {
+    if (isset($markupJsonSiblings[$jsonFile])) {
+        continue;
+    }
+    $sources[] = ['path' => $jsonFile, 'markup' => false];
 }
 ```
+
+`.g7.html` 은 설치 시점에 **메모리로 컴파일**해 등록 content 를 만들고 디스크에 산출 JSON 을 남기지
+않는다. `--layout-source=json`(`config('template.layout_markup.install_source')`)으로 우선순위를 뒤집을
+수 있으나, 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일된다.
 
 ### 모듈 레이아웃 자동 등록
 
 모듈 활성화 시 레이아웃은 디렉토리 위치에 따라 해당 타입의 템플릿에 등록됩니다:
 
-- `modules/{module}/resources/layouts/admin/*.json` → Admin 타입 템플릿에 등록
-- `modules/{module}/resources/layouts/user/*.json` → User 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/admin/*.{g7.html,json}` → Admin 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/user/*.{g7.html,json}` → User 타입 템플릿에 등록
 
 이 동작은 `ModuleManager::registerModuleLayouts()`에서 처리됩니다.
 
@@ -550,13 +608,15 @@ GET /api/admin/templates/{templateName}/check-modified-layouts
 
 | 전략 | 동작 |
 |------|------|
-| `apply_new` | 새 버전의 레이아웃으로 덮어쓰기 (관리자 수정 사항 유실) |
-| `keep_current` | 기존 레이아웃 유지 (새 버전 레이아웃 미적용) |
+| `overwrite` (기본) | 새 버전의 레이아웃으로 덮어쓰기 (관리자 수정 사항 유실) |
+| `keep` | 고친 부분은 유지하고 손대지 않은 부분(조각·최상위 키·data_sources 항목)에는 새 버전을 병합. 같은 곳을 양쪽이 고쳤으면 운영자 것 유지 |
 
 ```text
 POST /api/admin/templates/{templateName}/update
-Body: { "layout_strategy": "apply_new" }
+Body: { "layout_strategy": "keep" }
 ```
+
+템플릿을 켜거나 사용자 템플릿을 바꿀 때도 같은 병합을 쓰므로 편집기로 고친 화면이 원본으로 돌아가지 않는다. 원본으로 되돌리려면 편집기의 「레이아웃 갱신」을 쓴다.
 
 > 상세: [extension-update-system.md](./extension-update-system.md)
 
@@ -569,21 +629,21 @@ Body: { "layout_strategy": "apply_new" }
 필수: _bundled 작업 완료 후 반영/검증은 업데이트 프로세스 사용
 ```
 
-### `custom/` 은 운영자 자리입니다 — 저작자가 선점하지 않습니다
+### `custom/` 은 운영자 자리입니다 — 작성자가 선점하지 않습니다
 
 `templates/{identifier}/custom/` 은 **사이트 운영자**가 자기 CSS·JS 를 덧붙이는 자리입니다.
 확장 교체(업데이트·재설치)가 이 디렉토리만은 보존하므로, 운영자가 넣은 파일은 템플릿을
 업데이트해도 살아남습니다.
 
-그래서 템플릿 저작자는 `_bundled` 에 `custom/` 을 담아 배포하지 않습니다. 보존 계층은
-"덮어쓰지 않음" 이라, 저작자가 담은 파일은 이미 `custom/` 을 가진 사이트에서 **영영
-반영되지 않는 상태**가 됩니다. 저작자의 기본 스타일은 `src/styles/` 에 두고 빌드에
+그래서 템플릿 작성자는 `_bundled` 에 `custom/` 을 담아 배포하지 않습니다. 보존 계층은
+"덮어쓰지 않음" 이라, 작성자가 담은 파일은 이미 `custom/` 을 가진 사이트에서 **영영
+반영되지 않는 상태**가 됩니다. 작성자의 기본 스타일은 `src/styles/` 에 두고 빌드에
 포함시킵니다.
 
 | 대상 | 자리 | 빌드 | 업데이트 시 |
 |---|---|---|---|
-| 저작자 기본 스타일 | `src/styles/` | 필요 | 새 배포본으로 교체 |
-| 저작자 동봉 구동 자산 | `dist/vendor/{lib}/{version}/` | 불필요 | 새 배포본으로 교체 |
+| 작성자 기본 스타일 | `src/styles/` | 필요 | 새 배포본으로 교체 |
+| 작성자 동봉 구동 자산 | `dist/vendor/{lib}/{version}/` | 불필요 | 새 배포본으로 교체 |
 | **운영자 추가 CSS·JS** | **`custom/`** | **불필요** | **보존** |
 
 운영자가 `dist/` 를 직접 고치는 것은 방법이 아닙니다 — 다음 빌드와 다음 업데이트에
@@ -680,7 +740,7 @@ SEO 페이지 생성기가 컴포넌트를 HTML로 변환할 때 사용하는 �
 
 ## 관련 문서
 
-- [index.md](./index.md) - 확장 시스템 인덱스
+- [README.md](./README.md) - 확장 시스템 인덱스
 - [template-routing.md](./template-routing.md) - 템플릿 라우트/언어 파일 규칙
 - [template-security.md](./template-security.md) - 템플릿 보안 정책
 - [template-caching.md](./template-caching.md) - 템플릿 캐싱 전략

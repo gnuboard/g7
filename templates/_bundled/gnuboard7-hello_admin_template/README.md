@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.1-0066FF?style=flat-square" alt="version 0.1.1">
+  <img src="https://img.shields.io/badge/version-0.2.0-0066FF?style=flat-square" alt="version 0.2.0">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.10-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.10">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -72,7 +72,7 @@ flowchart TD
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.0.10` |
+| 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -89,6 +89,8 @@ php artisan template:activate gnuboard7-hello_admin_template
 # 업데이트 (번들 소스 기준 강제 반영)
 php artisan template:update gnuboard7-hello_admin_template --force
 ```
+
+저장소: https://github.com/gnuboard/g7-template-gnuboard7-hello_admin_template
 <!-- @generated:install END -->
 
 ## 제공 컴포넌트
@@ -126,9 +128,11 @@ php artisan template:activate gnuboard7-hello_admin_template
 활성화하면 관리자 화면이 이 최소 템플릿으로 바뀝니다. 원래 템플릿으로 되돌리려면 그 템플릿을
 다시 활성화하면 됩니다.
 
-**모듈 호환성 확인용으로 쓰기**: 만들고 있는 모듈의 관리자 화면이 특정 템플릿에만 의존하지
-않는지 확인할 때 유용합니다. 이 템플릿으로 바꿔서 화면이 깨진다면 그 화면이 필수 부품 밖의
-것을 쓰고 있다는 뜻입니다.
+**알려진 제한 — 번들 확장의 관리자 화면은 그려지지 않습니다**: 이 템플릿은 화면 부품 8개와 문구
+19개만 갖추고 있어, 번들 모듈·플러그인의 관리자 화면이 쓰는 부품(68종)·공용 문구(`common.*`·`admin.*`)·
+스타일 클래스가 없습니다. 이 템플릿을 켜면 그 화면들은 대부분 비거나 문구 키가 그대로 보입니다 — 학습용
+범위라 의도된 것입니다. 운영용 관리자 템플릿이 갖춰야 할 목록은 공개 문서 「관리자 템플릿 교체 계약」
+(`docs/extension/admin-template-contract.md`)에 있습니다.
 
 **새 관리자 템플릿의 출발점으로 쓰기**: 이 디렉토리를 복제한 뒤 식별자를 바꾸고 학습용 표시를
 지우면 새 템플릿이 됩니다. 부품과 화면을 필요한 만큼 더해 나가면 됩니다.
@@ -168,6 +172,7 @@ php artisan template:activate gnuboard7-hello_admin_template
 | 관리자 템플릿 목록에 이 템플릿이 없음 | 학습용이라 목록에서 제외됨 | 정상입니다. 명령줄로 설치·활성화합니다 |
 | 활성화했더니 일부 모듈 화면이 비어 보임 | 그 화면이 이 템플릿에 없는 부품을 사용 | 정상입니다. 모듈이 필수 부품만 쓰도록 고치거나 원래 템플릿으로 되돌립니다 |
 | 화면이 아무것도 안 그려짐 | 빌드 결과물이 없거나 오래됨 | 템플릿을 다시 빌드하고 반영합니다 |
+| 부품을 고친 뒤 일부 영역만 비어 보임 | 부품의 이름을 바꿨는데 부품 목록 파일(`components.json`)은 옛 이름 그대로임 | 소스에서 내보내는 이름과 `components.json` 의 이름을 같게 맞추고 다시 빌드합니다 |
 | 오류가 났는데 아무 화면도 안 보임 | 해당 오류 화면이 없음 | 오류 화면 6종이 모두 있는지 확인합니다 |
 | 복제해서 만든 템플릿이 목록에 안 보임 | 복제본에 학습용 표시가 남아 있음 | 복제본의 `hidden` 표시를 지웁니다 |
 <!-- @intent END -->

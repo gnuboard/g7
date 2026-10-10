@@ -53,6 +53,11 @@ class OrderProcessingServiceTest extends ModuleTestCase
 {
     protected OrderProcessingService $service;
 
+    /**
+     * 마일리지 설정 파일을 비우고 테스트 대상 서비스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -60,6 +65,11 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->service = app(OrderProcessingService::class);
     }
 
+    /**
+     * 테스트가 남긴 마일리지 설정 파일을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->cleanupMileageSettingsFile();
@@ -69,6 +79,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
     /**
      * 테스트 간 격리를 위해 testing 격리 경로의 마일리지 설정 파일을 제거합니다.
      * (setSetting 으로 deduction_timing 등을 변경한 테스트가 다음 테스트에 누설되지 않도록)
+     *
+     * @return void 반환값 없음
      */
     private function cleanupMileageSettingsFile(): void
     {
@@ -87,6 +99,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 마일리지가 주제가 아닌 테스트는 배포 기본값(최소 1,000 / 상한 50,000)에 걸린다.
      * 이 테스트들의 관심사는 주문 메타·결제 상태이므로 정책을 열어 두고 본래 대상만 검증한다.
      * 정책 강제 자체는 MileageUsageLimitTest 가 다룬다.
+     *
+     * @return void 반환값 없음
      */
     private function allowAnyMileageUsage(): void
     {
@@ -120,7 +134,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 차감 시점은 결제수단별(order_settings.payment_methods.*.mileage_deduction_timing)로 관리되므로,
      * 단일 키 대신 카드 결제수단 설정을 저장한다.
      *
-     * @param  string  $timing  order_placed | payment_complete
+     * @param  string  $timing  차감 시점 (order_placed 또는 payment_complete)
+     * @return void 반환값 없음
      */
     private function setCardMileageTiming(string $timing): void
     {
@@ -136,6 +151,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== 기존 테스트 (determineInitialStatus, isFirstOrder, generateOrderNumber) =====
 
+    /**
+     * 결제액이 있는 가상계좌 주문의 초기 상태는 입금대기입니다.
+     *
+     * @effects initial_status_is_pending_payment_for_deposit_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_determine_initial_status_returns_pending_payment_for_vbank(): void
     {
         // Protected 메서드 테스트를 위한 리플렉션
@@ -149,6 +171,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PENDING_PAYMENT, $status);
     }
 
+    /**
+     * 결제액이 있는 카드 주문의 초기 상태는 주문대기입니다.
+     *
+     * @scenario payment_method=card_pg
+     *
+     * @effects initial_status_is_pending_order_for_pg_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_determine_initial_status_returns_pending_order_for_card(): void
     {
         $reflection = new \ReflectionClass($this->service);
@@ -160,6 +191,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $status);
     }
 
+    /**
+     * 결제액이 있는 PG 주문의 초기 상태는 주문대기입니다.
+     *
+     * @scenario payment_method=card_pg
+     *
+     * @effects initial_status_is_pending_order_for_pg_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_determine_initial_status_returns_pending_order_for_pg(): void
     {
         $reflection = new \ReflectionClass($this->service);
@@ -171,6 +211,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $status);
     }
 
+    /**
+     * 주문 이력이 없는 회원은 첫 주문으로 판정합니다.
+     *
+     * @scenario actor=member
+     *
+     * @effects first_order_flag_true_only_for_member_without_orders
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_first_order_returns_true_for_new_user(): void
     {
         $user = User::factory()->create();
@@ -184,6 +233,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertTrue($isFirstOrder);
     }
 
+    /**
+     * 주문 이력이 있는 회원은 첫 주문이 아닙니다.
+     *
+     * @scenario actor=member
+     *
+     * @effects first_order_flag_true_only_for_member_without_orders
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_first_order_returns_false_for_user_with_orders(): void
     {
         $user = User::factory()->create();
@@ -200,6 +258,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertFalse($isFirstOrder);
     }
 
+    /**
+     * 비회원 주문은 첫 주문 혜택 대상이 아닙니다.
+     *
+     * @effects first_order_flag_true_only_for_member_without_orders
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_first_order_returns_false_for_guest(): void
     {
         // 비회원 주문(user_id = null)은 회원 식별이 불가능해 첫 주문 혜택 대상이 아니다.
@@ -212,6 +277,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertFalse($isFirstOrder);
     }
 
+    /**
+     * 주문번호를 두 번 채번하면 서로 다른 문자열이 나옵니다.
+     *
+     * @effects order_number_unique_timestamp_format
+     *
+     * @return void 반환값 없음
+     */
     public function test_generate_order_number_returns_unique_string(): void
     {
         $reflection = new \ReflectionClass($this->service);
@@ -226,6 +298,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertNotEquals($orderNumber1, $orderNumber2);
     }
 
+    /**
+     * 주문번호는 Ymd-His 기반 타임스탬프 형식입니다.
+     *
+     * @effects order_number_unique_timestamp_format
+     *
+     * @return void 반환값 없음
+     */
     public function test_generate_order_number_has_expected_format(): void
     {
         $reflection = new \ReflectionClass($this->service);
@@ -238,6 +317,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertMatchesRegularExpression('/^\d{8}-\d{10}$/', $orderNumber);
     }
 
+    /**
+     * 채번한 주문번호가 시퀀스 코드 테이블에 기록됩니다.
+     *
+     * @effects order_number_recorded_in_sequence_codes
+     *
+     * @return void 반환값 없음
+     */
     public function test_generate_order_number_is_recorded_in_sequence_codes(): void
     {
         $reflection = new \ReflectionClass($this->service);
@@ -253,6 +339,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 연속 10회 채번한 주문번호가 모두 유일하고 같은 형식입니다.
+     *
+     * @effects order_number_unique_timestamp_format
+     *
+     * @return void 반환값 없음
+     */
     public function test_generate_order_number_produces_unique_values(): void
     {
         $reflection = new \ReflectionClass($this->service);
@@ -280,6 +373,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * OrderCalculationService를 mock하여 재계산 결과를 주입하고, 서비스를 재생성합니다.
      *
      * @param  OrderCalculationResult  $result  재계산 결과
+     * @return void 반환값 없음
      */
     protected function mockCalculationService(OrderCalculationResult $result): void
     {
@@ -295,6 +389,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      *
      * @param  int  $finalAmount  최종 금액
      * @param  array  $overrides  오버라이드 옵션
+     * @return OrderCalculationResult 계산 결과 DTO
      */
     protected function makeCalculationResult(int $finalAmount = 103000, array $overrides = []): OrderCalculationResult
     {
@@ -328,7 +423,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      *
      * @param  User  $user  사용자
      * @param  int  $finalAmount  최종 금액 (calculation_result.summary.final_amount)
-     * @return TempOrder
+     * @return TempOrder 생성된 임시주문
      */
     protected function createTestTempOrder(User $user, int $finalAmount = 103000)
     {
@@ -357,6 +452,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
             ->create();
     }
 
+    /**
+     * 임시주문으로 카드 주문을 만들면 회원, 주문대기 상태, 금액, 주문번호가 저장됩니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_from_temp_order_persists_order, initial_status_is_pending_order_for_pg_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_creates_order(): void
     {
         $user = User::factory()->create();
@@ -385,6 +489,12 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 주문 생성 시 현재 화면 언어가 배송지 orderer_locale 에 저장된다.
      *
      * 비회원 알림(이메일)이 주문 화면 언어로 발송되도록 하는 근거 데이터.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_stores_orderer_locale_on_address
+     *
+     * @return void 반환값 없음
      */
     public function test_create_from_temp_order_stores_current_locale_on_address(): void
     {
@@ -412,6 +522,12 @@ class OrderProcessingServiceTest extends ModuleTestCase
      *
      * 회귀 배경: createOrderPayment 가 결제요청일시·구매자정보·결제명·부가세·디바이스 컬럼을
      * 설정하지 않아, 무통장 등 PG 콜백 없는 주문에서 영구 NULL 로 남던 결함.
+     *
+     * @scenario payment_method=dbank, actor=member
+     *
+     * @effects create_order_payment_populates_started_at_buyer_vat_name_device
+     *
+     * @return void 반환값 없음
      */
     public function test_create_from_temp_order_populates_payment_record_fields(): void
     {
@@ -484,6 +600,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertContains($payment->payment_device, ['pc', 'mobile']);
     }
 
+    /**
+     * 가상계좌 주문을 만들면 입금대기 상태로 시작합니다.
+     *
+     * @scenario actor=member
+     *
+     * @effects initial_status_is_pending_payment_for_deposit_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_with_vbank_sets_pending_payment(): void
     {
         $user = User::factory()->create();
@@ -509,6 +634,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PENDING_PAYMENT, $order->order_status);
     }
 
+    /**
+     * PG 재결제를 위해 주문 생성 뒤에도 임시주문이 남습니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_keeps_temp_order_for_pg_retry
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_preserves_temp_order(): void
     {
         $user = User::factory()->create();
@@ -536,6 +670,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== 신규 테스트: 프로모션/배송비/마일리지 데이터 누락 수정 검증 =====
 
+    /**
+     * 적용 쿠폰이 주문의 프로모션 스냅샷에 기록됩니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_saves_promotions_applied_snapshot
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_populates_promotions_applied_snapshot(): void
     {
         $user = User::factory()->create();
@@ -574,6 +717,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(101, $snapshot['product_promotions']['coupons'][0]['coupon_issue_id']);
     }
 
+    /**
+     * 배송정책 스냅샷이 items 배열과 address 로 나뉘어 저장됩니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_saves_shipping_policy_snapshot_as_items_and_address
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_populates_shipping_policy_snapshot(): void
     {
         $user = User::factory()->create();
@@ -657,6 +809,10 @@ class OrderProcessingServiceTest extends ModuleTestCase
      *
      * 기존에는 0 으로 고정 기록되어, 배송사 연동·운임 정산이 이 값을 읽으면
      * 무게 없는 주문으로 취급됐다. 값의 단위는 상품 옵션과 같은 g / cm³ 다.
+     *
+     * @effects order_totals_recorded_from_option_subtotals_on_create
+     *
+     * @return void 반환값 없음
      */
     public function test_create_from_temp_order_records_total_weight_and_volume(): void
     {
@@ -725,6 +881,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(3600.0, (float) $order->total_volume);
     }
 
+    /**
+     * 재계산 입력(calculation_input)이 주문 메타에 보존됩니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_saves_calculation_input_in_order_meta
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_saves_order_meta_with_calculation_input(): void
     {
         $this->allowAnyMileageUsage();
@@ -782,6 +947,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(500, $meta['calculation_input']['use_points']);
     }
 
+    /**
+     * 주문 배송 행에 기본, 추가, 할인 배송비와 도서산간 여부가 DTO 값대로 저장됩니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_shippings_store_fee_breakdown_from_dto
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_order_shippings_uses_correct_dto_properties(): void
     {
         $user = User::factory()->create();
@@ -859,6 +1033,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertTrue((bool) $shipping->is_remote_area); // extraShippingAmount > 0
     }
 
+    /**
+     * 주문 배송 행에 배송정책 스냅샷이 저장됩니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_shippings_save_delivery_policy_snapshot
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_order_shippings_saves_delivery_policy_snapshot(): void
     {
         $user = User::factory()->create();
@@ -937,6 +1120,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals('기본 배송정책', $shipping->delivery_policy_snapshot['name']);
     }
 
+    /**
+     * 주문 생성 시 쿠폰 사용 훅이 적용 쿠폰 발급 ID 와 함께 호출됩니다.
+     *
+     * @scenario payment_method=card, asset=coupon
+     *
+     * @effects create_order_fires_coupon_use_hook_with_issue_ids
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_calls_coupon_use_hook(): void
     {
         $user = User::factory()->create();
@@ -983,9 +1175,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 이미 다른 주문이 선점한 쿠폰으로 주문을 확정하면 트랜잭션 전체가 롤백되어야 합니다.
      *
      * 쿠폰 차감 실패를 삼키고 주문만 생성하면, 1회 제한 쿠폰의 할인이 두 주문에 모두
-     * 적용된 채로 확정된다 (KVE-2026-1886).
+     * 적용된 채로 확정된다.
      *
-     * @return void
+     * @scenario payment_method=card, asset=coupon
+     *
+     * @effects coupon_reuse_blocked_until_cancel, coupon_conflict_rolls_back_whole_order
+     *
+     * @return void 반환값 없음
      */
     public function test_create_from_temp_order_rolls_back_when_coupon_already_taken(): void
     {
@@ -1076,6 +1272,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals($winningOrder->id, $issue->order_id);
     }
 
+    /**
+     * 카드 마일리지 차감 시점이 order_placed 이면 주문 생성 시 마일리지 사용 훅이 사용액과 함께 호출됩니다.
+     *
+     * @scenario payment_method=card, asset=mileage
+     *
+     * @effects mileage_timing_per_method
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_calls_mileage_use_hook(): void
     {
         $user = User::factory()->create();
@@ -1139,6 +1344,12 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * PG(KG 이니시스 등)·무통장 입금액이 마일리지 차감 전 금액으로 잡히던 결함.
      * 결제예정금액(total_due_amount)·주문 결제금액(total_amount)은 모두 차감 후 실결제액(finalAmount)이며,
      * 차감 전 paymentAmount 는 어느 컬럼에도 PG 결제 기준값으로 저장되지 않는다.
+     *
+     * @scenario payment_method=card, asset=mileage
+     *
+     * @effects create_order_due_amount_is_post_mileage_final_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_create_from_temp_order_sets_total_due_amount_to_post_mileage_final_amount(): void
     {
@@ -1194,6 +1405,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 주문 확정 시 저장된 입력으로 금액을 한 번 재계산합니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_recalculates_from_stored_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_recalculates_from_stored_input(): void
     {
         $user = User::factory()->create();
@@ -1217,6 +1437,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 재계산 금액이 임시주문 금액과 다르면 주문 생성을 막습니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects create_order_blocked_when_recalculated_amount_drifts
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_blocks_order_on_amount_drift(): void
     {
         $user = User::factory()->create();
@@ -1246,6 +1475,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @param  int  $subtotal  소계
      * @param  int  $shipping  배송비
      * @param  int  $discount  할인액
+     * @return Order 결제 레코드가 붙은 주문
      */
     protected function createOrderWithPayment(
         int $subtotal = 50000,
@@ -1288,6 +1518,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         return $order;
     }
 
+    /**
+     * PG 금액이 결제예정금액과 같으면 금액 검증을 통과합니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_validates_pg_amount_against_due_amount
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_payment_amount_passes_when_amounts_match(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1304,6 +1543,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * 결제예정금액이 금액 구성요소 합과 어긋나면 금액 검증이 예외를 던집니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_validates_pg_amount_against_due_amount
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_payment_amount_throws_on_component_mismatch(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1328,6 +1576,12 @@ class OrderProcessingServiceTest extends ModuleTestCase
      *
      * 회귀: PG 검증 기준 컬럼을 total_due_amount 로 통일. total_points_used_amount 가 0 이 아닐 때
      * 컴포넌트 재합산(마일리지 차감 포함) = total_due_amount 와 일치하고, 차감 전 금액(pgAmount)은 거부되어야 한다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_validates_post_mileage_due_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_payment_amount_uses_post_mileage_due_amount(): void
     {
@@ -1356,6 +1610,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $method->invoke($this->service, $order, 55000);
     }
 
+    /**
+     * PG 금액이 결제예정금액과 다르면 금액 검증이 예외를 던집니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_validates_pg_amount_against_due_amount
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_payment_amount_throws_on_pg_amount_mismatch(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1376,6 +1639,17 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 하도록 바뀌었으나, validatePaymentAmount 2단계가 base(total_due_amount)를 직접 비교해
      * base≠order_currency(예: base JPY 500 → 결제 KRW 4,750) 에서 "결제금액 불일치"로 오차단됐다.
      * 검증 기준을 결제 통화 환산액으로 통일했으므로, 환산 청구액은 통과하고 base 금액은 거부되어야 한다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_validates_charge_in_payment_currency
+     *
+     * @param  string  $baseCurrency  기준 통화 코드
+     * @param  string  $orderCurrency  결제 통화 코드
+     * @param  float  $baseDueAmount  기준 통화 결제예정금액
+     * @param  array  $exchangeRates  환율 스냅샷
+     * @param  int  $expectedPgAmount  결제 통화로 환산한 기대 PG 청구액
+     * @return void 반환값 없음
      */
     #[DataProvider('providePaymentCurrencyCombinations')]
     public function test_validate_payment_amount_uses_payment_currency_charge(
@@ -1431,7 +1705,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
     /**
      * 검증 4조합: base/order 통화 전 경우의 수.
      *
-     * @return array<string, array{0:string,1:string,2:float,3:array,4:int}>
+     * @return array<string, array{0:string,1:string,2:float,3:array,4:int}> 케이스명별 (기준 통화, 결제 통화, 기준 결제예정금액, 환율 스냅샷, 기대 PG 청구액)
      */
     public static function providePaymentCurrencyCombinations(): array
     {
@@ -1470,6 +1744,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== completePayment 확장 테스트 =====
 
+    /**
+     * PG 금액을 검증한 뒤 결제완료로 바꾸고 승인 정보를 결제 레코드에 기록합니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, actor=member
+     *
+     * @effects complete_payment_records_pg_card_details
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_with_pg_amount_validates_and_updates(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1500,6 +1783,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals('pc', $payment->payment_device);
     }
 
+    /**
+     * PG 금액 없이 호출하면 금액 검증 없이 결제완료로 바뀝니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_skips_amount_check_without_pg_amount
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_without_pg_amount_skips_validation(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1512,6 +1804,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order_status);
     }
 
+    /**
+     * 결제완료 처리 전후 훅이 모두 호출됩니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_fires_before_and_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_calls_hooks(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1534,6 +1835,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== completePayment 옵션 상태 동기화 회귀 테스트 (PG 결제완료 후 옵션이 주문대기에 갇히는 버그) =====
 
+    /**
+     * 결제완료 시 주문대기 옵션이 모두 결제완료로 동기화됩니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, option_mix=all_active, actor=member
+     *
+     * @effects complete_payment_syncs_option_status_to_payment_complete
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_syncs_option_status_to_payment_complete(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1553,6 +1863,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $optionB->fresh()->option_status);
     }
 
+    /**
+     * 결제완료 동기화가 이미 취소된 옵션을 되살리지 않습니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, option_mix=has_partial_cancel, actor=member
+     *
+     * @effects cancelled_option_not_revived_by_sync
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_does_not_resurrect_cancelled_option(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1574,6 +1893,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== failPayment 테스트 =====
 
+    /**
+     * 결제 전 주문이 결제실패하면 취소되고 실패 코드, 메시지, 시각이 메타에 남습니다.
+     *
+     * @scenario terminal_path=fail_payment, payment_method=card_pg, actor=member
+     *
+     * @effects fail_payment_cancels_order_and_records_failure_meta
+     *
+     * @return void 반환값 없음
+     */
     public function test_fail_payment_cancels_pending_order(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1589,6 +1917,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertArrayHasKey('payment_failed_at', $meta);
     }
 
+    /**
+     * 이미 결제완료된 주문은 결제실패 보고가 와도 상태가 바뀌지 않습니다.
+     *
+     * @scenario terminal_path=fail_payment, payment_method=card_pg, actor=member
+     *
+     * @effects fail_payment_ignores_order_past_payment
+     *
+     * @return void 반환값 없음
+     */
     public function test_fail_payment_ignores_non_pending_order(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1603,6 +1940,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order_status);
     }
 
+    /**
+     * 결제실패 훅이 실패 코드와 함께 호출됩니다.
+     *
+     * @scenario terminal_path=fail_payment, payment_method=card_pg, actor=member
+     *
+     * @effects fail_payment_fires_payment_failed_hook
+     *
+     * @return void 반환값 없음
+     */
     public function test_fail_payment_calls_payment_failed_hook(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1630,6 +1976,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @scenario terminal_path=fail_payment, payment_method=dbank, option_mix=all_active, actor=member
      *
      * @effects fail_payment_syncs_option_status_to_cancelled
+     *
+     * @return void 반환값 없음
      */
     public function test_fail_payment_syncs_option_status_to_cancelled(): void
     {
@@ -1653,9 +2001,11 @@ class OrderProcessingServiceTest extends ModuleTestCase
     /**
      * 결제 실패 동기화가 이미 부분취소된 옵션을 되살리지 않음 (B1 syncExcludedValues)
      *
-     * @scenario terminal_path=fail_payment, payment_method=dbank, option_mix=has_cancelled, actor=member
+     * @scenario terminal_path=fail_payment, payment_method=dbank, option_mix=has_partial_cancel, actor=member
      *
      * @effects fail_payment_preserves_already_cancelled_options
+     *
+     * @return void 반환값 없음
      */
     public function test_fail_payment_preserves_already_cancelled_options(): void
     {
@@ -1687,9 +2037,11 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 보호로 되살아나지 못해 "주문=결제완료 / 옵션=취소" 모순이 고착된다.
      * → payment_status=PAID 면 결제는 이미 성공한 것이므로 failPayment 를 무시해야 한다.
      *
-     * @scenario terminal_path=fail_payment, payment_method=card, payment_status=paid, option_mix=all_active, actor=member
+     * @scenario terminal_path=fail_payment, payment_method=card_pg, option_mix=all_active, actor=member
      *
      * @effects fail_payment_ignored_when_payment_already_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_fail_payment_ignores_order_when_payment_already_paid(): void
     {
@@ -1718,9 +2070,11 @@ class OrderProcessingServiceTest extends ModuleTestCase
     /**
      * payment_status=PAID 가드는 결제실패 메타도 기록하지 않는다 (race 회귀).
      *
-     * @scenario terminal_path=fail_payment, payment_method=card, payment_status=paid, option_mix=all_active, actor=member
+     * @scenario terminal_path=fail_payment, payment_method=card_pg, option_mix=all_active, actor=member
      *
      * @effects fail_payment_ignored_when_payment_already_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_fail_payment_does_not_record_failure_meta_when_paid(): void
     {
@@ -1739,6 +2093,10 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     /**
      * 무통장 미결제 주문 생성 (입금확인 테스트용)
+     *
+     * @param  int  $subtotal  상품 소계
+     * @param  int  $shipping  배송비
+     * @return Order 입금대기 상태의 무통장 주문
      */
     private function createDbankOrder(int $subtotal = 50000, int $shipping = 3000): Order
     {
@@ -1755,6 +2113,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
      *
      * @effects manual_deposit_confirm_syncs_option_status_via_complete_payment, manual_deposit_confirm_records_depositor_name
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_manual_deposit_syncs_option_status_and_records_depositor(): void
     {
@@ -1780,6 +2140,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
      *
      * @effects manual_deposit_records_payment_only_without_order_transition
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_manual_deposit_records_payment_only_when_not_marking_complete(): void
     {
@@ -1808,6 +2170,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
      *
      * @effects manual_deposit_reconciles_payment_only_for_already_completed_order
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_manual_deposit_reconciles_payment_for_already_completed_order(): void
     {
@@ -1825,11 +2189,70 @@ class OrderProcessingServiceTest extends ModuleTestCase
     }
 
     /**
-     * 무통장 입금확인: 입금액이 결제예정금액과 불일치하면 422(PaymentAmountMismatchException) (B2)
+     * 무통장 입금확인 — 상태를 상품준비중까지 먼저 올려 둔 주문에 입금을 「기록만」 하면
+     * 결제행과 함께 주문의 결제금액도 채워진다 (실측 2026-10-03).
+     *
+     * 종전에는 결제행만 PAID 가 되고 주문은 결제금액 0·미수금 그대로 남았다. 결제행이 PAID 라
+     * [입금확인] 이 사라져 되돌릴 수 없고, 이후 환불 신청의 환불 예정액이 0원으로 계산됐다.
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
+     *
+     * @effects manual_deposit_fills_order_paid_amount_when_status_already_past_payment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_confirm_manual_deposit_fills_order_paid_amount_when_status_already_past_payment(): void
+    {
+        $order = $this->createDbankOrder(50000, 3000);
+        $order->update(['order_status' => OrderStatusEnum::PREPARING]);
+
+        $result = $this->service->confirmManualDeposit($order->fresh(), 53000, '홍길동', false);
+
+        $this->assertEquals(PaymentStatusEnum::PAID, $result->payment->payment_status);
+        $this->assertEquals(OrderStatusEnum::PREPARING, $result->order_status);
+        $this->assertEquals(53000.0, (float) $result->total_paid_amount);
+        $this->assertEquals(0.0, (float) $result->total_due_amount);
+        $this->assertNotNull($result->paid_at);
+        $this->assertIsArray($result->mc_total_paid_amount);
+    }
+
+    /**
+     * 무통장 입금확인 — 「결제완료로 처리」를 체크해도 상품준비중 주문을 결제완료로 되돌리지 않는다.
+     *
+     * 결제완료만 비교하던 때는 상품준비중 주문이 completePayment 로 들어가 결제완료로 내려가고
+     * 상품 상태까지 결제완료로 덮였다.
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
+     *
+     * @effects manual_deposit_does_not_regress_order_already_past_payment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_confirm_manual_deposit_does_not_regress_order_already_past_payment(): void
+    {
+        $order = $this->createDbankOrder(50000, 3000);
+        $order->update(['order_status' => OrderStatusEnum::PREPARING]);
+        $option = OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'option_status' => OrderStatusEnum::PREPARING,
+        ]);
+
+        $result = $this->service->confirmManualDeposit($order->fresh(), 53000, '홍길동', true);
+
+        $this->assertEquals(OrderStatusEnum::PREPARING, $result->order_status);
+        $this->assertEquals(OrderStatusEnum::PREPARING, $option->fresh()->option_status);
+        $this->assertEquals(PaymentStatusEnum::PAID, $result->payment->payment_status);
+        $this->assertEquals(53000.0, (float) $result->total_paid_amount);
+    }
+
+    /**
+     * 무통장 입금확인: 입금액이 결제예정금액과 불일치하면 422(PaymentAmountMismatchException)
      *
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
      *
      * @effects manual_deposit_confirm_rejects_amount_mismatch_422
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_manual_deposit_rejects_amount_mismatch(): void
     {
@@ -1852,6 +2275,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
      *
      * @effects manual_deposit_confirm_syncs_option_status_via_complete_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_manual_deposit_fires_before_confirm_deposit_hook(): void
     {
@@ -1871,10 +2296,44 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertTrue($hookFired, 'payment.before_confirm_deposit 훅이 발화되어야 합니다');
     }
 
+    /**
+     * 입금 기록 훅은 기록 전 주문 스냅샷을 세 번째 인자로 넘긴다 — 활동 로그가 바뀐 결제금액을 변경 내역으로 남길 수 있게.
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
+     *
+     * @effects manual_deposit_recorded_hook_carries_before_snapshot
+     *
+     * @return void 반환값 없음
+     */
+    public function test_deposit_recorded_hook_carries_before_snapshot(): void
+    {
+        $order = $this->createDbankOrder(50000, 3000);
+        $order->update(['order_status' => OrderStatusEnum::PREPARING]);
+
+        $captured = null;
+        HookManager::addAction('sirsoft-ecommerce.order.after_deposit_recorded', function ($o, $amount, $snapshot = null) use (&$captured) {
+            $captured = $snapshot;
+        });
+
+        $this->service->confirmManualDeposit($order->fresh(), 53000, '홍길동', false);
+
+        $this->assertIsArray($captured);
+        $this->assertEquals(0.0, (float) ($captured['total_paid_amount'] ?? -1));
+    }
+
     // ===== findByOrderNumber 테스트 =====
 
     // ===== recordPaymentCancellation 테스트 =====
 
+    /**
+     * 결제 취소를 기록하면 결제 상태가 취소로 바뀌고 취소 시각이 남습니다.
+     *
+     * @scenario payment_method=card_pg
+     *
+     * @effects payment_cancellation_marks_payment_cancelled
+     *
+     * @return void 반환값 없음
+     */
     public function test_record_payment_cancellation_updates_payment_status(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1888,6 +2347,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertNotNull($payment->cancelled_at);
     }
 
+    /**
+     * 결제 취소 기록이 취소 코드와 메시지를 취소 이력에 추가합니다.
+     *
+     * @scenario payment_method=card_pg
+     *
+     * @effects payment_cancellation_appends_cancel_history
+     *
+     * @return void 반환값 없음
+     */
     public function test_record_payment_cancellation_appends_cancel_history(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1905,6 +2373,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertArrayHasKey('cancelled_at', $cancelHistory[0]);
     }
 
+    /**
+     * 두 번 취소를 기록하면 취소 이력이 누적됩니다.
+     *
+     * @scenario payment_method=card_pg
+     *
+     * @effects payment_cancellation_appends_cancel_history
+     *
+     * @return void 반환값 없음
+     */
     public function test_record_payment_cancellation_appends_to_existing_history(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1921,6 +2398,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertCount(2, $cancelHistory);
     }
 
+    /**
+     * 결제 레코드가 없는 주문도 오류 없이 그대로 돌려줍니다.
+     *
+     * @effects payment_cancellation_tolerates_missing_payment
+     *
+     * @return void 반환값 없음
+     */
     public function test_record_payment_cancellation_returns_order_when_no_payment(): void
     {
         $user = User::factory()->create();
@@ -1936,6 +2420,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== completePayment 임시주문 정리 테스트 =====
 
+    /**
+     * 결제완료 시 회원의 임시주문이 삭제됩니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, actor=member
+     *
+     * @effects complete_payment_deletes_temp_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_deletes_temp_order(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1962,6 +2455,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== findByOrderNumber 테스트 =====
 
+    /**
+     * 주문번호로 조회하면 해당 주문을 돌려줍니다.
+     *
+     * @effects find_by_order_number_returns_matching_order_or_null
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_by_order_number_returns_order(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -1972,6 +2472,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals($order->id, $found->id);
     }
 
+    /**
+     * 없는 주문번호로 조회하면 null 을 돌려줍니다.
+     *
+     * @effects find_by_order_number_returns_matching_order_or_null
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_by_order_number_returns_null_for_non_existent(): void
     {
         $found = $this->service->findByOrderNumber('NON_EXISTENT_ORDER_NUMBER');
@@ -1985,7 +2492,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * StockService와 EcommerceSettingsService를 mock하여 재고 차감 타이밍을 제어합니다.
      *
      * @param  string  $timing  재고 차감 타이밍 ('order_placed', 'payment_complete', 'none')
-     * @return MockObject StockService mock
+     * @return MockObject 재고 서비스 목 객체
      */
     protected function mockStockAndSettingsForTiming(string $timing): MockObject
     {
@@ -1999,6 +2506,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         return $stockMock;
     }
 
+    /**
+     * 재고 차감 시점이 order_placed 이면 주문 생성 시 재고를 한 번 차감합니다.
+     *
+     * @scenario payment_method=dbank, actor=member
+     *
+     * @effects stock_deducted_at_order_creation_only_for_order_placed_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_deducts_stock_for_order_placed_timing(): void
     {
         $user = User::factory()->create();
@@ -2019,6 +2535,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 재고 차감 시점이 payment_complete 이면 주문 생성 시 재고를 차감하지 않습니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects stock_deducted_at_order_creation_only_for_order_placed_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_does_not_deduct_stock_for_payment_complete_timing(): void
     {
         $user = User::factory()->create();
@@ -2039,6 +2564,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 재고 차감 시점이 none 이면 주문 생성 시 재고를 차감하지 않습니다.
+     *
+     * @scenario payment_method=dbank, actor=member
+     *
+     * @effects stock_deducted_at_order_creation_only_for_order_placed_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_does_not_deduct_stock_for_none_timing(): void
     {
         $user = User::factory()->create();
@@ -2087,6 +2621,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * orderRequiresPgPayment 는 determinePgProvider → SettingsService 조회 결과로 PG 필요 여부를
      * 판정한다. 테스트 환경엔 활성 PG 플러그인이 없어 'none' 이 되므로, 설정을 목킹해 'kginicis' 를
      * 반환하게 한다. mockCalculationService 호출 전에 설정 인스턴스를 바인딩해야 한다.
+     *
+     * @return void 반환값 없음
      */
     private function mockCardPgProvider(): void
     {
@@ -2100,6 +2636,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->app->instance(EcommerceSettingsService::class, $settingsMock);
     }
 
+    /**
+     * 카드(PG) 주문은 생성 시점(pending_order)에 관리자 신규주문 알림을 발화하지 않는다.
+     *
+     * @scenario payment_kind=pg, moment=order_created
+     *
+     * @effects pg_order_defers_admin_notify_to_payment_complete
+     *
+     * @return void 반환값 없음
+     */
     public function test_card_order_does_not_fire_admin_notify_at_creation(): void
     {
         $user = User::factory()->create();
@@ -2121,6 +2666,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertSame(0, $getCount());
     }
 
+    /**
+     * 무통장(비-PG) 주문은 입금 전이라도 생성 시점에 관리자 신규주문 알림을 발화한다.
+     *
+     * @scenario payment_kind=non_pg, moment=order_created
+     *
+     * @effects non_pg_order_sends_admin_notify_at_creation
+     *
+     * @return void 반환값 없음
+     */
     public function test_dbank_order_fires_admin_notify_at_creation(): void
     {
         $user = User::factory()->create();
@@ -2141,6 +2695,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertSame(1, $getCount());
     }
 
+    /**
+     * 카드(PG) 주문은 결제완료 시점에 관리자 신규주문 알림을 한 번 발화한다.
+     *
+     * @scenario payment_kind=pg, moment=payment_completed
+     *
+     * @effects pg_order_sends_admin_notify_once_on_completion
+     *
+     * @return void 반환값 없음
+     */
     public function test_card_order_fires_admin_notify_on_payment_complete(): void
     {
         // 일관된 카드 주문 fixture(total_due=53000) — completePayment 금액 재검증 통과
@@ -2154,10 +2717,48 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertSame(1, $getCount());
     }
 
+    /**
+     * 무통장 주문은 입금확인(결제완료) 시점에 관리자 신규주문 알림을 **다시** 발화하지 않는다.
+     *
+     * 무통장 주문은 생성 시점에 이미 발화했다(위 케이스). 관리자가 입금확인을 누르면
+     * `completePayment` 로 들어오는데, 여기서 또 발화하면 운영자 알림함에 같은
+     * 「새로운 주문이 접수되었습니다」가 한 주문으로 두 번 선다 — 어느 쪽이 새 주문인지
+     * 구분할 수 없다. 결제완료 사실은 `order_confirmed_admin` 이 따로 알린다.
+     * 실측(2026-09-21 · 주문 20260921-1316400577): 접수 13:16 71행 + 입금확인 13:31 71행.
+     *
+     * @scenario payment_kind=non_pg, moment=payment_completed
+     *
+     * @effects non_pg_order_does_not_resend_admin_notify
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dbank_order_does_not_fire_admin_notify_again_on_deposit_confirm(): void
+    {
+        $order = $this->createOrderWithPayment();
+        $order->payment->update([
+            'payment_method' => PaymentMethodEnum::DBANK,
+            'pg_provider' => 'manual',
+        ]);
+        $order->load('payment');
+
+        $getCount = $this->countAdminNotify();
+
+        $this->service->completePayment($order, [], (int) $order->total_due_amount);
+
+        $this->assertSame(0, $getCount());
+    }
+
     // ──────────────────────────────────────────────
     // 미지원 결제 통화 차단 (assertPaymentCurrencyChargeable)
     // ──────────────────────────────────────────────
 
+    /**
+     * 환율이 0 인 결제 통화는 청구 전에 차단합니다.
+     *
+     * @effects payment_currency_chargeability_checked_before_charge
+     *
+     * @return void 반환값 없음
+     */
     public function test_assert_payment_currency_throws_for_zero_rate_currency(): void
     {
         $method = new \ReflectionMethod($this->service, 'assertPaymentCurrencyChargeable');
@@ -2176,6 +2777,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $method->invoke($this->service, $snapshot, 6.0);
     }
 
+    /**
+     * 환산 청구액이 0 이 되는 결제 통화는 청구 전에 차단합니다.
+     *
+     * @effects payment_currency_chargeability_checked_before_charge
+     *
+     * @return void 반환값 없음
+     */
     public function test_assert_payment_currency_throws_when_converted_amount_is_zero(): void
     {
         $method = new \ReflectionMethod($this->service, 'assertPaymentCurrencyChargeable');
@@ -2195,6 +2803,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $method->invoke($this->service, $snapshot, 0.0001);
     }
 
+    /**
+     * 환율과 환산액이 유효한 결제 통화는 통과합니다.
+     *
+     * @effects payment_currency_chargeability_checked_before_charge
+     *
+     * @return void 반환값 없음
+     */
     public function test_assert_payment_currency_passes_for_valid_currency(): void
     {
         $method = new \ReflectionMethod($this->service, 'assertPaymentCurrencyChargeable');
@@ -2214,6 +2829,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * 재고 차감 시점이 payment_complete 이면 결제완료 시 재고를 한 번 차감합니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects stock_deducted_at_payment_complete_only_for_payment_complete_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_deducts_stock_for_payment_complete_timing(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -2228,6 +2852,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         ], 53000);
     }
 
+    /**
+     * 재고 차감 시점이 order_placed 이면 결제완료 시 재고를 다시 차감하지 않습니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects stock_deducted_at_payment_complete_only_for_payment_complete_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_does_not_deduct_stock_for_order_placed_timing(): void
     {
         $order = $this->createOrderWithPayment(50000, 3000, 0);
@@ -2244,6 +2877,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== completePayment 배송지 자동 저장 테스트 =====
 
+    /**
+     * 배송지 저장 요청이 있는 회원 주문은 결제완료 시 배송지를 저장하고 요청 플래그를 지웁니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, actor=member
+     *
+     * @effects complete_payment_saves_member_shipping_address_when_requested
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_saves_shipping_address_when_meta_flag_set(): void
     {
         $order = $this->createOrderWithPayment();
@@ -2277,6 +2919,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertArrayNotHasKey('shipping_info_for_save', $order->order_meta ?? []);
     }
 
+    /**
+     * 배송지 저장 요청이 없으면 결제완료 시 배송지를 저장하지 않습니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, actor=member
+     *
+     * @effects complete_payment_saves_member_shipping_address_when_requested
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_does_not_save_address_when_no_meta_flag(): void
     {
         $order = $this->createOrderWithPayment();
@@ -2290,6 +2941,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 비회원 주문은 배송지 저장 요청이 있어도 배송지를 저장하지 않습니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_saves_member_shipping_address_when_requested
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_does_not_save_address_for_guest_order(): void
     {
         $order = $this->createOrderWithPayment();
@@ -2317,6 +2977,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(0, UserAddress::count());
     }
 
+    /**
+     * 배송지 저장이 실패해도 결제완료는 정상 처리됩니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, actor=member
+     *
+     * @effects complete_payment_survives_address_save_failure
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_succeeds_even_if_address_save_fails(): void
     {
         $order = $this->createOrderWithPayment();
@@ -2344,6 +3013,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @param  int  $quantity  수량
      * @param  Product|null  $product  상품 (null이면 새로 생성)
      * @param  ProductOption|null  $option  옵션 (null이면 새로 생성)
+     * @return Cart 생성된 장바구니
      */
     protected function createTestCart(
         int $userId,
@@ -2362,6 +3032,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 주문 메타에 주문 항목별 장바구니 ID 와 수량이 기록됩니다.
+     *
+     * @effects order_meta_records_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_order_meta에_cart_items_포함(): void
     {
         $user = User::factory()->create();
@@ -2400,6 +3077,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(1, $meta['cart_items'][1]['quantity']);
     }
 
+    /**
+     * cart_id 가 없는 주문 항목은 주문 메타의 장바구니 정보에서 빠집니다.
+     *
+     * @effects order_meta_records_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_order_meta_cart_id_없는_아이템은_제외(): void
     {
         $user = User::factory()->create();
@@ -2432,6 +3116,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEmpty($meta['cart_items']);
     }
 
+    /**
+     * 장바구니 수량과 주문 수량이 같으면 장바구니 행을 삭제합니다.
+     *
+     * @effects ordered_cart_items_cleared_by_ordered_quantity
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_ordered_cart_items_장바구니_수량과_주문_수량_같으면_삭제(): void
     {
         $user = User::factory()->create();
@@ -2450,6 +3141,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
     }
 
+    /**
+     * 장바구니 수량이 주문 수량보다 크면 주문 수량만큼 차감합니다.
+     *
+     * @effects ordered_cart_items_cleared_by_ordered_quantity
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_ordered_cart_items_장바구니_수량이_주문보다_크면_차감(): void
     {
         $user = User::factory()->create();
@@ -2468,6 +3166,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertDatabaseHas('ecommerce_carts', ['id' => $cart->id, 'quantity' => 2]);
     }
 
+    /**
+     * 장바구니 수량이 주문 수량보다 작으면 장바구니 행을 삭제합니다.
+     *
+     * @effects ordered_cart_items_cleared_by_ordered_quantity
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_ordered_cart_items_장바구니_수량이_주문보다_작으면_삭제(): void
     {
         $user = User::factory()->create();
@@ -2486,6 +3191,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
     }
 
+    /**
+     * 주문 메타의 장바구니 정보가 비어 있으면 아무것도 하지 않습니다.
+     *
+     * @effects ordered_cart_items_cleared_by_ordered_quantity
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_ordered_cart_items_cart_items_비어있으면_스킵(): void
     {
         $order = Order::factory()->create([
@@ -2501,6 +3213,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * 이미 지워진 장바구니 ID 는 오류 없이 건너뜁니다.
+     *
+     * @effects ordered_cart_items_cleared_by_ordered_quantity
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_ordered_cart_items_이미_삭제된_장바구니는_무시(): void
     {
         $order = Order::factory()->create([
@@ -2516,6 +3235,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * 여러 장바구니 행을 주문 수량에 따라 차감과 삭제로 함께 처리합니다.
+     *
+     * @effects ordered_cart_items_cleared_by_ordered_quantity
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_ordered_cart_items_복수_아이템_혼합_처리(): void
     {
         $user = User::factory()->create();
@@ -2550,6 +3276,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart3->id]);
     }
 
+    /**
+     * 재고 차감 시점이 order_placed 이면 주문 생성 시 재고를 차감하고 장바구니 항목을 지웁니다.
+     *
+     * @scenario payment_method=dbank, actor=member
+     *
+     * @effects cart_cleared_at_order_creation_for_order_placed_timing, stock_deducted_at_order_creation_only_for_order_placed_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_order_placed_타이밍에서_장바구니_아이템_삭제(): void
     {
         $user = User::factory()->create();
@@ -2600,6 +3335,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
     }
 
+    /**
+     * 재고 차감 시점이 payment_complete 이면 주문 생성 시 장바구니를 남기고 주문 메타에 보관합니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects cart_kept_at_creation_for_payment_complete_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_payment_complete_타이밍에서_create_from_temp_order_장바구니_미삭제(): void
     {
         $user = User::factory()->create();
@@ -2646,6 +3390,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertNotEmpty($order->order_meta['cart_items']);
     }
 
+    /**
+     * 결제완료 시 주문 메타에 보관한 장바구니 항목을 지웁니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg, actor=member
+     *
+     * @effects complete_payment_clears_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_시_장바구니_아이템_삭제(): void
     {
         $user = User::factory()->create();
@@ -2666,6 +3419,75 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
     }
 
+    /**
+     * 가상계좌 계좌가 발급되면(주문 완료 화면) 입금 전이라도 주문한 장바구니 항목을 정리합니다.
+     *
+     * 가상계좌는 재고 차감이 입금 완료 시점이라 장바구니도 입금 때까지 남았다 — 고객은 주문을 마쳤는데
+     * 장바구니에 같은 상품이 그대로 보였다(후속 B 실측, 제품 결정 2026-10-08).
+     *
+     * @scenario terminal_path=vbank_issued, payment_method=vbank_pg, actor=member
+     *
+     * @effects vbank_issue_clears_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_account_issued_clears_ordered_cart_items(): void
+    {
+        $user = User::factory()->create();
+        $cart = $this->createTestCart($user->id, 2);
+
+        $order = $this->createOrderWithPayment();
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], [
+                'cart_items' => [['cart_id' => $cart->id, 'quantity' => 2]],
+            ]),
+        ]);
+
+        $this->service->onVbankAccountIssued($order);
+
+        $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
+        $this->assertNotEmpty($order->fresh()->order_meta['cart_cleared_at'] ?? null);
+    }
+
+    /**
+     * 발급 때 이미 정리한 장바구니는 입금 완료 때 다시 차감하지 않습니다(같은 상품을 더 담아 둔 수량 보존).
+     *
+     * @scenario terminal_path=complete_payment, payment_method=vbank_pg, actor=member
+     *
+     * @effects cart_cleared_once_per_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cart_cleared_at_vbank_issue_is_not_deducted_again_on_payment_complete(): void
+    {
+        $user = User::factory()->create();
+        $cart = $this->createTestCart($user->id, 5);
+
+        $order = $this->createOrderWithPayment();
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], [
+                'cart_items' => [['cart_id' => $cart->id, 'quantity' => 3]],
+            ]),
+        ]);
+
+        $this->service->onVbankAccountIssued($order);
+        $this->assertDatabaseHas('ecommerce_carts', ['id' => $cart->id, 'quantity' => 2]);
+
+        $this->service->onVbankAccountIssued($order->fresh());
+        $this->service->completePayment($order->fresh(), ['transaction_id' => 'test_tx_vbank_once'], $order->total_amount);
+
+        $this->assertDatabaseHas('ecommerce_carts', ['id' => $cart->id, 'quantity' => 2]);
+    }
+
+    /**
+     * 기준 통화와 결제 통화가 다른 결제완료는 결제 통화 환산액과 기준 통화 금액을 나눠 기록합니다.
+     *
+     * @scenario terminal_path=complete_payment, payment_method=card_pg
+     *
+     * @effects complete_payment_stores_paid_amount_in_payment_currency
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_stores_paid_amount_local_in_order_currency_when_cross_currency(): void
     {
         // base JPY 주문을 KRW 로 결제: paid_amount_local 은 결제 통화(KRW) 환산액이어야 하고,
@@ -2710,7 +3532,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      *
      * @param  User  $user  사용자
      * @param  int  $productId  주문 항목의 상품 ID
-     * @return TempOrder
+     * @return TempOrder 생성된 임시주문
      */
     protected function createRestrictedTempOrder(User $user, int $productId)
     {
@@ -2736,6 +3558,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
     }
 
     /**
+     * 구매 대상 제한 테스트에 쓰는 주문자 정보와 배송지 정보를 돌려줍니다.
+     *
      * @return array{0: array, 1: array} 주문자 정보, 배송지 정보
      */
     protected function ordererAndShipping(): array
@@ -2746,6 +3570,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 허용 역할이 없는 회원은 구매 대상 제한 상품을 주문할 수 없습니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects purchase_restriction_enforced_at_order_creation
+     *
+     * @return void 반환값 없음
+     */
     public function test_허용_역할_없는_회원은_제한_상품_주문_차단(): void
     {
         $allowedRole = Role::create(['identifier' => 'vip-test', 'name' => ['ko' => 'VIP', 'en' => 'VIP']]);
@@ -2767,6 +3600,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->service->createFromTempOrder($tempOrder, $orderer, $shipping, 'card', 103000);
     }
 
+    /**
+     * 허용 역할을 가진 회원은 구매 대상 제한 상품을 주문할 수 있습니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects purchase_restriction_enforced_at_order_creation
+     *
+     * @return void 반환값 없음
+     */
     public function test_허용_역할_보유_회원은_제한_상품_주문_가능(): void
     {
         $allowedRole = Role::create(['identifier' => 'vip-test', 'name' => ['ko' => 'VIP', 'en' => 'VIP']]);
@@ -2790,6 +3632,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertInstanceOf(Order::class, $order);
     }
 
+    /**
+     * 구매 대상 제한이 없는 상품은 회원 주문이 정상 생성됩니다.
+     *
+     * @scenario payment_method=card_pg, actor=member
+     *
+     * @effects purchase_restriction_enforced_at_order_creation
+     *
+     * @return void 반환값 없음
+     */
     public function test_제한_없음_상품은_회원_주문_정상_생성(): void
     {
         $user = User::factory()->create();
@@ -2814,6 +3665,10 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * §3.4 회귀: 옵션 다통화 빌더가 mc_subtotal_earned_points_amount 를 포함해야 한다.
      *
      * 결함: buildOptionMultiCurrency 에 적립값 변환이 빠져 mc_ 적립 컬럼이 항상 NULL.
+     *
+     * @effects order_option_multi_currency_includes_earned_points
+     *
+     * @return void 반환값 없음
      */
     public function test_build_option_multi_currency_includes_earned_points(): void
     {
@@ -2851,6 +3706,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     // ===== 전액 마일리지 결제 (결제액 0원) — determineInitialStatus / 자동 완료 =====
 
+    /**
+     * 결제액이 0원이면 결제수단과 무관하게 결제완료로 시작하고, 결제액이 있으면 기존 분기를 따릅니다.
+     *
+     * @scenario payment_method=mileage_full
+     *
+     * @effects initial_status_is_payment_complete_for_zero_amount, initial_status_is_pending_order_for_pg_methods, initial_status_is_pending_payment_for_deposit_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_determine_initial_status_returns_payment_complete_for_zero_amount(): void
     {
         $reflection = new \ReflectionClass($this->service);
@@ -2867,6 +3731,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PENDING_PAYMENT, $method->invoke($this->service, 'vbank', 50000));
     }
 
+    /**
+     * 전액 마일리지 주문은 생성 즉시 결제완료가 되고 결제 레코드도 PAID 입니다.
+     *
+     * @scenario payment_method=mileage_full, actor=member
+     *
+     * @effects zero_amount_order_completes_payment_on_create
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_full_mileage_payment_marks_payment_complete(): void
     {
         $this->allowAnyMileageUsage();
@@ -2928,6 +3801,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(PaymentStatusEnum::PAID, $order->payment->payment_status, '전액 마일리지 결제의 결제 레코드는 PAID 여야 합니다.');
     }
 
+    /**
+     * 전액 마일리지 주문을 만들면 결제완료 훅과 주문확인 훅이 발화합니다.
+     *
+     * @scenario payment_method=mileage_full, actor=member
+     *
+     * @effects zero_amount_order_fires_payment_complete_hooks_on_create
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_from_temp_order_full_mileage_payment_fires_payment_complete_hooks(): void
     {
         $user = User::factory()->create();
@@ -2991,6 +3873,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * @param  User  $user  사용자
      * @param  int  $usePoints  사용 마일리지
      * @param  int  $finalAmount  차감 후 결제액
+     * @return TempOrder 생성된 임시주문
      */
     protected function makePartialMileageTempOrder(User $user, int $usePoints, int $finalAmount): TempOrder
     {
@@ -3018,6 +3901,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
             ->create();
     }
 
+    /**
+     * 카드 마일리지 차감 시점이 payment_complete 이면 주문 생성 시 마일리지를 차감하지 않습니다.
+     *
+     * @scenario payment_method=card, asset=mileage
+     *
+     * @effects mileage_timing_per_method
+     *
+     * @return void 반환값 없음
+     */
     public function test_payment_complete_timing_does_not_deduct_mileage_at_order_creation(): void
     {
         $user = User::factory()->create();
@@ -3046,6 +3938,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(2000, (int) MileageTransaction::where('user_id', $user->id)->where('type', 'purchase_earn')->sum('remaining_amount'), '결제 전이므로 적립 lot 잔여가 보존되어야 합니다.');
     }
 
+    /**
+     * 카드 마일리지 차감 시점이 payment_complete 이면 결제완료 시 마일리지를 차감합니다.
+     *
+     * @scenario payment_method=card, asset=mileage
+     *
+     * @effects card_mileage_deducted_on_payment_complete
+     *
+     * @return void 반환값 없음
+     */
     public function test_complete_payment_deducts_mileage_for_payment_complete_timing(): void
     {
         $user = User::factory()->create();
@@ -3073,6 +3974,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(0, (int) MileageTransaction::where('user_id', $user->id)->where('type', 'purchase_earn')->sum('remaining_amount'), '사용분만큼 적립 lot 잔여가 소진되어야 합니다.');
     }
 
+    /**
+     * 카드 마일리지 차감 시점이 order_placed 이면 주문 생성 시 마일리지를 차감합니다.
+     *
+     * @scenario payment_method=card, asset=mileage
+     *
+     * @effects mileage_timing_per_method
+     *
+     * @return void 반환값 없음
+     */
     public function test_order_placed_timing_deducts_mileage_at_order_creation(): void
     {
         $user = User::factory()->create();
@@ -3099,6 +4009,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(1, MileageTransaction::where('user_id', $user->id)->where('type', 'order_use')->count(), '주문 생성 시점에 사용 거래가 생성되어야 합니다.');
     }
 
+    /**
+     * 주문 생성 시 차감된 마일리지는 결제실패 취소 때 복원됩니다.
+     *
+     * @scenario payment_method=card, asset=mileage
+     *
+     * @effects fail_payment_restores_deducted_mileage
+     *
+     * @return void 반환값 없음
+     */
     public function test_fail_payment_restores_deducted_mileage(): void
     {
         $user = User::factory()->create();
@@ -3131,6 +4050,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(2000, (int) MileageTransaction::where('user_id', $user->id)->where('type', 'order_cancel_restore')->sum('amount'), '복원액은 사용 마일리지와 같아야 합니다.');
     }
 
+    /**
+     * 차감 전에 결제가 실패하면 마일리지 복원 거래를 만들지 않습니다.
+     *
+     * @scenario payment_method=card, asset=mileage
+     *
+     * @effects fail_payment_skips_restore_for_undeducted_mileage
+     *
+     * @return void 반환값 없음
+     */
     public function test_fail_payment_does_not_create_phantom_mileage_when_not_deducted(): void
     {
         $user = User::factory()->create();
@@ -3161,6 +4089,13 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertEquals(2000, (int) MileageTransaction::where('user_id', $user->id)->where('type', 'purchase_earn')->sum('remaining_amount'), '잔액이 변동 없이 보존되어야 합니다.');
     }
 
+    /**
+     * 목록에서 숨기는 주문 상태는 주문대기 하나뿐입니다.
+     *
+     * @effects pending_order_is_the_only_hidden_order_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_order_status_enum_list_hidden_values_contains_only_pending_order(): void
     {
         $this->assertEquals(['pending_order'], OrderStatusEnum::listHiddenValues());

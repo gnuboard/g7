@@ -52,10 +52,10 @@
         "Pagination",
         "SearchBar",
         "Avatar",
+        "VisitorCounter",
         "UserInfo",
         "QuantitySelector",
-        "ProductImageViewer",
-        "PostReactions"
+        "ProductImageViewer"
       ]
     }
   ],
@@ -616,6 +616,21 @@
         }
       }
     },
+    "VisitorCounter": {
+      "label": "$t:layout_editor.palette.visitor_counter.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "VisitorCounter",
+        "props": {
+          "today": 128,
+          "yesterday": 96,
+          "max": 391,
+          "total": 21455,
+          "layout": "row"
+        }
+      }
+    },
     "UserInfo": {
       "label": "$t:layout_editor.palette.user_info.label",
       "requiresDefaultNode": true,
@@ -654,21 +669,6 @@
               "src": "https://via.placeholder.com/400",
               "alt": "$t:layout_editor.palette.product_image_viewer.default_alt"
             }
-          ]
-        }
-      }
-    },
-    "PostReactions": {
-      "label": "$t:layout_editor.palette.post_reactions.label",
-      "requiresDefaultNode": true,
-      "defaultNode": {
-        "type": "composite",
-        "name": "PostReactions",
-        "props": {
-          "postId": "sample",
-          "reactions": [
-            { "type": "like", "count": 3 },
-            { "type": "funny", "count": 1 }
           ]
         }
       }

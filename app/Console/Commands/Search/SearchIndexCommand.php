@@ -127,7 +127,7 @@ class SearchIndexCommand extends Command
     private function confirmRebuild(array $targets): bool
     {
         $this->newLine();
-        $this->components->info(__('search.index.rebuild_targets', ['count' => count($targets)]));
+        $this->components->info(trans_choice('search.index.rebuild_targets', count($targets)));
 
         foreach ($targets as $target) {
             $this->line('  - '.$target->identifier.' ('.$target->measurement.')');

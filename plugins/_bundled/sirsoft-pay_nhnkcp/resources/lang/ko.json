@@ -6,11 +6,10 @@
             "kcp_status": "결제 상태",
             "nhnkcp_test_mode_status": "테스트 모드 상태",
             "nhnkcp_easy_pay_config": "간편결제 설정",
-            "nhnkcp_easy_pay_display_map": "간편결제 표시 맵",
             "nhnkcp_test_map": "테스트 결제 맵",
-            "nicepay_test_map": "테스트 결제 맵",
             "settings": "결제 설정",
-            "vbank_info": "가상계좌 정보"
+            "vbank_info": "가상계좌 정보",
+            "nhnkcp_mock_deposit": "모의입금 정보"
         }
     },
     "messages": {
@@ -45,7 +44,16 @@
         "supply_amount": "공급가액",
         "vat_amount": "부가세",
         "tax_free_amount": "면세금액",
-        "escrow_badge": "에스크로"
+        "escrow_badge": "에스크로",
+        "loading": "로딩 중...",
+        "vbank_amount": "입금 금액",
+        "mock_title": "모의입금처리",
+        "mock_trade_no": "KCP 거래번호",
+        "mock_deposit_no": "입금계좌",
+        "mock_depositor": "입금자명",
+        "mock_notify_url": "입금통보 URL",
+        "mock_submit": "입금통보 테스트",
+        "mock_admin_notice": "관리자에게만 출력되는 내용"
     },
     "admin": {
         "test_mode_badge": "테스트 결제",
@@ -66,6 +74,7 @@
         "result_app_no": "원승인번호",
         "result_app_time": "원승인일시",
         "result_pay_method": "결제수단",
+        "result_easy_pay": "간편결제",
         "result_res_cd": "원승인 응답코드",
         "result_cancelled_amount": "취소금액",
         "result_cancelled_at": "취소일시",
@@ -78,6 +87,7 @@
         "escrow_delivery_invoice_placeholder": "운송장번호 입력",
         "escrow_delivery_courier_label": "택배사",
         "escrow_delivery_courier_placeholder": "택배사 선택",
+        "escrow_delivery_courier_etc": "기타",
         "escrow_delivery_already_registered": "배송등록 완료",
         "escrow_delivery_registered_at": "등록일시",
         "escrow_delivery_invoice_info": "운송장번호",
@@ -131,11 +141,11 @@
         "redirect_success_url": "결제 성공 리다이렉트 URL",
         "redirect_success_url_hint": "{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL(https://...)을 직접 넣어도 됩니다. {orderId}는 주문번호로 자동 치환됩니다.",
         "redirect_fail_url": "결제 실패 리다이렉트 URL",
-        "redirect_fail_url_hint": "상대 경로 또는 전체 URL 모두 가능합니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.",
+        "redirect_fail_url_hint": "{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL 을 직접 넣어도 됩니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.",
         "section_vbank": "가상계좌 설정",
         "section_vbank_hint": "가상계좌 결제 관련 설정입니다.",
-        "vbank_expire_days": "입금 유효기간",
-        "vbank_expire_days_hint": "가상계좌 발급 후 입금 가능한 기한 (1~7일).",
+        "vbank_expire_days": "입금 유효기간 (사용 안 함)",
+        "vbank_expire_days_hint": "가상계좌 입금 기한은 쇼핑몰 환경설정 › 주문설정 › 「주문 자동취소」 기한을 따릅니다. 이 값은 주문에 입금 기한이 없는 예외 경우에만 예비값(1~7일)으로 씁니다.",
         "vbank_expire_days_unit": "일",
         "section_vbank_notify": "가상계좌 입금통보 URL",
         "vbank_notify_hint": "NHN KCP 가맹점 어드민에서 이 URL을 입금통보 URL로 등록해야 가상계좌 결제가 자동으로 처리됩니다.",
@@ -150,14 +160,41 @@
         "escrow_test_site_cd_hint": "KCP 에스크로 테스트용 site_cd (기본값: T0007)",
         "section_escrow_notify": "에스크로 공통통보 URL",
         "escrow_common_notify_hint": "NHN KCP 가맹점 어드민에서 이 URL을 공통통보 URL로 등록해야 구매확인/취소가 자동으로 처리됩니다.",
-        "escrow_common_notify_copied": "URL이 클립보드에 복사되었습니다."
+        "escrow_common_notify_copied": "URL이 클립보드에 복사되었습니다.",
+        "health": {
+            "title": "시스템 점검",
+            "error_count": "오류 {{count}}건",
+            "warning_count": "경고 {{count}}건",
+            "fixed_count": "자동 복구 {{count}}건",
+            "all_ok": "모두 정상",
+            "recheck": "다시 검사",
+            "ready": "동작 가능",
+            "not_ready": "동작 불가",
+            "pc_payment": "PC 결제 (Standard Pay)",
+            "pc_payment_requires": "CLI 바이너리 필요",
+            "mobile_payment": "모바일 카드/일반결제",
+            "mobile_payment_requires": "SmartPhone Pay (SOAP) + CLI 바이너리 모두 필요",
+            "mobile_vbank": "모바일 가상계좌",
+            "mobile_vbank_requires": "SmartPhone Pay (SOAP) 만 필요 (평문 콜백)",
+            "category_pc": "PC",
+            "category_mobile": "모바일",
+            "auto_fixed": "자동 복구됨",
+            "action_required": "↓ 사용자 조치 필요",
+            "forbidden": "시스템 점검을 볼 권한이 없습니다. 이커머스 설정 조회 또는 플러그인 설정 수정 권한이 필요합니다."
+        }
     },
     "easy_pay": {
         "section_title": "간편결제"
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
+            "krw_only": "NHN KCP는 KRW 결제만 지원합니다. ({{currency}})",
+            "mobile_approval_key_failed": "KCP 모바일 승인키 획득 실패",
+            "pg_error": "KCP 오류 [{{code}}]: {{message}}",
+            "applepay_ios_only": "애플페이는 IOS 기기에 모바일결제만 가능합니다.",
+            "method_missing": "결제수단 정보가 없어 결제를 진행할 수 없습니다. 주문서를 다시 열어 주세요."
         }
-    }
+    },
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다."
 }

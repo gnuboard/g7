@@ -1,0 +1,52 @@
+feature: 관리자 회원 생성·수정 요청 검증 (연락처·시간대·역할)
+
+description: |
+  관리자 회원 폼(생성 POST /api/admin/users · 수정 PUT /api/admin/users/{uuid})의 서버 검증 규칙이
+  화면이 보내는 값 모양 그대로 받거나 거절하는지 고정한다.
+
+  규칙 정본은 CreateUserRequest · UpdateUserRequest 다.
+    - mobile·phone: nullable, 숫자·하이픈·플러스·괄호·공백만 (두 요청이 같은 정규식을 쓴다)
+    - timezone: nullable, PHP 시간대 식별자만
+    - 역할: 생성은 생략·빈 배열이면 서비스가 기본 역할(user)을 배정한다(#703 — 역할 칸은 역할 부여
+      권한이 있어야 열리므로 필수로 두면 생성 권한만 가진 운영자의 등록이 늘 422 였다).
+      수정은 roles/role_ids 중 하나가 1개 이상 필수다.
+    - 폼은 응답에서 읽은 roles(빈 배열)와 선택한 role_ids 를 함께 보낼 수 있다 — prepareForValidation 이
+      role_ids 를 우선하고 roles 를 버린다.
+
+  축:
+    - operation: store(생성) / update(수정)
+    - input: 필드와 값 모양의 조합. *_valid 는 통과, *_invalid 는 해당 필드 422,
+      timezone_null 은 nullable 허용, roles_omitted·roles_empty_array 는 역할 없는 요청,
+      role_ids_with_empty_roles 는 두 필드 동시 전송.
+
+axes:
+  operation: [store, update]
+  input:
+    - mobile_valid
+    - mobile_invalid
+    - phone_valid
+    - phone_invalid
+    - timezone_valid
+    - timezone_invalid
+    - timezone_null
+    - roles_omitted
+    - roles_empty_array
+    - role_ids_with_empty_roles
+
+exclusions:
+  - { operation: store, input: phone_valid, reason: "mobile·phone 은 두 요청에서 같은 nullable 정규식을 쓴다 — 생성의 허용 경로는 mobile_valid, phone 허용은 update 조합이 대표한다" }
+  - { operation: store, input: timezone_null, reason: "timezone 은 생성·수정이 같은 nullable 규칙 — null 허용은 update 조합이 대표하고, 생성의 다른 조합들이 timezone 을 생략한 채 201 을 확인한다" }
+  - { operation: update, input: roles_empty_array, reason: "수정의 roles/role_ids 는 required_without + min:1 — 빈 배열은 roles_omitted 와 같은 422 경로라 roles_omitted 조합이 대표한다" }
+
+effects:
+  - valid_contact_number_accepted
+  - invalid_contact_number_rejected_per_field
+  - valid_timezone_accepted
+  - invalid_timezone_rejected
+  - null_timezone_accepted
+  - store_without_roles_assigns_default_role
+  - update_without_roles_rejected
+  - role_ids_take_precedence_over_empty_roles
+
+test_files:
+  - tests/Feature/Api/Admin/UserControllerValidationTest.php

@@ -1,0 +1,52 @@
+feature: 관리자 신고 관리 API — 목록·상세·상태 변경·삭제와 권한 게이트
+
+description: |
+  관리자 신고현황 화면이 쓰는 신고 API(목록·검색 필터·상세·단일/일괄 상태 변경·삭제)와
+  상태 변경이 대상 게시글에 미치는 동기화(게시중단·삭제·반려 복구)를 고정한다.
+  조회는 sirsoft-board.reports.view, 상태 변경은 sirsoft-board.reports.manage 권한이 있어야 한다.
+
+  기존 회귀 테스트(ReportTest)의 소유권을 7.1.0 abilities 게이트 작업 중 시험 파일을 고치며 사후 등재했다.
+  축 case 는 관리자가 하는 조작 단위이고, 신고 접수(submit_report)는 신고 행을 만드는 쪽의 전제 확인이다.
+
+axes:
+  case:
+    - list_reports
+    - filter_reports
+    - report_detail
+    - update_status
+    - bulk_update_status
+    - status_validation
+    - delete_report
+    - permission_denied
+    - submit_report
+
+effects:
+  # 목록·검색
+  - admin_report_list_returns_paginated_reports
+  - admin_report_list_filters_by_status
+  - admin_report_list_filters_by_target_type
+  - admin_report_list_per_page_clamped_between_10_and_20
+  - admin_comment_report_title_snapshot_in_list_and_post_title_in_detail
+  - admin_report_list_exposes_author_and_reporter_uuid_only
+  - admin_report_list_exposes_processor_uuid_only
+  # 상세
+  - admin_report_detail_returns_report
+  # 상태 변경과 대상 게시글 동기화
+  - admin_report_status_update_persists_status_and_note
+  - admin_report_bulk_status_update_persists_all
+  - admin_report_suspend_blinds_post
+  - admin_report_delete_status_deletes_post
+  - admin_report_rejection_restores_post
+  - admin_report_status_update_rejects_invalid_status_422
+  - admin_report_status_update_rejects_too_long_process_note_422
+  # 삭제
+  - admin_report_delete_soft_deletes_row
+  # 권한 게이트
+  - admin_report_list_without_view_permission_returns_403
+  - admin_report_status_update_without_manage_permission_returns_403
+  # 신고 접수 전제
+  - duplicate_report_returns_409
+  - report_creation_saves_target_snapshot
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReportTest.php

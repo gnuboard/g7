@@ -1,0 +1,19 @@
+feature: validationError 메시지 키 자리 계약
+
+description: |
+  #138 후속 validate 에서 드러난 결함. 확장 관리 컨트롤러(모듈·플러그인·템플릿)가 Service 가 감싼 실패 사유 문장을
+  `validationError($e->errors(), $firstError)` 로 메시지 **키** 자리에 넘기고 있었다(이중 접두어를 피하려던 처리).
+  응답 첫 인자는 다국어 키 전용이다(docs/backend/exceptions.md). 사유 문장은 치환 자리로 넘긴다 —
+  `validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError])`. 응답 문구는 그대로다.
+  판정은 코어와 전 번들 확장 컨트롤러 소스 전수 스캔이며, 호출을 하나도 못 찾으면 실패한다.
+
+axes:
+  contract_check: [validation_error_key_slot]
+
+exclusions: []
+
+effects:
+  - validation_error_key_slot_is_never_a_variable_repository_wide
+
+test_files:
+  - tests/Feature/Http/ValidationErrorKeySlotContractTest.php

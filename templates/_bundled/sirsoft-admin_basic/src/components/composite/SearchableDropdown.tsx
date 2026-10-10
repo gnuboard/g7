@@ -5,6 +5,13 @@ import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 export interface SearchableDropdownOption {
   value: string | number;
   label: string;
@@ -31,6 +38,14 @@ export interface SearchableDropdownProps {
   initialText?: string;
   /** 트리거 버튼 텍스트 */
   triggerLabel?: string;
+  /**
+   * 다중 선택에서 둘 이상 골랐을 때의 트리거 문구. `{count}` 가 고른 수로 치환된다.
+   *
+   * 기본값이 영어인 것은 이 컴포넌트가 코어 번역을 읽지 않기 때문이다 — 화면(레이아웃)이
+   * `$t:` 로 넘긴다. 넘기지 않으면 한국어 관리자 화면에 「2 selected」 가 그대로 뜬다
+   * (2026-09-21 브라우저 실측: 회원 배송지 목록의 회원 필터).
+   */
+  selectedCountLabel?: string;
   /** 트리거 버튼 아이콘 */
   triggerIcon?: React.ReactNode;
   /** 비활성화 */
@@ -56,17 +71,24 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   value,
   onChange,
   multiple = false,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder: searchPlaceholderProp,
   onSearch,
-  noResultsText = 'No results found',
-  initialText = 'Type to search',
-  triggerLabel = 'Select',
+  noResultsText: noResultsTextProp,
+  initialText: initialTextProp,
+  triggerLabel: triggerLabelProp,
+  selectedCountLabel: selectedCountLabelProp,
   triggerIcon,
   disabled = false,
   className = '',
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const searchPlaceholder = searchPlaceholderProp ?? tOr('common.search_placeholder', 'Search...');
+  const noResultsText = noResultsTextProp ?? tOr('common.no_results', 'No results found');
+  const initialText = initialTextProp ?? tOr('common.type_to_search', 'Type to search');
+  const triggerLabel = triggerLabelProp ?? tOr('common.select_placeholder', 'Select');
+  const selectedCountLabel = selectedCountLabelProp ?? tOr('common.selected_count', '{count} selected', { count: '{count}' });
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,13 +103,19 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   }, [value]);
 
   // 검색어로 옵션 필터링
+  //
+  // 라벨·설명을 **문자열로 좁혀서** 비교한다. 옵션은 화면마다 다른 곳에서 온다 — 검색 API,
+  // 현재 선택값 시드, 확장이 주입한 목록. 그중 하나가 문자열이 아닌 값을 흘리면 종전에는
+  // `opt.label.toLowerCase is not a function` 이 나면서 **드롭다운 전체가 언마운트**됐다
+  // (실측 §9 T-D2: 알림 템플릿 수정 창의 역할 칸이 검색어 첫 글자에 사라졌다).
+  // 한 항목이 이상한 것과 그 화면을 못 쓰게 되는 것은 대가가 다르다.
   const filteredOptions = useMemo(() => {
     if (!searchTerm.trim()) return options;
     const term = searchTerm.toLowerCase();
     return options.filter(
       opt =>
-        opt.label.toLowerCase().includes(term) ||
-        opt.description?.toLowerCase().includes(term)
+        String(opt.label ?? '').toLowerCase().includes(term) ||
+        String(opt.description ?? '').toLowerCase().includes(term)
     );
   }, [options, searchTerm]);
 
@@ -100,11 +128,11 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         const selected = options.find(opt => String(opt.value) === String(selectedValues[0]));
         return selected?.label || triggerLabel;
       }
-      return `${count} selected`;
+      return selectedCountLabel.replace('{count}', String(count));
     }
     const selected = options.find(opt => String(opt.value) === String(selectedValues[0]));
     return selected?.label || triggerLabel;
-  }, [selectedValues, options, multiple, triggerLabel]);
+  }, [selectedValues, options, multiple, triggerLabel, selectedCountLabel]);
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {

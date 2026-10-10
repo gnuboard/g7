@@ -60,7 +60,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **설명**
 
-현재 로그인한 사용자가 자신의 계정을 탈퇴한다. 프론트의 회원 탈퇴 모달(`_modal_withdraw.json`)이 호출한다. 별도 요청 파라미터 없이 인증 토큰의 사용자를 대상으로 하며, `UserService::withdrawUser()` 가 아바타·토큰 삭제와 개인정보 익명화를 수행한다. 되돌릴 수 없는 작업이므로 호출 전 사용자 확인 절차를 두는 것을 권장한다.
+현재 로그인한 사용자가 자신의 계정을 탈퇴한다. 프론트의 회원 탈퇴 모달(`_modal_withdraw.g7.html`)이 호출한다. 별도 요청 파라미터 없이 인증 토큰의 사용자를 대상으로 하며, `UserService::withdrawUser()` 가 아바타·토큰 삭제와 개인정보 익명화를 수행한다. 되돌릴 수 없는 작업이므로 호출 전 사용자 확인 절차를 두는 것을 권장한다.
 
 탈퇴는 원자적으로 처리된다 — 약관 동의 이력 삭제·토큰 삭제·익명화가 하나의 트랜잭션이며, 어느 단계에서 실패해도 전부 취소된다. 아바타 파일 삭제는 커밋이 확정된 뒤에 수행되고, 파일 삭제가 실패해도 탈퇴는 되돌리지 않는다(참조되지 않는 파일만 남는다).
 
@@ -122,7 +122,8 @@ _단건 응답: `data` 객체의 필드._
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| country_name | string | `대한민국` | 국가 코드의 현지화 국가명 (country 값에서 파생, 없으면 null) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | homepage | null | `null` | 홈페이지 URL |
@@ -140,6 +141,9 @@ _단건 응답: `data` 객체의 필드._
 | last_login_human | string | `2시간 전` | 마지막 로그인 시각의 상대 표현 (diffForHumans() 산물, 사용자 시간대 기준) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
+| password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null — #736) |
+| password_expires_at | string\|null | `2026-09-29 10:20:00` | 비밀번호 만료 예정 일시 — 만료가 적용되지 않으면 null |
+| password_expiry_days_left | integer\|null | `3` | 만료까지 남은 날수 (지났으면 0, 적용되지 않으면 null) |
 | notify_post_complete | boolean | `false` | 게시글 작성 완료 알림 수신 설정 (게시판 모듈 주입) |
 | notify_post_reply | boolean | `false` | 내 게시글에 대한 답글 알림 수신 설정 (게시판 모듈 주입) |
 | notify_comment | boolean | `false` | 내 게시글에 대한 댓글 알림 수신 설정 (게시판 모듈 주입) |
@@ -262,7 +266,9 @@ HTTP/1.1 200
 
 **설명**
 
-현재 로그인한 사용자의 프로필 정보를 조회한다. 프론트의 마이페이지(`mypage/profile.json`)와 프로필 수정 화면(`mypage/profile-edit.json`)이 소비한다. 응답은 `UserResource::toProfileArray()` 산물로, 비밀번호 등 민감 필드는 제외된다. 표의 `notify_*`(게시판 모듈)·`marketing_consent*`/`email_subscription*`/`third_party_consent*`/`info_disclosure*`/`channels`/`consent_histories`(마케팅 플러그인)·`ecommerce_*`(이커머스 모듈) 필드는 코어가 아니라 각 확장이 `core.user.filter_resource_data` 훅으로 병합하는 확장 소유 필드이며, 해당 확장이 비활성인 환경에서는 응답에 나타나지 않는다.
+현재 로그인한 사용자의 프로필 정보를 조회한다. 프론트의 마이페이지(`mypage/profile.g7.html`)와 프로필 수정 화면(`mypage/profile-edit.g7.html`)이 소비한다. 응답은 `UserResource::toProfileArray()` 산물로, 비밀번호 등 민감 필드는 제외된다. 표의 `notify_*`(게시판 모듈)·`marketing_consent*`/`email_subscription*`/`third_party_consent*`/`info_disclosure*`/`channels`/`consent_histories`(마케팅 플러그인)·`ecommerce_*`(이커머스 모듈) 필드는 코어가 아니라 각 확장이 `core.user.filter_resource_data` 훅으로 병합하는 확장 소유 필드이며, 해당 확장이 비활성인 환경에서는 응답에 나타나지 않는다.
+
+**계정 상태와 조회**: 활성(`active`)이 아닌 회원(비활성·차단·탈퇴·가입대기·휴면)이 이미 가진 토큰으로 부르면, 그 회원 역할에 `core.profile.read`(내 정보 조회) 권한이 있을 때만 200 으로 응답한다 — 마이페이지가 `status`·`status_label`·`status_variant` 로 계정 상태 배지와 안내를 그릴 수 있게 하기 위함이다. 권한이 없으면 종전처럼 403 과 상태 사유(`auth.account_blocked` 등)를 돌려준다. 같은 판정이 `GET /api/auth/user` 에도 걸린다. 쓰기(`PUT`·`DELETE /api/me`, 비밀번호·아바타)와 그 밖의 사용자 API 는 권한과 무관하게 상태로 403 이며, 로그인 자체의 상태 거부도 그대로다.
 
 
 ### PUT /api/me
@@ -278,8 +284,8 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 아니오 | — | 비밀번호 |
-| current_password | body | string | 아니오 | — | 현재 비밀번호 (변경 전 확인용) |
+| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -353,7 +359,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string\|null | `한국어` | 언어 코드의 다국어 라벨 (`user.language.{code}` 번역문) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active, inactive, blocked, withdrawn, pending_verification) |
+| status | string | `active` | 계정 상태 (active, inactive, blocked, withdrawn, pending_verification, dormant) |
 | status_label | string\|null | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label() 산물) |
 | status_variant | string\|null | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() 산물 — UI 배지용) |
 | is_admin | boolean | `false` | 관리자 역할 보유 여부 (`User::isAdmin()` — 역할 관계 기반 파생) |
@@ -425,11 +431,12 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18). 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
 
 <!-- @generated:end -->
 
 **설명**
 
-현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.json`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
+현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.g7.html`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
 
 

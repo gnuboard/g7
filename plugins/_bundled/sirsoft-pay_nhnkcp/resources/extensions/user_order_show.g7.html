@@ -1,0 +1,126 @@
+<!-- 내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.
+     e2e:allow S4-D10·D13 — 가상계좌 블록에 영수증 행처럼 고정 id 를 달고, 표시 조건 두 가지(취소 주문엔 안내 숨김·입금 뒤 자동 취소 경고 숨김)만 더했다. 대체 검증: Vitest 조건 평가·조각 렌더 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다. -->
+<extension extension-point="mypage_order_payment_provider_slot" mode="append" priority="100">
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.is_escrow}}" class="pt-2 mt-1">
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+        <icon name="shield-halved" class="text-xs"/>
+        <span>$t:sirsoft-pay_nhnkcp.user.escrow_badge</span>
+      </span>
+    </div>
+    <!-- 가상계좌 안내는 이 조각만 그린다(#639 에서 주입 스크립트를 옮김). id(kcp-mp-vbank-row)는 영수증 행(kcp-mp-receipt-row)처럼 고정해 화면 점검이 블록 수를 셀 수 있게 한다.
+         취소된 주문엔 입금 계좌를 보이지 않는다(취소 뒤 입금을 부르지 않게). 자동 취소 경고는 입금 전에만. -->
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.vbank_name &amp;&amp; order.data.payment?.payment_status !== 'cancelled' &amp;&amp; order.data.order_status !== 'cancelled'}}" id="kcp-mp-vbank-row" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
+      <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.user.vbank_title</p>
+      <div class="space-y-1.5">
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_bank_name</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.vbank_name}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_account</span>
+          <span class="text-gray-900 dark:text-white font-medium font-mono tracking-wide">{{order.data.payment?.vbank_number}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_holder</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.vbank_holder}}</span>
+        </div>
+        <!-- 입금 금액 — 실제로 입금할 결제예정금액(마일리지 차감 뒤). 비회원 응답에는 없어(비회원은 마일리지를 못 쓴다) 주문금액으로 대신한다 -->
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_amount</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_due</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.due_date_formatted}}</span>
+        </div>
+      </div>
+      <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
+    </div>
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
+      <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title</p>
+      <div class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.supply_amount</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_taxable_supply_amount_formatted}}</span>
+      </div>
+      <div class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vat_amount</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_vat_amount_formatted}}</span>
+      </div>
+      <div data-if="{{order.data.total_tax_free_amount > 0}}" class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.tax_free_amount</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
+      </div>
+    </div>
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.transaction_id &amp;&amp; order.data.payment?.paid_at}}" id="kcp-mp-receipt-row" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex-between">
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
+        <button type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50" disabled="{{_local._kcpReceiptLoading === true}}">
+          <on type="click">
+            <!-- 매출전표 보기 — 전표를 받아 외부 팝업 생성자에 넘긴다(새 창은 사용자 클릭 안에서 열어야 차단되지 않는다) -->
+            <sequence>
+              <set-state target="local" :_kcpReceiptLoading="true"/>
+              <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{order.data.order_number}}/receipt" method="GET">
+                <field name="headers">
+                  <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+                </field>
+              </api-call>
+              <call-external constructor="KcpReceiptPopup">
+                <field name="args">
+                  <field name="url" value="{{$prev.data.receipt_url}}"/>
+                  <field name="cash_url" value="{{$prev.data.cash_receipt_url}}"/>
+                </field>
+              </call-external>
+              <set-state target="local" :_kcpReceiptLoading="false"/>
+            </sequence>
+          </on>
+          <icon data-if="{{_local._kcpReceiptLoading === true}}" name="spinner" class="text-sm animate-spin"/>
+          <icon data-if="{{!_local._kcpReceiptLoading}}" name="file-text" class="text-sm"/>
+          <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
+        </button>
+      </div>
+    </div>
+    <!-- 테스트 모드 모의입금 도구 — 입금 대기 가상계좌 주문에서 정보 API 가 쓸 수 있다고 답할 때만 보인다(운영 모드·남의 주문이면 available=false). 입력값을 KCP 테스트 입금통보 화면으로 새 창 POST 한다 -->
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.payment_method === 'vbank' &amp;&amp; nhnkcp_mock_deposit?.data?.available === true}}" data-testid="nhnkcp-mock-deposit" class="pt-4 mt-2 border-t border-dashed border-orange-300 dark:border-orange-700">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-300 dark:border-orange-700">$t:sirsoft-pay_nhnkcp.user.test_mode_badge</span>
+        <p class="text-sm font-semibold text-orange-700 dark:text-orange-300">$t:sirsoft-pay_nhnkcp.user.mock_title</p>
+      </div>
+      <form method="post" action="{{nhnkcp_mock_deposit.data.mock_url ?? ''}}" target="_blank" class="space-y-2">
+        <div class="flex items-center gap-2 text-sm">
+          <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_trade_no</span>
+          <input type="text" name="e_trade_no" value="{{nhnkcp_mock_deposit.data.trade_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_deposit_no</span>
+          <input type="text" name="deposit_no" value="{{nhnkcp_mock_deposit.data.account_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_depositor</span>
+          <!-- 입금자명 — 테스트 입금통보에 실을 이름이라 직접 고칠 수 있다 -->
+          <input type="text" name="req_name" value="NHN KCP" class="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"/>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_notify_url</span>
+          <input type="text" name="noti_url" value="{{nhnkcp_mock_deposit.data.notify_url ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+        </div>
+        <div class="pt-1">
+          <button type="submit" class="w-full py-1.5 text-xs font-semibold rounded border border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors">$t:sirsoft-pay_nhnkcp.user.mock_submit</button>
+        </div>
+      </form>
+      <p data-if="{{nhnkcp_mock_deposit.data.is_admin_view === true}}" class="mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium">$t:sirsoft-pay_nhnkcp.user.mock_admin_notice</p>
+    </div>
+    <!-- 모의입금 정보 — 로그인 전용 주소라 비회원이면 요청하지 않는다(auth_mode=required). 주소에 주문번호가 있는 주문 상세에서만 부른다(신청서 상세는 주소가 신청번호다). 주문 본체와 따로 늦게 와도 되므로 progressive 다.
+         엔진은 토큰이 없어 요청을 건너뛴 사실을 401 로 알리므로 401·403 은 여기서 조용히 넘긴다 — 처리기가 없으면 템플릿 기본 401 처리(로그인 이동)로 떨어져,
+         이 조각이 붙는 비회원 주문 상세가 로그인 화면으로 튕겼다(7.1.0 리허설 실측). 결제대행사·결제수단은 이 단계(조건 평가는 route·query·_global 만 본다)에서
+         가를 수 없어 정보 API 가 가린다 — NHN KCP 가상계좌 입금 대기·테스트 모드·본인 주문이 아니면 available=false 다. -->
+    <data-source id="nhnkcp_mock_deposit" label_key="$t:sirsoft-pay_nhnkcp.editor.data_source.nhnkcp_mock_deposit" type="api" endpoint="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/vbank-mock-deposit-info" method="GET" if="{{!!route.order_number}}" :auto_fetch="true" auth_mode="required" loading_strategy="progressive">
+      <error-handling>
+        <on-code code="401">
+          <suppress/>
+        </on-code>
+        <on-code code="403">
+          <suppress/>
+        </on-code>
+      </error-handling>
+    </data-source>
+</extension>

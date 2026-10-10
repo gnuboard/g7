@@ -1,0 +1,65 @@
+feature: 본인인증 정책 편집 모달은 `_global` namespace 하나만 진실로 삼는다
+
+description: |
+  환경설정 > 본인인증 정책의 추가·편집 모달(`partials/admin_settings/_tab_identity_policies`)은
+  목록과 모달이 한 레이아웃 안에 있고, 목록 행에서 연 값을 모달이 이어받아 저장까지 간다.
+  이 구조에서 조용히 깨지는 지점이 넷이다.
+
+  ① 상태를 어디에 두느냐. 모달이 부모의 `_local` 을 쓰면 입력 한 글자마다 목록을 품은 부모가
+     다시 그려져 표가 통째로 흔들린다(사례 13). 그래서 진입 setState 가
+     `_global.identity_policy_form_modal` **객체를 통째로** 세우고, 모달 안의 모든 표시·변경이
+     그 namespace 만 읽고 쓴다(옵션 K). 한 곳이라도 `$parent._local` 로 새면 그 필드만
+     목록을 다시 그리는데, 화면은 멀쩡해 보이고 입력도 되므로 눈으로는 찾기 어렵다.
+
+  ② 빈 값의 **모양**. `conditions` 는 조건 이름으로 값을 꺼내는 묶음이라 신규 추가 초기값이
+     빈 map 이어야 한다. 빈 배열이면 편집 모달 진입 setState(`policy.conditions ?? {}`)와
+     모양이 갈리고, 그 값이 저장 본문에 실리면 서버가 대상을 찾지 못해 오류도 로그도 없이
+     조건이 적용되지 않는다(`mem:markup-migration-can-flip-empty-map-to-array`).
+
+  ③ 출처별 편집 제한. 코어·모듈·플러그인이 선언한 정책은 식별에 쓰이는 필드가 잠기지만
+     운영자가 조정해야 하는 필드(인증 목적·우선순위 등)는 열려 있어야 한다. 잠금 술어가
+     한쪽으로 치우치면 운영자가 못 고치거나, 선언형 정책의 정체성이 바뀐다.
+
+  ④ 모달 1회 트리거 제약. `modals` 섹션의 모달은 `lifecycle.onMount` 와 `dataKey` 자동바인딩을
+     쓰면 열릴 때마다 초기화가 한 번 더 돌거나 반대로 돌지 않는다 — 구조로 막는다.
+
+axes:
+  # 모달 하나의 계약이다. 필드·출처·조건을 축으로 펼치면 같은 코드 경로를 여러 번 세게 되므로
+  # 표면 1축으로 두고 계약마다 effect 를 고정한다(잠금·편집 가능 필드 전수는 it.each 가 돈다).
+  surface: [identity_policy_modal]
+
+effects:
+  # 모달 등록·구조
+  - modal_partial_registered_in_admin_settings_modals
+  - modal_uses_standard_modal_component_shape
+  - modal_avoids_lifecycle_onmount_single_trigger_constraint
+  - modal_does_not_use_datakey_autobinding
+  # 진입 setState (목록 → 모달)
+  - list_entry_sets_whole_global_namespace_object
+  - entry_setstate_carries_form_and_isnew_errors_issaving
+  - entry_sequence_ends_with_openmodal
+  # 사례 13 — 키스트로크당 부모 재렌더 0
+  - change_actions_target_global_only
+  - modal_body_never_targets_parent_local
+  # 옵션 K — namespace 단일 진실
+  - all_display_expressions_read_global_namespace
+  - input_change_setstate_uses_dot_path_into_form
+  # 저장 흐름
+  - save_onsuccess_closes_modal_refetches_and_clears_namespace
+  - apicall_body_fields_read_from_global_form
+  # 출처별 편집 제한
+  - declarative_source_locks_identity_fields
+  - editable_fields_stay_unlocked_for_declarative_source
+  - purpose_field_has_no_disabled_class_variant
+  - priority_input_exists_and_binds_form_priority
+  # 우선순위 동률 결함
+  - priority_change_setstate_targets_form_priority
+  - policy_grid_exposes_priority_column
+  # conditions 운영자 편집 (B안)
+  - new_policy_init_state_uses_empty_map_for_conditions
+  - edit_entry_copies_policy_conditions_into_form
+  - signup_stage_change_writes_form_conditions_path
+  - apicall_body_sends_conditions_from_form
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-identity-policy-modal.test.tsx

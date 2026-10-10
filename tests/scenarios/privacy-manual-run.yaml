@@ -1,0 +1,103 @@
+feature: 개인정보 조치 관리자 직권 실행 (이슈 #636 후속)
+
+description: |
+  스케줄러로만 돌던 개인정보 조치(보유기간 파기·익명화, 휴면 네 단계, 연간 통지 발송)를 관리자가
+  설정 화면의 「지금 실행」으로 즉시 한 번 돌린다. 요청은 큐에 접수만 하고 끝나며, 큐 작업이 처리한
+  결과(처리 건수·실패 사유)를 실행 기록에 남겨 화면 카드가 진행 상태와 마지막 결과를 보여 준다.
+
+  코어는 무엇을 처리하는지 모른 채 한 벌의 수집기·API·큐 작업·기록으로 모든 대상을 다룬다 —
+  보유기간 핸들러(확장 포함)와 휴면 단계는 코어가 기본 등록하고, 그 밖의 조치는 확장이
+  `core.privacy.manual_run_targets` 필터로 더한다(gdpr 연간 통지).
+
+  확정(2026-09-25):
+    - 자동 실행 토글이 꺼져 있어도 직권 실행은 저장된 설정값으로 처리한다(자동 배치는 여전히 토글을 본다).
+    - 휴면 전환·탈퇴 단계는 「대기기간 생략」을 고를 수 있다(기본 해제). 생략하면 안내 여부와 무관하게
+      기간 경과자 전원이 대상이다 — 관리자 보호 제외는 유지한다.
+    - 큐 적재 방식 + 카드에 진행 상태·마지막 결과. 같은 대상에 진행 중 작업이 있으면 거절한다.
+    - 권한 = 설정 수정 + 도메인 수정(전체 범위만). 명단 열람(설정 읽기 + 도메인 읽기)의 쓰기 대칭.
+    - gdpr 직권 발송은 발송 상한(batch_size)을 지킨다 — 남은 인원을 결과에 적는다.
+    - 감사 기록 = 관리자 활동 로그(접수·종료).
+
+  확장 도메인의 결과는 각 확장 매니페스트가 소유한다 — 이커머스 삭제 방식의 주문 삭제 권한은
+  `order-privacy-retention.yaml`, gdpr 발송 상한은 `privacy-annual-notice.yaml`, 게시판 두 축은
+  `board-privacy-retention.yaml`.
+
+axes:
+  target_kind: [retention_handler, dormant_stage, extension_runner]
+  toggle: [off, on]
+  actor: [runner, read_only]
+
+exclusions:
+  - { actor: read_only, toggle: on, reason: "권한 거절은 토글을 보기 전에 끝난다 — 꺼진 축 1건으로 충분" }
+  - { target_kind: extension_runner, actor: read_only, reason: "확장 대상의 권한 판정은 코어 수집기 판정식을 그대로 쓴다 — 코어 대상 거절 축과 같은 코드 경로" }
+
+sub_flows:
+  - id: dormant_skip_waiting
+    description: |
+      휴면 전환·탈퇴 단계의 「대기기간 생략」. 생략 모집단은 기존 쿼리 메서드가 인자로 만든다(조건식 사본 금지).
+    effects:
+      - skip_waiting_widens_dormant_population_to_unnotified_members
+      - skip_waiting_keeps_admin_accounts_out_of_withdrawal
+      - skip_waiting_is_ignored_for_stages_that_do_not_support_it
+  - id: concurrency
+    description: |
+      같은 대상의 작업은 하나만 — 직권 실행끼리는 접수 시점에, 새벽 배치와는 공유 락으로 막는다.
+      워커가 멈춰 버려진 기록은 기준 시간이 지나면 실패로 닫고 새 접수를 받는다.
+    effects:
+      - duplicate_queue_is_rejected_while_active
+      - stale_active_run_is_closed_and_requeue_allowed
+      - job_waits_while_batch_holds_the_lock
+      - batch_command_skips_a_domain_locked_by_manual_run
+  - id: screens
+    description: |
+      코어 환경설정 개인정보 탭 · 이커머스 보유기간 탭 · 게시판 일반 탭 · gdpr 설정의 「지금 실행」과 확인 창.
+      조치 대상은 대상마다 한 행 — 이름 · 건수 배지 · 대상 보기 · 지금 실행 · 그 행의 결과 줄(2026-09-26 결정).
+      되돌릴 수 없는 실행은 채운 강조색을 쓰지 않는다.
+    effects:
+      - run_button_is_gated_by_run_permission_and_unsaved_changes
+      - confirm_modal_recounts_before_queueing
+      - card_polls_until_finished_and_refreshes_counts
+      - card_shows_active_status_and_last_result
+      - target_row_keeps_count_view_run_and_result_together
+
+effects:
+  - confirm_modal_execute_locks_repeat_click
+  - manual_run_is_queued_and_processed_by_the_job
+  - manual_run_ignores_the_disabled_toggle
+  - run_requires_settings_and_domain_update_permission
+  - status_api_masks_targets_without_run_permission
+  - run_record_captures_count_and_failure
+  - run_failure_reason_hides_internal_detail_in_production # 운영 모드 실패 사유에 SQL·DB 호스트·서버 경로를 남기지 않는다(#736 H 실측)
+  - activity_log_records_queue_and_finish
+  - activity_log_orders_queue_before_finish_on_sync_queue
+  - queued_hook_failure_does_not_block_dispatch # 접수 훅 구독자 예외가 작업 발행을 막지 않는다
+  - extension_registers_manual_run_target_via_filter
+  - skip_waiting_widens_dormant_population_to_unnotified_members
+  - skip_waiting_keeps_admin_accounts_out_of_withdrawal
+  - skip_waiting_is_ignored_for_stages_that_do_not_support_it
+  - duplicate_queue_is_rejected_while_active
+  - stale_active_run_is_closed_and_requeue_allowed
+  - job_waits_while_batch_holds_the_lock
+  - batch_command_skips_a_domain_locked_by_manual_run
+  - run_button_is_gated_by_run_permission_and_unsaved_changes
+  - confirm_modal_recounts_before_queueing
+  - card_polls_until_finished_and_refreshes_counts
+  - card_shows_active_status_and_last_result
+  - target_row_keeps_count_view_run_and_result_together
+
+test_files:
+  - tests/Feature/Privacy/PrivacyManualRunTest.php
+  - tests/Feature/Migrations/CreatePrivacyManualRunsTableMigrationTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-privacy-manual-run.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-privacy-retention-settings.test.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-privacy-retention-settings.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/annual_notice.test.tsx
+  - tests/Playwright/specs/admin/settings-privacy-retention.spec.ts
+
+rules_layer_coverage:
+  - rule: offset-chunk-mutates-filter
+    coverage: |
+      직권 실행은 자동 배치와 같은 처리 메서드(`chunkById`)를 부른다 — 처리하면서 조건에서 빠지는 행이
+      커서를 밀지 않는다. 대기기간 생략도 같은 쿼리 메서드가 인자로 조건을 뺄 뿐이다.
+  - rule: console-confirm
+    coverage: 신규 커맨드 없음 — 기존 배치 커맨드 두 개가 공유 락을 잡을 뿐 확인 프롬프트는 없다(무인 실행).

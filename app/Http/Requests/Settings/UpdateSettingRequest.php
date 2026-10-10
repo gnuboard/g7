@@ -28,6 +28,16 @@ class UpdateSettingRequest extends FormRequest
     private const MAX_ARRAY_JSON_LENGTH = 5000;
 
     /**
+     * 서버만 기록하는 설정 키 (요청으로 저장 금지)
+     *
+     * `security.password_expiry_started_at` — 비밀번호 만료 기준 시작일. 만료 토글이 꺼짐→켜짐으로
+     * 바뀌는 순간 `RecordPasswordExpiryStartListener` 가 기록한다.
+     */
+    public const SERVER_ONLY_KEYS = [
+        'security.password_expiry_started_at',
+    ];
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool 권한 체크는 permission 미들웨어 체인이 담당하므로 항상 true 반환
@@ -46,6 +56,8 @@ class UpdateSettingRequest extends FormRequest
      *
      * 해석할 수 없는 값(예: boolean 설정에 `"maybe"`)은 건드리지 않는다 — null 이나 false 로
      * 바꿔 두면 오타 입력이 "정상 저장" 으로 통과한다. 그 판정은 규칙이 맡는다.
+     *
+     * @return void 입력을 제자리에서 고친다
      */
     protected function prepareForValidation(): void
     {
@@ -115,6 +127,16 @@ class UpdateSettingRequest extends FormRequest
             // 대신 `value` 키 자체가 빠진 요청은 그대로 거부한다.
             'value' => ['present', 'nullable', $this->valueShapeRule()],
         ];
+
+        // 서버가 기록하는 키는 이 경로로 쓰지 못한다 — 만료 시작일을 과거로 돌리면 켜자마자 전원이
+        // 만료되고, 미래로 밀면 만료가 무력화된다. 기본값이 null 이라 형태 검사도 걸리지 않는 키다.
+        // `prohibited` 는 null 을 통과시키는데, 시작일을 null 로 비우면 판독부가 "지금" 으로 다시 채워
+        // 만료가 미뤄진다 — 그래서 값이 무엇이든(null 포함) 거부한다.
+        if (in_array($this->route('key'), self::SERVER_ONLY_KEYS, true)) {
+            $rules['value'] = ['present', function (string $attribute, mixed $value, callable $fail): void {
+                $fail(__('validation.setting.value.server_only'));
+            }];
+        }
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.settings.update_validation_rules', $rules, $this);

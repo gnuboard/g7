@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderOptionResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -24,6 +26,49 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class OrderOptionResourceSubtotalDiscountValueTest extends ModuleTestCase
 {
+    /**
+     * 기본 통화를 0자리(KRW)로 **명시 고정**한다.
+     *
+     * raw 금액은 기본 통화의 `decimal_places` 로 정규화되므로, 0자리면 정수(0)·2자리면
+     * 소수(0.0)가 나온다. 이 클래스의 단언은 0자리를 전제하는데, 같은 프로세스에서 먼저
+     * 돈 테스트가 상점 설정을 2자리 통화로 남기면 그 전제가 조용히 깨진다(단독 실행은
+     * 통과하고 묶어 돌릴 때만 실패하는 형태 — 실제로 관측됐다).
+     *
+     * 부팅 시 로드된 운영 설정이 단위 테스트로 스며드는 것과 같은 성질이므로, 전제를
+     * 주석이 아니라 코드로 고정한다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $languageCurrency = [
+            'default_currency' => 'KRW',
+            'currencies' => [
+                ['code' => 'KRW', 'name' => ['ko' => '원'], 'is_default' => true, 'decimal_places' => 0, 'base_unit' => 1000, 'exchange_rate' => null],
+            ],
+        ];
+
+        app(EcommerceSettingsService::class)->setSetting('language_currency', $languageCurrency);
+        config(['g7_settings.modules.sirsoft-ecommerce.language_currency' => $languageCurrency]);
+        HasMultiCurrencyPrices::clearCurrencySettingsCache();
+    }
+
+    /**
+     * @return void 반환값 없음
+     */
+    protected function tearDown(): void
+    {
+        HasMultiCurrencyPrices::clearCurrencySettingsCache();
+        parent::tearDown();
+    }
+
+    /**
+     * @scenario discount_state=none
+     *
+     * @effects no_discount_exposes_the_numeric_field_as_float_zero, raw_amount_is_normalized_to_the_base_currency_decimal_places
+     */
     public function test_무할인_옵션은_숫자형_보조필드가_정확히_0_float로_노출된다(): void
     {
         $order = OrderFactory::new()->create();
@@ -42,6 +87,11 @@ class OrderOptionResourceSubtotalDiscountValueTest extends ModuleTestCase
         $this->assertSame(0.0, $array['subtotal_discount_amount_value']);
     }
 
+    /**
+     * @scenario discount_state=positive
+     *
+     * @effects positive_discount_exposes_the_numeric_field_as_a_positive_float, raw_amount_is_normalized_to_the_base_currency_decimal_places
+     */
     public function test_할인_옵션은_숫자형_보조필드가_양수_float로_노출된다(): void
     {
         $order = OrderFactory::new()->create();

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Helpers\PermissionHelper;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
 
@@ -11,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileReposit
  *
  * 코어 UserResource 의 프로필(/api/me)·관리자 상세 응답에 발화하는 core.user.filter_resource_data
  * 필터 훅을 구독해, 유저의 영속 결제 통화(ecommerce_preferred_currency)를 병합합니다.
- * 프론트(_user_base.json)는 로그인 유저면 이 값으로 _global.preferredCurrency 를 초기화해
+ * 프론트(_user_base.g7.html)는 로그인 유저면 이 값으로 _global.preferredCurrency 를 초기화해
  * "로그인 시 계정 통화로 덮어씀"(D-LOGIN-CUR) 을 구조적으로 충족합니다.
  */
 class UserCurrencyInfoListener implements HookListenerInterface
@@ -43,6 +44,7 @@ class UserCurrencyInfoListener implements HookListenerInterface
      * 기본 핸들러 (getSubscribedHooks 의 method 매핑 사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -61,6 +63,8 @@ class UserCurrencyInfoListener implements HookListenerInterface
     public function injectPreferredCurrency(array $data, User $user): array
     {
         $data['ecommerce_preferred_currency'] = $this->profileRepository->getPreferredCurrency($user->id);
+        // 관리자 회원 상세의 결제 통화 칸을 잠그는 키 — 저장 검증(`UserPreferenceCoreSaveListener`)과 같은 권한이다.
+        $data['ecommerce_currency_can_manage'] = PermissionHelper::check('sirsoft-ecommerce.user-currency.manage');
 
         return $data;
     }

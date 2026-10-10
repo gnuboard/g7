@@ -57,7 +57,7 @@ FULLTEXT 연산자를 제거한 뒤 검색하며, 연산자만 입력한 경우�
 | file | body | file | 예 | — | 업로드 파일 |
 | post_id | body | integer | 아니오 | min 1 | post 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
-| temp_key | body | string | 아니오 | max 64 | 게시글 작성 전 임시 업로드 세션 키. `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
+| temp_key | body | string | 아니오 | UUID | 게시글 작성 전 임시 업로드 세션 키(화면이 `$uuid()` 로 발급, `post_id` 와 함께 생략하면 서버가 UUID 를 발급). `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.attachment.upload_validation_rules`).
 
@@ -86,7 +86,7 @@ Content-Disposition: form-data; name="collection"
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary--
 ```
 
@@ -103,7 +103,7 @@ _단건 응답: `data` 객체의 필드. FileUploader 컴포넌트 호환을 위
 | data.stored_filename | string | `—` | 스토리지에 실제 저장된 파일명 (충돌 방지용 내부 파일명) |
 | data.mime_type | string | `image/png` | 업로드 파일의 MIME 타입 |
 | data.size | integer | `2048` | 파일 크기 (바이트) |
-| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물) |
+| data.url | string | `/api/modules/sirsoft-board/boards/apidoc-sample-board/attachment/apidocsmpl1` | 첨부파일 접근 URL (`AttachmentService::getUrl()` 산물 — 비밀글·삭제글 게이트가 걸린 다운로드 서빙 URL. 공개 자산 디스크를 켜도 직접 URL 로 바뀌지 않는다, 7.0.11+) |
 | data.order | integer | `0` | 첨부파일 표시 순서 (0 부터 오름차순) |
 | data.created_at | string | `2026-07-08 10:41:34` | 업로드(생성) 일시 |
 
@@ -145,7 +145,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글 첨부파일 1건을 업로드합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, `AttachmentService::upload()`가 게시판별 동적 첨부 테이블에 저장합니다. `post_id`가 있으면 해당 게시글에 즉시 귀속되고, 없으면 `temp_key`로 임시 업로드되어 게시글 작성/수정 저장 시점에 연결됩니다. 응답은 FileUploader 컴포넌트 호환을 위해 `data.data`로 한 번 더 감싸 파일 메타(hash·url·order 등)를 반환합니다.
+**설명** 게시판 관리자가 게시글 첨부파일 1건을 업로드합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, `AttachmentService::upload()`가 게시판별 동적 첨부 테이블에 저장합니다. 파일 1개당 용량 상한은 게시판의 `max_file_size`, 비어 있으면 게시판 환경설정 기본값, 그것도 없으면 10MB 순으로 정해지며 게시글 저장 검증과 같은 기준입니다. `post_id`가 있으면 해당 게시글에 즉시 귀속되고, 없으면 `temp_key`로 임시 업로드되어 게시글 작성/수정 저장 시점에 연결됩니다. 응답은 FileUploader 컴포넌트 호환을 위해 `data.data`로 한 번 더 감싸 파일 메타(hash·url·order 등)를 반환합니다.
 
 첨부 개수는 게시판 설정 `max_file_count` 를 기준으로 **직접 업로드 · 미리 올려 둔 파일 연결(`attachment_ids`) · 임시 업로드 연결(`temp_key`) · 이미 연결된 첨부** 를 모두 합산해 판정합니다. 상한을 넘으면 `422`(`errors.code = attachment_limit_exceeded`)를 반환하며, 이 판정은 업로드 엔드포인트뿐 아니라 게시글 생성·수정 저장 시점에도 동일하게 적용됩니다. `max_file_count` 가 0 이면 개수를 제한하지 않습니다.
 
@@ -261,7 +261,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글 첨부파일들의 표시 순서를 일괄 변경합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, FileUploader가 보낸 `[{id, order}]` 배열을 `[ID => order]` 매핑으로 변환해 `AttachmentService::reorder()`가 게시판별 첨부 테이블의 order 값을 갱신합니다.
+**설명** 게시판 관리자가 게시글 첨부파일들의 표시 순서를 일괄 변경합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, FileUploader가 보낸 `[{id, order}]` 배열을 `[ID => order]` 매핑으로 변환해 `AttachmentService::reorder()`가 게시판별 첨부 테이블의 order 값을 갱신합니다. 대상 첨부를 하나씩 찾아 담당 범위를 확인하고, 범위 밖 첨부가 하나라도 섞이면 요청 전체를 403 으로 거부합니다. 아직 글에 붙지 않은 임시 첨부(저장이 실패한 글쓰기 화면에 남은 첨부)도 그 게시판에서 올린 것이면 대상이며, 임시 첨부는 올린 사람만 다룰 수 있습니다(남의 임시 첨부는 403).
 
 
 ### DELETE /api/modules/sirsoft-board/admin/board/{slug}/attachments/{id}
@@ -314,7 +314,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 첨부파일 1건을 삭제합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, `AttachmentService::getById()`로 대상 존재를 확인한 뒤 `delete()`가 게시판별 첨부 테이블 레코드와 실제 파일을 함께 제거합니다. 첨부가 없으면 404, 삭제 실패 시 500을 반환합니다.
+**설명** 게시판 관리자가 첨부파일 1건을 삭제합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, `AttachmentService::getById()`로 대상 존재를 확인한 뒤 `delete()`가 게시판별 첨부 테이블 레코드와 실제 파일을 함께 제거합니다. 첨부가 없으면 404, 삭제 실패 시 500을 반환합니다. 아직 글에 붙지 않은 임시 첨부(저장이 실패한 글쓰기 화면에 남은 첨부)도 그 게시판에서 올린 것이면 대상이며, 임시 첨부는 올린 사람만 다룰 수 있습니다(남의 임시 첨부는 403). 실제 파일은 지우지 않고 소프트 삭제합니다.
 
 
 ### GET /api/modules/sirsoft-board/admin/board/{slug}/posts
@@ -359,9 +359,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | view_count | integer | `43` | view 개수 (집계) |
 | comment_count | integer | `0` | comment 개수 (집계) |
 | reply_count | integer | `0` | reply 개수 (집계) |
-| attachment_count | integer | `0` | attachment 개수 (집계) |
-| has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시·본문 이미지 URL 노출 차단 — 필드 자체는 유지) |
+| attachment_count | integer | `0` | attachment 개수 (집계). 블라인드 글은 작성자·게시판 관리자가 아니면 `0` (첨부 목록·서빙과 같은 기준) |
+| reaction_total | integer | `5` | 게시판이 켠 활성 반응 유형의 개수 합계 (1.2.0+). 관리자 목록의 「반응」 열이 읽는다. 게시판이 반응을 껐거나 활성 유형이 없으면 **키 자체가 실리지 않는다** |
+| has_attachment | boolean | `false` | attachment 여부. 블라인드 글은 작성자·게시판 관리자가 아니면 `false` |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시·본문 이미지 URL 노출 차단 — 필드 자체는 유지). 블라인드 글도 작성자·게시판 관리자가 아니면 `null`. 비밀글·블라인드 글을 볼 수 있는 사람에게는 `<img>` 요청에 토큰이 실리지 않으므로 한시 서명 주소(`?expires=…&signature=…`)로 내려간다 |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -451,6 +452,7 @@ HTTP/1.1 200
                 "use_comment": true,
                 "use_reply": true,
                 "use_report": true,
+                "use_scrap": true,
                 "secret_mode": "{MASKED}",
                 "per_page": 20,
                 "per_page_mobile": 15,
@@ -483,7 +485,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 특정 게시판의 게시글 목록을 조회합니다. `auth:sanctum` + admin + 게시판별 `posts.read` 권한이 필요하며, 요청 파라미터로 검색·상태·정렬·페이지네이션이 적용됩니다(`PostService::buildListParams`). 추가로 `admin.manage` 권한이 있으면 소프트 삭제된 게시글까지 포함해 조회하며, 응답에는 공지 고정 처리 후의 일반 게시글 총 건수(캐시 기반)와 관리자용 게시판 정보(`boardInfo`)가 함께 담깁니다.
+**설명** 게시판 관리자가 특정 게시판의 게시글 목록을 조회합니다. `auth:sanctum` + admin + 게시판별 `posts.read` 권한이 필요하며, 요청 파라미터로 검색·상태·정렬·페이지네이션이 적용됩니다(`PostService::buildListParams`). 추가로 `admin.manage` 권한이 있으면 소프트 삭제된 게시글까지 포함해 조회하며, 응답에는 공지 고정 처리 후의 일반 게시글 총 건수(캐시 기반)와 관리자용 게시판 정보(`boardInfo`)가 함께 담깁니다. 검색(`filters[0][field]`·`filters[0][value]`)은 원글뿐 아니라 답글의 제목·내용·작성자도 찾습니다. 목록은 원글 한 줄 아래 그 답글 줄을 이어 그리고 페이지·총 건수를 원글 단위로 세므로, 답글이 걸리면 그 답글이 달린 맨 위 원글이 결과가 되고 원글 아래 답글 줄(걸린 답글 포함)이 함께 옵니다. 총 건수와 페이지는 같은 원글 기준으로 셉니다(공개 목록은 종전처럼 원글만 검색).
 
 
 ### POST /api/modules/sirsoft-board/admin/board/{slug}/posts
@@ -527,9 +529,9 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | view_count | integer | `0` | 조회수 (집계) |
 | comment_count | integer | `0` | 댓글 수 (집계) |
 | reply_count | integer | `0` | 답변글 수 (집계) |
-| attachment_count | integer | `0` | 첨부파일 수 (집계) |
-| has_attachment | boolean | `false` | 첨부파일 보유 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
+| attachment_count | integer | `0` | 첨부파일 수 (집계). 블라인드 글은 작성자·게시판 관리자가 아니면 `0` |
+| has_attachment | boolean | `false` | 첨부파일 보유 여부. 블라인드 글은 작성자·게시판 관리자가 아니면 `false` |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null`(블라인드 글은 작성자·게시판 관리자가 아니면 `null`). 볼 수 있는 사람에게는 한시 서명 주소 |
 | parent_id | null | `null` | 원글 ID (답변글일 때만 값 존재) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위) |
 | is_reply | boolean | `false` | 답변글 여부 |
@@ -543,7 +545,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | trigger_type | string | `user` | 상태 변경을 유발한 주체 (`report`/`admin`/`system`/`auto_hide`/`user`/`cascade`) |
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체. board 관계 미로드 시 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보. 쓰기 응답에서는 계산하지 않아 null. |
@@ -638,7 +640,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 새 게시글을 작성합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, `StorePostRequest` 검증을 거친 값에 작성자(`Auth::id()`)와 요청 IP가 자동으로 채워집니다. 업로드 파일과 첨부파일 ID 배열은 본문에서 분리되어 `PostService::createPost()`로 전달되고, 성공 시 생성된 게시글 리소스를 201로 반환합니다.
+**설명** 게시판 관리자가 새 게시글을 작성합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, `StorePostRequest` 검증을 거친 값에 작성자(`Auth::id()`)와 요청 IP가 자동으로 채워집니다. 업로드 파일과 첨부파일 ID 배열은 본문에서 분리되어 `PostService::createPost()`로 전달되고, 성공 시 생성된 게시글 리소스를 201로 반환합니다. `is_notice=true` 는 게시판 관리 권한(`admin.manage`/`manager`) 또는 공지 등록 권한(`posts.write-notice`)이 있어야 합니다(사용자 글쓰기 경로와 같은 판정) — 없으면 403(`messages.permission.notice_denied`, 7.1.0).
 
 
 ### GET /api/modules/sirsoft-board/admin/board/{slug}/posts/form-data
@@ -772,6 +774,7 @@ HTTP/1.1 200
             "use_reply": true,
             "max_reply_depth": 5,
             "use_report": true,
+            "use_scrap": true,
             "comment_order": "ASC",
             "max_comment_depth": 10,
             "min_title_length": 2,
@@ -835,7 +838,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글 폼 화면 표시용 메타 데이터(읽기 전용)를 반환합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 게시판 정보와 사용자 권한(abilities)을 항상 포함합니다. `post_id`가 있으면 작성자·작성일·첨부파일과 원글 정보를 덧붙이고(수정 모드), `parent_id`가 있으면 원글 정보를 포함하되 블라인드/삭제된 원글에는 답글 작성이 차단됩니다(각각 403).
+**설명** 게시글 폼 화면 표시용 메타 데이터(읽기 전용)를 반환합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 게시판 정보와 사용자 권한(abilities)을 항상 포함합니다. `board.max_file_size` 는 게시판 값이 비어 있으면(기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10(MB)으로 채워 첨부 업로드 검증의 용량 상한과 같은 값을 내려 줍니다. `post_id`가 있으면 작성자·작성일·첨부파일과 원글 정보를 덧붙이고(수정 모드), `parent_id`가 있으면 원글 정보를 포함하되 블라인드/삭제된 원글에는 답글 작성이 차단됩니다(각각 403). 수정 모드(`post_id`)에서는 `can_modify` 를 싣습니다 — 저장(PUT)과 같은 판정(관리 권한이거나 글쓰기 권한 + 본인 글)으로, false 면 화면이 폼을 읽기 전용으로 엽니다(7.1.0). `board.user_abilities.can_write_notice` 는 글 등록·수정 API 의 공지 판정(게시판 관리 권한 `admin.manage`/`manager` 또는 공지 등록 권한 `posts.write-notice`)과 같은 값으로, 화면의 공지 체크박스가 이 값으로 잠깁니다.
 
 
 ### DELETE /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}
@@ -878,9 +881,9 @@ _단건 응답: `data` 객체의 필드._
 | view_count | integer | `43` | view 개수 (집계) |
 | comment_count | integer | `0` | comment 개수 (집계) |
 | reply_count | integer | `0` | reply 개수 (집계) |
-| attachment_count | integer | `0` | attachment 개수 (집계) |
-| has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
+| attachment_count | integer | `0` | attachment 개수 (집계). 블라인드 글은 작성자·게시판 관리자가 아니면 `0` (첨부 목록·서빙과 같은 기준) |
+| has_attachment | boolean | `false` | attachment 여부. 블라인드 글은 작성자·게시판 관리자가 아니면 `false` |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null`(블라인드 글은 작성자·게시판 관리자가 아니면 `null`). 볼 수 있는 사람에게는 한시 서명 주소 |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -894,7 +897,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `admin` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:43` | 최종 수정 일시 |
 | deleted_at | string | `2026-07-08 15:01:43` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -903,6 +906,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1038,9 +1043,9 @@ _단건 응답: `data` 객체의 필드._
 | view_count | integer | `43` | view 개수 (집계) |
 | comment_count | integer | `0` | comment 개수 (집계) |
 | reply_count | integer | `0` | reply 개수 (집계) |
-| attachment_count | integer | `0` | attachment 개수 (집계) |
-| has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시·본문 이미지 URL 노출 차단 — 필드 자체는 유지) |
+| attachment_count | integer | `0` | attachment 개수 (집계). 블라인드 글은 작성자·게시판 관리자가 아니면 `0` (첨부 목록·서빙과 같은 기준) |
+| has_attachment | boolean | `false` | attachment 여부. 블라인드 글은 작성자·게시판 관리자가 아니면 `false` |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시·본문 이미지 URL 노출 차단 — 필드 자체는 유지). 블라인드 글도 작성자·게시판 관리자가 아니면 `null`. 비밀글·블라인드 글을 볼 수 있는 사람에게는 `<img>` 요청에 토큰이 실리지 않으므로 한시 서명 주소(`?expires=…&signature=…`)로 내려간다 |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1054,7 +1059,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 상태 변경(삭제/블라인드 등)을 유발한 주체. `report`(신고) / `admin`(관리자 직권) / `system`(시스템) / `auto_hide`(신고 누적 자동 블라인드) / `user`(사용자 직접) / `cascade`(상위 삭제 연쇄) 중 하나입니다. |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | object | `{"prev":null,"next":null}` | 이전/다음 게시글 이동 정보. `prev`·`next` 키에 인접 게시글 요약(없으면 null)이 담기며, 상세 로드 시 함께 계산됩니다. |
@@ -1066,6 +1071,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1125,6 +1132,7 @@ HTTP/1.1 200
             "use_comment": true,
             "use_reply": true,
             "use_report": true,
+            "use_scrap": true,
             "show_view_count": true,
             "max_reply_depth": 5,
             "max_comment_depth": 10,
@@ -1298,9 +1306,9 @@ _단건 응답: `data` 객체의 필드._
 | view_count | integer | `44` | view 개수 (집계) |
 | comment_count | integer | `0` | comment 개수 (집계) |
 | reply_count | integer | `0` | reply 개수 (집계) |
-| attachment_count | integer | `0` | attachment 개수 (집계) |
-| has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
+| attachment_count | integer | `0` | attachment 개수 (집계). 블라인드 글은 작성자·게시판 관리자가 아니면 `0` (첨부 목록·서빙과 같은 기준) |
+| has_attachment | boolean | `false` | attachment 여부. 블라인드 글은 작성자·게시판 관리자가 아니면 `false` |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null`(블라인드 글은 작성자·게시판 관리자가 아니면 `null`). 볼 수 있는 사람에게는 한시 서명 주소 |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1314,7 +1322,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1323,6 +1331,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1408,7 +1418,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글을 수정합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한을 적용합니다: 일반 글은 `admin.manage`(타인 글) 또는 `admin.write`(본인 글), 이미 삭제된 글은 `admin.manage`가 필요합니다. `UpdatePostRequest` 검증 값에서 첨부파일 ID 배열을 분리해 `PostService::updatePost()`로 전달하고, 갱신된 게시글 리소스를 반환합니다.
+**설명** 게시판 관리자가 게시글을 수정합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한을 적용합니다: 일반 글은 `admin.manage`(타인 글) 또는 `admin.write`(본인 글), 이미 삭제된 글은 `admin.manage`가 필요합니다. `UpdatePostRequest` 검증 값에서 첨부파일 ID 배열을 분리해 `PostService::updatePost()`로 전달하고, 갱신된 게시글 리소스를 반환합니다. 공지 여부를 바꾸는 요청(`is_notice` 가 현재 값과 다름)은 게시판 관리 권한(`admin.manage`/`manager`) 또는 공지 등록 권한(`posts.write-notice`)이 있어야 합니다 — 없으면 403. 같은 값의 재전송은 막지 않습니다(7.1.0).
 
 
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}/blind
@@ -1457,9 +1467,9 @@ _단건 응답: `data` 객체의 필드._
 | view_count | integer | `44` | view 개수 (집계) |
 | comment_count | integer | `0` | comment 개수 (집계) |
 | reply_count | integer | `0` | reply 개수 (집계) |
-| attachment_count | integer | `0` | attachment 개수 (집계) |
-| has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
+| attachment_count | integer | `0` | attachment 개수 (집계). 블라인드 글은 작성자·게시판 관리자가 아니면 `0` (첨부 목록·서빙과 같은 기준) |
+| has_attachment | boolean | `false` | attachment 여부. 블라인드 글은 작성자·게시판 관리자가 아니면 `false` |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null`(블라인드 글은 작성자·게시판 관리자가 아니면 `null`). 볼 수 있는 사람에게는 한시 서명 주소 |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1473,7 +1483,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1482,6 +1492,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1574,7 +1586,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글을 블라인드 처리합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 선택적 `reason`(최대 1000자)을 사유로 받아 `PostService::blindPost()`가 게시글 상태를 블라인드로 전환합니다. 소프트 삭제와 달리 게시글을 숨기되 관리 목적으로 보존하는 처리이며, 복원(restore)으로 되돌릴 수 있습니다.
+**설명** 게시판 관리자가 게시글을 블라인드 처리합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 선택적 `reason`(최대 1000자)을 사유로 받아 `PostService::blindPost()`가 게시글 상태를 블라인드로 전환합니다. 소프트 삭제와 달리 게시글을 숨기되 관리 목적으로 보존하는 처리이며, 복원(restore)으로 되돌릴 수 있습니다. 삭제된 게시글은 블라인드하지 않고 **409** 와 「먼저 복구한 뒤 블라인드」 안내(`sirsoft-board::messages.posts.blind_deleted_not_allowed`)로 거절합니다 — 블라인드가 삭제를 풀지 않게 하기 위해서이며, 게시글 상태는 바뀌지 않습니다(1.2.0+).
 
 
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}/restore
@@ -1623,9 +1635,9 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | view_count | integer | `44` | 조회수 (집계) |
 | comment_count | integer | `0` | 댓글 수 (집계) |
 | reply_count | integer | `0` | 답변글 수 (집계) |
-| attachment_count | integer | `0` | 첨부파일 수 (집계) |
-| has_attachment | boolean | `false` | 첨부파일 보유 여부 |
-| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` |
+| attachment_count | integer | `0` | 첨부파일 수 (집계). 블라인드 글은 작성자·게시판 관리자가 아니면 `0` |
+| has_attachment | boolean | `false` | 첨부파일 보유 여부. 블라인드 글은 작성자·게시판 관리자가 아니면 `false` |
+| thumbnail | null | `null` | 썸네일 이미지 URL/경로 — 첫 이미지 첨부의 미리보기 서빙 URL. 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null`(블라인드 글은 작성자·게시판 관리자가 아니면 `null`). 볼 수 있는 사람에게는 한시 서명 주소 |
 | parent_id | null | `null` | 원글 ID (답변글일 때만 값 존재) |
 | depth | integer | `0` | 계층 트리에서의 깊이 |
 | is_reply | boolean | `false` | 답변글 여부 |
@@ -1639,7 +1651,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | trigger_type | string | `admin` | 상태 변경을 유발한 주체 (복원은 관리자 직권이므로 `admin`) |
 | updated_at | string | `2026-07-08 15:01:45` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (복원 후 null) |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체 (관계 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보 (쓰기 응답은 미계산 → null) |
@@ -1757,6 +1769,8 @@ HTTP/1.1 200
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | postId | path | string | 예 | — | 대상 post의 식별자 |
 
+> `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
+
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.store_validation_rules`).
 
 **요청 예시**
@@ -1789,9 +1803,9 @@ _단건 응답: `data` 객체의 필드 (`CommentResource`)._
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
-| is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 |
+| is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
 | is_already_reported | boolean | `false` | 현재 사용자가 이미 신고한 댓글인지 여부 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -1930,6 +1944,8 @@ HTTP/1.1 200
 | postId | path | string | 예 | — | 대상 post의 식별자 |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
 
+> `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
+
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.update_validation_rules`).
 
 **요청 예시**
@@ -1964,7 +1980,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource` — 댓글 생성/블
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
 | ip_address | null | `null` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
-| is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 |
+| is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
 | is_already_reported | boolean | `false` | 현재 사용자가 이미 신고한 댓글인지 여부 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 |
@@ -2031,7 +2047,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 댓글 1건을 수정합니다. `auth:sanctum` + admin + 게시판별 `comments.write` 권한이 필요하며, 컨트롤러가 댓글을 조회한 뒤 권한을 적용합니다: `admin.manage`는 모든 댓글, `admin.write`는 본인 댓글만 수정할 수 있습니다. 게시판의 `use_comment`가 꺼져 있으면 403이며, `UpdateCommentRequest` 검증 값으로 `CommentService::updateComment()`가 갱신을 수행합니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다.
+**설명** 게시판 관리자가 댓글 1건을 수정합니다. `auth:sanctum` + admin + 게시판별 `comments.write` 권한이 필요하며, 컨트롤러가 댓글을 조회한 뒤 권한을 적용합니다: `admin.manage`는 모든 댓글, `admin.write`는 본인 댓글만 수정할 수 있습니다. 게시판의 `use_comment`가 꺼져 있으면 403이며, `UpdateCommentRequest` 검증 값으로 `CommentService::updateComment()`가 갱신을 수행합니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다. 작성자 본인 판정은 댓글 쓰기 권한(`admin.comments.write`)으로 합니다 — 관리 권한이 없어도 본인 댓글은 수정할 수 있습니다(7.1.0 정정).
 
 
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/{postId}/comments/{id}/blind
@@ -2086,9 +2102,11 @@ _단건 응답: `data` 객체의 필드._
 | is_cascade_deleted | boolean | `false` | cascade deleted 여부 |
 | ip_address | null | `null` | 요청/행위가 발생한 IP 주소 |
 | action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
-| is_author | boolean | `true` | author 여부 |
+| is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | guest comment 여부 |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_manage":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -2159,7 +2177,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 댓글을 블라인드 처리합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 게시판의 `use_comment`가 꺼져 있으면 403으로 차단됩니다. 선택적 `reason`(최대 1000자)을 사유로 받아 `CommentService::blindComment()`가 댓글을 숨김 처리하되 관리 목적으로 보존하며, 복원(restore)으로 되돌릴 수 있습니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다.
+**설명** 게시판 관리자가 댓글을 블라인드 처리합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 게시판의 `use_comment`가 꺼져 있으면 403으로 차단됩니다. 선택적 `reason`(최대 1000자)을 사유로 받아 `CommentService::blindComment()`가 댓글을 숨김 처리하되 관리 목적으로 보존하며, 복원(restore)으로 되돌릴 수 있습니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다. 삭제된 댓글은 블라인드하지 않고 **409** 와 「먼저 복구한 뒤 블라인드」 안내(`sirsoft-board::messages.comment.blind_deleted_not_allowed`)로 거절합니다(1.2.0+).
 
 
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/{postId}/comments/{id}/restore
@@ -2214,7 +2232,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource` — 복원된 댓글.
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
 | ip_address | null | `null` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) |
 | action_logs | array | `[{"action":"blind","reason":"실측 예시값",…},{"action":"restore","reason":null,…}]` | 블라인드/복원/삭제 처리 이력 목록 (복원 이력이 추가됨). `admin.manage` 권한 보유자에게만 노출. |
-| is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 |
+| is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
 | is_already_reported | boolean | `false` | 현재 사용자가 이미 신고한 댓글인지 여부 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 |
@@ -2289,11 +2307,115 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없거나, 게시판의 댓글 기능이 꺼진 경우 (`이 게시판은 댓글 기능이 비활성화되어 있습니다.`) |
 | 404 | Not Found | ID 에 해당하는 댓글 또는 슬러그에 해당하는 게시판이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
+| 409 | Conflict | 원글이 삭제된 상태에서 댓글만 복구하려 한 경우 (`원글이 삭제된 상태라 댓글만 복구할 수 없습니다. 원글을 먼저 복구해 주세요.`) — 원글을 복구하면 함께 지워진 댓글도 돌아온다(1.2.0+) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 복원 처리 실패 (`댓글 복원에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 블라인드 처리된 댓글을 복원합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 게시판의 `use_comment`가 꺼져 있으면 403으로 차단됩니다. 요청 본문의 선택적 `reason`을 사유로 받아 `CommentService::restoreComment()`가 블라인드 상태를 해제해 댓글을 다시 노출합니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다.
+**설명** 게시판 관리자가 블라인드 처리된 댓글을 복원합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 게시판의 `use_comment`가 꺼져 있으면 403으로 차단됩니다. 요청 본문의 선택적 `reason`을 사유로 받아 `CommentService::restoreComment()`가 블라인드 상태를 해제해 댓글을 다시 노출합니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다. 원글이 삭제된 상태면 댓글만 살리지 않고 **409** 와 「원글을 먼저 복구」 안내(`sirsoft-board::messages.comment.restore_parent_deleted`)로 거절합니다 — 보이지 않는 글 아래 댓글만 살아나지 않게 하기 위해서이며, 댓글 상태는 바뀌지 않습니다(1.2.0+).
 
 
+
+---
+
+## 관리자 게시글 일괄 처리 (삭제 · 블라인드 · 복구)
+
+> 이 절은 **수기 작성**입니다. `api:docgen` 기본 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)로
+> 막혀 있어 위쪽 `@generated` 블록처럼 실측 스캐폴딩을 만들 수 없습니다. 값은 전부 코드에서 옮겼고
+> 근거 위치를 각 항목에 적었습니다 (이슈 #524).
+
+세 엔드포인트는 같은 요청 형태·같은 응답 형태·같은 권한을 쓰고 동작만 다릅니다.
+
+| 메서드 | 경로 | 라우트명 | 동작 |
+| --- | --- | --- | --- |
+| DELETE | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk` | `…admin.board.posts.bulk-destroy` | 선택한 글을 삭제 |
+| PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-blind` | `…admin.board.posts.bulk-blind` | 선택한 글을 블라인드 |
+| PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-restore` | `…admin.board.posts.bulk-restore` | 블라인드·삭제된 글을 복구 |
+
+- **컨트롤러**: `Admin\PostController@bulkDestroy` / `@bulkBlind` / `@bulkRestore` (`src/Http/Controllers/Admin/PostController.php:623,635,647`)
+- **미들웨어**: `auth:sanctum` + `admin` + `permission:admin,sirsoft-board.{slug}.admin.manage`
+  셋 다 `admin.manage` 를 요구합니다 — 단건 삭제의 「본인 글이면 `posts.write`」 완화를 일괄에 적용하면
+  한 요청에 남의 글이 섞여 들어갈 수 있기 때문입니다 (`src/routes/api.php:330-344`).
+- **선언 순서**: 세 라우트는 `/{id}` 계열보다 **먼저** 선언됩니다. 뒤에 두면 `bulk` 가 `{id}` 로 잡힙니다.
+
+### 요청 파라미터
+
+`BulkPostActionRequest` (`src/Http/Requests/Admin/BulkPostActionRequest.php:35-37`)
+
+| 이름 | 위치 | 타입 | 필수 | 제한 | 설명 |
+| --- | --- | --- | --- | --- | --- |
+| ids | body | array | 예 | 1~100개 | 대상 게시글 ID 목록 |
+| ids.* | body | integer | 예 | distinct | `exists` 를 두지 않습니다 — 없는 ID·다른 게시판의 ID 는 `skipped` 로만 드러나고 422 가 되지 않습니다 |
+| reason | body | string | 아니오 | 최대 1000자 | 사유. 블라인드·복구 이력에 남습니다(삭제는 사용하지 않음) |
+
+`DELETE /bulk` 도 **본문 JSON** 으로 `ids` 를 받습니다. 레이아웃 엔진은 GET 이 아닌 모든 메서드에 본문을
+실어 보냅니다(`resources/js/core/template-engine/ActionDispatcher.ts`) — 스크랩 일괄 해제와 같은 방식입니다.
+
+### 응답
+
+```json
+{
+    "success": true,
+    "message": "2개의 게시글을 삭제했습니다. (건너뜀 1개)",
+    "data": {
+        "affected_count": 2,
+        "affected_ids": [12, 15],
+        "skipped": [
+            {
+                "id": 19,
+                "reason": "has_replies",
+                "reason_label": "답글이 달린 글 (답글 삭제 정책상 삭제할 수 없음)",
+                "title": "답글이 달린 공지"
+            }
+        ]
+    }
+}
+```
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| affected_count | integer | 실제로 처리된 건수 |
+| affected_ids | array | 처리된 게시글 ID 목록 |
+| skipped | array | 건너뛴 항목 목록. 항목마다 `id`(게시글 ID)·`reason`(사유 코드, 아래 표)·`reason_label`(요청 언어로 번역된 사유 — 1.2.0+)·`title`(글 제목, 조회 전에 실패했으면 `null` — 1.2.0+). 관리자 목록 화면은 건너뛴 글이 있으면 이 두 값으로 「건너뛴 게시글」 창을 연다 |
+
+메시지 키는 `sirsoft-board::messages.posts_bulk.{delete,blind,restore}_success` 이며 `:count`·`:skipped`
+를 치환합니다 (`src/lang/{ko,en}/messages.php:311-316`).
+
+### 건너뛰는 사유 (`skipped[].reason`)
+
+`PostService::resolveBulkSkipReason()` (`src/Services/PostService.php:711-738`)
+
+| reason | 동작 | 조건 |
+| --- | --- | --- |
+| `already_deleted` | delete, blind | 이미 삭제 상태이거나 소프트 삭제된 글. 블라인드하면 삭제가 풀리므로 블라인드에서도 건너뜁니다(1.2.0+) — 먼저 복구한 뒤 블라인드합니다 |
+| `has_replies` | delete | 게시판의 답글 삭제 정책이 `block` 인데 살아 있는 답글이 있는 글 — 단건 삭제와 같은 판정이라 일괄에서만 규칙이 느슨해지지 않습니다 |
+| `already_blinded` | blind | 이미 블라인드된 글 |
+| `already_published` | restore | 이미 정상 게시 중인 글 |
+| `not_found` | 공통 | 이 게시판에 없는 글(다른 게시판의 글이거나 없는 번호, 1.2.0+). 종전에는 `error` 로 묶였습니다 |
+| `unknown_action` | 공통 | 정의되지 않은 처리 종류 (라우트가 세 갈래만 열어 두어 화면에서는 나오지 않음) |
+| `error` | 공통 | 항목 처리 중 예외. **한 건의 실패가 나머지를 막지 않습니다** — 사유만 남기고 계속합니다 |
+
+사유 문구는 `sirsoft-board::messages.posts_bulk.skip_reasons.{reason}` 에서 읽습니다.
+
+### 훅과 본인인증(IDV)
+
+- `sirsoft-board.post.before_bulk_action($slug, $action, $ids, $reason)` — **루프에 들어가기 전 1회**만
+  발화합니다 (`PostService.php:660`). 항목마다 `before_delete`·`before_blind` 를 태우지 않으므로,
+  본인인증이 필요한 상황에서 428 이 루프 **중간**에 터져 일부만 처리되는 일이 없습니다(부수효과 0).
+- `sirsoft-board.post.after_bulk_action($slug, $action, $affectedIds, $skipped)` — 처리 뒤 1회 (`:692`).
+- 본인인증 정책 `sirsoft-board.post.bulk_action` 이 위 `before_bulk_action` 을 대상으로 선언돼 있습니다
+  (`module.php:827-834`, 기본 `enabled=false`). 켜면 미충족 시 **HTTP 428** 과 함께
+  `verification.return_request` 가 내려가고, 프론트 인터셉터가 인증 모달을 연 뒤 원요청을 재전송합니다.
+  컨트롤러는 `catch (\Exception)` 만 잡습니다 — 428 을 일으키는 예외는 `\Error` 를 상속하므로 삼켜지지 않습니다.
+
+### 에러 응답
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | `sirsoft-board.{slug}.admin.manage` 권한이 없는 경우 |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나 정수가 아닌 경우 |
+| 428 | Identity Verification Required | 본인인증 정책이 켜져 있고 미충족인 경우 (아무 항목도 처리되지 않음) |
+| 500 | Internal Server Error | 일괄 처리 실패 (`sirsoft-board::messages.posts_bulk.action_failed`) |

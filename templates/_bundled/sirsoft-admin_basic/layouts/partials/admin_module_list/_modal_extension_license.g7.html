@@ -1,0 +1,20 @@
+<!-- 라이선스 전문을 그대로 보여 주는 창. 본문은 상세 창이 받아 전역 `extensionLicenseContent` 에
+  담아 준 문자열 하나이고, 이 창은 그것을 원문 그대로 흘려보낸다(줄바꿈·들여쓰기 유지).
+  모듈·플러그인·템플릿 화면이 각자 같은 이름의 사본을 두고 있다. -->
+<partial description="확장 라이선스 전문 모달" editor_label="$t:admin.modal_label.admin_module_list.extension_license_modal">
+  <modal data-type="composite" data-ref="extension_license_modal" title="$t:admin.license.license_text" size="large">
+    <div class="flex flex-col max-h-[70vh]">
+      <div class="flex-1 overflow-y-auto min-h-0 px-1">
+        <pre class="whitespace-pre-wrap text-body font-mono leading-relaxed">{{_global.extensionLicenseContent ?? ''}}</pre>
+      </div>
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

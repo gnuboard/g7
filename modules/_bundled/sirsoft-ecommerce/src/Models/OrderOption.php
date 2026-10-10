@@ -14,6 +14,9 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 
 /**
  * 주문 옵션 모델
+ *
+ * @property int $quantity 이 행이 지금 가진 수량(분할로 떼어 낸 수량은 빠져 있음)
+ * @property int $cancelled_quantity 이 행에서 취소로 떼어 낸 수량의 누적(이력 — 집계 감산항 아님)
  */
 class OrderOption extends Model
 {
@@ -30,6 +33,11 @@ class OrderOption extends Model
         'cancelled_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.cancelled_quantity', 'type' => 'number'],
     ];
 
+    /**
+     * 모델 팩토리를 반환합니다.
+     *
+     * @return OrderOptionFactory 주문 옵션 팩토리
+     */
     protected static function newFactory()
     {
         return OrderOptionFactory::new();
@@ -263,6 +271,61 @@ class OrderOption extends Model
     public function isExchanged(): bool
     {
         return $this->source_type === OrderOptionSourceTypeEnum::EXCHANGE && $this->source_option_id !== null;
+    }
+
+    /**
+     * 주문 시점 스냅샷 기준 단가 정가를 구합니다.
+     *
+     * 옵션 스냅샷에 정가가 있으면 그 값을, 없으면 상품 정가에 옵션 조정액을 더한다 — 판매가가
+     * 조정액을 더해 저장되므로 정가도 같은 규칙이어야 한다(ProductOption::getListPrice,
+     * CalculationSnapshotPresenter 와 같은 식). 조정액을 빼먹으면 블루(+3,000) 옵션의 정가가
+     * 판매가보다 낮게 찍힌다(실측 2026-10-03: 정가 ¥4,000 / 판매가 ¥5,000).
+     *
+     * @return float|null 정가 (스냅샷에 정가 근거가 없으면 null)
+     */
+    public function getSnapshotListPrice(): ?float
+    {
+        return self::resolveListPriceFromSnapshots($this->option_snapshot ?? [], $this->product_snapshot ?? []);
+    }
+
+    /**
+     * 옵션·상품 스냅샷으로 단가 정가를 구합니다 — 주문 상품 정가 규칙의 단일 원천.
+     *
+     * 옵션 스냅샷 정가가 있으면 그 값, 없으면 상품 정가 + 옵션 조정액이다. 상품 정가도 없으면 null.
+     * 주문 상세 리소스(getSnapshotListPrice)와 클레임 비교 카드(CalculationSnapshotPresenter)가 함께 쓴다.
+     *
+     * @param  array  $optionSnapshot  옵션 스냅샷
+     * @param  array  $productSnapshot  상품 스냅샷
+     * @return float|null 정가 (근거가 없으면 null)
+     */
+    public static function resolveListPriceFromSnapshots(array $optionSnapshot, array $productSnapshot): ?float
+    {
+        if (isset($optionSnapshot['list_price'])) {
+            return (float) $optionSnapshot['list_price'];
+        }
+
+        $productListPrice = $productSnapshot['list_price'] ?? null;
+        if ($productListPrice === null) {
+            return null;
+        }
+
+        return (float) $productListPrice + (float) ($optionSnapshot['price_adjustment'] ?? 0);
+    }
+
+    /**
+     * 정가가 없으면 판매 단가(상품 판매가 + 옵션 조정액)로 대신한 단가 정가를 구합니다.
+     *
+     * 주문 상세가 정가 근거가 없을 때 판매 단가로 대신하는 것과 같은 규칙이다 — 클레임 비교 카드가 0 + 조정액을
+     * 정가로 쓰면 같은 주문의 두 화면 값이 갈린다.
+     *
+     * @param  array  $optionSnapshot  옵션 스냅샷
+     * @param  array  $productSnapshot  상품 스냅샷
+     * @return float 정가 또는 판매 단가
+     */
+    public static function resolveListOrUnitPriceFromSnapshots(array $optionSnapshot, array $productSnapshot): float
+    {
+        return self::resolveListPriceFromSnapshots($optionSnapshot, $productSnapshot)
+            ?? (float) ($productSnapshot['selling_price'] ?? 0) + (float) ($optionSnapshot['price_adjustment'] ?? 0);
     }
 
     /**

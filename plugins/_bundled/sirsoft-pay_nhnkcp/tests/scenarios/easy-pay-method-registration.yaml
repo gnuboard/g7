@@ -1,0 +1,34 @@
+feature: NHN KCP 간편결제 수단 등록
+
+description: |
+  NHN KCP 는 결제수단 카탈로그 필터 훅으로 간편결제 5종(PAYCO·네이버페이 카드·네이버페이 포인트·
+  카카오페이·애플페이)을 쇼핑몰 결제수단 목록에 끼워 넣는다. 등록 데이터가 틀리면 쇼핑몰 관리자
+  화면과 체크아웃이 그 값을 그대로 믿기 때문에 어긋남이 다른 곳에서 드러난다.
+
+  계약 네 갈래:
+    - 위치: 휴대폰 결제와 다른 PG 의 간편결제 뒤, 포인트·무통장 앞에 놓인다. 다른 PG 플러그인이
+      먼저 등록한 수단을 밀어내거나 사이에 끼어들지 않는다.
+    - 배선: 플러그인이 등록 리스너와 관리자 결제수단 화면 보정 리스너를 함께 훅에 올린다.
+    - 기본값: PG 를 자기 자신으로 고정 선언한다(pg_provider=nhnkcp, pg_locked, needs_pg, 환불수단 pg).
+      pg_provider 가 비면 쇼핑몰이 간편결제 주문을 PG 결제가 아닌 주문으로 오인해 결제 실패 주문에
+      신규주문 알림이 나가고 임시주문이 지워진다(#475). 설치 직후에는 꺼진 상태이며 재고·마일리지
+      차감 시점은 결제 완료다.
+    - 표시명: 관리자 결제수단 화면과 체크아웃이 쓰는 이름·설명이 언어팩 문구와 일치한다.
+
+  브랜드 마크와 iOS 전용 노출 플래그는 쇼핑몰의 체크아웃 브랜드 마크 시나리오가 소유한다.
+
+# axis 의미:
+#   contract — 등록 데이터가 지키는 계약 갈래. 간편결제 5종은 같은 등록 코드를 지나므로 수단별로
+#              곱하지 않고, 각 계약을 5종 전체에 대해 단언한다.
+axes:
+  contract: [catalog_position, hook_wiring, method_defaults, display_labels]
+
+effects:
+  - easy_pay_methods_follow_phone_and_other_pg_easy_pay    # 휴대폰·타 PG 간편결제 뒤, 포인트 앞
+  - easy_pay_hook_listeners_registered                     # 등록·화면 보정 리스너가 훅 목록에 있음
+  - easy_pay_methods_locked_to_own_pg                      # pg_provider=nhnkcp, pg_locked, needs_pg, 환불수단 pg
+  - easy_pay_methods_installed_inactive_with_payment_complete_timing # 설치 직후 비활성, 차감 시점 결제 완료
+  - easy_pay_labels_match_language_pack                    # 이름·설명이 언어팩 문구와 일치
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php

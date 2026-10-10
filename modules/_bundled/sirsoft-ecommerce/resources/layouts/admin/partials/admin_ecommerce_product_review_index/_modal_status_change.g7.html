@@ -1,0 +1,48 @@
+<!-- 고른 리뷰 여러 건의 전시 상태를 한꺼번에 바꾸는 확인 창. 대상 id 묶음과 바꿀 상태는 목록이
+  `_global.reviewBatchIds` · `_global.reviewBatchAction` 에 담아 준다.
+  안내 문구의 상태 이름은 목록의 일괄작업 선택칸이 쓰는 것과 **같은 키**를 쓴다 — 사용자가 고른
+  낱말이 확인 문구에 그대로 되울려야 하므로, 여기에 따로 키를 두면 두 자리가 갈릴 수 있다.
+  성공하면 고른 항목까지 비운다 — 상태가 바뀐 뒤에도 체크가 남아 있으면 같은 대상에 다시 실행하기 쉽다.
+  실패는 진행 깃발만 풀고 알리지 않는다. -->
+<partial description="Product Review Status Change Confirm Modal">
+  <modal data-type="composite" data-ref="modal_status_change" title="$t:sirsoft-ecommerce.admin.product_review.modal.status_change.title" size="sm">
+    <div>
+      <div>
+        <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.product_review.modal.status_change.message|count={{(_global.reviewBatchIds ?? []).length}}|status={{_global.reviewBatchAction === 'visible' ? $t('sirsoft-ecommerce.admin.product_review.filter.visible') : $t('sirsoft-ecommerce.admin.product_review.filter.hidden')}}</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <!-- 취소 — 창을 닫고 목록 쪽 일괄 작업 선택도 비운다. 비우지 않으면 확인을 거부했는데 선택칸에 그 작업이 남는다. -->
+          <sequence>
+            <close-modal target="modal_status_change"/>
+            <set-state target="local" batchAction=""/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.admin.product_review.modal.status_change.cancel
+      </button>
+      <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.isBatchProcessing ?? false) || reviews.data?.abilities?.can_update !== true}}">
+        <on type="click">
+          <!-- 일괄 상태 변경 실행. 성공 갈래가 진행 깃발·작업 선택·체크한 리뷰를 모두 비운 뒤 목록을 다시 부른다. -->
+          <sequence>
+            <set-state target="local" :isBatchProcessing="true"/>
+            <api-call target="/api/modules/sirsoft-ecommerce/admin/reviews/bulk" :auth_required="true" method="POST">
+              <success>
+                <set-state target="local" :isBatchProcessing="false" batchAction="" :selectedReviews="[]"/>
+                <refetch-data-source dataSourceId="reviews"/>
+                <close-modal target="modal_status_change"/>
+              </success>
+              <fail>
+                <set-state target="local" :isBatchProcessing="false"/>
+              </fail>
+              <body ids="{{_global.reviewBatchIds ?? []}}" action="change_status" status="{{_global.reviewBatchAction}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <span data-if="{{!(_local.isBatchProcessing ?? false)}}">$t:sirsoft-ecommerce.admin.product_review.modal.status_change.confirm</span>
+        <span data-if="{{_local.isBatchProcessing ?? false}}">$t:common.loading</span>
+      </button>
+    </div>
+  </modal>
+</partial>

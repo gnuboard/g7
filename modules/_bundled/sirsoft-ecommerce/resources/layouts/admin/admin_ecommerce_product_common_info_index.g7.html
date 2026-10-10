@@ -1,0 +1,138 @@
+<!-- 상품 공통정보 관리 (운영자) — 여러 상품이 함께 쓰는 안내문을 만들어 두고 상품 등록 시 불러 쓴다.
+  왼쪽 목록(무한 스크롤)과 오른쪽 패널(조회·수정·등록·복사)로 나뉘며, 기본값 지정은 한 건만
+  가질 수 있어 확인 창을 거친다. -->
+<layout name="admin_ecommerce_product_common_info_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.common_info.title" description="$t:sirsoft-ecommerce.admin.common_info.description"/>
+  <!-- 첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 저장·삭제·기본값 변경 뒤에는 이 소스를 다시 태워 목록과 상세를 서버 값으로 맞춘다 -->
+  <data-source id="commonInfos" label_key="$t:sirsoft-ecommerce.editor.data_source.commonInfos" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-common-infos" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+    <params search="{{query.search}}" :per_page="20"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="form">
+      <field name="name">
+        <field name="ko" value=""/>
+        <field name="en" value=""/>
+      </field>
+      <field name="content">
+        <field name="ko" value=""/>
+        <field name="en" value=""/>
+      </field>
+      <field name="content_mode" value="text"/>
+      <field name="is_default" :value="false"/>
+      <field name="is_active" :value="true"/>
+    </field>
+    <field name="viewLocale" :value="null"/>
+    <field name="editLocale" :value="null"/>
+    <field name="showPreview" :value="false"/>
+    <field name="isSaving" :value="false"/>
+    <field name="errors" :value="null"/>
+    <field name="copyModal">
+      <field name="isOpen" :value="false"/>
+    </field>
+    <field name="deleteModal">
+      <field name="isOpen" :value="false"/>
+      <field name="itemId" :value="null"/>
+      <field name="itemName" value=""/>
+    </field>
+    <field name="defaultModal">
+      <field name="isOpen" :value="false"/>
+    </field>
+    <field name="editingModal">
+      <field name="isOpen" :value="false"/>
+    </field>
+  </init-local>
+  <init-global>
+    <field name="infiniteScroll">
+      <field name="currentPage" :value="1"/>
+      <field name="hasMore" :value="true"/>
+      <field name="isLoadingMore" :value="false"/>
+    </field>
+    <field name="selectedId" :value="null"/>
+    <field name="selectedItem" :value="null"/>
+    <field name="panelMode" value="view"/>
+    <field name="pendingItemId" :value="null"/>
+    <field name="isDeleting" :value="false"/>
+    <field name="isSettingDefault" :value="false"/>
+    <field name="deleteModal">
+      <field name="itemId" :value="null"/>
+      <field name="itemName" value=""/>
+    </field>
+  </init-global>
+  <permissions>
+    <permission>sirsoft-ecommerce.product-common-infos.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>commonInfos</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="common_info_page_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.common_info.title</h1>
+          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.common_info.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+            <on type="click">
+              <!-- 검색어와 쌓인 스크롤 페이지를 함께 떨어뜨린다 — 소스만 다시 태우면 이어 붙인 목록이 남는다 -->
+              <navigate path="/admin/ecommerce/common-info" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
+          </button>
+          <button data-ref="add_common_info_button" disabled="{{commonInfos?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 오른쪽 패널을 등록 모드로 전환 — 선택·이전 입력·미리보기까지 비운 뒤 빈 폼을 새로 심는다 -->
+              <sequence>
+                <set-state target="global" :selectedId="null" :selectedItem="null" panelMode="create"/>
+                <set-state target="local" :form="null" :errors="null" :isSaving="false" :showPreview="false"/>
+                <set-state target="local">
+                  <field name="form">
+                    <field name="name">
+                      <field name="ko" value=""/>
+                      <field name="en" value=""/>
+                    </field>
+                    <field name="content">
+                      <field name="ko" value=""/>
+                      <field name="en" value=""/>
+                    </field>
+                    <field name="content_mode" value="text"/>
+                    <field name="is_default" :value="false"/>
+                    <field name="is_active" :value="true"/>
+                  </field>
+                </set-state>
+              </sequence>
+            </on>
+            <icon name="plus" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.common_info.list.add</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
+        <include src="partials/admin_ecommerce_product_common_info_index/_panel_list.g7.html"/>
+        <include src="partials/admin_ecommerce_product_common_info_index/_panel_detail.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 공통정보 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_delete_confirm.g7.html"/>
+  <!-- 복사해서 새로 만들기 — 확인하면 패널이 복사 모드로 바뀌고 원본 내용이 폼에 실린다 -->
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_copy_confirm.g7.html"/>
+  <!-- 편집 폼에서 기본값 체크를 켰을 때 — 취소를 고르면 체크를 되돌린다(아직 저장 전이라 서버를 부르지 않는다) -->
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_default_confirm.g7.html"/>
+  <!-- 편집 중 다른 항목으로 넘어갈 때 저장하지 않은 입력을 버릴지 묻는다 -->
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_editing_confirm.g7.html"/>
+  <!-- 조회 패널에서 곧바로 기본값 지정 — 위 창과 달리 확인 즉시 서버에 반영한다 -->
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_set_default_confirm.g7.html"/>
+</layout>

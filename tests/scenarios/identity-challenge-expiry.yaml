@@ -1,0 +1,16 @@
+feature: 본인인증 요청 만료 처리의 활동 로그
+
+description: |
+  스케줄러 만료 처리가 상태만 일괄로 바꾸고 core.identity.challenge_expired 를 발화하지 않아, 활동 로그의
+  「본인인증 만료」가 한 번도 기록되지 않았다(#138 후속 전수 점검 5번). 만료된 요청마다 한 번 발화한다.
+  조회와 변경 사이에 인증이 끝난 건은 상태 조건으로 다시 걸러 만료로 덮지 않고 발화하지 않는다.
+  인증 시도 도중 즉석 만료(프로바이더 verify)는 이미 인증 실패(EXPIRED)로 기록되므로 발화하지 않는다.
+
+axes:
+  case: [past_due_pending, rerun]
+
+effects:
+  - expired_challenge_logged_once_each
+
+test_files:
+  - tests/Feature/Identity/IdentityChallengeExpiryTest.php

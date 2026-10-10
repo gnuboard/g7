@@ -1,0 +1,18 @@
+feature: 취소 창 환불 우선순위 — 차감되지 않은 마일리지 (S3-D10)
+
+description: |
+  마일리지를 차감하지 않고 결제완료한 주문도 우선순위를 고르게 했다(실측: 주문 20261006-1553557453).
+
+axes:
+  points:
+    - radios
+    - undeducted
+    - deducted
+    - hint
+
+effects:
+  - undeducted_points_disable_refund_priority # 차감되지 않은 마일리지 주문은 우선순위 라디오가 꺼진다
+  - undeducted_points_hint_is_shown # 꺼진 이유 문구를 곁에 보인다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cancelModalUndeductedPointsPriority.test.ts

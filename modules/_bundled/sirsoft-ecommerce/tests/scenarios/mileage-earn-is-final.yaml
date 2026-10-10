@@ -1,0 +1,59 @@
+# 시나리오 매니페스트 — 확정된 적립은 되돌리지 않는다 (#599 3차 실측 L-1)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: mileage_earn_is_final
+
+description: >-
+  적립은 주문옵션 단위로 한 번 나가고, 나가는 순간 원장에 확정된다. 그 뒤 반품·교환·취소가
+  들어와도 **이미 나간 적립은 되돌리지 않는다**(운영 결정 2026-09-23).
+
+  되돌리면 회원이 이중으로 잃기 때문이다. 회수액 기준이 적립 lot 의 `amount`(원 적립액)인데 그
+  lot 의 잔여는 사용·만료로 이미 0 일 수 있고, 모자란 만큼은 **살아 있는 다른 적립에서 FIFO 로**
+  빠져나갔다. 전액을 다른 lot 에서 가져가면 `shortfall` 이 0 이라 `metadata` 에 흔적조차 남지
+  않았다 — 2026-09-22 실측에서 만료로 잔여 0 이 된 1,260원 적립을 회수하자 관리자 지급 lot 이
+  34,000 → 32,740 으로 깎였고, 회원은 같은 1,260원을 소멸과 회수로 두 번 잃었다.
+
+  부분 반품의 과다 회수도 같은 자리에서 났다. 주문옵션이 분할돼도 적립 lot 은 분할 전 금액을
+  그대로 들고 있어(증액 전용 갱신이라 줄지 않는다) 수량 2 반품에 3개분이 빠졌다. 회수를 하지
+  않으므로 함께 사라진다.
+
+  **적립 전**은 이 계약의 대상이 아니다 — 적립 lot 이 없어 회수할 것이 없고, 반품·교환·취소로
+  주문옵션의 상태가 바뀌면 적립 대상 조회(`getEarnableOptions()` 가 `option_status` 를 본다)에서
+  자동으로 빠져 애초에 적립이 나가지 않는다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/MileageTransactionListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimCompletionEarnNoticeTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  event:
+    - confirm_with_confirmed_trigger   # 구매확정 이벤트 + trigger=confirmed
+    - confirm_with_delivered_trigger   # 구매확정 이벤트 + trigger=delivered (적립 안 함)
+    - confirm_with_delay               # 구매확정 이벤트 + delay>0 (스케줄러 몫)
+    - delivered_with_delivered_trigger # 배송완료 이벤트 + trigger=delivered
+    - cancel_transition_after_earn     # 적립 뒤 취소 전이 (회수하지 않는다)
+    - use_deduction                    # 사용 차감 FIFO
+    - restore_without_cancel_id        # 취소 ID 없는 복원 요청은 무시
+    - subscribed_hooks                 # 구독 훅 목록 계약
+    - completion_preview_after_earn    # 적립이 나간 상품의 완료 예고 (「적립 차감」 없음)
+    - completion_preview_before_earn   # 적립 전 상품의 완료 예고 (「적립 차감」 유지)
+
+exclusions:
+  - { event: subscribed_hooks, reason: "제외 없음 — 축 값마다 테스트가 하나씩 있고 조합이 필요한 축이 없다(단일 축)" }
+
+effects:
+  - mileage_earns_on_confirm_when_trigger_is_confirmed       # 구매확정 즉시 적립
+  - mileage_skips_confirm_earn_when_trigger_is_delivered     # 트리거가 다르면 적립하지 않는다
+  - mileage_defers_immediate_earn_when_delay_is_positive     # 지연 적립은 스케줄러 몫
+  - mileage_earns_on_delivered_when_trigger_is_delivered     # 배송완료 적립
+  - mileage_cancel_transition_keeps_the_earned_mileage       # 취소 전이에서도 확정된 적립은 그대로
+  - mileage_use_deducts_the_balance_in_fifo_order            # 사용은 FIFO 로 차감
+  - mileage_restore_is_ignored_without_a_cancel_id           # 취소 ID 없는 복원 요청은 무시한다
+  - mileage_listener_subscribes_the_declared_hooks           # 구독 훅 목록이 선언과 일치한다
+  - completion_preview_omits_the_earn_notice_after_the_earn  # 일어나지 않을 차감을 예고하지 않는다
+  - completion_preview_keeps_the_earn_notice_before_the_earn # 적립 예정분이 사라지는 것은 예고한다
+
+validation:
+  audit_rule: test-scenario-coverage

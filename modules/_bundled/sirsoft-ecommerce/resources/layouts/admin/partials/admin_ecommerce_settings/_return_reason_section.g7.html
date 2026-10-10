@@ -1,0 +1,171 @@
+<!-- 쇼핑몰 설정 — 반품 사유 목록, 넓은 화면용 표와 사유 추가 폼. 좁은 화면용 카드와 같은 배열을 고치고, 새 사유는 임시 폼에서 [추가]로 확정해야 배열에 들어가며 모든 변경은 페이지 [저장] 때 서버의 사유 카탈로그에 한꺼번에 동기화된다. -->
+<partial>
+  <div class="admin-card">
+    <div class="card-header">
+      <!-- `card-header` 는 justify 를 걸지 않는 가로 flex 라, 이 줄이 w-full 없이는
+        내용 폭으로 줄어 「추가」 버튼이 제목에 달라붙는다. -->
+      <div class="flex-between w-full">
+        <div>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.section_title</h3>
+        </div>
+        <button data-if="{{!_local.isAddingReturnReason}}" type="button" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <!-- 신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[사이트 기본 언어]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 사이트 기본 언어 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다. -->
+            <set-state target="local" :isAddingReturnReason="true" returnReasonForm="{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), fault_type: 'customer', is_user_selectable: true, is_active: true, sort_order: 0 } }}" :returnReasonFormErrors="null"/>
+          </on>
+          <icon name="plus" class="text-xs"/>
+          <span>$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.add_button</span>
+        </button>
+      </div>
+    </div>
+    <div data-if="{{_local.isAddingReturnReason}}" class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.code</label>
+          <!-- 새 반품 사유의 코드. 접수된 반품 건이 사유를 이 코드로만 가리키므로 목록에 붙고 나면 표에서는 고칠 수 없고, 사용 중인 사유라면 서버도 코드 변경을 거절한다. -->
+          <input type="text" value="{{_local.returnReasonForm?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.code_placeholder" class="{{_local.returnReasonFormErrors?.code ? 'input input-error font-mono' : 'input font-mono'}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" returnReasonForm.code="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span data-if="{{_local.returnReasonFormErrors?.code}}" class="form-error">{{_local.returnReasonFormErrors?.code === 'format' ? '$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.validation.code_format' : (_local.returnReasonFormErrors?.code === 'length' ? '$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.validation.code_length' : (_local.returnReasonFormErrors?.code === 'duplicate' ? '$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.validation.code_duplicate' : '$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.validation.code_required'))}}</span>
+        </div>
+        <div>
+          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.name</label>
+          <!-- 새 반품 사유 문구. 설치된 언어마다 칸이 생기지만 [추가] 확정은 지금 화면 언어의 문구가 있어야 통과한다. -->
+          <multilingual-input data-type="composite" value="{{_local.returnReasonForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.name_ko_placeholder" error="{{_local.returnReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" returnReasonForm.name="{{$event.target.value}}"/>
+            </on>
+          </multilingual-input>
+        </div>
+        <div>
+          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_type</label>
+          <!-- 새 반품 사유의 귀책. 고객 귀책이면 이 사유의 반품에서 회수 배송비를 고객에게 받고, 판매자·배송사 귀책이면 받지 않는다. -->
+          <select value="{{_local.returnReasonForm?.fault_type ?? 'customer'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+            <options>
+              <option value="customer">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.customer</option>
+              <option value="seller">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.seller</option>
+              <option value="carrier">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.carrier</option>
+            </options>
+            <on type="change">
+              <set-state target="local" returnReasonForm.fault_type="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <label class="flex-center gap-2 cursor-pointer">
+            <!-- 새 반품 사유를 고객 신청 화면에 보일지. 끄면 고객은 이 사유로 반품을 신청하거나 신청서 사유를 이것으로 바꿀 수 없다. -->
+            <input type="checkbox" checked="{{_local.returnReasonForm?.is_user_selectable ?? true}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <set-state target="local" returnReasonForm.is_user_selectable="{{!(_local.returnReasonForm?.is_user_selectable ?? true)}}"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.is_user_selectable</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-3">
+        <!-- 반품 사유 추가 취소. 임시 폼과 오류 표시만 버리고 목록의 기존 반품 사유는 손대지 않는다. -->
+        <button type="button" class="px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <set-state target="local" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.cancel</span>
+        </button>
+        <!-- 반품 사유 추가 확정. 코드 형식·길이·중복과 현재 언어 문구를 화면에서 먼저 걸러 통과한 것만 목록 끝에 붙이고, 저장 때 서버가 같은 규칙으로 한 번 더 판정한다. -->
+        <button type="button" class="px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <conditions>
+              <when if="{{(_local.returnReasonForm?.code ?? '').trim() &amp;&amp; 'abcdefghijklmnopqrstuvwxyz'.includes((_local.returnReasonForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) &amp;&amp; !(_local.returnReasonForm?.code ?? '').trim().includes('__') &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().charAt((_local.returnReasonForm?.code ?? '').trim().length - 1) !== '_' &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().length <= 50 &amp;&amp; !(_local.form?.claim?.return_reasons ?? []).some(r => String(r.code ?? '').toLowerCase() === (_local.returnReasonForm?.code ?? '').trim().toLowerCase()) &amp;&amp; (_local.returnReasonForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim()}}">
+                <set-state target="local" form.claim.return_reasons="{{[...(_local.form?.claim?.return_reasons ?? []), {..._local.returnReasonForm, sort_order: (_local.form?.claim?.return_reasons ?? []).length}]}}" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :hasChanges="true"/>
+              </when>
+              <else>
+                <set-state target="local">
+                  <field name="returnReasonFormErrors">
+                    <field name="code" value="{{!(_local.returnReasonForm?.code ?? '').trim() ? 'required' : (!('abcdefghijklmnopqrstuvwxyz'.includes((_local.returnReasonForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) &amp;&amp; !(_local.returnReasonForm?.code ?? '').trim().includes('__') &amp;&amp; (_local.returnReasonForm?.code ?? '').trim().charAt((_local.returnReasonForm?.code ?? '').trim().length - 1) !== '_') ? 'format' : ((_local.returnReasonForm?.code ?? '').trim().length > 50 ? 'length' : ((_local.form?.claim?.return_reasons ?? []).some(r => String(r.code ?? '').toLowerCase() === (_local.returnReasonForm?.code ?? '').trim().toLowerCase()) ? 'duplicate' : null)))}}"/>
+                    <field name="name_ko" value="{{!(_local.returnReasonForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
+                  </field>
+                </set-state>
+              </else>
+            </conditions>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.save</span>
+        </button>
+      </div>
+    </div>
+    <div data-if="{{(_local.form?.claim?.return_reasons ?? []).length === 0 &amp;&amp; !_local.isAddingReturnReason}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.empty</div>
+    <div data-ref="return_reason_list" data-if="{{(_local.form?.claim?.return_reasons ?? []).length > 0}}" class="overflow-x-clip">
+      <responsive on="portable" class="">
+        <include src="_return_reason_cards.g7.html"/>
+      </responsive>
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th class="text-tertiary text-left font-medium px-4 py-2 w-32">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.code</th>
+            <th class="text-tertiary text-left font-medium px-4 py-2 w-56">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.name</th>
+            <th class="text-tertiary text-left font-medium px-4 py-2 w-32">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.fault_type</th>
+            <th class="text-tertiary text-center font-medium px-4 py-2 w-20">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.is_user_selectable</th>
+            <th class="text-tertiary text-center font-medium px-4 py-2 w-16">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.is_active</th>
+            <th class="text-tertiary text-center font-medium px-4 py-2 w-16">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-each="reason, rIdx in (_local.form?.claim?.return_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="border-t border-gray-200 dark:border-gray-700">
+            <td class="px-4 py-2">
+              <!-- 코드 칸은 읽기 전용(사용 중 잠금·형식 면제 계약)이라 서버가 이 행의 code 를 거절하면 여기서만 알 수 있다 — 형제 배송사 표와 같은 행 지목 통로. 지목이 없으면 운영자는 어느 행인지 모른 채 삭제·재추가만 남는다. -->
+              <span class="{{_local.errors?.['claim.return_reasons.' + reason._idx + '.code'] ? 'font-mono text-red-600 dark:text-red-400' : 'font-mono text-body'}}">{{reason.code}}</span>
+              <span data-if="{{_local.errors?.['claim.return_reasons.' + reason._idx + '.code']}}" class="form-error">{{_local.errors?.['claim.return_reasons.' + reason._idx + '.code']?.[0] ?? ''}}</span>
+            </td>
+            <td class="px-4 py-2">
+              <!-- 등록된 반품 사유의 문구. 과거 반품 건도 사유 표시를 이 문구에서 가져오므로, 저장하면 지난 건의 사유 표시까지 새 문구로 바뀐다. -->
+              <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.return_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.return_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
+                </on>
+              </multilingual-input>
+            </td>
+            <td class="px-4 py-2">
+              <!-- 등록된 반품 사유의 귀책 변경. 이후 접수되는 반품의 회수 배송비 청구만 달라지고, 이미 접수된 건은 접수 때 적어 둔 귀책을 계속 쓴다. -->
+              <select value="{{reason.fault_type ?? 'customer'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+                <options>
+                  <option value="customer">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.customer</option>
+                  <option value="seller">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.seller</option>
+                  <option value="carrier">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.carrier</option>
+                </options>
+                <on type="change">
+                  <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, fault_type: $event.target.value} : r)}}" :hasChanges="true"/>
+                </on>
+              </select>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <!-- 고객 직접 선택 허용. 끄면 고객 반품 신청 화면에서 빠지고 요청으로 보내도 서버가 받지 않아, 감춘 판매자 귀책 사유로 회수 배송비를 면제받는 우회를 막는다. -->
+              <input type="checkbox" checked="{{reason.is_user_selectable ?? false}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_user_selectable: !(r.is_user_selectable)} : r)}}" :hasChanges="true"/>
+                </on>
+              </input>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <!-- 반품 사유 사용 여부. 꺼도 줄이 남아 지난 반품 건의 사유 표시는 유지되고, 새 반품 신청에서만 빠진다. -->
+              <toggle data-type="composite" checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
+                </on>
+              </toggle>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <!-- 반품 사유 삭제 지목. 저장 전까지는 화면에서만 사라지고, 저장 때 이 사유로 접수된 반품 건이 하나라도 있으면 서버가 저장 전체를 거절한다. -->
+              <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+                <on type="click">
+                  <set-state confirm="$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.confirm_delete" target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).filter((_, i) => i !== reason._idx)}}" form.claim.return_reasons_deleted="{{[...(_local.form?.claim?.return_reasons_deleted ?? []), ...(reason?.id ? [reason.id] : [])]}}" :hasChanges="true"/>
+                </on>
+                <icon name="fa-solid fa-trash" class="text-sm"/>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</partial>

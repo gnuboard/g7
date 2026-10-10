@@ -1,6 +1,12 @@
 {
   "title": "Shop Settings",
   "description": "Configure basic shop settings.",
+  "unsaved_tab_modal": {
+    "title": "Unsaved changes",
+    "message": "You have unsaved changes on this tab. If you switch tabs, your changes will be discarded and the saved values will be restored.",
+    "btn_stay": "Stay on this tab",
+    "btn_leave": "Leave without saving"
+  },
   "tabs": {
     "basic_info": "Basic Info",
     "language_currency": "Language/Currency",
@@ -11,11 +17,21 @@
     "review_settings": "Review Settings",
     "notification_definitions": "Notifications",
     "identity_policies": "Identity Policies",
-    "mileage": "Mileage"
+    "mileage": "Mileage",
+    "privacy_retention": "Privacy Retention"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
   "save_pending_currency": "Confirm (check button) or cancel the currency you are adding before saving.",
+  "save_pending_form": "Confirm the open :forms form with its Add button, or cancel it, before saving.",
+  "save_pending_form_targets": {
+    "exchange_reason": "exchange reason",
+    "return_reason": "return reason",
+    "refund_reason": "refund reason",
+    "carrier": "shipping carrier",
+    "shipping_type": "shipping type",
+    "country": "available country"
+  },
   "validation_error": "Please check the input fields.",
   "basic_info": {
     "shop_info": {
@@ -49,6 +65,7 @@
       "email_id_placeholder": "Email ID",
       "email_domain_placeholder": "Domain",
       "email_domain_direct": "Enter directly",
+      "email_domain_select": "Email domain",
       "privacy_officer": "Privacy Officer",
       "privacy_officer_placeholder": "Privacy officer name",
       "privacy_officer_email": "Privacy Officer Email",
@@ -64,7 +81,8 @@
       "description": "Configure the storage disk for this module's fully public assets such as product, category, and review images.",
       "disk": "Public Asset Disk",
       "follow_core": "Follow core setting",
-      "help": "Select to use a different disk for this module only. Leave empty to follow the public asset storage setting in core system settings."
+      "help": "Select to use a different disk for this module only. Leave empty to follow the public asset storage setting in core system settings.",
+      "unavailable": "The saved disk ({disk}) is no longer available, so images are being streamed. Select another disk and save to change it."
     },
     "inquiry_settings": {
       "title": "1:1 Inquiry Board Settings",
@@ -131,6 +149,17 @@
       },
       "edit": "Edit",
       "duplicate_currency_error": "This currency code is already registered."
+    },
+    "rate_provider": {
+      "label": "Exchange rate provider",
+      "manual": "Manual entry",
+      "managed_badge": "Automatically managed",
+      "manual_badge": "Manually managed",
+      "last_updated": "Last updated",
+      "settings": "Provider settings",
+      "auth_key_required": "Enter an API key to start automatic management.",
+      "unsupported_base": "The base currency is unsupported. Enter rates manually.",
+      "auto_manage_disabled": "Enable automatic management in provider settings."
     }
   },
   "order_settings": {
@@ -153,6 +182,7 @@
       "is_active": "Active",
       "orphaned_badge": "Plugin Not Installed",
       "orphaned_pg_badge": "PG removed",
+      "internal_only_badge": "Not customer-selectable",
       "remove_orphaned": "Remove",
       "pg_provider": "PG Provider",
       "pg_use_default": "Default PG",
@@ -251,6 +281,152 @@
   },
   "claim": {
     "title": "Claims Settings",
+    "reason_tabs": {
+      "exchange": "Exchange reasons",
+      "return": "Return reasons",
+      "refund": "Refund reasons"
+    },
+    "policy": {
+      "days_unit": "days",
+      "images_unit": "images",
+      "requestable": {
+        "title": "Request Conditions",
+        "description": "Choose the item statuses and period in which customers may request an exchange, return, cancellation or refund.",
+        "placeholder": "Select statuses",
+        "exchange_label": "Exchange requestable statuses",
+        "exchange_hint": "Only items in these statuses show the exchange request button and can be submitted.",
+        "return_label": "Return requestable statuses",
+        "return_hint": "Only items in these statuses show the return request button and can be submitted.",
+        "instant_cancel_label": "Auto-advance statuses",
+        "instant_cancel_hint": "Items in these statuses still create a refund request, which is then advanced through approval and completion automatically. Bank-transfer refunds stop at approval and an operator completes them after sending the money.",
+        "refund_request_label": "Refund request statuses",
+        "refund_request_hint": "Items in these statuses are filed as a refund request and refunded after admin approval.",
+        "request_period_days_label": "Request period",
+        "request_period_days_hint": "Exchanges and returns can no longer be requested once this period passes after delivery (or purchase confirmation)."
+      },
+      "charge": {
+        "title": "Additional Payment",
+        "description": "Choose how claim charges — exchange round-trip shipping, option price difference — may be billed and paid.",
+        "methods_label": "Allowed charge methods",
+        "methods_placeholder": "Select charge methods",
+        "methods_hint": "Charge methods customers may pick on the request form. Methods removed here are not offered.",
+        "payment_methods_label": "Additional payment methods",
+        "payment_methods_placeholder": "Select payment methods",
+        "payment_methods_hint": "Payment methods usable for claim charges. Points are available to members only."
+      },
+      "auto_approve": {
+        "title": "Auto Approval",
+        "description": "Choose when requests are approved without an administrator review.",
+        "zero_charge_label": "Auto-approve zero charge",
+        "zero_charge_hint": "Approve exchange and return requests with no additional charge as soon as they are filed.",
+        "after_payment_label": "Auto-approve after payment",
+        "after_payment_hint": "Move the request to approved once the customer completes the additional payment.",
+        "refund_request_label": "Auto-approve refund request",
+        "refund_request_hint": "Move filed refund requests to approved automatically. Executing the refund stays a separate step.",
+        "refund_statuses_label": "Auto-approval target statuses",
+        "refund_statuses_hint": "When auto-approval is on, choose which item statuses are approved automatically. If any item on a request falls outside the list, an operator approves the whole request.",
+        "refund_payment_methods_label": "Payment methods eligible for automatic refunds",
+        "refund_payment_methods_hint": "Only refunds paid with the methods selected here proceed automatically. Methods left out (bank transfer, virtual account, and the like) stop at the requested state even for paid items — an operator approves the request and then completes the transfer with [Refund]. This list applies regardless of the auto-approval toggles.",
+        "refund_payment_methods_pg_badge": "Instant PG refund"
+      },
+      "attachment": {
+        "title": "Attachments",
+        "description": "Choose how many images customers may attach to a request and how large each may be.",
+        "max_images_label": "Maximum attachments",
+        "max_images_hint": "Both the on-screen notice and the server limit follow this value.",
+        "image_max_size_kb_label": "Maximum image size",
+        "image_max_size_kb_hint": "Per image. 1MB = 1024KB."
+      },
+      "complete_defaults": {
+        "title": "Completion Defaults",
+        "description": "Initial selections of the completion dialog opened when moving to return-completed or exchange-completed.",
+        "notice": "These values only preset the dialog. Stock restoration and refund request filing are confirmed per item in the completion dialog.",
+        "create_refund_request_label": "File refund request",
+        "create_refund_request_hint": "Preselect \"File now\" in the dialog.",
+        "restore_stock_label": "Restore stock",
+        "restore_stock_hint": "Preselect the per-item stock restore checkbox in the dialog."
+      },
+      "advance_exchange": {
+        "title": "Advance exchange",
+        "description": "Ship the new item first and receive the original later. When on, exchanges show [Switch to advance exchange].",
+        "enabled_label": "Use advance exchange",
+        "enabled_hint": "When off, no new switches are possible. Existing advance exchanges continue.",
+        "due_days_label": "Return deadline for the original",
+        "due_days_hint": "Counted from the day the new item ships. Staff are notified once when it passes."
+      }
+    },
+    "exchange_reasons": {
+      "section_title": "Exchange Reason Management",
+      "add_button": "Add Reason",
+      "empty": "No exchange reasons registered.",
+      "columns": {
+        "code": "Code",
+        "name": "Reason",
+        "fault_type": "Fault Type",
+        "is_user_selectable": "User Selectable",
+        "is_active": "Active",
+        "actions": "Actions"
+      },
+      "form": {
+        "code": "Reason Code",
+        "code_placeholder": "Lowercase letters, underscores (e.g., order_mistake)",
+        "name": "Reason Name",
+        "name_ko_placeholder": "Reason name",
+        "fault_type": "Fault Type",
+        "fault_types": {
+          "customer": "Customer",
+          "seller": "Seller",
+          "carrier": "Carrier"
+        },
+        "is_user_selectable": "User Selectable",
+        "cancel": "Cancel",
+        "save": "Add"
+      },
+      "confirm_delete": "Are you sure you want to delete this exchange reason?",
+      "validation": {
+        "code_required": "Code is required",
+        "code_format": "Code must start with a lowercase letter and use only lowercase letters, digits, and single underscores between words — no double or trailing underscores (e.g. size_mismatch)",
+        "code_length": "Code must be 50 characters or fewer",
+        "code_duplicate": "A reason with this code already exists — enter a different code",
+        "name_required": "Reason name is required"
+      }
+    },
+    "return_reasons": {
+      "section_title": "Return Reason Management",
+      "add_button": "Add Reason",
+      "empty": "No return reasons registered.",
+      "columns": {
+        "code": "Code",
+        "name": "Reason",
+        "fault_type": "Fault Type",
+        "is_user_selectable": "User Selectable",
+        "is_active": "Active",
+        "actions": "Actions"
+      },
+      "form": {
+        "code": "Reason Code",
+        "code_placeholder": "Lowercase letters, underscores (e.g., order_mistake)",
+        "name": "Reason Name",
+        "name_ko_placeholder": "Reason name",
+        "fault_type": "Fault Type",
+        "fault_types": {
+          "customer": "Customer",
+          "seller": "Seller",
+          "carrier": "Carrier"
+        },
+        "is_user_selectable": "User Selectable",
+        "cancel": "Cancel",
+        "save": "Add"
+      },
+      "confirm_delete": "Are you sure you want to delete this return reason?",
+      "validation": {
+        "code_required": "Code is required",
+        "code_format": "Code must start with a lowercase letter and use only lowercase letters, digits, and single underscores between words — no double or trailing underscores (e.g. size_mismatch)",
+        "code_length": "Code must be 50 characters or fewer",
+        "code_duplicate": "A reason with this code already exists — enter a different code",
+        "name_required": "Reason name is required"
+      }
+    },
     "refund_reasons": {
       "section_title": "Refund Reason Management",
       "add_button": "Add Reason",
@@ -267,8 +443,7 @@
         "code": "Reason Code",
         "code_placeholder": "Lowercase letters, underscores (e.g., order_mistake)",
         "name": "Reason Name",
-        "name_ko_placeholder": "Korean",
-        "name_en_placeholder": "English",
+        "name_ko_placeholder": "Reason name",
         "fault_type": "Fault Type",
         "fault_types": {
           "customer": "Customer",
@@ -282,6 +457,9 @@
       "confirm_delete": "Are you sure you want to delete this refund reason?",
       "validation": {
         "code_required": "Code is required",
+        "code_format": "Code must start with a lowercase letter and use only lowercase letters, digits, and single underscores between words — no double or trailing underscores (e.g. size_mismatch)",
+        "code_length": "Code must be 50 characters or fewer",
+        "code_duplicate": "A reason with this code already exists — enter a different code",
         "name_required": "Reason name is required"
       }
     }
@@ -327,8 +505,7 @@
         "code": "Type Code",
         "code_placeholder": "lowercase, underscore (e.g. express_delivery)",
         "name": "Type Name",
-        "name_ko_placeholder": "Korean",
-        "name_en_placeholder": "English",
+        "name_ko_placeholder": "Shipping type name",
         "category": "Category",
         "cancel": "Cancel",
         "save": "Add"
@@ -368,7 +545,7 @@
         "tracking_url_help": "{tracking_number} will be replaced with the tracking number.",
         "cancel": "Cancel",
         "save": "Save",
-        "name_ko_placeholder": "Korean"
+        "name_ko_placeholder": "Carrier name"
       },
       "created": "Shipping carrier has been created.",
       "updated": "Shipping carrier has been updated.",
@@ -493,6 +670,7 @@
     "search_type_subject": "Subject",
     "search_type_body": "Body",
     "total_count": "Total {{count}} items",
+    "total_count_one": "Total {{count}} item",
     "per_page_label": "Per page",
     "empty_message": "No notification settings found.",
     "empty_no_results": "No search results found.",
@@ -530,6 +708,8 @@
     "enable_success": "Policy enabled.",
     "disable_success": "Policy disabled.",
     "toggle_failed": "Failed to update policy state.",
+    "no_read_permission": "You do not have permission to view identity verification policies. The \"View ecommerce identity policies\" permission is required.",
+    "read_only_notice": "You do not have permission to change identity verification policies, so they are shown read-only. Adding, editing, or deleting policies requires the \"Update ecommerce identity policies\" permission.",
     "col": {
       "key": "Key",
       "scope": "Scope",
@@ -550,6 +730,66 @@
       "module": "Module",
       "plugin": "Plugin",
       "admin": "Admin"
+    }
+  },
+  "privacy_retention": {
+    "notice_title": "Legal notice — read first",
+    "notice_desc": "Under the Act on the Consumer Protection in Electronic Commerce, records of contracts, withdrawals, payments and supply of goods must be kept for 5 years, so the retention period cannot be shorter than 5 years. Announce the retention period and erasure method in your privacy policy before turning this on.",
+    "title": "Closed order personal information retention",
+    "description": "Automatically processes, every day, the orderer and recipient information of orders closed by purchase confirmation or cancellation (with no refund, exchange or return in progress) once the retention period has passed. Orders in delivery or not yet confirmed are never processed.",
+    "enabled": "Automatic retention processing",
+    "enabled_hint": "When on, the core privacy retention job (runs daily) processes orders with the method below. Processed data cannot be restored.",
+    "target_count": "{{count}} targets",
+    "target_count_one": "{{count}} target",
+    "retention_years": "Retention period",
+    "years_unit": "years",
+    "retention_years_hint": "Counted from when the order was closed. At least 5 years (e-commerce law).",
+    "mode": "Processing method",
+    "modes": {
+      "anonymize": "Anonymize (keep the order, mask personal information)",
+      "delete": "Delete (delete the whole order)"
+    },
+    "anonymize_notice": "Order number, amounts and product records remain, and the orderer and recipient name, contact number and address are masked. Refund account holders and numbers, reason details and admin memos on exchange, return and refund requests, and exchange redelivery addresses are masked as well. Processed orders can no longer be found through guest order lookup or the admin order search by name or contact number, but can still be opened by order number.",
+    "delete_warning": "Deletion cannot be undone. The order is deleted together with its payment, shipping, cancellation, refund, exchange and return records, including attached photos, and product reviews written for it disappear with their images, which changes product ratings. Receipt and transaction lookups on the payment provider screens no longer open for that order number, and coupon issues and mileage history remain but lose their link to the order.",
+    "preview_hint": "Target counts are based on the saved settings. If you changed a value, save first and check again.",
+    "targets": {
+      "view": "View target orders",
+      "row_label": "Closed orders past the retention period",
+      "title": "Orders due for retention processing",
+      "total": "{{count}} in total",
+      "empty": "There are no targets.",
+      "loading": "Loading...",
+      "close": "Close",
+      "editor_label": "Shop retention target orders"
+    },
+    "manual_run": {
+      "run": "Run now",
+      "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+      "status_active": "{{status}} — queued {{at}} · {{by}}",
+      "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
+      "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "Unknown",
+      "modal_title": "{{target}} — manual run",
+      "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on this screen when it finishes.",
+      "count_label": "To be processed",
+      "count_value": "{{count}}",
+      "loading": "Counting...",
+      "mode_label": "Method",
+      "modes": {
+        "anonymize": "Anonymize",
+        "delete": "Delete",
+        "erase_ip": "Erase author IP"
+      },
+      "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved settings.",
+      "irreversible": "This cannot be undone. Check the count and the target list before running.",
+      "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+      "cancel": "Cancel",
+      "execute": "Run",
+      "executing": "Queuing...",
+      "queued_toast": "The run has been queued. The result will appear when it finishes.",
+      "queue_failed": "Could not queue the run.",
+      "preview_failed": "Could not load the target count.",
+      "editor_label": "Shop retention manual run"
     }
   }
 }

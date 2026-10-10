@@ -36,7 +36,7 @@
         "redirect_success_url": "결제 성공 리다이렉트 URL",
         "redirect_success_url_hint": "{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL(https://...)을 직접 넣어도 됩니다. {orderId}는 주문번호로 자동 치환됩니다.",
         "redirect_fail_url": "결제 실패 리다이렉트 URL",
-        "redirect_fail_url_hint": "상대 경로 또는 전체 URL 모두 가능합니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.",
+        "redirect_fail_url_hint": "{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL 을 직접 넣어도 됩니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.",
         "use_escrow": "에스크로 결제 사용",
         "use_escrow_hint": "실물 상품 판매 시 구매자 보호를 위한 에스크로 결제를 활성화합니다. 에스크로 결제 후 배송 등록이 필요합니다.",
         "section_easy_pay": "간편결제 설정",
@@ -123,6 +123,7 @@
         "receipt_label": "영수증",
         "view_receipt": "영수증 보기",
         "view_cash_receipt": "현금영수증 조회",
+        "view_sales_slip": "매출전표 보기",
         "easy_pay_label": "간편결제 서비스",
         "test_mode_badge": "테스트 결제",
         "tax_breakdown_title": "세금 상세",
@@ -135,7 +136,19 @@
         "vbank_holder": "예금주",
         "vbank_amount": "입금 금액",
         "vbank_due": "입금 기한",
-        "vbank_notice": "입금 기한 내에 입금이 완료되지 않으면 주문이 자동 취소됩니다."
+        "vbank_notice": "입금 기한 내에 입금이 완료되지 않으면 주문이 자동 취소됩니다.",
+        "receipt_view": "영수증 조회",
+        "loading": "로딩 중...",
+        "easy_pay_names": {
+            "NAVERPAY": "네이버페이",
+            "KAKAOPAY": "카카오페이",
+            "SAMSUNGPAY": "삼성페이",
+            "APPLEPAY": "애플페이",
+            "PAYCO": "PAYCO",
+            "SKPAY": "11pay",
+            "SSGPAY": "SSG페이",
+            "LPAY": "L.pay"
+        }
     },
     "messages": {
         "refund": {
@@ -153,7 +166,10 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
+            "sdk_load_failed": "나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.",
+            "request_failed": "결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         }
-    }
+    },
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다."
 }

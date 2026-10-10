@@ -1,4 +1,5 @@
 {
+    "comment": "알림 발송 기록 표. 줄 고르기는 **삭제 권한이 있을 때만 켜진다** — 권한이 없으면 체크칸 자체가\n  나오지 않아 지울 수 없는 버튼을 눌러 보는 일이 없다.\n  받는 사람과 보낸 사람 칸은 회원으로 이어질 때만 메뉴가 되고, 아니면 남아 있는 이름·주소를\n  글자로만 보여 준다(비회원 발송과 시스템 발송이 그렇다). 줄을 펼치면 실패 사유와 본문이 나오는데,\n  본문은 채널이 만든 HTML 그대로다.",
     "meta": {
         "is_partial": true,
         "description": "Notification Log List DataGrid"
@@ -6,6 +7,52 @@
     "id": "notification_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "actions": [
+        {
+            "comment": "쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다. 위의 「이 사람으로 좁히기」와 달리 이쪽은 조건을 합쳐 넘긴다.",
+            "type": "change",
+            "event": "onPageChange",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/notification-logs",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "notification_log_datagrid__body",
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        },
+        {
+            "comment": "고른 줄은 전역에 둔다 — 일괄 삭제 버튼이 표 밖 화면 머리에 있어 표 안쪽 상태로는 닿지 않는다.",
+            "type": "action",
+            "event": "onSelectionChange",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedIds_admin_notification_logs": "{{$args[0]}}"
+            }
+        },
+        {
+            "comment": "한 줄 삭제도 바로 지우지 않는다 — 누른 줄을 전역에 실어 둔 뒤 확인 창을 열고, 창이 그 값을 읽어 무엇을 지우는지 보여 준다.",
+            "type": "action",
+            "event": "onRowAction",
+            "handler": "switch",
+            "cases": {
+                "delete": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "modal_data": "{{$args[1]}}"
+                    },
+                    "onSuccess": {
+                        "handler": "openModal",
+                        "target": "delete_confirm_modal"
+                    }
+                }
+            }
+        }
+    ],
     "props": {
         "data": "{{notificationLogs?.data?.data}}",
         "pagination": true,
@@ -22,6 +69,16 @@
         "selectedCountText": "",
         "loading": "{{notificationLogs?.loading}}",
         "expandable": true,
+        "actionsColumnHeader": "$t:common.actions",
+        "rowActions": [
+            {
+                "id": "delete",
+                "label": "$t:admin.notification_log.delete.button",
+                "iconName": "trash",
+                "variant": "danger",
+                "disabledField": "abilities.can_delete"
+            }
+        ],
         "expandChildren": [
             {
                 "type": "basic",
@@ -31,78 +88,88 @@
                 },
                 "children": [
                     {
+                        "comment": "라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list(#682 S4 라운드 8 전수조사 — 라벨 폭마다 값이 들쭉날쭉).",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{row.error_message}}",
                         "props": {
-                            "className": "flex items-start gap-2"
+                            "className": "kv-list gap-y-2"
                         },
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Span",
+                                "name": "Div",
+                                "if": "{{row.error_message}}",
                                 "props": {
-                                    "className": "text-sm font-medium text-red-600 dark:text-red-400 shrink-0"
+                                    "className": "kv-row"
                                 },
-                                "text": "$t:admin.notification_log.detail.error_label"
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-medium text-red-600 dark:text-red-400"
+                                        },
+                                        "text": "$t:admin.notification_log.detail.error_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-red-500 dark:text-red-300"
+                                        },
+                                        "text": "{{row.error_message}}"
+                                    }
+                                ]
                             },
                             {
                                 "type": "basic",
-                                "name": "Span",
+                                "name": "Div",
                                 "props": {
-                                    "className": "text-sm text-red-500 dark:text-red-300"
+                                    "className": "kv-row"
                                 },
-                                "text": "{{row.error_message}}"
-                            }
-                        ]
-                    },
-                    {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "flex-center gap-2"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "text-body font-medium shrink-0"
-                                },
-                                "text": "$t:admin.notification_log.detail.source_label"
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-body font-medium"
+                                        },
+                                        "text": "$t:admin.notification_log.detail.source_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "{{row.source ?? '-'}}"
+                                    }
+                                ]
                             },
                             {
                                 "type": "basic",
-                                "name": "Span",
+                                "name": "Div",
                                 "props": {
-                                    "className": "text-label"
+                                    "className": "kv-row"
                                 },
-                                "text": "{{row.source ?? '-'}}"
-                            }
-                        ]
-                    },
-                    {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "flex-center gap-2"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "text-body font-medium shrink-0"
-                                },
-                                "text": "$t:admin.notification_log.detail.notification_type_label"
-                            },
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
-                                },
-                                "text": "{{row.notification_type ?? '-'}}"
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-body font-medium"
+                                        },
+                                        "text": "$t:admin.notification_log.detail.notification_type_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "{{row.notification_type ?? '-'}}"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -142,16 +209,6 @@
                 ]
             }
         ],
-        "rowActions": [
-            {
-                "id": "delete",
-                "label": "$t:admin.notification_log.delete.button",
-                "iconName": "trash",
-                "variant": "danger",
-                "disabledField": "abilities.can_delete"
-            }
-        ],
-        "actionsColumnHeader": "$t:common.actions",
         "columns": [
             {
                 "field": "channel",
@@ -201,6 +258,34 @@
                         "type": "composite",
                         "name": "ActionMenu",
                         "if": "{{!!row.recipient}}",
+                        "actions": [
+                            {
+                                "comment": "「이 사람이 받은 것만」은 이름이 아니라 회원 번호로 좁힌다 — 개명·동명이인에 흔들리지 않는다. 회원 상세는 새 창이라 보던 목록을 잃지 않는다.",
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.recipient.uuid}}"
+                                        }
+                                    },
+                                    "search_by_recipient": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "notification_log_datagrid__body",
+                                            "query": {
+                                                "recipient_user_id": "{{row.recipient_user_id}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
                             "position": "right",
                             "items": [
@@ -250,43 +335,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{!!row.recipient.email}}",
                                                 "props": {
                                                     "className": "text-tertiary truncate block"
                                                 },
-                                                "text": "({{row.recipient.email}})",
-                                                "if": "{{!!row.recipient.email}}"
+                                                "text": "({{row.recipient.email}})"
                                             }
                                         ]
                                     }
                                 ]
-                            }
-                        ],
-                        "actions": [
-                            {
-                                "event": "onItemClick",
-                                "handler": "switch",
-                                "value": "{{$args[0]}}",
-                                "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.recipient.uuid}}"
-                                        }
-                                    },
-                                    "search_by_recipient": {
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/notification-logs",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "recipient_user_id": "{{row.recipient_user_id}}",
-                                                "page": 1
-                                            },
-                                            "replace": true,
-                                            "transition_overlay_target": "notification_log_datagrid__body"
-                                        }
-                                    }
-                                }
                             }
                         ]
                     }
@@ -310,6 +367,34 @@
                         "type": "composite",
                         "name": "ActionMenu",
                         "if": "{{!!row.sender}}",
+                        "actions": [
+                            {
+                                "comment": "보낸 사람 쪽도 같은 두 갈래다. 다만 이 칸은 사람이 보낸 알림에만 나온다 — 시스템이 낸 것은 보낸 사람이 없어 글자만 남는다.",
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.sender.uuid}}"
+                                        }
+                                    },
+                                    "search_by_sender": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "notification_log_datagrid__body",
+                                            "query": {
+                                                "sender_user_id": "{{row.sender_user_id}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
                             "position": "right",
                             "items": [
@@ -359,43 +444,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{!!row.sender.email}}",
                                                 "props": {
                                                     "className": "text-tertiary truncate block"
                                                 },
-                                                "text": "({{row.sender.email}})",
-                                                "if": "{{!!row.sender.email}}"
+                                                "text": "({{row.sender.email}})"
                                             }
                                         ]
                                     }
                                 ]
-                            }
-                        ],
-                        "actions": [
-                            {
-                                "event": "onItemClick",
-                                "handler": "switch",
-                                "value": "{{$args[0]}}",
-                                "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.sender.uuid}}"
-                                        }
-                                    },
-                                    "search_by_sender": {
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/notification-logs",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "sender_user_id": "{{row.sender_user_id}}",
-                                                "page": 1
-                                            },
-                                            "replace": true,
-                                            "transition_overlay_target": "notification_log_datagrid__body"
-                                        }
-                                    }
-                                }
                             }
                         ]
                     }
@@ -479,50 +536,5 @@
                 ]
             }
         ]
-    },
-    "actions": [
-        {
-            "event": "onPageChange",
-            "type": "change",
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/notification-logs",
-                "mergeQuery": true,
-                "query": {
-                    "page": "{{$args[0]}}"
-                },
-                "replace": true,
-                "transition_overlay_target": "notification_log_datagrid__body"
-            }
-        },
-        {
-            "event": "onSelectionChange",
-            "type": "action",
-            "handler": "setState",
-            "params": {
-                "target": "global",
-                "selectedIds_admin_notification_logs": "{{$args[0]}}"
-            }
-        },
-        {
-            "event": "onRowAction",
-            "type": "action",
-            "handler": "switch",
-            "cases": {
-                "delete": {
-                    "handler": "setState",
-                    "params": {
-                        "target": "global",
-                        "modal_data": "{{$args[1]}}"
-                    },
-                    "onSuccess": [
-                        {
-                            "handler": "openModal",
-                            "target": "delete_confirm_modal"
-                        }
-                    ]
-                }
-            }
-        }
-    ]
+    }
 }

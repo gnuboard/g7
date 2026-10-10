@@ -4,7 +4,7 @@ export interface UseFileUploaderOptions {
     attachmentableId?: number;
     collection: string;
     maxFiles: number;
-    maxSize: number;
+    maxSize?: number;
     maxConcurrentUploads: number;
     accept?: string;
     imageCompression?: FileUploaderProps['imageCompression'];

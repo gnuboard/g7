@@ -1,0 +1,75 @@
+<partial description="공용 삭제 모달 - 게시글/댓글" editor_label="$t:user.modal_label.board_show.board_delete_modal">
+  <!-- 공용 삭제 모달 - 게시글/댓글 모두 사용 가능 -->
+  <modal data-type="composite" data-ref="board_delete_modal" id="board_delete_modal" title="{{_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_title' : '$t:board.modals.delete_post_title'}}" icon="trash" iconClassName="text-red-500" size="sm">
+    <div class="space-y-4">
+      <!-- 삭제 확인 메시지 (비회원인 경우 비밀번호 안내, 회원인 경우 삭제 확인) -->
+      <p class="text-gray-600 dark:text-gray-400">{{_global.deleteModal.isGuest ? (_global.deleteModal.type === 'comment' ? '$t:board.guest_password_comment_delete_message' : '$t:board.guest_password_post_delete_message') : (_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_confirm' : '$t:board.modals.delete_post_confirm')}}</p>
+      <!-- 비회원 비밀번호 입력 (비회원만 표시) -->
+      <div data-if="{{_global.deleteModal.isGuest}}">
+        <div class="flex items-center gap-1.5 mb-1">
+          <icon name="lock" size="xs" class="text-gray-500 dark:text-gray-400"/>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:board.guest_password</span>
+        </div>
+        <input type="password" placeholder="$t:board.guest_password_placeholder" value="{{_global.deleteModal.password ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <on type="change">
+            <!-- 비회원 비밀번호 입력 — 이 창의 상태는 여는 쪽(글·댓글 어느 쪽이든)이 채운 전역 값이라, 비밀번호만 바꿔 담더라도 나머지 항목(대상 종류·회원 여부·삭제 주소)을 함께 다시 실어야 덮어쓰기로 지워지지 않는다. -->
+            <set-state target="global">
+              <field name="deleteModal">
+                <field name="type" value="{{_global.deleteModal.type}}"/>
+                <field name="isGuest" value="{{_global.deleteModal.isGuest}}"/>
+                <field name="apiEndpoint" value="{{_global.deleteModal.apiEndpoint}}"/>
+                <field name="password" value="{{$event.target.value}}"/>
+              </field>
+            </set-state>
+          </on>
+        </input>
+      </div>
+      <!-- 에러 메시지 -->
+      <div data-if="{{_local.deleteError}}" class="text-sm text-red-500">{{_local.deleteError}}</div>
+      <!-- 버튼 영역 -->
+      <div class="flex justify-end gap-3">
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <on type="click">
+            <!-- 취소 — 창을 닫기 전에 남은 오류 문구와 전역 대상 정보를 비운다. 이 창은 글·댓글이 돌려 쓰므로 지우지 않으면 다음에 열 때 앞의 대상이 남는다. -->
+            <sequence>
+              <set-state target="local" deleteError=""/>
+              <set-state target="global" :deleteModal="null"/>
+              <close-modal/>
+            </sequence>
+          </on>
+          $t:common.cancel
+        </button>
+        <button disabled="{{_local.deleteSubmitting || (_global.deleteModal.isGuest &amp;&amp; !_global.deleteModal.password)}}" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 삭제 실행. 댓글이면 목록만 다시 부르고, 글이면 그 글이 사라지므로 게시판 목록으로 나간다 -->
+            <sequence>
+              <!-- 로컬 상태 초기화
+                       모달 상태 초기화
+                       댓글 삭제 시 데이터소스 갱신, 게시글 삭제 시 목록으로 이동
+                       삭제 후 목록 복귀 — 보고 있던 목록 상태(page/search/category/del)를 그대로 되돌린다 (#75). del(삭제글 포함 보기)은 사용자가 직접 켠 보기 모드이므로 삭제를 이유로 해제하지 않는다. -->
+              <set-state target="local" :deleteSubmitting="true" deleteError=""/>
+              <api-call target="{{_global.deleteModal.apiEndpoint}}" :auth_required="true" method="DELETE" body="{{_global.deleteModal.isGuest ? {password: _global.deleteModal.password} : {}}}">
+                <success>
+                  <set-state target="local" :deleteSubmitting="false" deleteError=""/>
+                  <set-state target="global" :deleteModal="null"/>
+                  <toast type="success" message="{{_global.deleteModal.type === 'comment' ? '$t:board.comment_deleted' : '$t:board.post_deleted'}}"/>
+                  <refetch-data-source if="{{_global.deleteModal.type === 'comment'}}" dataSourceId="post"/>
+                  <navigate if="{{_global.deleteModal.type !== 'comment'}}" path="/board/{{route.slug}}" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="local" :deleteSubmitting="false" deleteError="{{error.message}}"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.deleteSubmitting}}" name="spinner" size="sm" class="animate-spin mr-2"/>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

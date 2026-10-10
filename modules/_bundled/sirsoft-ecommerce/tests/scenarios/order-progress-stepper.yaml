@@ -1,0 +1,75 @@
+feature: 주문 진행단계 스텝퍼 — 마이페이지 상세 · 목록 상단 건수 칸 · 관리자 상세 (#599 후속)
+
+description: |
+  클레임 상세에 세운 진행단계(원 64px · 상태 아이콘 · 균일 칸 · 꺾쇠 · 모바일 줄바꿈)를 주문에도
+  같은 수준으로 세운다. 대상은 셋 — 마이페이지 주문 상세(비회원 주문조회 상세가 같은 partial 을
+  공유), 마이페이지 주문내역 목록 상단 건수 칸, 관리자 주문 상세(탭 위 상시 노출).
+
+  ① **배열은 서버가 만든다.** 순서는 `OrderStatusEnum::progressSequence()`(7단계)가 소유하고
+     `OrderProgressSteps` 가 세 화면에 같은 배열을 준다. 화면이 순서를 다시 적으면 그 사본이
+     어휘의 두 번째 출처가 되어 상태가 늘어도 한 화면만 낡은 채 남는다.
+  ② **이탈 상태(배송보류·취소·교환/반품 진행·교환/반품 완료)는 순서 밖이다.** 흐름을 따라가는
+     단계가 아니라 멈추는 사건이라 마지막 이탈 칸으로 붙는다. 도달 지점은 현재 상태와 주문이
+     박아 둔 시각(결제·배송완료·구매확정) 중 더 나아간 쪽 — 이탈 상태에서는 현재 상태만으로
+     어디까지 갔는지 알 수 없다.
+  ③ **아이콘은 라이브러리 중립 의미 토큰(status-*)이다.** 백엔드는 글리프 이름을 알지 않고,
+     토큰→글리프 표는 두 번들 템플릿의 Icon 이 가진다. 주문 전용 토큰 6종이 어휘에 더해진다.
+  ④ **목록 상단 건수 칸은 통계·클릭 필터와 같은 키 어휘를 쓴다.** 6칸이며 '상품준비중' 칸은
+     배송준비중을 합산한다(필터 규칙과 같은 집합). 서버가 키·라벨·아이콘·색·건수를 실어
+     화면이 상태 어휘를 다시 적지 않는다.
+  ⑤ **Icon 에 직접 `hidden` 을 주면 숨겨지지 않는다.** Font Awesome 의 display 규칙이 Tailwind
+     유틸리티를 이긴다 — 숨김은 래퍼 Div 가 맡는다. jsdom 은 이것을 보지 못하므로 브라우저 축이
+     따로 있다.
+
+# axis 의미:
+#   surface — 같은 배열을 그리는 세 화면. mypage_detail 은 비회원 주문조회 상세를 겸한다(같은 partial).
+#   order_stage — in_progress 는 순서 안의 한 칸이 현재, off_path 는 순서 밖이라 현재 칸이 없다.
+#   viewport — desktop 은 한 줄·PC 꺾쇠, mobile 은 4칸/줄(건수 칸은 3칸/줄) 줄바꿈·모바일 꺾쇠.
+axes:
+  surface: [mypage_detail, mypage_list, admin_detail]
+  order_stage: [in_progress, off_path]
+  viewport: [desktop, mobile]
+
+exclusions:
+  - { surface: mypage_list, order_stage: off_path, reason: "건수 칸은 상태별 집계라 이탈 칸 개념이 없다 — 취소·보류 주문은 자기 칸(취소 필터)이 아니라 집계 밖이다" }
+
+effects:
+  # 서버 배열
+  - order_progress_steps_seven_stages
+  - order_progress_steps_carry_icon_and_variant
+  - order_progress_off_path_appends_last_cell
+  # 주문대기는 7단계 순서 밖이지만 **이탈이 아니다** — 칸을 덧붙이지 않고 첫 칸(결제대기)을
+  # 현재로 그린다. 이탈 판정에 함께 묶이면 아직 결제도 하지 않은 주문에 8번째 칸이 선다.
+  - order_progress_pending_order_is_not_off_path
+  - order_progress_reached_index_uses_stamps
+  # 화면 — 스텝퍼
+  - order_progress_stepper_renders_server_steps
+  - order_progress_chevrons_between_cells_only
+  - order_progress_cells_uniform_width_with_chevrons
+  - order_progress_wraps_on_mobile_without_scroll
+  - order_progress_card_mounted_above_tabs
+  # 배열이 비면 스텝퍼 영역(관리자 카드 · 마이페이지 섹션)이 아예 서지 않는다 — 빈 껍데기 금지
+  - order_progress_absent_when_steps_empty
+  # 숨김은 래퍼 Div 가 맡는다 — Icon 에 직접 준 hidden 은 Font Awesome display 규칙에 밀린다 (⑤)
+  - order_progress_hidden_is_owned_by_wrapper_div_not_icon
+  # 배열 출처가 서버 단일 — 반복 source 가 `order.data.progress_steps` 이고 화면이 순서를 다시 적지 않는다
+  - order_progress_iteration_reads_server_array_only
+  # 화면 — 목록 상단 건수 칸
+  - order_summary_cells_render_server_summary
+  - order_summary_selected_cell_highlighted_zero_count_dimmed
+  - order_summary_badge_overlaps_circle
+  - order_summary_click_filters_by_status
+  - order_summary_wraps_on_mobile_without_scroll
+  # 상태 뱃지 아이콘
+  - order_status_badge_carries_icon
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/OrderProgressStepsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/OrderEnumsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserOrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderProgressRender.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/orderProgressStepper.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-order-progress.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/mypage-order-progress.spec.ts

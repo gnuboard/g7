@@ -1,0 +1,48 @@
+<!-- 마이페이지 프로필에 KG이니시스 본인인증 이력 카드를 덧붙이는 조각 -->
+<extension target-layout="mypage/profile" priority="110">
+  <inject target-id="profile_view_bio_card" position="append">
+    <div data-ref="profile_view_inicis_identity_card" data-if="{{inicisRecord?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:sirsoft-verification_kginicis.card.title</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.method</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{inicisRecord?.data?.method ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.verified_at</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{inicisRecord?.data?.verified_at ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.name</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{inicisRecord?.data?.name_masked ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.birthday</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{inicisRecord?.data?.birthday_masked ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.phone</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{inicisRecord?.data?.phone_masked ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.is_adult.label</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{inicisRecord?.data?.is_adult ? '$t:sirsoft-verification_kginicis.card.is_adult.true' : '$t:sirsoft-verification_kginicis.card.is_adult.false'}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="profile_view_inicis_identity_pending_card" data-if="{{!inicisRecord?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">$t:sirsoft-verification_kginicis.card.title</h3>
+      <div class="flex items-start gap-3">
+        <icon name="circle-info" class="text-xl text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5"/>
+        <div class="space-y-1">
+          <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-verification_kginicis.card.pending.title</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.pending.hint</p>
+        </div>
+      </div>
+    </div>
+  </inject>
+  <!-- 내 인증 이력. 없으면 카드 자체가 뜨지 않으므로 실패해도 프로필 화면은 그대로다 -->
+  <data-source id="inicisRecord" label_key="$t:sirsoft-verification_kginicis.editor.data_source.inicisRecord" type="api" endpoint="/api/plugins/sirsoft-verification_kginicis/me/identity/inicis" method="GET" :auto_fetch="true" :auth_required="true"/>
+</extension>

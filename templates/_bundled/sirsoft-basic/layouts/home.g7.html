@@ -1,0 +1,102 @@
+<!-- 사이트 첫 화면 — 통계·최근글·인기게시판·게시판 소개를 각각 따로 받아 카드로 늘어놓는다. 넷 다 게시판 모듈에서 오므로 그 모듈이 없으면 카드들이 빈 채로 남고 화면 자체는 선다. 검색봇에게도 서버가 직접 그려 준다. -->
+<layout name="home" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" :priority="1" changefreq="daily">
+      <data-sources>
+        <item>stats</item>
+        <item>recent_posts</item>
+        <item>popular_boards</item>
+        <item>home_boards</item>
+      </data-sources>
+      <og type="website"/>
+      <structured-data @type="WebSite" name="{{_global.site_name ?? ''}}" url="{{_global.site_url ?? ''}}"/>
+    </seo>
+  </meta>
+  <!-- 사이트 규모 숫자 — 게시판·글·댓글·회원 수 네 카드가 이 한 응답을 나눠 쓴다. -->
+  <data-source id="stats" label_key="$t:editor.data_source.stats" type="api" endpoint="/api/modules/sirsoft-board/boards/stats" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="users" :value="0"/>
+        <field name="posts" :value="0"/>
+        <field name="comments" :value="0"/>
+        <field name="boards" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 방문자 카운터용 공개 요약 — 네 숫자뿐이고 로그인이 필요 없다. 운영자가 카운터를 끄면 404 라 소스 자체를 설정으로 가른다.
+       실패하면 카운터를 그리지 않는다(0 을 그리면 아무도 오지 않은 것처럼 읽힌다). -->
+  <data-source id="visitor_summary" label_key="$t:editor.data_source.visitor_summary" type="api" endpoint="/api/analytics/summary" method="GET" :auto_fetch="true" loading_strategy="background" if="{{_global.settings?.analytics?.public_summary_enabled === true}}">
+    <error-handling>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 최근 글 5건 — 게시판을 가리지 않고 새로 올라온 순서다(인기순인 아래 목록과 다르다). -->
+  <data-source id="recent_posts" label_key="$t:editor.data_source.recent_posts" type="api" endpoint="/api/modules/sirsoft-board/boards/posts/recent?limit=5" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 활발한 게시판 4개 — 게시판 자체의 순위다(개별 인기글을 모으는 인기글 화면과 다르다). -->
+  <data-source id="popular_boards" label_key="$t:editor.data_source.popular_boards" type="api" endpoint="/api/modules/sirsoft-board/boards/popular-boards?limit=4" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 게시판 소개 3개 — 헤더 메뉴가 쓰는 boards 와 같은 곳에서 오지만 첫 화면 카드용으로 개수를 줄여 따로 받는다(상속원의 그 데이터소스는 개수 제한이 없다). -->
+  <data-source id="home_boards" label_key="$t:editor.data_source.home_boards" type="api" endpoint="/api/modules/sirsoft-board/boards?limit=3" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <container data-type="layout" class="py-6 px-4">
+      <responsive on="tablet" class="py-6 px-6"/>
+      <responsive on="desktop" class="py-6 px-8"/>
+      <!-- === 1행: Welcome + 통계 카드 4개 (PC: 3컬럼, 모바일: 1컬럼) === -->
+      <div class="grid grid-cols-3 grid-rows-2 gap-4 mb-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
+        <!-- === 좌측: 웰컴 카드 (row-span-2) === -->
+        <div class="row-span-2">
+          <include src="partials/home/_welcome_card.g7.html"/>
+        </div>
+        <!-- === 통계 카드 4개 (PC: 개별 배치, 모바일: 2x2 그리드) === -->
+        <div class="contents">
+          <responsive on="portable" class="col-span-1 grid grid-cols-2 gap-4"/>
+          <!-- === 회원 통계 === -->
+          <include src="partials/home/_stat_card_users.g7.html"/>
+          <!-- === 게시글 통계 === -->
+          <include src="partials/home/_stat_card_posts.g7.html"/>
+          <!-- === 댓글 통계 === -->
+          <include src="partials/home/_stat_card_comments.g7.html"/>
+          <!-- === 게시판 통계 === -->
+          <include src="partials/home/_stat_card_boards.g7.html"/>
+        </div>
+      </div>
+      <!-- === 2행: 최근 게시글 + 인기 게시판 + 쇼핑몰/가이드 (PC: 3컬럼) === -->
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
+        <!-- === 좌측: 최근 게시글 === -->
+        <include src="partials/home/_recent_posts.g7.html"/>
+        <!-- === 중앙: 인기 게시판 === -->
+        <include src="partials/home/_popular_boards.g7.html"/>
+        <!-- === 우측: 쇼핑몰 + 커뮤니티 가이드 === -->
+        <div class="flex flex-col gap-4">
+          <include src="partials/home/_shop_promo.g7.html"/>
+          <include src="partials/home/_community_guide.g7.html"/>
+        </div>
+      </div>
+      <!-- === 하단: 게시판 요약 카드 (PC: 3컬럼, 모바일: 2컬럼) === -->
+      <div class="grid grid-cols-3 gap-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4"/>
+        <div data-each="item in {{home_boards.data ?? []}}">
+          <include src="partials/home/_board_summary.g7.html"/>
+        </div>
+      </div>
+      <!-- === 맨 아래: 방문자 카운터 (설정으로 켜고 끈다) === -->
+      <include src="partials/_visitor_counter.g7.html"/>
+    </container>
+  </slot>
+</layout>

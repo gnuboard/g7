@@ -1,9 +1,7 @@
 {
+    "comment": "토스페이먼츠 결제 연동 설정 화면. 결제창을 하나로 띄우는 통합 모드와 주문서에서 결제수단을 직접 고르게 하는 모드를 여기서 가른다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-tosspayments.settings.title",
@@ -19,8 +17,26 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "저장된 플러그인 설정을 폼 초기값으로 싣는다. refetchOnMount 라 저장하고 돌아와도 서버 값이 다시 실린다"
+        },
+        {
+            "id": "webhook_info",
+            "label_key": "$t:sirsoft-tosspayments.editor.data_source.webhook_info",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-tosspayments/admin/webhook-url",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "webhookInfo",
+            "comment": "가상계좌 입금통보 웹훅 URL — 토스 개발자센터에 그대로 붙여 넣는 값이라 사이트 주소까지 붙은 전체 URL 을 서버에서 받아 보여 준다"
         }
+    ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -44,6 +60,34 @@
                             "backPath": "/admin/plugins",
                             "backLabel": "$t:admin.plugins.back_to_list"
                         }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "pay-tosspayments-tone-warning"
+                                },
+                                "text": "$t:sirsoft-tosspayments.plugin_read_only"
+                            }
+                        ]
                     },
                     {
                         "id": "validation_error",
@@ -86,12 +130,12 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
@@ -159,7 +203,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "is_test_mode"
+                                                    "name": "is_test_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -247,7 +292,8 @@
                                                             "type": "text",
                                                             "name": "test_client_key",
                                                             "placeholder": "test_ck_...",
-                                                            "className": "focus:border-transparent font-mono"
+                                                            "className": "focus:border-transparent font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -301,7 +347,8 @@
                                                             "type": "password",
                                                             "name": "test_secret_key",
                                                             "placeholder": "test_sk_...",
-                                                            "className": "focus:border-transparent font-mono"
+                                                            "className": "focus:border-transparent font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -383,7 +430,8 @@
                                                             "type": "text",
                                                             "name": "live_client_key",
                                                             "placeholder": "live_ck_...",
-                                                            "className": "focus:border-transparent font-mono"
+                                                            "className": "focus:border-transparent font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -437,7 +485,8 @@
                                                             "type": "password",
                                                             "name": "live_secret_key",
                                                             "placeholder": "live_sk_...",
-                                                            "className": "focus:border-transparent font-mono"
+                                                            "className": "focus:border-transparent font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -527,7 +576,8 @@
                                                             "type": "text",
                                                             "name": "redirect_success_url",
                                                             "placeholder": "/shop/orders/{orderId}/complete",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -581,7 +631,8 @@
                                                             "type": "text",
                                                             "name": "redirect_fail_url",
                                                             "placeholder": "/shop/checkout",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -658,7 +709,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "order_sheet_mode"
+                                                    "name": "order_sheet_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -692,15 +744,15 @@
                                                 "id": "method_checkbox_grid",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "grid grid-cols-3 gap-3"
-                                                },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
                                                             "className": "grid grid-cols-1 gap-2"
                                                         }
                                                     }
+                                                },
+                                                "props": {
+                                                    "className": "grid grid-cols-3 gap-3"
                                                 },
                                                 "children": [
                                                     {
@@ -711,24 +763,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "카드. 자동바인딩을 끄고 checked 와 hasChanges 를 손으로 다루는 것은 저장값이 null 일 수 있어서다 — 자동바인딩은 boolean 이 아닌 값을 빈 문자열로 보내고 서버가 그것을 null 로 저장해 다시 켤 수 없게 고착시킨다",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_card",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_card}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_card": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_card",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_card}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -745,24 +800,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "가상계좌. 켜면 아래 가상계좌 구역의 입금기한·자동 현금영수증 설정이 실제로 쓰인다",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_virtual_account",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_virtual_account}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_virtual_account": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_virtual_account",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_virtual_account}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -779,24 +837,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "계좌이체. 에스크로를 쓰는 상점이면 이 수단과 가상계좌에만 구매안전서비스가 붙는다",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_transfer",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_transfer}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_transfer": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_transfer",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_transfer}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -813,24 +874,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "휴대폰 소액결제. 국내 전용이라 원화가 아닌 주문에서는 서버가 막는다",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_mobile_phone",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_mobile_phone}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_mobile_phone": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_mobile_phone",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_mobile_phone}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -847,24 +911,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "토스페이",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_tosspay",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_tosspay}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_tosspay": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_tosspay",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_tosspay}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -881,24 +948,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "카카오페이",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_kakaopay",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_kakaopay}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_kakaopay": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_kakaopay",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_kakaopay}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -915,24 +985,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "네이버페이",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_naverpay",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_naverpay}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_naverpay": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_naverpay",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_naverpay}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -949,24 +1022,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "페이코",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_payco",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_payco}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_payco": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_payco",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_payco}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -983,24 +1059,27 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "삼성페이",
                                                                 "type": "basic",
                                                                 "name": "Checkbox",
-                                                                "props": {
-                                                                    "name": "method_samsungpay",
-                                                                    "autoBinding": false,
-                                                                    "checked": "{{!!_local.form?.method_samsungpay}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.method_samsungpay": "{{$event.target.checked}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "name": "method_samsungpay",
+                                                                    "autoBinding": false,
+                                                                    "checked": "{{!!_local.form?.method_samsungpay}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1078,7 +1157,8 @@
                                                     "name": "vbank_valid_hours",
                                                     "min": 1,
                                                     "max": 2160,
-                                                    "className": "w-32"
+                                                    "className": "w-32",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             },
                                             {
@@ -1109,10 +1189,20 @@
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "vbank_cash_receipt_type",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}",
                                                     "options": [
-                                                        { "value": "", "label": "$t:sirsoft-tosspayments.settings.vbank_cash_receipt_none" },
-                                                        { "value": "소득공제", "label": "$t:sirsoft-tosspayments.settings.vbank_cash_receipt_income" },
-                                                        { "value": "지출증빙", "label": "$t:sirsoft-tosspayments.settings.vbank_cash_receipt_expense" }
+                                                        {
+                                                            "value": "",
+                                                            "label": "$t:sirsoft-tosspayments.settings.vbank_cash_receipt_none"
+                                                        },
+                                                        {
+                                                            "value": "소득공제",
+                                                            "label": "$t:sirsoft-tosspayments.settings.vbank_cash_receipt_income"
+                                                        },
+                                                        {
+                                                            "value": "지출증빙",
+                                                            "label": "$t:sirsoft-tosspayments.settings.vbank_cash_receipt_expense"
+                                                        }
                                                     ]
                                                 }
                                             },
@@ -1144,10 +1234,20 @@
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "use_escrow",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}",
                                                     "options": [
-                                                        { "value": "off", "label": "$t:sirsoft-tosspayments.settings.use_escrow_off" },
-                                                        { "value": "on", "label": "$t:sirsoft-tosspayments.settings.use_escrow_on" },
-                                                        { "value": "buyer_choice", "label": "$t:sirsoft-tosspayments.settings.use_escrow_buyer_choice" }
+                                                        {
+                                                            "value": "off",
+                                                            "label": "$t:sirsoft-tosspayments.settings.use_escrow_off"
+                                                        },
+                                                        {
+                                                            "value": "on",
+                                                            "label": "$t:sirsoft-tosspayments.settings.use_escrow_on"
+                                                        },
+                                                        {
+                                                            "value": "buyer_choice",
+                                                            "label": "$t:sirsoft-tosspayments.settings.use_escrow_buyer_choice"
+                                                        }
                                                     ]
                                                 }
                                             },
@@ -1161,9 +1261,9 @@
                                             },
                                             {
                                                 "id": "escrow_operation_notice",
-                                                "if": "{{_local.form?.use_escrow !== 'off'}}",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{_local.form?.use_escrow !== 'off'}}",
                                                 "props": {
                                                     "className": "mt-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 space-y-1"
                                                 },
@@ -1195,7 +1295,7 @@
                                                                     "href": "https://app.tosspayments.com/",
                                                                     "target": "_blank",
                                                                     "rel": "noopener noreferrer",
-                                                                    "className": "ml-1 underline font-medium hover:text-amber-900 dark:hover:text-amber-100"
+                                                                    "className": "ml-1 underline font-medium pay-tosspayments-link-warning"
                                                                 },
                                                                 "text": "$t:sirsoft-tosspayments.settings.escrow_shipping_info_link"
                                                             }
@@ -1224,15 +1324,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex items-center gap-2"
-                                                },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
                                                             "className": "flex flex-col items-stretch gap-2"
                                                         }
                                                     }
+                                                },
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1241,16 +1341,12 @@
                                                         "props": {
                                                             "className": "flex-1 overflow-x-auto font-mono text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 whitespace-nowrap"
                                                         },
-                                                        "text": "/plugins/sirsoft-tosspayments/webhook/deposit"
+                                                        "text": "{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}"
                                                     },
                                                     {
                                                         "id": "webhook_copy_button",
                                                         "type": "basic",
                                                         "name": "Button",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-secondary btn-sm flex-shrink-0"
-                                                        },
                                                         "responsive": {
                                                             "portable": {
                                                                 "props": {
@@ -1261,22 +1357,25 @@
                                                         },
                                                         "actions": [
                                                             {
+                                                                "comment": "웹훅 주소는 운영자가 토스 상점관리자에 직접 등록해야 입금통보가 들어온다. 그래서 보여 주기만 하지 않고 복사까지 시켜 준다",
                                                                 "type": "click",
-                                                                "handler": "copyToClipboard",
+                                                                "handler": "sirsoft-tosspayments.copyToClipboard",
                                                                 "params": {
-                                                                    "text": "/plugins/sirsoft-tosspayments/webhook/deposit"
+                                                                    "text": "{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}"
                                                                 },
-                                                                "onSuccess": [
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "success",
-                                                                            "message": "$t:sirsoft-tosspayments.settings.webhook_url_copied"
-                                                                        }
+                                                                "onSuccess": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-tosspayments.settings.webhook_url_copied"
                                                                     }
-                                                                ]
+                                                                }
                                                             }
                                                         ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-secondary btn-sm flex-shrink-0"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
@@ -1331,7 +1430,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "webhook_secret_verify"
+                                                    "name": "webhook_secret_verify",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -1352,9 +1452,6 @@
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1364,6 +1461,9 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1376,12 +1476,9 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "저장. 직전 오류를 먼저 지워야 이번 시도의 결과만 화면에 남는다. 성공 후 설정을 다시 불러오는 것은 서버가 비밀키를 마스크해 돌려주기 때문이다 — 다시 싣지 않으면 화면의 폼 값과 저장값이 어긋난 채 다음 저장이 나간다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1395,8 +1492,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -1430,7 +1527,7 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{$error.errors}}"
+                                                            "errors": "{{error.errors}}"
                                                         }
                                                     },
                                                     {
@@ -1445,6 +1542,10 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",

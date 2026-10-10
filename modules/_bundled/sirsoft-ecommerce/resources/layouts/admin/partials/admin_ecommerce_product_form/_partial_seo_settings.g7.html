@@ -1,0 +1,97 @@
+<!-- 상품 폼 — SEO 구획. 검색 결과에 실릴 제목·설명을 정한다. 대개 상품명·상세설명과 같으므로
+  「따라가기」를 기본으로 두고, 끄면 그 순간의 값을 옮겨 담아 거기서부터 손보게 한다.
+  아래 미리보기는 검색 결과에 어떻게 보일지를 그대로 흉내 낸 것이다. -->
+<partial description="Product Form - SEO Settings Section">
+  <div data-ref="seo" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <!-- 구획 접기/펼치기 -->
+        <set-state target="local" ui.seoExpanded="{{!_local.ui.seoExpanded}}"/>
+      </on>
+      <icon name="search" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.seo</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.seoExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="seo_body" data-if="{{_local.ui.seoExpanded !== false}}" class="row-stack">
+      <div data-ref="field_meta_title">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.meta_title</label>
+          <input data-ref="meta_title_synced" data-if="{{_local.form.seo_sync_title}}" value="{{$localized(_local.form.name) || ''}}" :disabled="true" :maxLength="70" class="rounded-md"/>
+          <multilingual-input data-type="composite" data-ref="meta_title_custom" data-if="{{!_local.form.seo_sync_title}}" name="meta_title" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.meta_title" :maxLength="70" error="{{_local.errors?.meta_title?.[0] ?? _local.errors?.['meta_title.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.meta_title}}" class="form-error-xs">{{_local.errors?.meta_title?.[0]}}</span>
+          <div class="flex-between text-xs">
+            <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.seo.title_hint</span>
+            <span class="text-gray-400 dark:text-gray-500">{{_local.form.seo_sync_title ? ($localized(_local.form.name) || '').length : ($localized(_local.form.meta_title) || '').length}}/70</span>
+          </div>
+          <label data-ref="seo_sync_title_checkbox" class="flex-center gap-2 cursor-pointer">
+            <checkbox checked="{{_local.form.seo_sync_title}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 상품명 따라가기 전환. 끌 때 상품명을 메타 제목으로 옮겨 담아 빈 칸에서 시작하지 않게 한다(조건이 뒤집기 전 값을 보므로 「켜져 있었다면」이 곧 「지금 끄는 중」이다) -->
+                <sequence>
+                  <set-state target="local" form.seo_sync_title="{{!_local.form.seo_sync_title}}" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state if="{{!_local.form.seo_sync_title}}" target="local" form.meta_title="{{_local.form.name}}"/>
+                </sequence>
+              </on>
+            </checkbox>
+            <span class="text-body">$t:sirsoft-ecommerce.admin.product.seo.sync_title</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="field_meta_description">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.meta_description</label>
+          <textarea data-ref="meta_desc_synced" data-if="{{_local.form.seo_sync_description}}" value="{{($localized(_local.form.description) || '').substring(0, 160)}}" :disabled="true" :rows="3" :maxLength="160" class="w-full rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3"/>
+          <multilingual-input data-type="composite" data-ref="meta_desc_custom" data-if="{{!_local.form.seo_sync_description}}" name="meta_description" layout="tabs" inputType="textarea" :rows="3" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.meta_description" :maxLength="160" error="{{_local.errors?.meta_description?.[0] ?? _local.errors?.['meta_description.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.meta_description}}" class="form-error-xs">{{_local.errors?.meta_description?.[0]}}</span>
+          <p class="text-hint text-right">{{_local.form.seo_sync_description ? ($localized(_local.form.description) || '').substring(0, 160).length : ($localized(_local.form.meta_description) || '').length}}/160</p>
+          <label data-ref="seo_sync_description_checkbox" class="flex-center gap-2 cursor-pointer">
+            <checkbox checked="{{_local.form.seo_sync_description}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 상세설명 따라가기 전환 — 위 제목과 같은 방식이다 -->
+                <sequence>
+                  <set-state target="local" form.seo_sync_description="{{!_local.form.seo_sync_description}}" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state if="{{!_local.form.seo_sync_description}}" target="local" form.meta_description="{{_local.form.description}}"/>
+                </sequence>
+              </on>
+            </checkbox>
+            <span class="text-body">$t:sirsoft-ecommerce.admin.product.seo.sync_description</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="field_meta_keywords">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.meta_keywords</label>
+          <tag-input data-type="composite" name="meta_keywords" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.meta_keywords" :maxItems="10" :creatable="true" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 값 자체는 폼 자동 바인딩이 담는다 — 여기서는 변경 표시만 세운다(등록 진입에서는 애초에 전부 새 값이라 세우지 않는다) -->
+              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+            </on>
+          </tag-input>
+          <p class="text-tertiary">$t:sirsoft-ecommerce.admin.product.seo.keywords_hint</p>
+        </div>
+      </div>
+      <label data-ref="field_og_image" class="flex-center gap-2 cursor-pointer">
+        <checkbox checked="{{_local.form.use_main_image_for_og ?? true}}" disabled="{{_computed.isReadOnly}}">
+          <on type="change">
+            <!-- 대표 이미지를 공유 미리보기(og:image)로 쓸지 — 체크값 대신 지금 값을 뒤집는다(설정된 적 없으면 켜진 것으로 본다) -->
+            <set-state target="local" form.use_main_image_for_og="{{!(_local.form.use_main_image_for_og ?? true)}}" hasChanges="{{!!route?.itemCode}}"/>
+          </on>
+        </checkbox>
+        <span class="text-body">$t:sirsoft-ecommerce.admin.product.fields.use_main_image_for_og</span>
+      </label>
+      <div data-ref="seo_preview" class="toggle-group">
+        <div class="p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.product.seo.preview</span>
+        </div>
+        <div class="p-4 bg-white dark:bg-gray-900 flex gap-4">
+          <img data-ref="seo_preview_image" data-if="{{!!_local.form.images?.[0]?.download_url}}" src="{{_local.form.images?.[0]?.download_url}}" alt="OG Image" class="w-20 h-20 rounded object-cover flex-shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <div class="text-blue-600 dark:text-blue-400 text-lg hover:underline cursor-pointer truncate">{{$localized(_local.form.meta_title) || $localized(_local.form.name) || '$t:sirsoft-ecommerce.admin.product.seo.untitled'}}</div>
+            <div class="text-green-700 dark:text-green-500 text-sm mt-1 truncate">{{_global.site_url ?? 'https://example.com'}}/products/{{_local.form.product_code || 'product-code'}}</div>
+            <div class="text-secondary text-sm mt-1 line-clamp-2">{{$localized(_local.form.meta_description) || $localized(_local.form.short_description) || $localized(_local.form.description) || '$t:sirsoft-ecommerce.admin.product.seo.no_description'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

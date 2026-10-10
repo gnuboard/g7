@@ -51,7 +51,7 @@ const createMockSetup = (overrides?: MockOpts) => {
         },
         api: { post: apiPost },
         dispatch: vi.fn(),
-        datasources: { refresh: vi.fn() },
+        dataSource: { refetch: vi.fn() },
         toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
         t: vi.fn((key: string) => key),
     };
@@ -66,6 +66,10 @@ afterEach(() => {
 });
 
 describe('saveAsNoticeTemplateHandler — 모달 열기 (openModal)', () => {
+    /**
+     * @scenario case=c01
+     * @effects notice_template_modal_save_flow
+     */
     it('항목이 없으면 경고 토스트 + 모달을 열지 않는다', () => {
         const { g7CoreMock } = createMockSetup({
             localState: { form: { notice_items: [] } },
@@ -77,6 +81,10 @@ describe('saveAsNoticeTemplateHandler — 모달 열기 (openModal)', () => {
         expect(g7CoreMock.dispatch).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario case=c02
+     * @effects notice_template_modal_save_flow
+     */
     it('항목이 있으면 이름 검증 없이 openModal(modal_save_template) 을 호출한다', () => {
         const { g7CoreMock } = createMockSetup({
             localState: {
@@ -92,6 +100,10 @@ describe('saveAsNoticeTemplateHandler — 모달 열기 (openModal)', () => {
         );
     });
 
+    /**
+     * @scenario case=c03
+     * @effects notice_template_modal_save_flow
+     */
     it('모달 입력 상태(_global.ui.saveTemplateData)를 초기화한다', () => {
         const { g7CoreMock, globalState } = createMockSetup({
             localState: {
@@ -112,6 +124,10 @@ describe('confirmSaveNoticeTemplateHandler — 저장 + closeModal', () => {
         { key: 'f2', name: { ko: '원산지' }, content: { ko: '국내' } },
     ];
 
+    /**
+     * @scenario case=c04
+     * @effects notice_template_modal_save_flow
+     */
     it('이름(_global.ui.saveTemplateData.name)이 비면 경고 + API 미호출', async () => {
         const { g7CoreMock } = createMockSetup({
             localState: { form: { notice_items: seedItems } },
@@ -124,6 +140,10 @@ describe('confirmSaveNoticeTemplateHandler — 저장 + closeModal', () => {
         expect(g7CoreMock.api.post).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario case=c05
+     * @effects notice_template_modal_save_flow
+     */
     it('백엔드 계약(name/fields.*.{name,content}/is_active) 으로 POST 한다', async () => {
         const { apiPost } = createMockSetup({
             localState: { form: { notice_items: seedItems } },
@@ -145,6 +165,10 @@ describe('confirmSaveNoticeTemplateHandler — 저장 + closeModal', () => {
         expect(body).not.toHaveProperty('is_default');
     });
 
+    /**
+     * @scenario case=c06
+     * @effects notice_template_modal_save_flow
+     */
     it('저장 성공 시 closeModal 을 호출하고 입력 상태를 초기화한다', async () => {
         const { g7CoreMock, globalState } = createMockSetup({
             localState: { form: { notice_items: seedItems } },
@@ -159,5 +183,20 @@ describe('confirmSaveNoticeTemplateHandler — 저장 + closeModal', () => {
         expect(g7CoreMock.toast.success).toHaveBeenCalled();
         // 입력 초기화 (빈 로케일 객체)
         expect(globalState.ui?.saveTemplateData?.name).toEqual({ ko: '', en: '' });
+    });
+
+    /**
+     * @scenario case=c07
+     * @effects notice_template_modal_save_flow
+     */
+    it('저장 성공 시 코어 공개 API dataSource.refetch 로 템플릿 목록을 다시 받는다 (D3-2)', async () => {
+        const { g7CoreMock } = createMockSetup({
+            localState: { form: { notice_items: seedItems } },
+            globalState: { ui: { saveTemplateData: { name: { ko: '기본고시' } } } },
+        });
+
+        await confirmSaveNoticeTemplateHandler({ handler: 'x', params: {} } as any, {} as any);
+
+        expect(g7CoreMock.dataSource.refetch).toHaveBeenCalledWith('notice_templates');
     });
 });

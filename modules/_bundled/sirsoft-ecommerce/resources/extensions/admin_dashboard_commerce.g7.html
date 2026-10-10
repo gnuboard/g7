@@ -1,0 +1,206 @@
+<!-- 관리자 대시보드의 이커머스 구역 — 오늘 주문 상태 배지 줄 · 판매 추세 그래프 · 최근 리뷰 ·
+  미답변 문의 넷을 한 덩어리로 얹는다. 관리자 템플릿이 연 확장 지점에 붙으므로 호스트는 이 내용을
+  모르고, `priority` 100 이 다른 모듈 구역과의 세로 순서를 정한다.
+  **네 데이터소스가 모두 독립**이라 하나가 느리거나 실패해도 나머지는 그린다 — 그래서 카드마다
+  `blur-until-loaded` 를 따로 걸고 데이터소스마다 `fallback` 을 둔다(응답이 없어도 0/빈 배열로
+  화면이 성립한다).
+  배지는 각각 해당 상태로 필터가 걸린 오늘자 주문 목록으로 이동한다(반품 배지는 반품 완료 조건
+  `claim_return_statuses[]=completed`). 배지 숫자는 서버가 이 링크와 같은 목록 조건으로 센 주문 수다
+  (`EcommerceDashboardService::BADGE_LIST_FILTERS` — 링크 조건을 바꾸면 그 표도 같이 바꾼다. PHPUnit
+  `DashboardBadgeOrderCountTest` 가 이 링크를 읽어 서버 표와 같은지 잠근다).
+  링크의 「오늘」은 배지가 센 하루와 같은 사이트 표준시의 날짜다(UTC 날짜를 실으면 한국 오전 9시 전에 어제 목록이 열렸다).
+  `date_basis=site` 는 목록에 그 날짜를 사이트 표준시의 하루로 거르라고 알린다 — 목록은 원래 보는 사람의 하루로 거르므로,
+  빼면 계정 시간대가 사이트와 다른 관리자에게 배지 1건 → 목록 0건이 된다. -->
+<extension extension-point="admin_dashboard_commerce" mode="append" priority="100">
+  <div data-ref="commerce_section_wrapper" class="mb-4 md:mb-6 lg:mb-8">
+    <div data-ref="commerce_section_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
+      <div data-ref="commerce_today_summary" class="flex items-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
+        <blur-until-loaded sources="commerce_overview"/>
+        <span data-ref="commerce_today_label" class="text-sm font-semibold text-slate-500 dark:text-slate-400">$t:admin.dashboard.stats.today</span>
+        <span data-ref="today_pending_payment_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/ecommerce/orders?order_status[]=pending_payment&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.dashboard.today_badges.pending_payment|count={{commerce_overview?.data?.pending_payment ?? 0}}
+        </span>
+        <span data-ref="today_payment_complete_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/ecommerce/orders?order_status[]=payment_complete&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.dashboard.today_badges.payment_complete|count={{commerce_overview?.data?.payment_complete ?? 0}}
+        </span>
+        <span data-ref="today_preparing_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/ecommerce/orders?order_status[]=preparing&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.dashboard.today_badges.preparing|count={{commerce_overview?.data?.preparing ?? 0}}
+        </span>
+        <span data-ref="today_shipping_ready_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/ecommerce/orders?order_status[]=shipping_ready&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.dashboard.today_badges.shipping_ready|count={{commerce_overview?.data?.shipping_ready ?? 0}}
+        </span>
+        <span data-ref="today_shipping_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/ecommerce/orders?order_status[]=shipping&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.dashboard.today_badges.shipping|count={{commerce_overview?.data?.shipping ?? 0}}
+        </span>
+        <span data-ref="today_cancellations_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/ecommerce/orders?order_status[]=cancelled&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.dashboard.today_badges.cancellations|count={{commerce_overview?.data?.cancellations ?? 0}}
+        </span>
+        <span data-ref="today_returns_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/ecommerce/orders?claim_return_statuses[]=completed&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.dashboard.today_badges.returns|count={{commerce_overview?.data?.returns ?? 0}}
+        </span>
+        <extension-badge data-type="composite" data-ref="commerce_section_badge" class="ml-auto" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+      </div>
+      <div data-ref="sales_graph_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col">
+        <blur-until-loaded>
+          <item>commerce_sales_graph</item>
+        </blur-until-loaded>
+        <div data-ref="sales_graph_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
+          <h3 data-ref="sales_graph_title" class="text-lg font-semibold text-slate-900 dark:text-white">$t:sirsoft-ecommerce.admin.dashboard.community.sales_graph</h3>
+          <div data-ref="sales_graph_legend" class="flex items-center gap-4">
+            <div data-ref="quantity_legend_item" class="flex items-center gap-2">
+              <span data-ref="quantity_legend_dot" class="w-3 h-3 rounded-full bg-violet-500"/>
+              <span data-ref="quantity_legend_label" class="text-sm text-slate-500 dark:text-slate-400">$t:sirsoft-ecommerce.admin.dashboard.community.quantity</span>
+            </div>
+            <div data-ref="sales_legend_item" class="flex items-center gap-2">
+              <span data-ref="sales_legend_dot" class="w-3 h-3 rounded-full bg-violet-200"/>
+              <span data-ref="sales_legend_label" class="text-sm text-slate-500 dark:text-slate-400">$t:sirsoft-ecommerce.admin.dashboard.community.sales_amount</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="sales_graph_stats" class="flex gap-4 md:gap-8 mb-4 md:mb-6">
+          <div data-ref="total_quantity_stat">
+            <p data-ref="total_quantity_label" class="text-sm text-slate-500 dark:text-slate-400 mb-1">$t:sirsoft-ecommerce.admin.dashboard.community.total_quantity</p>
+            <div data-ref="total_quantity_value_wrapper" class="flex items-baseline gap-2">
+              <span data-ref="total_quantity_value" class="text-lg md:text-2xl font-bold text-slate-900 dark:text-white">{{commerce_sales_graph?.data?.total_quantity ?? 0 | number}}</span>
+              <span data-ref="total_quantity_change" class="{{(commerce_sales_graph?.data?.quantity_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((commerce_sales_graph?.data?.quantity_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}">{{(commerce_sales_graph?.data?.quantity_change ?? null) === null ? '—' : ((commerce_sales_graph?.data?.quantity_change >= 0 ? '+' : '') + commerce_sales_graph?.data?.quantity_change + '%')}}</span>
+            </div>
+          </div>
+          <div data-ref="total_sales_stat">
+            <p data-ref="total_sales_label" class="text-sm text-slate-500 dark:text-slate-400 mb-1">$t:sirsoft-ecommerce.admin.dashboard.community.total_sales</p>
+            <div data-ref="total_sales_value_wrapper" class="flex items-baseline gap-2">
+              <span data-ref="total_sales_value" class="text-lg md:text-2xl font-bold text-slate-900 dark:text-white">₩ {{commerce_sales_graph?.data?.total_sales ?? 0 | number}}</span>
+              <span data-ref="total_sales_change" class="{{(commerce_sales_graph?.data?.sales_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((commerce_sales_graph?.data?.sales_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}">{{(commerce_sales_graph?.data?.sales_change ?? null) === null ? '—' : ((commerce_sales_graph?.data?.sales_change >= 0 ? '+' : '') + commerce_sales_graph?.data?.sales_change + '%')}}</span>
+            </div>
+          </div>
+        </div>
+        <bar-chart data-type="composite" data-ref="sales_graph_chart" labels="{{(commerce_sales_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-ecommerce.admin.dashboard.community.quantity'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_quantity ?? 0), backgroundColor: '#7C3AED', yAxisID: 'y'}, {label: $t('sirsoft-ecommerce.admin.dashboard.community.sales_amount'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_amount ?? 0), backgroundColor: '#DDD6FE', yAxisID: 'y1'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
+        <p data-ref="sales_graph_updated_at_caption" data-if="{{!!commerce_sales_graph?.data?.updated_at_display}}" class="text-xs text-slate-400 dark:text-slate-500 mt-2 text-right">$t:sirsoft-ecommerce.admin.dashboard.community.updated_at|time={{commerce_sales_graph?.data?.updated_at_display ?? ''}}</p>
+      </div>
+      <div data-ref="latest_reviews_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
+        <blur-until-loaded sources="commerce_recent_reviews"/>
+        <div data-ref="latest_reviews_header" class="flex-between mb-4">
+          <h3 data-ref="latest_reviews_title" class="text-base font-semibold text-slate-900 dark:text-white">$t:sirsoft-ecommerce.admin.dashboard.community.latest_reviews</h3>
+          <a data-ref="latest_reviews_view_all" href="/admin/ecommerce/reviews" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">$t:sirsoft-ecommerce.admin.dashboard.community.go_to_reviews</a>
+        </div>
+        <p data-ref="latest_reviews_empty" data-if="{{(commerce_recent_reviews?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:sirsoft-ecommerce.admin.dashboard.community.no_reviews</p>
+        <div data-ref="latest_reviews_list" data-if="{{(commerce_recent_reviews?.data ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
+          <div data-ref="latest_review_item_{{i}}" data-each="review, i in commerce_recent_reviews?.data" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+            <on type="click">
+              <navigate path="/admin/ecommerce/reviews"/>
+            </on>
+            <div data-ref="latest_review_header_{{i}}" class="flex-between gap-2">
+              <p data-ref="latest_review_product_{{i}}" class="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate">{{review?.product_name ?? ''}}</p>
+              <span data-ref="latest_review_rating_{{i}}" class="shrink-0 flex items-center gap-1 text-rose-500 text-xs font-medium">
+                <icon data-ref="latest_review_star_{{i}}" name="star" variant="solid"/>
+                <span data-ref="latest_review_rating_text_{{i}}">{{review?.rating ?? 0}}</span>
+              </span>
+            </div>
+            <p data-ref="latest_review_meta_{{i}}" class="text-xs text-slate-500 dark:text-slate-400">{{(review?.author_name ?? '') + ' · ' + (review?.created_at ?? '')}}</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="pending_inquiries_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
+        <blur-until-loaded sources="commerce_pending_inquiries"/>
+        <div data-ref="pending_inquiries_header" class="flex-between mb-4">
+          <h3 data-ref="pending_inquiries_title_wrapper" class="flex items-center text-base font-semibold text-slate-900 dark:text-white gap-1">
+            <span data-ref="pending_inquiries_title_text">$t:sirsoft-ecommerce.admin.dashboard.community.unanswered_inquiries</span>
+            <span data-ref="pending_inquiries_count" data-if="{{(commerce_pending_inquiries?.data?.total ?? 0) > 0}}" class="text-purple-600 dark:text-purple-400">({{commerce_pending_inquiries?.data?.total ?? 0}})</span>
+          </h3>
+          <a data-ref="pending_inquiries_view_all" data-if="{{!!commerce_pending_inquiries?.data?.board_slug}}" href="/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">$t:sirsoft-ecommerce.admin.dashboard.community.go_to_inquiries</a>
+        </div>
+        <p data-ref="pending_inquiries_empty" data-if="{{(commerce_pending_inquiries?.data?.items ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:sirsoft-ecommerce.admin.dashboard.community.no_inquiries</p>
+        <div data-ref="pending_inquiries_list" data-if="{{(commerce_pending_inquiries?.data?.items ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
+          <div data-ref="pending_inquiry_item_{{i}}" data-each="inquiry, i in commerce_pending_inquiries?.data?.items" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+            <on type="click">
+              <navigate path="/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}"/>
+            </on>
+            <p data-ref="pending_inquiry_title_{{i}}" class="text-sm font-medium text-slate-900 dark:text-white truncate">{{inquiry?.product_name ?? ''}}</p>
+            <p data-ref="pending_inquiry_meta_{{i}}" class="text-xs text-slate-500 dark:text-slate-400">{{(inquiry?.author_name ?? '익명') + ' · ' + (inquiry?.created_at ?? '')}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 오늘 주문 상태 7버킷. **주문 테이블을 직접 세지 않는다** — 스케쥴러가 시간마다 채우는 집계
+    테이블(`ecommerce_stats`)의 오늘 행을 읽는다. 그래서 방금 들어온 주문은 다음 집계 전까지
+    배지에 반영되지 않고, 배지를 눌러 들어간 목록의 건수와 어긋날 수 있다.
+    집계 행이 아직 없으면 응답이 전부 0 이고, 아예 실패해도 아래 `fallback` 이 같은 모양을 준다. -->
+  <data-source id="commerce_overview" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/dashboard/overview" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="pending_payment" :value="0"/>
+        <field name="payment_complete" :value="0"/>
+        <field name="preparing" :value="0"/>
+        <field name="shipping_ready" :value="0"/>
+        <field name="shipping" :value="0"/>
+        <field name="cancellations" :value="0"/>
+        <field name="returns" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 7일 판매 추세. 서버가 직전 7일도 함께 집계해 변화율을 계산해 준다 — 화면은 그 값을 그대로
+    표시할 뿐 빼기를 하지 않는다.
+    변화율이 `null` 로 오는 경우가 있다(직전 기간 실적이 0 일 때 — 나눌 수가 없다). 화면이
+    `null` 과 0 을 갈라 `—` 로 그리는 이유가 이것이라, `?? 0` 으로 뭉개면 "0% 변화" 라는 없는
+    사실이 표시된다.
+    `updated_at_display` 는 집계 시각이지 조회 시각이 아니다 — 캡션이 "몇 시 기준" 을 알리는 자리다. -->
+  <data-source id="commerce_sales_graph" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/dashboard/sales-graph" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="days" :value="[]"/>
+        <field name="total_quantity" :value="0"/>
+        <field name="total_sales" :value="0"/>
+        <field name="quantity_change" :value="null"/>
+        <field name="sales_change" :value="null"/>
+        <field name="updated_at" :value="null"/>
+        <field name="updated_at_display" value=""/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 전 상품을 가로지르는 최신 노출 리뷰. 카드의 각 줄은 개별 리뷰가 아니라 **리뷰 목록 화면**으로
+    간다 — 리뷰 하나만 여는 관리자 라우트가 없기 때문이다.
+    `fallback` 이 `data.data` 로 한 겹 더 감싼 것은 응답이 목록 봉투를 쓰기 때문이고, 화면이
+    읽는 경로도 그 형태다. -->
+  <data-source id="commerce_recent_reviews" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/dashboard/recent-reviews" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 미답변 상품 문의. `items` 는 화면에 보일 몇 건이고 `total` 은 전체 미답변 수라 둘이 다르다 —
+    제목 옆 괄호 숫자는 목록 길이가 아니라 `total` 이다.
+    상품 문의는 게시판 모듈의 글로 저장되므로 상세로 가려면 **어느 게시판인지**가 필요하다. 그
+    설정(`inquiry.board_slug`)이 비어 있으면 서버가 `board_slug` 를 `null` 로 주고, 그때는
+    "문의 관리로" 링크가 사라진다 — 목록은 그대로 나오지만 눌러도 갈 곳이 없어지는 것을 막는다. -->
+  <data-source id="commerce_pending_inquiries" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/dashboard/pending-inquiries" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="items" :value="[]"/>
+        <field name="total" :value="0"/>
+        <field name="board_slug" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+</extension>

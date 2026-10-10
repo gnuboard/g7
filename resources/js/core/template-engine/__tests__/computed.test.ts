@@ -15,6 +15,10 @@ describe('computed 속성', () => {
   });
 
   describe('문자열 표현식 computed', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('단순 바인딩 표현식 평가', () => {
       const context = {
         user: { firstName: '홍', lastName: '길동' },
@@ -28,6 +32,10 @@ describe('computed 속성', () => {
       expect(result).toBe('홍 길동');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('조건 표현식 평가', () => {
       const context = {
         user: { role: 'admin' },
@@ -39,6 +47,10 @@ describe('computed 속성', () => {
       expect(result).toBe(true);
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('복잡한 연산 표현식 평가', () => {
       const context = {
         items: [
@@ -56,6 +68,10 @@ describe('computed 속성', () => {
   });
 
   describe('$switch 형태 computed', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('$switch computed 정의 감지', () => {
       const switchDef = {
         $switch: '{{status}}',
@@ -69,6 +85,10 @@ describe('computed 속성', () => {
       expect(engine.isSwitchExpression(switchDef)).toBe(true);
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('$switch computed 값 해석', () => {
       const switchDef = {
         $switch: '{{status}}',
@@ -85,6 +105,10 @@ describe('computed 속성', () => {
       expect(result).toBe('text-green-500');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('$switch computed에서 매칭되지 않으면 $default 반환', () => {
       const switchDef = {
         $switch: '{{status}}',
@@ -101,6 +125,10 @@ describe('computed 속성', () => {
       expect(result).toBe('text-gray-400');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('$switch computed에서 중첩 경로 접근', () => {
       const switchDef = {
         $switch: '{{row.data.status_variant}}',
@@ -122,6 +150,10 @@ describe('computed 속성', () => {
   });
 
   describe('_computed 컨텍스트 접근', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('_computed에서 값 접근', () => {
       const context = {
         _computed: {
@@ -135,6 +167,10 @@ describe('computed 속성', () => {
       expect(result).toBe('10,000원');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('_computed 값을 다른 표현식에서 사용', () => {
       const context = {
         _computed: {
@@ -147,6 +183,10 @@ describe('computed 속성', () => {
       expect(result).toBe(true);
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('_computed가 없어도 안전하게 처리', () => {
       const context = {};
 
@@ -156,6 +196,10 @@ describe('computed 속성', () => {
   });
 
   describe('$computed alias 지원', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('$computed로 _computed 값에 접근 (evaluateExpression)', () => {
       const context = {
         _computed: {
@@ -169,6 +213,10 @@ describe('computed 속성', () => {
       expect(result).toBe('2026-01-14');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('$computed로 _computed 값에 접근 (resolveBindings)', () => {
       const context = {
         _computed: {
@@ -182,6 +230,10 @@ describe('computed 속성', () => {
       expect(result).toBe('100');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('$computed와 || 연산자 조합', () => {
       const context = {
         _computed: {
@@ -198,6 +250,10 @@ describe('computed 속성', () => {
       expect(result2).toBeNull();
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('$computed와 다른 컨텍스트 값 조합', () => {
       const context = {
         _computed: {
@@ -212,6 +268,10 @@ describe('computed 속성', () => {
       expect(result).toBe(true);
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_namespace_and_alias_read
+     */
     it('$computed가 이미 존재하면 덮어쓰지 않음', () => {
       const context = {
         _computed: {
@@ -229,6 +289,10 @@ describe('computed 속성', () => {
   });
 
   describe('실제 레이아웃 패턴', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('다중 통화 가격 computed', () => {
       const context = {
         _global: { preferredCurrency: 'USD' },
@@ -250,6 +314,10 @@ describe('computed 속성', () => {
       expect(result).toBe('$10.00');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('권한 기반 computed', () => {
       const context = {
         post: {
@@ -271,6 +339,10 @@ describe('computed 속성', () => {
       expect(canDelete).toBe(false);
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('상태 배지 클래스 computed ($switch 활용)', () => {
       const switchDef = {
         $switch: '{{row.status_variant}}',
@@ -297,6 +369,10 @@ describe('computed 속성', () => {
   });
 
   describe('defines와 computed 조합', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('_defines 값을 computed에서 참조', () => {
       const context = {
         _defines: {
@@ -317,6 +393,10 @@ describe('computed 속성', () => {
       expect(result).toBe('us');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('존재하지 않는 _defines 키에서 폴백', () => {
       const context = {
         _defines: {
@@ -338,6 +418,10 @@ describe('computed 속성', () => {
   });
 
   describe('iteration 컨텍스트에서 computed 사용', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('각 row별 다른 computed 결과', () => {
       const switchDef = {
         $switch: '{{row.status}}',
@@ -367,6 +451,10 @@ describe('computed 속성', () => {
       expect(results[3]).toBe('help-circle');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('Stale Closure 방지 - 상태 변경 후 즉시 반영', () => {
       const switchDef = {
         $switch: '{{currentTab}}',
@@ -392,6 +480,10 @@ describe('computed 속성', () => {
   });
 
   describe('엣지 케이스', () => {
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('빈 _computed 객체', () => {
       const context = {
         _computed: {},
@@ -401,21 +493,30 @@ describe('computed 속성', () => {
       expect(result).toBeUndefined();
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('computed에서 다른 computed 참조', () => {
       const context = {
         _computed: {
           firstName: '홍',
           lastName: '길동',
-          fullName: undefined, // 순환 참조 방지를 위해 직접 계산
+          fullName: undefined, // 정의 순서 평가는 이 테스트 범위 밖 — 아래 주석 참조
         },
       };
 
-      // 실제로는 TemplateApp에서 순차적으로 계산되므로 이전 computed 값 참조 가능
-      // 여기서는 단순히 _computed 접근 테스트
+      // computed 는 정의 순서대로 계산되어 뒤 키가 앞 키의 최신값을 읽는다(engine-v1.74.0 —
+      // 렌더·라우트 진입·sequence 가 같은 평가기를 쓴다, ComputedEvaluator.test.ts 가 잠금).
+      // 여기서는 평가기 없이 _computed 경로 접근만 확인한다.
       const result = engine.evaluateExpression('_computed.firstName + " " + _computed.lastName', context);
       expect(result).toBe('홍 길동');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('null/undefined 값 computed', () => {
       const context = {
         user: null,
@@ -425,6 +526,10 @@ describe('computed 속성', () => {
       expect(result).toBe('Unknown');
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('computed 결과가 객체인 경우', () => {
       const switchDef = {
         $switch: '{{level}}',
@@ -441,6 +546,10 @@ describe('computed 속성', () => {
       expect(result).toEqual({ color: 'red', icon: 'alert-circle' });
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_expression_and_switch_values
+     */
     it('computed 결과가 배열인 경우', () => {
       const context = {
         items: [1, 2, 3, 4, 5],
@@ -460,6 +569,9 @@ describe('computed 속성', () => {
      * 3. if 조건은 skipCache: true로 정확하지만, disabled prop은 stale cache 사용
      *
      * 수정: DynamicRenderer.tsx에서 _computed 참조 prop에 skipCache: true 적용
+     *
+     * @scenario layer=computed_evaluator
+     * @effects computed_prop_path_skips_value_cache
      */
     it('resolve()에서 _computed 경로는 skipCache로 컴포넌트별 정확한 값 반환', () => {
       // 컴포넌트 A의 컨텍스트 (_computed.isReadOnly = false)
@@ -488,6 +600,10 @@ describe('computed 속성', () => {
       expect(resultB_skipCache).toBe(true);
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_prop_path_skips_value_cache
+     */
     it('resolve()에서 $computed 경로도 skipCache로 정확한 값 반환', () => {
       const contextA = {
         _computed: { canEdit: false },
@@ -508,6 +624,10 @@ describe('computed 속성', () => {
       expect(result).toBe(true);
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_prop_path_skips_value_cache
+     */
     it('if 조건의 skipCache와 동일한 결과 보장', () => {
       const contextReadOnly = {
         _computed: { isReadOnly: true },
@@ -534,6 +654,10 @@ describe('computed 속성', () => {
       expect(propResult_fixed).toBe(true); // if 조건과 동일한 결과
     });
 
+    /**
+     * @scenario layer=computed_evaluator
+     * @effects computed_prop_path_skips_value_cache
+     */
     it('_computed가 아닌 일반 경로는 캐시를 유지', () => {
       const contextA = { _local: { name: 'A' } };
       const contextB = { _local: { name: 'B' } };

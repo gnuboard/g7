@@ -1,29 +1,10 @@
 {
+    "comment": "활동 로그 목록. 조건이 일곱 가지(검색어·검색 대상·로그 종류·행위자·기간)라 **입력은 `_local.filter`\n  에 모아 두고 검색 버튼을 눌러야 URL 로 옮겨 간다** — 고를 때마다 조회하면 한 번 거를 때 대여섯 번\n  다녀온다. 데이터소스는 URL 만 읽으므로 그 사이에는 목록이 움직이지 않는다.\n  화면 이동은 전부 `replace` 다 — 조건을 몇 번 바꿔 가며 좁히는 화면이라 뒤로가기 이력에 다 쌓이면\n  빠져나가지 못한다.\n  본체는 조각 둘(`_partial_filter`·`_partial_datagrid`)로 나뉘어 있고 여기에는 뼈대와 삭제 창만 있다.",
     "version": "1.0.0",
     "layout_name": "admin_activity_log_list",
-    "permissions": [
-        "core.activities.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.activity_log.page_title"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "activityLogs"
-        ]
-    },
-    "state": {
-        "filter": {
-            "searchType": "all",
-            "search": "",
-            "logTypes": [],
-            "createdBy": "",
-            "dateQuick": "",
-            "dateFrom": "",
-            "dateTo": ""
-        },
-        "actorSearchResults": []
     },
     "data_sources": [
         {
@@ -54,9 +35,51 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "활동 로그. 파라미터가 전부 `query.*` 를 읽는다(위 설명 참조). 403 은 목록을 볼 권한이 없다는\n       뜻이므로 빈 표 대신 에러 화면으로 갈아끼운다."
         }
     ],
+    "initLocal": {
+        "filter": {
+            "searchType": "all",
+            "search": "",
+            "logTypes": [],
+            "createdBy": "",
+            "dateQuick": "",
+            "dateFrom": "",
+            "dateTo": ""
+        },
+        "actorSearchResults": []
+    },
+    "permissions": [
+        "core.activities.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "activityLogs"
+        ]
+    },
+    "named_actions": {
+        "searchActivityLogs": {
+            "comment": "검색 실행 — 필터 조각의 여러 버튼이 공유한다. 모아 둔 조건을 한꺼번에 쿼리로 옮기되\n       **비었거나 기본값인 것은 `undefined` 로 빼서** URL 에 빈 조건이 남지 않게 한다.\n       페이지는 1로 되돌리고, 대기 표시는 표 본문에만 건다(필터 상자가 가려지면 방금 고른 값이 안 보인다).",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/activity-logs",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "activity_log_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
+                    "log_type[]": "{{_local.filter.logTypes?.length > 0 ? _local.filter.logTypes : undefined}}",
+                    "created_by": "{{_local.filter.createdBy || undefined}}",
+                    "date_from": "{{_local.filter.dateFrom || undefined}}",
+                    "date_to": "{{_local.filter.dateTo || undefined}}"
+                }
+            }
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -76,26 +99,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchActivityLogs": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/activity-logs",
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "search": "{{_local.filter.search || undefined}}",
-                    "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
-                    "log_type[]": "{{_local.filter.logTypes?.length > 0 ? _local.filter.logTypes : undefined}}",
-                    "created_by": "{{_local.filter.createdBy || undefined}}",
-                    "date_from": "{{_local.filter.dateFrom || undefined}}",
-                    "date_to": "{{_local.filter.dateTo || undefined}}"
-                },
-                "replace": true,
-                "transition_overlay_target": "activity_log_datagrid__body"
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -140,11 +143,9 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "새로고침 겸 조건 초기화 — `mergeQuery=false` 라 걸어 둔 필터가 전부 떨어진다.",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -154,6 +155,12 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -223,8 +230,26 @@
                                         },
                                         "children": [
                                             {
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "정렬 — 기준은 기록 시각 하나뿐이라 방향만 옵션 값의 마지막 조각에서 떼어 쓴다.\n                     필터는 유지하고 페이지만 1로 되돌린다.",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/activity-logs",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "activity_log_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "created_at",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "sortBy",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -239,28 +264,28 @@
                                                             "label": "$t:admin.activity_log.sort.created_at_asc"
                                                         }
                                                     ]
-                                                },
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "페이지당 항목 수 — 정렬과 같은 이유로 페이지를 1로 되돌린다.",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/activity-logs",
                                                             "mergeQuery": true,
-                                                            "query": {
-                                                                "sort_by": "created_at",
-                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                                "page": 1
-                                                            },
                                                             "replace": true,
-                                                            "transition_overlay_target": "activity_log_datagrid__body"
+                                                            "transition_overlay_target": "activity_log_datagrid__body",
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
                                                         }
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "composite",
-                                                "name": "Select",
+                                                ],
                                                 "props": {
                                                     "name": "perPage",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -283,23 +308,7 @@
                                                             "label": "100"
                                                         }
                                                     ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/activity-logs",
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "per_page": "{{$event.target.value}}",
-                                                                "page": 1
-                                                            },
-                                                            "replace": true,
-                                                            "transition_overlay_target": "activity_log_datagrid__body"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             }
                                         ]
                                     }
@@ -309,6 +318,7 @@
                                 "id": "bulk_action_bar",
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{activityLogs?.data?.abilities?.can_delete === true}}",
                                 "props": {
                                     "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
                                 },
@@ -332,19 +342,19 @@
                                         "id": "bulk_delete_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                                            "disabled": "{{(_global.selectedIds_admin_activity_logs ?? []).length === 0 || activityLogs?.data?.abilities?.can_delete !== true}}"
-                                        },
-                                        "text": "$t:admin.activity_log.delete.bulk_button",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "openModal",
                                                 "target": "bulk_delete_confirm_modal"
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                                            "disabled": "{{(_global.selectedIds_admin_activity_logs ?? []).length === 0 || activityLogs?.data?.abilities?.can_delete !== true}}"
+                                        },
+                                        "text": "$t:admin.activity_log.delete.bulk_button"
                                     }
                                 ]
                             },
@@ -359,9 +369,7 @@
     },
     "modals": [
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.activity_log_list.delete_confirm_modal"
-            },
+            "comment": "로그 한 건 삭제 확인 창. 대상은 표 조각의 행 메뉴가 전역 `modal_data` 에 담아 준 행이다.",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -397,17 +405,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -419,13 +427,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "삭제 실행. 조건이 URL 에 있고 여기서는 URL 이 바뀌지 않으므로 목록을 직접 다시 부른다.\n                 403 은 별도 갈래로 문구를 가른다 — 삭제 권한만 없는 경우가 있다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -438,8 +442,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/activity-logs/{{_global.modal_data.id}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE"
                                             },
@@ -487,30 +491,33 @@
                                             "errorHandling": {
                                                 "403": {
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "isDeleting": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:auth.permission_denied"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeleting": false
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             }
                                         }
                                     ]
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -531,12 +538,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.activity_log_list.delete_confirm_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.activity_log_list.bulk_delete_confirm_modal"
-            },
+            "comment": "선택한 로그를 한꺼번에 지우는 확인 창. 대상은 표에서 고른 id 묶음이라, 위 한 건 삭제 창과\n         읽는 값이 다르다(그쪽은 `modal_data` 한 행).",
             "id": "bulk_delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -572,17 +580,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -594,13 +602,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "일괄 삭제 실행. 성공하면 선택을 비운다 — 지운 id 가 남아 있으면 다음 일괄이 없는 것을\n                 다시 보낸다. 403 갈래는 한 건 삭제와 같은 이유로 문구를 가른다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -613,8 +617,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/activity-logs/bulk-delete",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "POST",
                                                 "body": {
@@ -666,30 +670,33 @@
                                             "errorHandling": {
                                                 "403": {
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "isDeleting": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:auth.permission_denied"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeleting": false
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             }
                                         }
                                     ]
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -710,7 +717,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.activity_log_list.bulk_delete_confirm_modal"
+            }
         }
     ]
 }

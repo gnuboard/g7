@@ -341,9 +341,9 @@ export function addCategoryToSelectionHandler(
     const newCategoryIds = [...currentIds, lastSelected.id];
     const primaryCategoryId = state.form?.primary_category_id || lastSelected.id;
 
-    // 카테고리 트리 가져오기 (브레드크럼 생성용)
-    const dataSources = G7Core.state.getDataSources?.() || {};
-    const categoriesTree = dataSources.categories?.data?.data || [];
+    // 카테고리 트리 가져오기 (브레드크럼 생성용) — 코어 공개 API `G7Core.dataSource.get`(응답 본문, 레이아웃의
+    // `categories?.data?.data` 와 같은 모양). 예전 `state.getDataSources` 는 코어에 없어 늘 빈 트리였다(D3-2)
+    const categoriesTree = G7Core.dataSource?.get?.('categories')?.data?.data || [];
 
     // 기존 selectedCategoryInfos에 새 정보 추가
     // selectedCategoryInfos가 비어있지만 form.categories에 데이터가 있으면 먼저 초기화
@@ -492,105 +492,6 @@ export function getCategoryBreadcrumbHandler(
 
     const pathNames = findPath(categories, categoryId);
     return pathNames ? pathNames.join(' > ') : '';
-}
-
-/**
- * 상품 데이터 로드 시 categories 배열로부터 selectedCategoryInfos를 초기화합니다.
- *
- * - API 응답의 categories 배열에서 브레드크럼 정보 생성
- * - _local.selectedCategoryInfos를 설정하여 선택된 카테고리 UI 표시
- *
- * @param action 액션 객체 (params.categories: 상품의 카테고리 배열)
- * @param _context 액션 컨텍스트
- */
-export function initCategoryInfosFromProductHandler(
-    _action: ActionWithParams,
-    _context: ActionContext
-): void {
-    logger.log('[initCategoryInfosFromProduct] START');
-
-    const G7Core = (window as any).G7Core;
-    if (!G7Core?.state) {
-        logger.warn('[initCategoryInfosFromProduct] G7Core.state API is not available');
-        return;
-    }
-
-    const state = G7Core.state.getLocal() || {};
-    const locale = G7Core.locale?.current?.() || 'ko';
-
-    // categories 데이터소스에서 전체 카테고리 트리 가져오기
-    const dataSources = G7Core.state.getDataSources?.() || {};
-    const categoriesTree = dataSources.categories?.data?.data || [];
-
-    // 상품의 카테고리 정보 (API 응답에서 가져온 것)
-    const productCategories = state.form?.categories || [];
-    const categoryIds = state.form?.category_ids || [];
-
-    logger.log('[initCategoryInfosFromProduct] Product categories:', productCategories);
-    logger.log('[initCategoryInfosFromProduct] Category IDs:', categoryIds);
-    logger.log('[initCategoryInfosFromProduct] Categories tree available:', categoriesTree.length > 0);
-
-    if (categoryIds.length === 0) {
-        logger.log('[initCategoryInfosFromProduct] No categories to initialize');
-        return;
-    }
-
-    // 카테고리 ID로 브레드크럼을 찾는 헬퍼 함수
-    const findBreadcrumb = (
-        cats: Category[],
-        targetId: number,
-        path: string[] = []
-    ): string[] | null => {
-        for (const cat of cats) {
-            const catName = cat.name?.[locale] || cat.name?.ko || '';
-
-            if (cat.id === targetId) {
-                return [...path, catName];
-            }
-
-            if (cat.children && cat.children.length > 0) {
-                const found = findBreadcrumb(cat.children, targetId, [...path, catName]);
-                if (found) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    };
-
-    // selectedCategoryInfos 생성
-    const selectedCategoryInfos: Array<{ id: number; breadcrumb: string }> = [];
-
-    for (const categoryId of categoryIds) {
-        // 먼저 카테고리 트리에서 브레드크럼 찾기
-        const pathNames = findBreadcrumb(categoriesTree, categoryId);
-
-        if (pathNames) {
-            selectedCategoryInfos.push({
-                id: categoryId,
-                breadcrumb: pathNames.join(' > '),
-            });
-        } else {
-            // 트리에서 못 찾으면 productCategories에서 직접 이름 사용
-            const productCat = productCategories.find((c: any) => c.id === categoryId);
-            if (productCat) {
-                const catName = productCat.name?.[locale] || productCat.name?.ko || productCat.name_localized || '';
-                selectedCategoryInfos.push({
-                    id: categoryId,
-                    breadcrumb: catName,
-                });
-            }
-        }
-    }
-
-    logger.log('[initCategoryInfosFromProduct] Generated selectedCategoryInfos:', selectedCategoryInfos);
-
-    // 상태 업데이트
-    G7Core.state.setLocal({
-        selectedCategoryInfos,
-    });
-
-    logger.log('[initCategoryInfosFromProduct] DONE');
 }
 
 /**

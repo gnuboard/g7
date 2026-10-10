@@ -1,0 +1,230 @@
+<!-- 플러그인 한 벌의 상세 창. 일곱 구획으로 나뉜다 — 기본 정보 · 의존 · 지원 언어 · 권한 · 역할 ·
+  훅(동작) · 필터(값 가로채기) · 변경 이력.
+  훅과 필터는 **한 목록에서 종류로 갈라** 두 구획에 나눠 그린다. 서버가 둘을 함께 보내기 때문이고,
+  그래서 어느 한쪽이 비어 보이는 것은 그 종류가 없다는 뜻이지 못 받아 온 것이 아니다.
+  변경 이력만 다른 값에서 온다 — 목록이 미리 받아 전역에 담아 둔 것을 읽는다. -->
+<partial description="플러그인 상세 정보 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_detail_modal">
+  <modal data-type="composite" data-ref="plugin_detail_modal" title="$t:admin.plugins.modals.detail_title" size="medium">
+    <!-- 목록 응답에는 의존·권한·훅 같은 속살이 실리지 않아 창을 열 때 그 하나만 따로 받는다. 받은 값은 목록이 골라 둔 자리에 덮어써서, 아래 화면 전체가 같은 값을 읽게 한다. -->
+    <data-source id="pluginDetail" label_key="$t:editor.data_source.pluginDetail" type="api" endpoint="/api/admin/plugins/{{_global.selectedPlugin.identifier}}" :auth_required="true" initGlobal="selectedPlugin"/>
+    <div class="flex flex-col max-h-[70vh]">
+      <div class="flex-1 overflow-y-auto min-h-0 pr-2">
+        <div class="row-stack">
+          <div data-ref="basic_info_section">
+            <div class="flex-center gap-2 mb-4">
+              <icon name="cog" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.basic_info</span>
+            </div>
+            <div class="grid-2col">
+            <div data-ref="detail_ext_icon" class="col-span-2 flex items-center gap-3 mb-4">
+              <!-- 글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지되고,
+                   404·손상이면 그 식별자만 목록에 담아 이미지를 감추면 글리프가 다시 드러난다.
+                   깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 확장까지 전부
+                   아이콘을 잃는다(전례) — 그래서 식별자 목록으로 든다. -->
+              <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                <icon name="puzzle-piece" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+                <img data-if="{{_global.selectedPlugin?.icon_url && !(_local.selectedPluginIconBroken ?? []).includes(_global.selectedPlugin?.identifier)}}" src="{{_global.selectedPlugin.icon_url}}" alt="$t:extensions.icon.alt|name={{_global.selectedPlugin?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
+                  <on event="onError">
+                    <!-- 이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가
+                         다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다. -->
+                    <set-state target="local" selectedPluginIconBroken="{{[...(_local.selectedPluginIconBroken ?? []), _global.selectedPlugin?.identifier]}}"/>
+                  </on>
+                </img>
+              </div>
+              <div class="min-w-0">
+                <p class="text-primary font-semibold truncate">{{_global.selectedPlugin?.name ?? ''}}</p>
+                <code class="text-label-subtle text-xs">{{_global.selectedPlugin?.identifier ?? ''}}</code>
+              </div>
+            </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.plugins.modals.field_name</span>
+                <p class="text-primary font-medium">{{_global.selectedPlugin.name}}</p>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.plugins.modals.field_version</span>
+                <p class="text-primary font-medium">v{{_global.selectedPlugin.version}}</p>
+              </div>
+              <div class="col-span-2">
+                <span class="text-label-subtle">$t:admin.plugins.modals.field_description</span>
+                <p class="text-primary font-medium">{{_global.selectedPlugin.description}}</p>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.plugins.modals.field_vendor</span>
+                <p class="text-primary font-medium">{{_global.selectedPlugin.vendor}}</p>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.plugins.modals.field_license</span>
+                <button type="button" class="flex-center text-left text-primary gap-1 font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  <on type="click">
+                    <!-- 라이선스 이름을 누르면 전문을 그때 받아 별도 창으로 띄운다 — 전문은 길어 상세 응답에 싣지 않는다. 받은 글은 확장 공용 자리에 담기므로 모듈·템플릿 상세도 같은 창을 쓴다. 버튼이어야 키보드로도 열린다(#736 F 실측). -->
+                    <sequence>
+                      <api-call :auth_required="true" target="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/license" method="GET">
+                        <success>
+                          <set-state target="global" extensionLicenseContent="{{response.data.content}}"/>
+                          <open-modal target="plugin_extension_license_modal"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
+                  </on>
+                  <icon name="file-lines" class="text-base text-gray-500" aria-hidden="true"/>
+                  <span>{{_global.selectedPlugin.license || '-'}}</span>
+                </button>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.plugins.modals.field_status</span>
+                <div>
+                  <span class="{{_global.selectedPlugin.status === 'active' ? 'badge badge-green' : (_global.selectedPlugin.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}">{{_global.selectedPlugin.status === 'active' ? '$t:admin.plugins.status.active' : (_global.selectedPlugin.status === 'uninstalled' ? '$t:admin.plugins.status.not_installed' : '$t:admin.plugins.status.inactive')}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="dependencies_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="link" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.dependencies</span>
+            </div>
+            <div class="row-stack">
+              <div class="flex-center gap-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.required_core_version</span>
+                <span data-if="{{_global.selectedPlugin.requires_core}}" class="text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded font-mono">{{_global.selectedPlugin.requires_core}}</span>
+                <span data-if="{{!_global.selectedPlugin.requires_core}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded">$t:admin.plugins.modals.no_required_core_version</span>
+              </div>
+              <p data-if="{{!_global.selectedPlugin.dependencies || _global.selectedPlugin.dependencies.length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_dependencies_required</p>
+              <div data-if="{{_global.selectedPlugin.dependencies &amp;&amp; _global.selectedPlugin.dependencies.length > 0}}" class="row-stack">
+                <div data-each="dep in _global.selectedPlugin.dependencies" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                  <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+                  <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400"/>
+                  <span class="text-heading">{{dep.name || dep.identifier}} ({{dep.identifier}})</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.plugins.modals.dependency_required_version|version={{dep.required_version}}</span>
+                  <span data-if="{{dep.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.plugins.modals.dependency_installed_version|version={{dep.installed_version}}</span>
+                  <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.plugins.modals.dependency_met</span>
+                  <span data-if="{{!dep.is_met &amp;&amp; !dep.installed_version}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.plugins.modals.dependency_not_installed</span>
+                  <span data-if="{{!dep.is_met &amp;&amp; dep.installed_version &amp;&amp; !dep.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.plugins.modals.dependency_inactive</span>
+                  <span data-if="{{!dep.is_met &amp;&amp; dep.installed_version &amp;&amp; dep.is_active}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.plugins.modals.dependency_unmet_version</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로
+            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다. -->
+          <div data-ref="integrations_section" data-if="{{(_global.selectedPlugin?.integrations ?? []).length > 0}}">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="plug" class="text-xl text-gray-500" aria-hidden="true"/>
+              <span class="text-primary font-semibold">$t:admin.extension_integrations.title</span>
+            </div>
+            <p class="text-label-subtle mb-2">$t:admin.extension_integrations.hint</p>
+            <div class="row-stack">
+              <div data-each="item in _global.selectedPlugin.integrations" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+                <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+                <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+                <span class="text-heading">{{item.name}} ({{item.identifier}})</span>
+                <span data-if="{{!item.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
+                <span data-if="{{item.is_installed &amp;&amp; !item.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.extension_integrations.inactive</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="supported_languages_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="language" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.supported_languages</span>
+            </div>
+            <p data-if="{{!_global.selectedPlugin.language_packs || _global.selectedPlugin.language_packs.length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_supported_languages</p>
+            <div data-if="{{_global.selectedPlugin.language_packs &amp;&amp; _global.selectedPlugin.language_packs.length > 0}}" class="row-stack">
+              <div data-each="lp in _global.selectedPlugin.language_packs" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                <span class="text-heading">{{lp.locale_native_name}} ({{lp.locale}})</span>
+                <span data-if="{{lp.origin === 'built_in'}}" class="text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded">$t:admin.language_packs.origin.built_in</span>
+                <span data-if="{{lp.origin === 'bundled'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.language_packs.origin.bundled</span>
+                <span data-if="{{lp.origin === 'user_installed'}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.language_packs.origin.user_installed</span>
+                <span data-if="{{lp.status === 'active'}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.language_packs.status.active</span>
+                <span data-if="{{lp.status === 'inactive'}}" class="text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">$t:admin.language_packs.status.inactive</span>
+                <span data-if="{{lp.status === 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">$t:admin.language_packs.status.uninstalled</span>
+                <span data-if="{{lp.version}}" class="text-tertiary font-mono">v{{lp.version}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="permissions_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="key" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.permissions</span>
+            </div>
+            <p data-if="{{!_global.selectedPlugin.permissions || _global.selectedPlugin.permissions.length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_permissions</p>
+            <!-- 서버는 모듈과 같은 분류 배열을 보낸다 — 분류 이름 아래 개별 권한을 「이름 (분류.동작)」으로 그린다(모듈 정보 창과 같은 모양). -->
+            <div data-if="{{_global.selectedPlugin.permissions &amp;&amp; _global.selectedPlugin.permissions.length > 0}}" class="row-stack">
+              <div data-each="category in _global.selectedPlugin.permissions">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{{$localized(category.name)}}</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <span data-each="perm in category.permissions" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">{{$localized(perm.name) + ' (' + category.identifier + '.' + perm.action + ')'}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="roles_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="user-group" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.roles</span>
+            </div>
+            <p data-if="{{!_global.selectedPlugin.roles || _global.selectedPlugin.roles.length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_roles</p>
+            <div data-if="{{_global.selectedPlugin.roles &amp;&amp; _global.selectedPlugin.roles.length > 0}}" class="flex flex-wrap gap-2">
+              <span data-each="role in _global.selectedPlugin.roles" class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{$localized(role.name)}} ({{role.identifier}})</span>
+            </div>
+          </div>
+          <div data-ref="hooks_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="bolt" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.hooks</span>
+            </div>
+            <!-- 이 칸은 플러그인이 getHooks() 로 선언해 다른 확장에 제공하는 훅만 보여 준다(구독하는 훅은 싣지 않는다) — 필터 칸과 같이 설명을 둬 「구독 훅이 비어 보인다」는 오해를 막는다 -->
+            <p class="text-tertiary mb-2">$t:admin.plugins.modals.hooks_description</p>
+            <p data-if="{{!_global.selectedPlugin.hooks || _global.selectedPlugin.hooks.filter(h => h.type === 'action').length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_hooks</p>
+            <div data-if="{{_global.selectedPlugin.hooks &amp;&amp; _global.selectedPlugin.hooks.filter(h => h.type === 'action').length > 0}}" class="flex flex-wrap gap-2">
+              <span data-each="hook in _global.selectedPlugin.hooks.filter(h => h.type === 'action')" class="text-info-soft px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">{{$localized(hook.description)}} ({{hook.name}})</span>
+            </div>
+          </div>
+          <div data-ref="filters_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="filter" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.filters</span>
+            </div>
+            <p class="text-tertiary mb-2">$t:admin.plugins.modals.filters_description</p>
+            <p data-if="{{!_global.selectedPlugin.hooks || _global.selectedPlugin.hooks.filter(h => h.type === 'filter').length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_filters</p>
+            <div data-if="{{_global.selectedPlugin.hooks &amp;&amp; _global.selectedPlugin.hooks.filter(h => h.type === 'filter').length > 0}}" class="flex flex-wrap gap-2">
+              <span data-each="filterItem in _global.selectedPlugin.hooks.filter(h => h.type === 'filter')" class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{$localized(filterItem.description)}} ({{filterItem.name}})</span>
+            </div>
+          </div>
+          <div data-ref="changelog_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="clock-rotate-left" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.plugins.modals.changelog</span>
+            </div>
+            <p data-if="{{!_global.pluginChangelog || _global.pluginChangelog.length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_changelog</p>
+            <div data-if="{{_global.pluginChangelog &amp;&amp; _global.pluginChangelog.length > 0}}" class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div data-each="entry, entryIdx in _global.pluginChangelog" class="pb-3 mb-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0">
+                <div class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">v{{entry.version}}{{entry.date ? ' (' + entry.date + ')' : ''}}</div>
+                <div data-each="category, catIdx in entry.categories" class="row-stack">
+                  <div>
+                    <span class="text-secondary text-xs font-medium">{{category.name}}</span>
+                    <div data-each="changeItem, itemIdx in category.items" class="ml-3 space-y-0.5">
+                      <div class="text-secondary text-xs">• {{changeItem}}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

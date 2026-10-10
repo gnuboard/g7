@@ -1,0 +1,106 @@
+<!-- 관리자 회원 상세에 마케팅 동의 탭을 덧붙이는 조각 — 탭을 새로 만들지 않고 기존 탭 목록 props 에 끼워 넣는다 -->
+<extension target-layout="admin_user_detail" priority="200">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_marketing" label="$t:admin.users.form.sections.marketing_consent" iconName="puzzle-piece"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_marketing_content" id="ext_marketing" class="scroll-mt-32">
+      <div data-ref="section_marketing_consent" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+        <div class="flex-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="bullhorn" size="md" class="text-gray-600 dark:text-gray-400"/>
+            <h3 class="section-heading">$t:admin.users.form.sections.marketing_consent</h3>
+          </div>
+          <extension-badge data-type="composite" type="plugin" identifier="sirsoft-marketing" installedPlugins="{{_global.installedPlugins}}"/>
+        </div>
+        <div class="grid grid-cols-1 gap-4">
+          <div class="space-y-3">
+            <label data-if="{{user?.data?.marketing_consent_enabled === true}}" class="flex items-start gap-3">
+              <checkbox checked="{{!!user?.data?.marketing_consent}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.marketing_consent</span>
+                  <span data-if="{{user?.data?.marketing_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user?.data?.marketing_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                </div>
+                <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.marketing_consent_desc</span>
+              </div>
+            </label>
+            <label data-if="{{user?.data?.marketing_consent_enabled === true}}" data-each="channel in (user?.data?.channels ?? []).filter(ch => ch.enabled !== false)" class="flex items-start gap-3 ml-8">
+              <checkbox checked="{{!!user?.data?.[channel.key]}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{channel.label}}</span>
+                  <span data-if="{{user?.data?.[channel.key + '_at']}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user?.data?.[channel.key + '_at']}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                </div>
+              </div>
+            </label>
+          </div>
+          <div class="space-y-3">
+            <label data-if="{{user?.data?.third_party_consent_enabled === true}}" class="flex items-start gap-3">
+              <checkbox checked="{{!!user?.data?.third_party_consent}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.third_party_consent</span>
+                  <span data-if="{{user?.data?.third_party_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user?.data?.third_party_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                </div>
+                <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
+              </div>
+            </label>
+            <div class="space-y-1">
+              <label data-if="{{user?.data?.info_disclosure_enabled === true}}" class="flex items-start gap-3">
+                <checkbox checked="{{!!user?.data?.info_disclosure}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+                <div class="flex-1 space-y-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
+                    <span data-if="{{user?.data?.info_disclosure_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
+                    <span data-if="{{!user?.data?.info_disclosure_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                  </div>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
+                </div>
+              </label>
+              <span class="text-xs text-gray-400 dark:text-gray-500 block ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
+            </div>
+          </div>
+        </div>
+        <!-- 동의 이력 테이블 -->
+        <div class="mt-6 pt-4">
+          <h3 class="text-gray-900 dark:text-white text-sm font-semibold mb-3">$t:admin.users.detail.consent_history</h3>
+          <!-- 이력이 없는 경우 -->
+          <div data-if="{{!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0}}" class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">$t:sirsoft-marketing.no_consent_history</div>
+          <!-- 이력 테이블 -->
+          <div data-if="{{user?.data?.consent_histories?.length > 0}}" class="max-h-60 overflow-y-auto overflow-x-auto">
+            <table class="divider-list min-w-full">
+              <thead class="sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
+                <tr>
+                  <th class="text-table-header px-2 py-1.5 text-left">$t:sirsoft-marketing.history_date</th>
+                  <th class="text-table-header px-2 py-1.5 text-left">$t:sirsoft-marketing.history_channel_key</th>
+                  <th class="text-table-header px-2 py-1.5 text-left">$t:sirsoft-marketing.history_action</th>
+                  <th class="text-table-header px-2 py-1.5 text-left">$t:sirsoft-marketing.history_source</th>
+                </tr>
+              </thead>
+              <tbody class="divider-list">
+                <tr data-each="history, histIdx in {{user?.data?.consent_histories ?? []}}">
+                  <td class="text-gray-900 dark:text-white px-2 py-1.5 text-xs whitespace-nowrap">{{history?.created_at ?? '-'}}</td>
+                  <td class="text-gray-900 dark:text-white px-2 py-1.5 text-xs">{{history?.channel_key === 'marketing_consent' ? '$t:sirsoft-marketing.marketing_consent' : history?.channel_key === 'third_party_consent' ? '$t:sirsoft-marketing.third_party_consent' : history?.channel_key === 'info_disclosure' ? '$t:sirsoft-marketing.info_disclosure' : ((user?.data?.channels ?? []).find(ch => ch.key === history?.channel_key)?.label ?? history?.channel_key ?? '-')}}</td>
+                  <td class="px-2 py-1.5 text-xs">
+                    <span class="{{history?.action === 'granted' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}">{{history?.action === 'granted' ? '$t:sirsoft-marketing.action_granted' : '$t:sirsoft-marketing.action_revoked'}}</span>
+                  </td>
+                  <td class="px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400">{{history?.source === 'register' ? '$t:sirsoft-marketing.source_register' : history?.source === 'admin' ? '$t:sirsoft-marketing.source_admin' : '$t:sirsoft-marketing.source_profile'}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

@@ -54,7 +54,7 @@ export interface PageHeaderProps {
 /**
  * PageHeader 컴포넌트
  *
- * 페이지 헤더 - admin_dashboard.json의 page_header 스타일과 동일
+ * 페이지 헤더 - admin_dashboard.g7.html의 page_header 스타일과 동일
  * 배경색 없음, flex items-center justify-between mb-6 레이아웃
  *
  * @example
@@ -103,9 +103,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         </Div>
       )}
 
-      {/* 제목 및 액션 버튼 - admin_dashboard.json 스타일 */}
-      <Div className="flex-between mb-lg">
-        <Div>
+      {/* 제목 및 액션 버튼 - admin_dashboard.g7.html 스타일 */}
+      {/* 좁은 화면(태블릿 900px 등)에서 버튼이 많으면 한 줄에 우겨 넣지 않고 다음 줄로 내린다 —
+          종전에는 버튼이 줄어들며 글자 단위로 꺾였다(「취
+소」·「저
+장」, 7.1.0 J D-J9). */}
+      <Div className="flex-between flex-wrap gap-3 mb-lg">
+        <Div className="min-w-0">
           <H1 className="page-title">{title}</H1>
           {description && (
             <P className="page-description">{description}</P>

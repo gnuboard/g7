@@ -1,0 +1,26 @@
+feature: 관리자 환경설정 화면 죽은 조각 0 (7.1.0 전수 실측 validate R3)
+
+description: |
+  환경설정 화면(`admin_settings`)의 partial 가운데 어느 레이아웃도 include 하지 않는 조각은
+  화면에 나오지 않으면서도 번역 키 점검·왕복 코퍼스·편집기 모달 이름표에는 계속 잡혀, 없는
+  번역 키를 결함처럼 보이게 한다. 옛 메일 템플릿 탭(`_tab_mail_templates`)과 그 편집 창
+  (`_modal_mail_template_form`)이 그런 잔재였다 — 메일 템플릿 관리는 알림 정의 탭으로 옮겨 갔고
+  두 조각은 `admin.settings.mail_templates.*` 키 약 30개를 가리킨 채 남아 있었다.
+
+  결정(2026-10-07): 키를 채우지 않고 파일을 지운다. 왕복 코퍼스 등재·바인딩 스냅샷·편집기
+  모달 이름표(ko/en/ja)·문서 트리도 함께 정리한다.
+
+axes:
+  partial_reach: [included, orphan]
+
+sub_flows:
+  - id: removed_fragments
+    description: 지운 옛 메일 템플릿 조각이 원본·짝 JSON 모두 되살아나지 않는다
+    effects:
+      - removed_mail_template_fragments_stay_removed
+
+effects:
+  - admin_settings_partials_are_all_included
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-dead-partials.test.ts

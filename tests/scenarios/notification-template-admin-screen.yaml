@@ -1,0 +1,128 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(편집 축 × 계층)의 조합마다 테스트를 두지 않는다 — 각 축의 계약은 "서버가 정하고 화면이
+#   읽는다" 하나이고, 계층마다 그 계약의 자기 몫을 한 테스트가 본다. effects 축은 면제하지 않는다.
+feature: notification_template_admin_screen
+
+description: |
+  운영자가 알림 템플릿을 고치는 화면의 세 축을 **서버가 정하고 화면이 읽는** 형태로 맞춘다.
+  세 축 모두 어긋나면 **수신자 0명** 또는 **저장 payload 가 빈다** 로만 드러난다 — 예외도
+  로그도 화면에 남지 않는 종류다.
+
+  핵심 동작:
+    - **본문 편집기는 채널이 정한다**(`template_editor`: rich / plain / none). 메일 본문은
+      HTML 로 나가고 사이트내 알림은 평문으로 그려지므로 한 편집기로 두 채널을 다루면
+      관리자 미리보기와 사용자 화면이 서로 다른 문자열을 보여 준다. 종전 플래그
+      `hidden_template_editor: true` 는 서버가 `none` 으로 정규화해 하위호환을 지킨다.
+    - **역할 수신자는 여러 개**를 고를 수 있다. 서버가 배열을 못 받으면 화면이 배열을 보낸
+      순간 422 이거나, 통과하더라도 해석에서 TypeError 가 나고 그것을 `resolve()` 의
+      try/catch 가 삼켜 수신자가 0명이 된다. 기존 저장값(문자열)은 읽기에서 그대로 수용한다.
+    - **「관련 사용자」의 관계 키는 정의가 선언한 목록 안**이어야 한다. 선언이 비면 화면이
+      그 타입 자체를 감춘다 — 지원하지 않는 키를 고르면 역시 조용한 0명이다.
+    - 표시 이름은 **저장된 순서 그대로** 나른다. DB 반환 순서로 뽑으면 화면이 인덱스로
+      짝지을 때 다른 사람·다른 역할의 이름이 붙는다.
+
+axes:
+  editing_axis:
+    - template_editor
+    - role_recipients
+    - related_user_relation
+    - toggle_active
+    - revert_to_declared
+    - operator_definition
+  layer:
+    - channel_meta
+    - request_validation
+    - resource_payload
+    - modal_layout
+    - live_screen
+    - user_overrides
+
+exclusions:
+  - { editing_axis: template_editor, layer: live_screen, reason: "편집기 종류의 라이브 축은 앞선 실측(T-D3)이 채널 메타 응답으로 이미 쟀다 — 같은 값을 화면에서 한 번 더 세지 않는다" }
+  - { editing_axis: related_user_relation, layer: live_screen, reason: "관계 선언의 라이브 축은 T-D5 가 정의 응답으로 쟀다(선언이 있는 8건 · 없는 52건)" }
+  - { editing_axis: template_editor, layer: request_validation, reason: "편집기 종류는 저장 값이 아니라 화면 렌더 축이라 FormRequest 가 볼 것이 없다" }
+  - { editing_axis: role_recipients, layer: channel_meta, reason: "수신자 규칙은 채널과 무관한 축이다" }
+  - { editing_axis: related_user_relation, layer: channel_meta, reason: "같은 사유" }
+
+effects:
+  # 채널 메타 — 편집기 종류
+  - notification_channel_meta_declares_template_editor
+  - notification_channel_hidden_flag_maps_to_none
+  - notification_channel_unknown_editor_falls_back_to_plain
+  # 역할 다중 선택
+  - notification_template_accepts_multiple_roles
+  - notification_template_still_accepts_a_scalar_role
+  - notification_template_rejects_a_malformed_role_value
+  - notification_template_rejects_keyed_recipient_values
+  - notification_template_recipient_errors_use_attribute_names
+  - notification_template_resource_normalizes_role_values
+  # 관련 사용자 관계
+  - notification_template_accepts_a_declared_relation
+  - notification_template_rejects_an_undeclared_relation
+  - notification_template_rejects_any_relation_without_declarations
+  - notification_definition_resource_carries_relations
+  - notification_definition_resource_carries_relation_labels
+  # 수신자 검색 라이브 축
+  - notification_template_recipient_search_live_measurement
+  # 기존 편집 계약 (회귀 보호)
+  - notification_template_update_saves_subject_and_body
+  - notification_template_edit_marks_both_as_customized
+  - notification_template_toggle_active
+  - notification_template_reset_restores_defaults
+  - notification_template_preview_renders_variables
+  - notification_template_preview_requires_a_definition
+  - notification_template_update_requires_settings_permission
+  # 값을 바꾸지 않은 저장은 「수정됨」 이 아니다 (#727 W12)
+  - notification_template_unchanged_save_keeps_default
+  - notification_template_real_change_marks_locale_and_clears_default
+  - notification_template_recipient_display_names_not_persisted
+  # 뜻이 같은 저장 모양·선언값으로 되돌린 칸은 「수정됨」 이 아니다 — 정의의 「기본」 도 함께 맞춘다(7.1.0 실측)
+  - notification_template_unchanged_save_with_scalar_role_keeps_default
+  - notification_template_toggle_back_releases_override
+  - notification_template_revert_restores_definition_default
+  - notification_template_operator_definition_stays_non_default
+  # 채널 활성 판정 (회귀 보호)
+  - core_channel_enabled_when_flag_true
+  - core_channel_disabled_when_flag_false
+  - core_channel_defaults_to_enabled_without_an_entry
+  - core_channel_defaults_to_enabled_without_settings
+  - module_channel_reads_module_settings
+  - plugin_channel_reads_plugin_settings
+  - module_without_identifier_defaults_to_enabled
+  - channel_enabled_lookup_is_memoized
+  - channel_enabled_cache_can_be_cleared
+  - settings_failure_defaults_to_enabled
+  # 모달 레이아웃 (코어 3벌의 대표)
+  - core_template_modal_uses_the_standard_modal_component
+  - core_template_modal_has_no_onmount_lifecycle
+  - core_template_modal_has_no_datakey
+  - core_template_list_sets_the_whole_namespace
+  - core_template_namespace_carries_every_editing_key
+  - core_template_modal_actions_target_global
+  - core_template_modal_never_touches_parent_local
+  - core_template_modal_reads_one_namespace
+  - core_template_subject_and_body_set_whole_objects
+  - core_template_recipients_replace_the_whole_array
+  - core_template_lang_tab_writes_the_namespace_path
+  - core_template_role_dropdown_seeds_selected_values
+  - core_template_users_dropdown_seeds_selected_values
+  - core_template_preview_stores_into_the_namespace
+  - core_template_preview_modal_reads_the_namespace
+  - core_template_preview_follows_the_channel_editor
+  - core_template_save_closes_refetches_and_clears
+  - core_template_save_body_reads_the_namespace
+  # 꺼 둔 템플릿 편집·저장이 다시 켜지 않는다 — 옛 본인인증 메시지 창의 #727 W13 계약을 이식(#699)
+  - core_template_save_omits_is_active
+  # 수신자 규칙 여러 줄이 보낸 순서의 목록으로 저장되고, 이미 줄 번호 객체로 저장된 행도 순서대로 읽힌다 (M1-O7)
+  - notification_template_recipients_keep_submitted_order
+  - notification_template_resource_lists_keyed_recipients_in_index_order
+
+test_files:
+  - tests/Feature/Api/Admin/NotificationTemplateControllerTest.php
+  - tests/Unit/Services/NotificationChannelServiceTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-notification-template-modal.test.tsx
+  # 수신자 검색의 라이브 축 — 역할 칸이 검색어 첫 글자에 사라지던 결함은 브라우저에서만 드러났다.
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/notification-template-recipient-search-measure.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

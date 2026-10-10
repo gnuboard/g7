@@ -1,0 +1,129 @@
+<!-- 남의 글 모아보기 — 프로필에서 «작성글 전체» 로 들어오는 화면이다. 프로필 요약은 로그인해야 볼 수 있지만 글 목록 자체는 누구나 볼 수 있어, 한 화면 안에서 두 데이터소스의 인증 요구가 갈린다. -->
+<layout name="users/posts" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" :priority="0.3" changefreq="weekly">
+      <data-sources>
+        <item>userProfile</item>
+        <item>userPosts</item>
+      </data-sources>
+      <og type="profile"/>
+    </seo>
+  </meta>
+  <!-- 프로필 머리말(이름·아바타) — 회원만 볼 수 있다. 화면에 다시 들어올 때마다 새로 받아 프로필이 바뀐 뒤에도 옛 값이 남지 않게 한다. -->
+  <data-source id="userProfile" label_key="$t:editor.data_source.userProfile" type="api" endpoint="/api/users/{{route.userId}}/profile" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <error-handling>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 그 사람이 쓴 글 — 위 프로필과 달리 비회원도 읽는다(공개 게시판의 글이므로). 로그인했으면 토큰을 실어 보는 사람이 읽을 수 있는 게시판의 글까지 보인다. 페이지 번호는 URL 질의에서 온다. -->
+  <data-source id="userPosts" label_key="$t:editor.data_source.userPosts" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" :per_page="20"/>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 로딩 상태 -->
+        <div data-if="{{userPosts.loading &amp;&amp; !userPosts.data}}" class="flex justify-center items-center py-20">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"/>
+        </div>
+        <!-- 게시글 목록 -->
+        <div data-if="{{userPosts.data &amp;&amp; !userPosts.error}}" class="space-y-6">
+          <!-- 브레드크럼 (1행) -->
+          <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+            <button class="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
+              <on type="click">
+                <navigate path="/users/{{route.userId}}"/>
+              </on>
+              {{userProfile.data?.name ?? ''}} $t:user.profile.back_to_profile
+            </button>
+            <span>></span>
+            <span class="text-gray-900 dark:text-white font-medium">$t:user.profile.posts_page_title</span>
+          </div>
+          <!-- 타이틀 + 총 게시글 수 (2행, 3행) -->
+          <div class="mb-4">
+            <!-- 2행: 타이틀 -->
+            <div class="flex items-center gap-2">
+              <icon name="file-lines" size="xl" class="text-gray-900 dark:text-white"/>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{userProfile.data?.name ?? ''}}$t:user.profile.posts_suffix</h1>
+            </div>
+            <!-- 3행: 총 게시글 수 -->
+            <span class="text-sm text-gray-500 dark:text-gray-400 mt-1 block text-right">$t:user.profile.total_posts|count={{userPosts.data?.total ?? 0}}</span>
+          </div>
+          <!-- 게시글 테이블 -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <!-- 게시글 없음 -->
+            <div data-if="{{!userPosts.data?.data?.length}}" class="text-center py-12">
+              <icon name="file-circle-xmark" size="2xl" class="text-gray-300 dark:text-gray-600 mb-4"/>
+              <p class="text-gray-500 dark:text-gray-400">$t:user.profile.no_posts</p>
+            </div>
+            <!-- 테이블 헤더 -->
+            <div data-if="{{userPosts.data?.data?.length > 0}}" class="hidden md:grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <div class="col-span-2">$t:user.profile.post_board</div>
+              <div class="col-span-6">$t:user.profile.post_title</div>
+              <div class="col-span-1 text-center">$t:user.profile.post_views</div>
+              <div class="col-span-3 text-right">$t:user.profile.post_date</div>
+            </div>
+            <!-- 게시글 목록 (한 줄 표시) -->
+            <div data-if="{{userPosts.data?.data?.length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
+              <button data-each="post in {{userPosts.data?.data ?? []}}" class="w-full text-left grid grid-cols-1 md:grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer items-center">
+                <on type="click">
+                  <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+                </on>
+                <!-- 게시판명 컬럼 -->
+                <div class="hidden md:block col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate">{{post.board_name}}</div>
+                <!-- 제목 영역 (배지 + 제목 + 댓글수) -->
+                <div class="col-span-1 md:col-span-6 flex items-center gap-2 min-w-0 overflow-hidden">
+                  <!-- 게시판명 배지 (모바일용) -->
+                  <span class="md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap">{{post.board_name}}</span>
+                  <!-- 카테고리 배지 -->
+                  <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
+                  <!-- 비밀글 아이콘 -->
+                  <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-500 dark:text-yellow-400"/>
+                  <!-- 블라인드 아이콘 -->
+                  <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-500 dark:text-orange-400"/>
+                  <!-- 제목 + 댓글수 컨테이너 -->
+                  <div class="flex-1 min-w-0 flex items-center gap-1">
+                    <!-- 제목 -->
+                    <span class="truncate font-medium text-gray-900 dark:text-white">{{post.title}}</span>
+                    <!-- 댓글 수 -->
+                    <span data-if="{{post.comment_count > 0}}" class="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium">[{{post.comment_count}}]</span>
+                  </div>
+                </div>
+                <!-- 조회수 -->
+                <div class="hidden md:flex col-span-1 justify-center items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                  <icon name="eye" size="xs"/>
+                  <span>{{post.view_count ?? 0}}</span>
+                </div>
+                <!-- 작성일 -->
+                <span class="hidden md:block col-span-3 text-right text-sm text-gray-500 dark:text-gray-400" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+                <!-- 모바일용 하단 정보 -->
+                <div class="md:hidden flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <span class="flex items-center gap-1">
+                    <icon name="eye" size="xs"/>
+                    <span>{{post.view_count ?? 0}}</span>
+                  </span>
+                  <span title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <!-- 페이지네이션 (항상 표시) -->
+          <div class="flex justify-center mt-6">
+            <pagination data-type="composite" currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? null}}" hasMorePages="{{userPosts.data?.has_more_pages ?? false}}">
+              <on event="onPageChange">
+                <!-- 페이지 이동 — 상태가 아니라 URL 질의를 바꾸므로 특정 페이지를 그대로 공유하거나 뒤로가기로 되돌아갈 수 있다. -->
+                <navigate path="/users/{{route.userId}}/posts" :mergeQuery="true">
+                  <query page="{{$args[0]}}"/>
+                </navigate>
+              </on>
+            </pagination>
+          </div>
+        </div>
+      </container>
+    </div>
+  </slot>
+</layout>

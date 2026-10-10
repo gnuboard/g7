@@ -1,0 +1,82 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 인스톨러 상태변경 게이트는 엔드포인트별 서브프로세스 단위 테스트가 effect 단위로 검증한다(installer-entry-guard·installer-security-hardening 매니페스트와 같은 형태). 세션×엔드포인트 교차는 공격자 409 데이터셋(save-extensions/reset/abort)과 install-process·finalize·worker·Step 3·reclaim 개별 테스트로 덮고, 실제 2세션 교차는 manual_verification 의 브라우저 A/B 매트릭스로 확인한다.
+
+feature: 웹 인스톨러 설치 소유권 — 교차 세션 상태 혼합 차단
+
+description: |
+  설치 도중 다른 브라우저 세션이 인스톨러 상태변경 API 를 호출해 관리자 자격증명을 바꾸거나
+  (자격증명 혼합 → 최고관리자 탈취) 기존 DB 삭제를 예약할 수 있던 결함의 회귀 가드.
+
+  근본 원인은 상태변경 API 에 "설치 소유권" 이 없었던 것 하나다. 처치:
+    1. Step 3 를 최초로 통과한 세션이 소유자 — state 에는 세션 토큰 해시만 남는다.
+    2. install-process / save-extensions / reset / abort / finalize 는 소유 세션 + CSRF 만.
+       폴링 action=get 은 게이트하지 않는다(완료 폴링 자가차단 회귀 가드).
+    3. DB 테스트 실패 기록은 통과가 아니며, 검사한 연결설정과 제출 설정을 HMAC 지문으로 대조.
+    4. drop_tables 는 DB 테스트가 발급한 확인 토큰 + 탐지 테이블 불변일 때만.
+    5. 세션이 없는 SSE 워커는 install-process 가 서명한 설치 계획만 실행.
+    6. state 쓰기는 generation CAS — 워커 진행 쓰기는 세대를 올리지 않고 소유 필드를 되돌리지 않는다.
+    7. 세션 유실 소유자는 복구 토큰으로만 소유권을 되찾는다(토큰 회전·실패 제한).
+
+axes:
+  session: [owner, other_session, lost_owner_session, no_session_worker]
+  surface: [step3, install_process, save_extensions, state_reset, state_abort, state_get, state_reclaim, finalize_env, install_worker]
+
+effects:
+  # 소유권
+  - ownership_first_claim_owns_installation
+  - ownership_other_session_is_not_owner
+  - ownership_state_stores_hashes_only
+  - ownership_fields_survive_secret_redaction
+  # 게이트
+  - non_owner_state_change_rejected_with_409
+  - csrf_mismatch_rejected_with_403
+  - state_get_polling_is_not_gated
+  - attacker_cannot_mix_credentials_or_schedule_drop
+  - finalize_blocked_before_completion
+  - worker_refuses_unsigned_plan
+  - owner_install_signs_plan_and_keeps_owner_credentials
+  # Step 3 DB 테스트 게이트
+  - db_test_failure_is_not_a_pass
+  - step3_rejects_config_changed_after_db_test
+  - step3_rejects_when_other_session_owns
+  - step3_claim_discards_stale_runtime
+  - step3_server_errors_are_translated
+  - fingerprint_ignores_read_when_read_db_disabled
+  - fingerprint_normalization_matches_frontend
+  # 기존 테이블 삭제 확인
+  - drop_confirm_requires_token_tables_prefix_unexpired
+  - drop_confirm_first_use_marks_consumed
+  - drop_confirm_consumed_allows_owner_retry
+  - unconfirmed_drop_downgraded_to_skip
+  # generation CAS
+  - cas_commits_and_bumps_generation
+  - cas_rejects_stale_write
+  - worker_progress_write_does_not_bump_generation
+  - stale_plain_save_cannot_revert_ownership_fields
+  # 복구 토큰
+  - recovery_token_reclaims_and_rotates
+  - recovery_token_rejects_wrong_token
+  - recovery_reclaim_is_rate_limited
+  - same_session_resumes_without_token
+  # 회귀 가드 — 엔드포인트 require 체인, 워커 동시 실행 락(이슈 #319)
+  - endpoint_require_chain_defines_gate_helpers
+  - worker_lock_prevents_concurrent_workers
+  # 설치 완료 판정 — .env 가 INI 로 파싱되지 않아도 완료 플래그를 읽는다(finalize 계열 가드 fail-open 차단)
+  - completion_flag_read_despite_non_ini_comments
+
+test_files:
+  - tests/Unit/Installer/InstallerOwnershipGuardTest.php
+  - tests/Unit/Installer/InstallerConfigFingerprintTest.php
+  - tests/Unit/Installer/InstallerDbTestGateTest.php
+  - tests/Unit/Installer/InstallerDropConfirmTest.php
+  - tests/Unit/Installer/InstallerGenerationCasTest.php
+  - tests/Unit/Installer/InstallerRecoveryTokenTest.php
+  - tests/Unit/Installer/InstallerCredentialMixingTest.php
+  - tests/Unit/Installer/InstallerIncludeOrderTest.php
+  - tests/Unit/Installer/WorkerLockGuardTest.php
+  - tests/Unit/Installer/InstallerCompletionEnvFlagTest.php
+
+manual_verification: |
+  실제 2세션 교차는 브라우저로 확인한다 — 소유 브라우저로 3단계를 통과한 뒤, 쿠키를 공유하지 않는
+  두 번째 세션에서 설치 시작·확장 저장·초기화·중단을 요청해 409 와 상태 불변을 측정하고, 소유
+  브라우저의 쿠키를 지워 복구 토큰 화면(오토큰 403, 정토큰 재개·토큰 회전)을 확인한다. SSE 와
+  폴링 두 모드로 끝까지 설치해 완료 전환과 완료 후 410 을 확인한다.

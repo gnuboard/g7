@@ -17,6 +17,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 import layoutJson from '../../../layouts/admin/admin_ecommerce_product_review_index.json';
+import { initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ─── 테스트용 컴포넌트 ───
 
@@ -284,8 +285,8 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
         });
 
         it('state에 selectedReviews, expandedRows가 정의되어 있다', () => {
-            expect(Array.isArray((layoutJson as any).state.selectedReviews)).toBe(true);
-            expect(Array.isArray((layoutJson as any).state.expandedRows)).toBe(true);
+            expect(Array.isArray(initStateOf(layoutJson as any).selectedReviews)).toBe(true);
+            expect(Array.isArray(initStateOf(layoutJson as any).expandedRows)).toBe(true);
         });
     });
 

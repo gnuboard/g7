@@ -1,74 +1,86 @@
 {
-  "editor": {
-    "data_source": {
-      "availableChannels": "사용 가능 채널",
-      "boardIdentityPolicies": "게시판 본인인증 정책",
-      "boardIdentityPurposes": "게시판 본인인증 목적",
-      "boardNotificationDefinitions": "게시판 알림 정의",
-      "board_list_for_inquiry": "문의용 게시판 목록",
-      "board_types": "게시판 유형",
-      "boards": "게시판 목록",
-      "boards_list": "게시판 목록",
-      "form_data": "폼 데이터",
-      "form_meta": "폼 메타",
-      "identityProviders": "본인인증 제공자",
-      "post": "게시글",
-      "posts": "게시글 목록",
-      "report_detail": "신고 상세",
-      "reporters_list": "신고자 목록",
-      "reports": "신고 목록",
-      "roles": "역할 목록",
-      "settings": "게시판 설정"
-    }
-  },
-  "common": {
-    "$partial": "partial/ko/common.json"
-  },
-  "admin": {
+    "editor": {
+        "data_source": {
+            "availableChannels": "사용 가능 채널",
+            "boardIdentityPolicies": "게시판 본인인증 정책",
+            "boardIdentityPurposes": "게시판 본인인증 목적",
+            "boardPrivacyRetentionPreview": "게시판 개인정보 보유기간 대상 건수",
+            "boardNotificationDefinitions": "게시판 알림 정의",
+            "board_list_for_inquiry": "문의용 게시판 목록",
+            "board_types": "게시판 유형",
+            "boards": "게시판 목록",
+            "boards_list": "게시판 목록",
+            "form_data": "폼 데이터",
+            "form_meta": "폼 메타",
+            "identityProviders": "본인인증 제공자",
+            "post": "게시글",
+            "posts": "게시글 목록",
+            "report_detail": "신고 상세",
+            "reporters_list": "신고자 목록",
+            "reports": "신고 목록",
+            "roles": "역할 목록",
+            "settings": "게시판 설정",
+            "scraps": "스크랩 목록",
+            "reactionTypes": "반응 유형",
+            "reactions": "반응 목록",
+            "privacyTargets": "보유기간 처리 대상 목록 (작성 IP·비회원)",
+            "privacyManualRuns": "개인정보 조치 직권 실행 상태"
+        }
+    },
+    "common": {
+        "$partial": "partial/ko/common.json"
+    },
+    "admin": {
+        "board": {
+            "$partial": "partial/ko/admin/board.json"
+        },
+        "modals": {
+            "$partial": "partial/ko/admin/modals.json"
+        },
+        "form": {
+            "$partial": "partial/ko/admin/form.json"
+        },
+        "reports": {
+            "$partial": "partial/ko/admin/reports.json"
+        },
+        "scraps": {
+            "$partial": "partial/ko/admin/scraps.json"
+        },
+        "reactions": {
+            "$partial": "partial/ko/admin/reactions.json"
+        },
+        "posts": {
+            "$partial": "partial/ko/admin/posts.json"
+        },
+        "settings": {
+            "$partial": "partial/ko/admin/settings.json"
+        },
+        "board_types": {
+            "$partial": "partial/ko/admin/board_types.json"
+        },
+        "users": {
+            "$partial": "partial/ko/admin/users.json"
+        },
+        "ecommerce_settings": {
+            "$partial": "partial/ko/admin/ecommerce_settings.json"
+        },
+        "dashboard": {
+            "$partial": "partial/ko/admin/dashboard.json"
+        }
+    },
     "board": {
-      "$partial": "partial/ko/admin/board.json"
+        "$partial": "partial/ko/board.json"
     },
-    "modals": {
-      "$partial": "partial/ko/admin/modals.json"
+    "messages": {
+        "$partial": "partial/ko/messages.json"
     },
-    "form": {
-      "$partial": "partial/ko/admin/form.json"
+    "validation": {
+        "$partial": "partial/ko/validation.json"
     },
-    "reports": {
-      "$partial": "partial/ko/admin/reports.json"
+    "attributes": {
+        "$partial": "partial/ko/attributes.json"
     },
-    "posts": {
-      "$partial": "partial/ko/admin/posts.json"
-    },
-    "settings": {
-      "$partial": "partial/ko/admin/settings.json"
-    },
-    "board_types": {
-      "$partial": "partial/ko/admin/board_types.json"
-    },
-    "users": {
-      "$partial": "partial/ko/admin/users.json"
-    },
-    "ecommerce_settings": {
-      "$partial": "partial/ko/admin/ecommerce_settings.json"
-    },
-    "dashboard": {
-      "$partial": "partial/ko/admin/dashboard.json"
+    "enums": {
+        "$partial": "partial/ko/enums.json"
     }
-  },
-  "board": {
-    "$partial": "partial/ko/board.json"
-  },
-  "messages": {
-    "$partial": "partial/ko/messages.json"
-  },
-  "validation": {
-    "$partial": "partial/ko/validation.json"
-  },
-  "attributes": {
-    "$partial": "partial/ko/attributes.json"
-  },
-  "enums": {
-    "$partial": "partial/ko/enums.json"
-  }
 }

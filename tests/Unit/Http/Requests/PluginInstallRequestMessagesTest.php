@@ -5,6 +5,7 @@ namespace Tests\Unit\Http\Requests;
 use App\Http\Requests\Plugin\InstallPluginFromFileRequest;
 use App\Http\Requests\Plugin\InstallPluginFromGithubRequest;
 use App\Http\Requests\Plugin\PreviewPluginManifestRequest;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,8 @@ class PluginInstallRequestMessagesTest extends TestCase
      * 메시지 배열의 모든 값이 원문 키가 아닌 해석된 문장이어야 한다.
      *
      * @param  array<string, string>  $messages  FormRequest 가 반환한 메시지 배열
+     * @param  string  $context  실패 메시지에 붙일 문맥
+     * @return void 반환값 없음
      */
     private function assertAllMessagesResolved(array $messages, string $context): void
     {
@@ -41,6 +44,12 @@ class PluginInstallRequestMessagesTest extends TestCase
 
     /**
      * GitHub 주소 설치 요청의 안내 문구가 모두 해석된다.
+     *
+     * @scenario concern=request_validation, extension_type=plugin
+     *
+     * @effects github_install_messages_are_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_github_install_messages_are_resolved(): void
     {
@@ -52,6 +61,12 @@ class PluginInstallRequestMessagesTest extends TestCase
 
     /**
      * ZIP 파일 업로드 설치 요청의 안내 문구가 모두 해석된다.
+     *
+     * @scenario concern=request_validation, extension_type=plugin
+     *
+     * @effects file_install_messages_are_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_file_install_messages_are_resolved(): void
     {
@@ -63,6 +78,12 @@ class PluginInstallRequestMessagesTest extends TestCase
 
     /**
      * manifest 미리보기 요청의 안내 문구가 모두 해석된다.
+     *
+     * @scenario concern=request_validation, extension_type=plugin
+     *
+     * @effects manifest_preview_messages_are_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_manifest_preview_messages_are_resolved(): void
     {
@@ -75,8 +96,14 @@ class PluginInstallRequestMessagesTest extends TestCase
     /**
      * ko/en 양쪽에 7키가 모두 정의되어 있어야 한다 (한쪽만 있으면 로케일에 따라 회귀).
      *
-     * @dataProvider localeProvider
+     * @scenario concern=translation_key, extension_type=plugin
+     *
+     * @effects install_validation_keys_defined_in_all_base_locales
+     *
+     * @param  string  $locale  로케일
+     * @return void 반환값 없음
      */
+    #[DataProvider('localeProvider')]
     public function test_install_validation_keys_defined_in_all_base_locales(string $locale): void
     {
         $keys = [

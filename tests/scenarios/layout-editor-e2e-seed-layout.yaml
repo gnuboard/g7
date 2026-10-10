@@ -16,13 +16,15 @@ description: |
       편집기 UI 로 저장한(파일에 없는) 변경을 전부 되돌리기 때문
     - 가드 2중: CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1` 명시 옵트인
     - globalSetup 이 매 실행 fixture 원본으로 덮어쓰므로 회차 간 누적이 성립하지 않음
+    - 대상은 활성 템플릿(사용자·관리자 각 하나)이고 시드 원본·경로는 템플릿 종류로 고른다 — 코어가 특정
+      템플릿 식별자를 적어 두지 않는다(2026-09-28 결정). 활성 템플릿이 없으면 실패한다
 
-  axes 는 커맨드의 상태 전이 축(설치/제거 × 대상 템플릿의 DB 등록 여부)만 둔다. 가드 거부·멱등·
-  미정의 템플릿은 상태 전이가 아니라 진입 차단 경로이므로 axes 조합이 아니라 effects 로 잠근다.
+  axes 는 커맨드의 상태 전이 축(설치/제거 × 활성 템플릿 유무)만 둔다. 가드 거부·멱등·
+  활성 아닌 템플릿 지정은 상태 전이가 아니라 진입 차단 경로이므로 axes 조합이 아니라 effects 로 잠근다.
 
 axes:
   action: [install, remove]
-  template_in_db: [yes, no]
+  template_active: [yes, no]
 
 effects:
   - seed_layout_command_requires_explicit_optin_env
@@ -32,9 +34,10 @@ effects:
   - seed_layout_remove_keeps_other_routes
   - seed_layout_remove_restores_routes_json_byte_for_byte
   - seed_layout_repeated_install_keeps_pristine_routes_backup
-  - seed_layout_skips_template_absent_from_db_without_failing
-  - seed_layout_remove_skips_template_absent_from_db_without_touching_files
-  - seed_layout_warns_on_template_without_declared_seed_route
+  - seed_layout_fails_without_an_active_template
+  - seed_layout_remove_without_active_template_touches_no_files
+  - seed_layout_warns_on_requested_template_that_is_not_active
+  - seed_layout_targets_whatever_template_is_active
   - delete_by_name_force_deletes_matching_layout
   - delete_by_name_returns_false_when_absent
   - delete_by_name_does_not_touch_same_name_in_other_template

@@ -1,0 +1,17 @@
+feature: 해외 배송 주문의 상세주소 필수 검증 (#703)
+
+description: |
+  주문 생성 검증이 shipping.address_detail 을 국가와 무관하게 필수로 요구해, 상세주소 칸이 없는
+  해외 배송 폼(주소 1·2행)은 결제하기마다 「상세 주소를 입력해주세요.」 422 로 막혔다.
+  기본 주소(address)와 같은 짝 — 해외 주소 1행이 없을 때만 필수 — 로 판정한다. 국내는 여전히 필수다.
+
+axes:
+  shipping_region: [domestic, overseas]
+  address_detail_input: [missing]
+
+effects:
+  - overseas_order_passes_without_address_detail
+  - domestic_order_still_requires_address_detail
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/CheckoutOverseasAddressDetailTest.php

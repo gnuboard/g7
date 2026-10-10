@@ -6,6 +6,10 @@
  *   `source_identifier: "module:sirsoft-board"` (잘못된 접두사 포함) 으로 필터하여
  *   DB 의 `source_identifier='sirsoft-board'` (모듈 식별자만 저장) 와 매칭되지 않아
  *   정책 목록이 항상 비어있던 문제.
+ *
+ * @effects source_type_filter_removed_from_dom,
+ *   scope_filter_remains_functional,
+ *   search_filter_remains_functional
  */
 
 import { describe, it, expect } from 'vitest';

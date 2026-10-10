@@ -12,6 +12,24 @@ use Illuminate\Http\Request;
 class TemplateCollection extends BaseApiCollection
 {
     /**
+     * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.
+     *
+     * 목록 머리말 버튼과 카드 메뉴가 읽는다. 식별자는 각 라우트의 permission 미들웨어와 같다.
+     *
+     * @return array<string, string> 능력 키 => 권한 식별자 매핑
+     */
+    protected function abilityMap(): array
+    {
+        return [
+            'can_install' => 'core.templates.install',
+            'can_activate' => 'core.templates.activate',
+            'can_uninstall' => 'core.templates.uninstall',
+            // 카드 「원문 편집」·「시각 편집」 — 행 TemplateResource 와 같은 키
+            'can_edit_layouts' => 'core.templates.layouts.edit',
+        ];
+    }
+
+    /**
      * 템플릿 컬렉션을 배열로 변환합니다.
      *
      * @param  Request  $request  HTTP 요청 객체

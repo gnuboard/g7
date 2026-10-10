@@ -4,12 +4,15 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 
 /**
  * 상품 1:1 문의 작성 요청 (회원 전용)
  */
 class StoreInquiryRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 권한 확인
      *
@@ -31,11 +34,11 @@ class StoreInquiryRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'title'     => ['nullable', 'string'],
-            'category'  => ['nullable', 'string'],
-            'content'   => ['required', 'string'],
+            'title' => ['nullable', 'string'],
+            'category' => ['nullable', 'string'],
+            'content' => ['required', 'string'],
             'is_secret' => ['boolean'],
-            'temp_key'  => ['nullable', 'string'],
+            'temp_key' => $this->tempKeyRules(),
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.inquiry.store_validation_rules', $rules, $this);
@@ -50,8 +53,8 @@ class StoreInquiryRequest extends FormRequest
     {
         $messages = [
             'content.required' => __('sirsoft-ecommerce::validation.inquiries.content.required'),
-            'content.min'      => __('sirsoft-ecommerce::validation.inquiries.content.min'),
-            'content.max'      => __('sirsoft-ecommerce::validation.inquiries.content.max'),
+            'content.min' => __('sirsoft-ecommerce::validation.inquiries.content.min'),
+            'content.max' => __('sirsoft-ecommerce::validation.inquiries.content.max'),
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.inquiry.store_validation_messages', $messages, $this);

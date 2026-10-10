@@ -1,398 +1,518 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "주문 배송지 변경 모달",
-    "editor_label": "$t:user.modal_label.mypage_orders.changeAddressModal"
-  },
-  "type": "composite",
-  "name": "Modal",
-  "id": "changeAddressModal",
-  "props": {
-    "title": "$t:mypage.order_detail.change_shipping_address",
-    "size": "md",
-    "closeOnBackdropClick": false
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "space-y-4" },
-      "children": [
+    "comment": "주문 배송지 변경 창 — 배송이 시작되기 전까지만 열린다. 회원은 저장된 배송지에서 고르거나 직접 쓸 수\n     있고 비회원은 주소록이 없어 직접 입력만 보인다. 창이 별도 컨텍스트라 고른 값이 `_global` 에 산다.",
+    "meta": {
+        "is_partial": true,
+        "description": "주문 배송지 변경 모달",
+        "editor_label": "$t:user.modal_label.mypage_orders.changeAddressModal"
+    },
+    "id": "changeAddressModal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:mypage.order_detail.change_shipping_address",
+        "size": "md",
+        "closeOnBackdropClick": false
+    },
+    "children": [
         {
-          "comment": "탭: 저장된 배송지 / 직접 입력 — 회원만. 비회원은 주소록이 없어 탭 없이 직접입력 폼만 노출.",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.currentUser?.uuid}}",
-          "props": { "className": "flex border-b border-gray-200 dark:border-gray-700" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "{{(_global.changeAddressMode ?? 'saved') === 'saved' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
-              },
-              "text": "$t:mypage.order_detail.saved_addresses",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": { "target": "global", "changeAddressMode": "saved" }
-                }
-              ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
             },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "{{(_global.changeAddressMode ?? 'saved') === 'manual' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
-              },
-              "text": "$t:mypage.order_detail.manual_input",
-              "actions": [
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": { "target": "global", "changeAddressMode": "manual" }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "저장된 배송지 목록 — 회원 + saved 탭. 비회원은 주소록이 없어 비노출.",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.currentUser?.uuid && (_global.changeAddressMode ?? 'saved') === 'saved'}}",
-          "props": { "className": "space-y-2 max-h-80 overflow-y-auto" },
-          "children": [
-            {
-              "comment": "배송지 있을 때",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(userAddresses?.data?.addresses?.data ?? []).length > 0}}",
-              "props": { "className": "space-y-2" },
-              "iteration": { "source": "{{userAddresses?.data?.addresses?.data ?? []}}", "item_var": "addr", "index_var": "addrIdx" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "{{_global.selectedAddressId === addr.id ? 'border-2 border-gray-900 dark:border-white rounded-lg p-3 cursor-pointer bg-gray-50 dark:bg-gray-700' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors'}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": { "target": "global", "selectedAddressId": "{{addr.id}}" }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-2 mb-1" },
-                      "children": [
+                    "comment": "탭: 저장된 배송지 / 직접 입력 — 회원만. 비회원은 주소록이 없어 탭 없이 직접입력 폼만 노출.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.currentUser?.uuid}}",
+                    "props": {
+                        "className": "flex border-b border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "font-medium text-gray-900 dark:text-white text-sm" },
-                          "text": "{{$localized(addr.name)}}"
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "저장된 배송지 탭",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "changeAddressMode": "saved"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(_global.changeAddressMode ?? 'saved') === 'saved' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                            },
+                            "text": "$t:mypage.order_detail.saved_addresses"
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{addr.is_default}}",
-                          "props": { "className": "inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium" },
-                          "children": [
-                            { "type": "basic", "name": "Icon", "props": { "name": "star", "className": "w-2.5 h-2.5" } },
-                            { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.default" }
-                          ]
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "직접 입력 탭 — 비회원에게는 이 모드만 있고 탭 줄 자체가 보이지 않는다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "changeAddressMode": "manual"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(_global.changeAddressMode ?? 'saved') === 'manual' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                            },
+                            "text": "$t:mypage.order_detail.manual_input"
                         }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
-                      "text": "{{addr.recipient_name}} | {{addr.recipient_phone}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                      "text": "[{{addr.zipcode}}] {{addr.address}} {{addr.address_detail}}"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "comment": "배송지 없을 때",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{!(userAddresses?.data?.addresses?.data ?? []).length}}",
-              "props": { "className": "text-center py-8" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": { "name": "map-pin", "className": "w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                  "text": "$t:mypage.addresses.empty"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "직접 입력 폼 — 비회원은 항상 노출(탭 없음), 회원은 manual 탭 선택 시 노출. 모달은 부모 _local 미접근이므로 dataKey 를 _global.editingShippingAddress 로 설정(트리거가 현재 배송지로 채움). 내부 Input 의 name(recipient_name 등 하위 키)이 _global.editingShippingAddress 와 자동 동기화됨. _modal_address.json(_global.editingAddress) 와 동일 패턴. 자동바인딩 Input 에는 수동 value 를 두지 않는다.",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!_global.currentUser?.uuid || (_global.changeAddressMode ?? 'saved') === 'manual'}}",
-          "dataKey": "_global.editingShippingAddress",
-          "props": { "className": "space-y-3" },
-          "children": [
-            {
-              "comment": "받는 분 + 연락처",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "grid grid-cols-2 gap-3" },
-              "responsive": {
-                "portable": {
-                  "props": { "className": "grid grid-cols-1 gap-3" }
-                }
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-                      "children": [
-                        { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.form.recipient" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-0.5" }, "text": "*" }
-                      ]
+                    "comment": "저장된 배송지 목록 — 회원 + saved 탭. 비회원은 주소록이 없어 비노출.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.currentUser?.uuid && (_global.changeAddressMode ?? 'saved') === 'saved'}}",
+                    "props": {
+                        "className": "space-y-2 max-h-80 overflow-y-auto"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "recipient_name",
-                        "placeholder": "$t:mypage.addresses.form.recipient_placeholder",
-                        "required": true,
-                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-                      "children": [
-                        { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.form.phone" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-0.5" }, "text": "*" }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "tel",
-                        "name": "recipient_phone",
-                        "placeholder": "$t:mypage.addresses.form.phone_placeholder",
-                        "required": true,
-                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "comment": "주소 검색",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-                  "children": [
-                    { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.form.address" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-0.5" }, "text": "*" }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "space-y-2" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex gap-2" },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "text",
-                            "name": "zipcode",
-                            "placeholder": "$t:shop.checkout.zipcode_placeholder",
-                            "className": "w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm",
-                            "readOnly": true
-                          }
+                            "comment": "배송지 있을 때",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(userAddresses?.data?.addresses?.data ?? []).length > 0}}",
+                            "iteration": {
+                                "source": "{{userAddresses?.data?.addresses?.data ?? []}}",
+                                "item_var": "addr",
+                                "index_var": "addrIdx"
+                            },
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "actions": [
+                                        {
+                                            "comment": "카드 전체가 고르기 영역이다 — 고르기만 하고 실제 반영은 아래 확인 버튼이 한다",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedAddressId": "{{addr.id}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "{{_global.selectedAddressId === addr.id ? 'border-2 border-gray-900 dark:border-white rounded-lg p-3 cursor-pointer bg-gray-50 dark:bg-gray-700' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2 mb-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-900 dark:text-white text-sm"
+                                                    },
+                                                    "text": "{{$localized(addr.name)}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{addr.is_default}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "star",
+                                                                "className": "text-[10px]"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:mypage.addresses.default"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "{{addr.recipient_name}} | {{addr.recipient_phone}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "[{{addr.zipcode}}] {{addr.address}} {{addr.address_detail}}"
+                                        }
+                                    ]
+                                }
+                            ]
                         },
                         {
-                          "id": "modal_change_address_search_slot",
-                          "type": "extension_point",
-                          "name": "address_search_slot",
-                          "props": {
-                            "readOnlyFields": ["zipcode", "address"]
-                          },
-                          "callbacks": {
-                            "onAddressSelect": {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "editingShippingAddress.zipcode": "{{$event.zipcode}}",
-                                "editingShippingAddress.address": "{{$event.address}}",
-                                "editingShippingAddress.region": "{{$event.region}}",
-                                "editingShippingAddress.city": "{{$event.city}}"
-                              }
+                            "comment": "배송지 없을 때",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!(userAddresses?.data?.addresses?.data ?? []).length}}",
+                            "props": {
+                                "className": "text-center py-8"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "map-pin",
+                                        "className": "text-[2.5rem] mx-auto text-gray-300 dark:text-gray-600 mb-2"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:mypage.addresses.empty"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "직접 입력 폼 — 비회원은 항상 노출(탭 없음), 회원은 manual 탭 선택 시 노출. 모달은 부모 _local 미접근이므로 dataKey 를 _global.editingShippingAddress 로 설정(트리거가 현재 배송지로 채움). 내부 Input 의 name(recipient_name 등 하위 키)이 _global.editingShippingAddress 와 자동 동기화됨. _modal_address.g7.html(_global.editingAddress) 와 동일 패턴. 자동바인딩 Input 에는 수동 value 를 두지 않는다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.currentUser?.uuid || (_global.changeAddressMode ?? 'saved') === 'manual'}}",
+                    "dataKey": "_global.editingShippingAddress",
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "comment": "받는 분 + 연락처",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "grid grid-cols-1 gap-3"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "grid grid-cols-2 gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:mypage.addresses.form.recipient"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-0.5"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "recipient_name",
+                                                "placeholder": "$t:mypage.addresses.form.recipient_placeholder",
+                                                "required": true,
+                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:mypage.addresses.form.phone"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-0.5"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "tel",
+                                                "name": "recipient_phone",
+                                                "placeholder": "$t:mypage.addresses.form.phone_placeholder",
+                                                "required": true,
+                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "주소 검색",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:mypage.addresses.form.address"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-red-500 ml-0.5"
+                                            },
+                                            "text": "*"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "text",
+                                                        "name": "zipcode",
+                                                        "placeholder": "$t:shop.checkout.zipcode_placeholder",
+                                                        "className": "w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm",
+                                                        "readOnly": true
+                                                    }
+                                                },
+                                                {
+                                                    "id": "modal_change_address_search_slot",
+                                                    "type": "extension_point",
+                                                    "name": "address_search_slot",
+                                                    "props": {
+                                                        "readOnlyFields": [
+                                                            "zipcode",
+                                                            "address"
+                                                        ]
+                                                    },
+                                                    "callbacks": {
+                                                        "onAddressSelect": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "editingShippingAddress.zipcode": "{{$event.zipcode}}",
+                                                                "editingShippingAddress.address": "{{$event.address}}",
+                                                                "editingShippingAddress.region": "{{$event.region}}",
+                                                                "editingShippingAddress.city": "{{$event.city}}"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "address",
+                                                "placeholder": "$t:shop.checkout.address_placeholder",
+                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm",
+                                                "readOnly": true
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "상세 주소",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "text": "$t:mypage.addresses.form.detail_address"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "address_detail",
+                                        "placeholder": "$t:mypage.addresses.form.detail_placeholder",
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "버튼 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
                             }
-                          }
                         }
-                      ]
                     },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "address",
-                        "placeholder": "$t:shop.checkout.address_placeholder",
-                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm",
-                        "readOnly": true
-                      }
-                    }
-                  ]
+                    "props": {
+                        "className": "flex justify-end gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid && (_global.changeAddressMode ?? 'saved') === 'saved' && !_global.selectedAddressId)}}"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "적용 — 저장된 배송지 탭에서 아무것도 고르지 않았으면 잠겨 있다(address_id 없이 나가면 서버가 직접 입력 칸을 요구해 422, #703).\n                 회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다.",
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.changeShippingAddress",
+                                    "params": {
+                                        "orderId": "{{order.data.id}}"
+                                    },
+                                    "confirm": "$t:mypage.order_detail.confirm_change_address"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid && (_global.changeAddressMode ?? 'saved') === 'saved' && !_global.selectedAddressId)}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.isSubmittingAddress}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "animate-spin",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_local.isSubmittingAddress ? '$t:common.processing' : '$t:mypage.order_detail.apply_change'}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "comment": "상세 주소",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-                  "text": "$t:mypage.addresses.form.detail_address"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "address_detail",
-                    "placeholder": "$t:mypage.addresses.form.detail_placeholder",
-                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "버튼 영역",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex justify-end gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
-          "responsive": {
-            "portable": {
-              "props": { "className": "flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" }
-            }
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              },
-              "responsive": {
-                "portable": {
-                  "props": {
-                    "type": "button",
-                    "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  }
-                }
-              },
-              "text": "$t:common.cancel",
-              "actions": [
-                { "type": "click", "handler": "closeModal" }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_local.isSubmittingAddress === true}}"
-              },
-              "responsive": {
-                "portable": {
-                  "props": {
-                    "type": "button",
-                    "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_local.isSubmittingAddress === true}}"
-                  }
-                }
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "if": "{{_local.isSubmittingAddress}}",
-                  "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "{{_local.isSubmittingAddress ? '$t:common.processing' : '$t:mypage.order_detail.apply_change'}}"
-                }
-              ],
-              "actions": [
-                {
-                  "comment": "적용 — 회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다.",
-                  "type": "click",
-                  "handler": "sirsoft-ecommerce.changeShippingAddress",
-                  "confirm": "$t:mypage.order_detail.confirm_change_address",
-                  "params": { "orderId": "{{order.data.id}}" }
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

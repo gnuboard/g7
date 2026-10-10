@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
  * 주문 배송 모델
@@ -16,10 +15,21 @@ class OrderShipping extends Model
 {
     use HasFactory;
 
+    /**
+     * 모델 팩토리를 돌려줍니다.
+     *
+     * @return OrderShippingFactory 모델 팩토리
+     */
     protected static function newFactory()
     {
         return OrderShippingFactory::new();
     }
+
+    /**
+     * 테이블명
+     *
+     * @var string
+     */
     protected $table = 'ecommerce_order_shippings';
 
     protected $fillable = [
@@ -36,10 +46,6 @@ class OrderShipping extends Model
         'carrier_id',
         'tracking_number',
         'return_shipping_amount',
-        'return_carrier_id',
-        'return_tracking_number',
-        'exchange_carrier_id',
-        'exchange_tracking_number',
         'package_number',
         'visit_date',
         'visit_time_slot',
@@ -214,25 +220,5 @@ class OrderShipping extends Model
     public function isPackaged(): bool
     {
         return ! empty($this->package_number);
-    }
-
-    /**
-     * 반품 배송 정보 존재 여부 확인
-     *
-     * @return bool 반품 배송 정보 존재 여부
-     */
-    public function hasReturnShipping(): bool
-    {
-        return ! empty($this->return_tracking_number);
-    }
-
-    /**
-     * 교환 배송 정보 존재 여부 확인
-     *
-     * @return bool 교환 배송 정보 존재 여부
-     */
-    public function hasExchangeShipping(): bool
-    {
-        return ! empty($this->exchange_tracking_number);
     }
 }

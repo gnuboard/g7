@@ -5,14 +5,19 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Exceptions\ConcurrentModificationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\LayoutVersionListRequest;
+use App\Http\Requests\Layout\CompileLayoutMarkupRequest;
 use App\Http\Requests\Layout\StoreLayoutExtensionPreviewRequest;
 use App\Http\Requests\Layout\UpdateLayoutExtensionContentRequest;
 use App\Http\Resources\LayoutExtensionResource;
 use App\Http\Resources\LayoutExtensionVersionResource;
 use App\Models\LayoutExtension;
+use App\Rules\LayoutContentGate;
 use App\Services\LayoutExtensionService;
+use App\Services\LayoutMarkupService;
 use App\Services\LayoutPreviewService;
 use App\Services\TemplateService;
+use App\Support\LayoutMarkup\CompileError;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -25,10 +30,17 @@ use Illuminate\Support\Facades\DB;
  */
 class LayoutExtensionController extends AdminBaseController
 {
+    /**
+     * @param  LayoutExtensionService  $layoutExtensionService  확장 조각 조회·저장·주입 해석
+     * @param  TemplateService  $templateService  템플릿 식별자 → 템플릿 해석
+     * @param  LayoutPreviewService  $layoutPreviewService  저장하지 않은 조각의 일회용 미리보기 발급
+     * @param  LayoutMarkupService  $layoutMarkupService  마크업 역변환·컴파일·저장본 해석
+     */
     public function __construct(
         private LayoutExtensionService $layoutExtensionService,
         private TemplateService $templateService,
-        private LayoutPreviewService $layoutPreviewService
+        private LayoutPreviewService $layoutPreviewService,
+        private LayoutMarkupService $layoutMarkupService
     ) {
         parent::__construct();
     }
@@ -90,10 +102,129 @@ class LayoutExtensionController extends AdminBaseController
         // 렌더할 대상. overlay = [target_layout], extension_point = 그 확장점을 포함하는
         // 레이아웃 전체(복수면 클라이언트가 대표 호스트 선택 picker 를 띄운다).
         // ResponseHelper::success 는 Resource additional() 을 보존하지 않으므로 data 안에 병합.
-        $payload = (new LayoutExtensionResource($extension))->resolve();
+        $resource = new LayoutExtensionResource($extension);
+
+        // `?with_markup=1` — 코드 편집기 HTML 탭용 역변환(JSON→.g7.html). 기본 응답은 무변경.
+        if (request()->boolean('with_markup')) {
+            $resource->withMarkup($this->buildMarkupPayload($extension, $templateName));
+        }
+
+        $payload = $resource->resolve();
         $payload['host_layouts'] = $this->layoutExtensionService->getExtensionHostLayouts($extension);
 
         return $this->success('common.success', $payload);
+    }
+
+    /**
+     * 확장 조각 마크업(`.g7.html`)을 저장 없이 프로덕션 컴파일해 JSON·경고를 돌려줍니다 (코드 편집기 JSON 뷰 갱신용).
+     *
+     * @param  CompileLayoutMarkupRequest  $request  변환 요청 (`markup`)
+     * @param  string  $templateName  템플릿 identifier
+     * @param  int  $extensionId  확장 ID
+     * @return JsonResponse 200 `{content, warnings}` | 422 `compile_error`
+     */
+    public function compileMarkup(CompileLayoutMarkupRequest $request, string $templateName, int $extensionId): JsonResponse
+    {
+        $extension = $this->resolveExtension($templateName, $extensionId);
+
+        if (! $extension) {
+            return $this->notFound('common.not_found');
+        }
+
+        $service = $this->layoutMarkupService;
+
+        try {
+            $result = $service->toJson(
+                $request->validated('markup'),
+                $templateName,
+                $extension->source_type?->value,
+                $extension->source_identifier,
+                "{$extension->target_name}.g7.html",
+                // 저장본 — 그 안에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 (#712)
+                $service->decodeStoredContent((string) $extension->getRawOriginal('content')),
+            );
+        } catch (CompileError $error) {
+            $described = $service->describeError($error);
+
+            // 구조화 오류는 `errors` 안에 — 레이아웃이 `{{error.errors?.compile_error}}` 로 읽는다.
+            $response = $this->error(
+                'validation.layout_extension.content.markup_compile_failed',
+                422,
+                ['markup' => [$error->getDetail()], 'compile_error' => $described],
+                ['detail' => $error->getDetail()],
+            );
+            $payload = $response->getData(true);
+            $payload['compile_error'] = $described;
+
+            return $response->setData($payload);
+        }
+
+        // 컴파일 산출 JSON 도 저장 경로와 같은 보안 게이트를 거친다 (KVE-2026-2350)
+        $violations = LayoutContentGate::violations($result->json);
+        if ($violations !== []) {
+            // 편집기 오류 패널·마커가 줄을 가리키도록 위반 값이 적힌 소스 자리를 `compile_error` 로 싣는다(7.1.0 P16).
+            $described = $service->describeContentViolation($request->validated('markup'), $result->json);
+            $response = $this->error(
+                'validation.layout_extension.content.markup_compile_failed',
+                422,
+                ['content' => $violations, 'compile_error' => $described],
+                ['detail' => $violations[0]],
+            );
+            $payload = $response->getData(true);
+            $payload['compile_error'] = $described;
+
+            return $response->setData($payload);
+        }
+
+        return $this->success('common.success', [
+            'content' => $service->encodeJson($result->json),
+            'warnings' => $service->describeWarnings($result->warnings),
+        ]);
+    }
+
+    /**
+     * `?with_markup=1` 페이로드 — 역변환 결과 + 되컴파일 lint 경고(실패면 `markup_compile_error`).
+     *
+     * @param  LayoutExtension  $extension  확장 행
+     * @param  string  $templateName  템플릿 identifier
+     * @return array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null} 역변환 마크업·이스케이프 목록·lint 경고·되컴파일 오류
+     */
+    private function buildMarkupPayload(LayoutExtension $extension, string $templateName): array
+    {
+        $service = $this->layoutMarkupService;
+        // 레이아웃 갈래와 같은 이유로 원본 JSON 문자열에서 디코드한다 — `array` 캐스트는 `{}` 와 `[]` 를
+        // 구분하지 못해, 그대로 역변환하면 `{}` 가 편집기에 `[]` 로 보이고 저장 시 실제로 바뀐다.
+        $content = $service->decodeStoredContent((string) $extension->getRawOriginal('content'));
+
+        // 템플릿 `components.json` 이 스키마를 어기면 검사 목록을 만들 수 없다 — 500 이 아니라 빈 마크업 + 오류로 연다(#712).
+        try {
+            ['markup' => $markup, 'escapes' => $escapes] = $service->toMarkup($content, $templateName);
+        } catch (CompileError $error) {
+            return [
+                'content_markup' => '',
+                'markup_escapes' => [],
+                'markup_warnings' => [],
+                'markup_compile_error' => $service->describeError($error),
+            ];
+        }
+
+        $warnings = [];
+        $compileError = null;
+
+        try {
+            // 저장본에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 — 7.0 이 무차별 등록한 조각 행 (#712)
+            $result = $service->toJson($markup, $templateName, $extension->source_type?->value, $extension->source_identifier, "{$extension->target_name}.g7.html", $content);
+            $warnings = $service->describeWarnings($result->warnings);
+        } catch (CompileError $error) {
+            $compileError = $service->describeError($error);
+        }
+
+        return [
+            'content_markup' => $markup,
+            'markup_escapes' => $escapes,
+            'markup_warnings' => $warnings,
+            'markup_compile_error' => $compileError,
+        ];
     }
 
     /**
@@ -132,7 +263,11 @@ class LayoutExtensionController extends AdminBaseController
 
             DB::commit();
 
-            return $this->success('common.success', new LayoutExtensionResource($updated));
+            $payload = (new LayoutExtensionResource($updated))->resolve();
+            // `format=markup` 저장이 낸 lint 경고 — 편집기가 노란 마커로 보여준다 (JSON 저장이면 빈 배열).
+            $payload['markup_warnings'] = $request->markupWarnings();
+
+            return $this->success('common.success', $payload);
         } catch (ModelNotFoundException) {
             DB::rollBack();
 
@@ -154,7 +289,7 @@ class LayoutExtensionController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
     }
 
@@ -244,7 +379,7 @@ class LayoutExtensionController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
     }
 
@@ -291,11 +426,12 @@ class LayoutExtensionController extends AdminBaseController
 
             return $this->success('common.success', [
                 'token' => $preview->token,
-                'preview_url' => '/preview/'.$preview->token,
+                'preview_url' => $this->layoutPreviewService->previewUrl($preview),
                 'expires_at' => $preview->expires_at->toIso8601String(),
+                'markup_warnings' => $request->markupWarnings(),
             ]);
         } catch (\Exception $e) {
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
     }
 

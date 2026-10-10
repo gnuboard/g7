@@ -1,0 +1,19 @@
+feature: 코어 한국어 확장·레이아웃 문구의 조사 자리표시
+
+description: |
+  코어 lang/ko 의 modules·plugins·templates·extensions·module·exceptions·layouts 문구 74곳이 모듈·플러그인·템플릿 식별자처럼
+  받침을 알 수 없는 영문 자리표시 뒤에 「:module"을(를)」「:name이(가)」 같은 괄호 조사를 남겨, 관리자 화면·콘솔에
+  「모듈 "sirsoft-board"을(를) 찾을 수 없습니다.」처럼 나왔다(결정 2026-10-08 「괄호 조사 74곳 고침」). 식별자 뒤에 조사가 필요 없는
+  문장(「"sirsoft-board" 모듈을 찾을 수 없습니다.」)으로 바꾸고, 같은 결함군인 「":correct_path"를」 2곳도 함께 고친다.
+  자리표시 뒤 괄호 조사와 받침을 가정한 조사가 다시 들어오지 않게 파일마다 잠근다. 검증 문구(validation.php)는
+  core-validation-korean-particle 매니페스트가 맡는다.
+
+axes:
+  particle_form: [bracket, after_variable]
+
+effects:
+  - no_bracket_particle_in_core_extension_messages
+  - no_particle_after_placeholder_in_core_extension_messages
+
+test_files:
+  - tests/Unit/Lang/CoreExtensionKoreanParticleTest.php

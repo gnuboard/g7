@@ -9,6 +9,7 @@
   "saving": "保存中",
   "close": "閉じる",
   "refresh": "更新",
+  "remove": "外す",
   "created_at": "作成日",
   "updated_at": "更新日",
   "active": "有効",
@@ -50,5 +51,6 @@
   "read_only_notice": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。",
   "validation_error_notice": "入力値を確認してください。一部の項目が正しくありません。",
   "currency_label": "通貨",
-  "shipping_country_label": "配送国"
+  "shipping_country_label": "配送国",
+  "module_name": "eコマース"
 }

@@ -2,9 +2,11 @@
 
 namespace Plugins\Sirsoft\Ckeditor5\Http\Controllers\Admin;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Plugins\Sirsoft\Ckeditor5\Http\Requests\BulkDeleteUploadsRequest;
 use Plugins\Sirsoft\Ckeditor5\Http\Requests\IndexUploadsRequest;
 use Plugins\Sirsoft\Ckeditor5\Http\Resources\ImageUploadResource;
@@ -51,6 +53,11 @@ class ImageUploadAdminController extends AdminBaseController
                 'scan_limited' => $result['scan_limited'],
                 'scan_window' => ImageUploadAdminService::SCAN_WINDOW,
                 'reference_sources_incomplete' => $result['reference_sources_incomplete'] ?? false,
+            ],
+            // 화면이 행 선택·삭제·일괄 삭제와 [설정 열기]를 잠그는 근거 — 삭제 라우트·설정 화면과 같은 권한
+            'abilities' => [
+                'can_delete' => PermissionHelper::check('sirsoft-ckeditor5.uploads.delete', Auth::user()),
+                'can_open_settings' => PermissionHelper::check('core.plugins.update', Auth::user()),
             ],
         ]);
     }
@@ -104,7 +111,7 @@ class ImageUploadAdminController extends AdminBaseController
         return ResponseHelper::success(
             'messages.uploads.bulk_deleted',
             $result,
-            messageParams: ['deleted' => $result['deleted']],
+            messageParams: ['deleted' => $result['deleted'], 'count' => $result['deleted']],
             domain: 'sirsoft-ckeditor5',
         );
     }

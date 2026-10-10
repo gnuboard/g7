@@ -76,6 +76,10 @@ effects:
   - cli_installation_is_unaffected_by_the_http_activation_gate
   - update_of_an_active_pack_keeps_it_active
   - update_of_an_inactive_pack_does_not_promote_it
+  - update_of_a_deactivated_pack_keeps_inactive_status
+  - update_keeps_awaiting_host_reason
+  - update_of_an_active_pack_reapplies_entity_seed_once
+  - lang_pack_update_check_offers_higher_of_github_and_bundled
 
 # E2E axis 없음: 판정은 전부 서버측(FormRequest / Service)이다. 관리자 화면에서
 # auto_activate 를 보내는 곳은 번들 재설치 모달 하나뿐이고, 게이트를 네 경로 전부에

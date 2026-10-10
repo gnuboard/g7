@@ -22,7 +22,6 @@ export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
 
 // 게시판 관련 컴포넌트
-export { default as PostReactions } from './PostReactions';
 export { default as RichTextEditor } from './RichTextEditor';
 export { HtmlContent } from './HtmlContent';
 export { HtmlEditor } from './HtmlEditor';
@@ -43,6 +42,9 @@ export { default as ThemeToggle } from './ThemeToggle';
 export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
 export { Avatar } from './Avatar';
+// 방문자 카운터 — 홈 하단 오늘·어제·최대·전체 (#682)
+export { VisitorCounter } from './VisitorCounter';
+export type { VisitorCounterProps, VisitorCounterLabels } from './VisitorCounter';
 export { AvatarUploader } from './AvatarUploader';
 export { UserInfo } from './UserInfo';
 export { Modal } from './Modal';
@@ -84,7 +86,6 @@ export const compositeComponents = {
   QuantitySelector: () => import('./QuantitySelector'),
 
   // 게시판
-  PostReactions: () => import('./PostReactions'),
   RichTextEditor: () => import('./RichTextEditor'),
   HtmlContent: () => import('./HtmlContent'),
   HtmlEditor: () => import('./HtmlEditor'),
@@ -105,6 +106,8 @@ export const compositeComponents = {
   Pagination: () => import('./Pagination'),
   SearchBar: () => import('./SearchBar'),
   Avatar: () => import('./Avatar'),
+  // 방문자 카운터 (#682) — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
+  VisitorCounter: () => import('./VisitorCounter'),
   AvatarUploader: () => import('./AvatarUploader'),
   UserInfo: () => import('./UserInfo'),
   Modal: () => import('./Modal'),

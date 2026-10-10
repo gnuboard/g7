@@ -1,0 +1,31 @@
+feature: 인기 게시글 공개 API (GET boards/popular)
+
+description: |
+  홈 화면 인기글 위젯이 쓰는 공개 API. 조회수·댓글수 기준 정렬, 기간 필터, 개수 제한,
+  활성 게시판 한정, 작성자 블록 구조, 캐시를 고정한다.
+
+  결과 배열은 Repository 가 조립해 캐시에 저장한다. 캐시 키의 `v2` 는 작성자 이메일을 담던
+  이전 캐시를 업데이트 직후부터 다시 읽지 않기 위한 것이다(모듈 업데이트는 이 캐시를 비우지 않는다).
+  이메일 비노출 자체는 `member-email-exposure.yaml` 이 고정한다.
+
+axes:
+  case: [limit_default, limit_param, limit_max, sort, period_today, period_week, period_all, period_unsupported, empty, inactive_board, comment_count, guest_author, cache, multi_board, created_at]
+
+effects:
+  - popular_limit_default_20
+  - popular_limit_param_applied
+  - popular_limit_capped_50
+  - popular_sorted_by_popularity
+  - popular_period_filter_applied
+  - popular_period_all_maps_to_year
+  - popular_unsupported_period_normalized
+  - popular_empty_when_no_posts
+  - popular_excludes_inactive_board
+  - popular_comment_count_aggregated
+  - popular_guest_author_structure
+  - popular_cached_under_versioned_key
+  - popular_aggregates_multiple_boards
+  - popular_created_at_fields_present
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardPopularApiTest.php

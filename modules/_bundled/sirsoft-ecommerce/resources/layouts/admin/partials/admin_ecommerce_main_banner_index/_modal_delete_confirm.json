@@ -1,55 +1,56 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Main Banner Delete Confirm Modal"
-  },
-  "id": "modal_delete_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-body"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.message"
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
+    "comment": "메인 배너 삭제 확인 창.\n  **아직 시안이다** — 확인 버튼이 창을 닫기만 하고 삭제 요청을 보내지 않는다(메인 배너 화면\n  전체가 같은 상태이고 모듈에 대응 라우트가 없다). 어떤 배너를 지우는지도 넘겨받지 않는다.\n  배선할 때는 대상 배너를 받는 자리와 확인 버튼의 삭제 호출이 함께 생긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Main Banner Delete Confirm Modal"
     },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.confirm",
-      "actions": [
+    "id": "modal_delete_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.confirm"
+            }
+        ]
+    },
+    "children": [
         {
-          "type": "click",
-          "handler": "closeModal"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-body"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.message"
         }
-      ]
-    }
-  ]
+    ]
 }

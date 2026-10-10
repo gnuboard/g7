@@ -1,452 +1,1129 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "로그인 폼 (1단계 이메일/비밀번호 → 2단계 인증번호)"
-  },
-  "type": "basic",
-  "name": "Form",
-  "props": { "className": "space-y-6" },
-  "children": [
-    {
-      "comment": "API 에러 메시지 표시",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.loginError}}",
-      "props": {
-        "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-sm text-red-600 dark:text-red-400" },
-          "text": "{{_global.loginError}}"
-        },
-        {
-          "comment": "계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 사용자는 계속 눌러 보게 된다",
-          "type": "basic",
-          "name": "P",
-          "if": "{{_global.loginErrors?.locked_until}}",
-          "props": { "className": "mt-1 text-sm text-red-600 dark:text-red-400" },
-          "text": "$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "if": "{{_global.loginErrors?.permanent === true}}",
-          "props": { "className": "mt-1 text-sm text-red-600 dark:text-red-400" },
-          "text": "$t:auth.locked_permanent"
-        }
-      ]
+    "comment": "로그인 폼 조각 — 로그인 화면과 결제 진입 화면이 함께 쓴다. 진행 상태와 오류를 _local 이 아니라 _global 에 두는 것은 이 조각 밖(바깥 화면의 버튼 비활성화 등)에서도 읽기 때문이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "로그인 폼 (1단계 이메일/비밀번호 → 2단계 인증번호 → 비밀번호 변경)"
     },
-    {
-      "comment": "이메일 입력 필드 (1단계)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!_global.twoFactor?.required}}",
-      "children": [
+    "type": "basic",
+    "name": "Form",
+    "actions": [
         {
-          "type": "basic",
-          "name": "Label",
-          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3" },
-          "text": "$t:auth.email"
-        },
-        {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "email",
-            "name": "email",
-            "placeholder": "$t:auth.email_placeholder",
-            "className": "{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
-            "required": true,
-            "disabled": "{{_global.isLoggingIn}}"
-          }
-        },
-        {
-          "comment": "이메일 필드 에러 메시지",
-          "type": "basic",
-          "name": "P",
-          "if": "{{_global.loginErrors?.email}}",
-          "props": { "className": "mt-1 text-sm text-red-600 dark:text-red-400" },
-          "text": "{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}"
-        }
-      ]
-    },
-    {
-      "comment": "비밀번호 입력 필드 (1단계)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!_global.twoFactor?.required}}",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3" },
-          "text": "$t:auth.password"
-        },
-        {
-          "type": "basic",
-          "name": "PasswordInput",
-          "props": {
-            "name": "password",
-            "placeholder": "$t:auth.password_placeholder",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
-            "required": true,
-            "disabled": "{{_global.isLoggingIn}}",
-            "showToggle": true,
-            "error": "{{_global.loginErrors?.password?.[0] ?? (_global.loginErrors?.password ?? '')}}"
-          }
-        }
-      ]
-    },
-    {
-      "comment": "로그인 버튼 (1단계)",
-      "type": "basic",
-      "name": "Button",
-      "if": "{{!_global.twoFactor?.required}}",
-      "props": {
-        "type": "submit",
-        "className": "w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-        "disabled": "{{_global.isLoggingIn}}"
-      },
-      "children": [
-        {
-          "comment": "버튼 내 스피너",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.isLoggingIn}}",
-          "props": { "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{!_global.isLoggingIn}}",
-          "text": "$t:auth.login"
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_global.isLoggingIn}}",
-          "text": "$t:auth.login_processing"
-        }
-      ]
-    },
-    {
-      "comment": "2단계 인증 — 비밀번호 확인만 통과한 상태다. 인증번호를 확인해야 로그인이 완료된다.",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.twoFactor?.required}}",
-      "props": { "className": "space-y-6" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800",
-            "role": "status",
-            "aria-live": "polite"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{!_global.twoFactor?.resent}}",
-              "props": { "className": "text-sm text-blue-700 dark:text-blue-300" },
-              "text": "$t:auth.two_factor.sent"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{_global.twoFactor?.resent}}",
-              "props": { "className": "text-sm text-blue-700 dark:text-blue-300" },
-              "text": "$t:auth.two_factor.resent"
-            }
-          ]
-        },
-        {
-          "comment": "인증번호 오류",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.twoFactor?.error}}",
-          "props": {
-            "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
-            "role": "alert"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-sm text-red-600 dark:text-red-400" },
-              "text": "{{_global.twoFactor?.error ?? ''}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3" },
-              "text": "$t:auth.two_factor.code_label"
-            },
-            {
-              "comment": "자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다",
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "name": "two_factor_code",
-                "value": "{{_global.twoFactor?.code ?? ''}}",
-                "inputMode": "numeric",
-                "autoComplete": "one-time-code",
-                "maxLength": 10,
-                "placeholder": "$t:auth.two_factor.code_placeholder",
-                "className": "w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
-                "disabled": "{{_global.isLoggingIn}}"
-              },
-              "actions": [
-                {
-                  "event": "onChange",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "twoFactor.code": "{{$event.target.value}}",
-                    "twoFactor.error": null
-                  }
-                }
-              ]
-            },
-            {
-              "comment": "유효시각 정적 표기 — 남은 시간 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다",
-              "type": "basic",
-              "name": "P",
-              "if": "{{_global.twoFactor?.expires_at}}",
-              "props": { "className": "mt-2 text-xs text-gray-500 dark:text-gray-400" },
-              "text": "$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}"
-            }
-          ]
-        },
-        {
-          "comment": "인증번호 확인 — submit 이라 Enter 키로도 제출된다",
-          "type": "basic",
-          "name": "Button",
-          "props": {
+            "comment": "로그인 — 성공하면 비회원 시절 주문조회 토큰을 지운다(같은 브라우저에서 회원·비회원 화면이 동시에 열리는 것을 막는다). 마친 뒤에는 원래 가려던 곳(redirect)으로, 없으면 홈으로 보낸다.\n           2단계 인증이 켜진 사이트에서는 1단계(`login`)와 2단계(`loginTwoFactor`)가 `if` 로 상호배타이고, 1단계 응답이 인증번호를 요구하면 사용자·토큰 없이 `_global.twoFactor` 만 심는다.\n           비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 1·2단계 응답이 토큰 대신 변경 단계를 돌려준다(#736) — 그때는 `_global.passwordChange` 만 심고\n           3단계(`loginPasswordChange`)로 바꾼다. 세 액션의 `if` 는 상호배타이고, 성공 분기는 `response.password_change_required` 를 먼저 본다.",
             "type": "submit",
-            "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-            "disabled": "{{!_global.twoFactor?.code || _global.twoFactor.code.length < 4 || _global.isLoggingIn}}"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.isLoggingIn}}",
-              "props": { "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{!_global.isLoggingIn}}",
-              "text": "$t:auth.two_factor.verify"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_global.isLoggingIn}}",
-              "text": "$t:auth.two_factor.verifying"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex flex-col sm:flex-row gap-2" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                "disabled": "{{_global.twoFactor?.resending || _global.isLoggingIn}}"
-              },
-              "text": "$t:auth.two_factor.resend",
-              "actions": [
+            "handler": "sequence",
+            "actions": [
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": { "target": "global", "twoFactor.resending": true, "twoFactor.error": null }
-                    },
-                    {
-                      "handler": "loginTwoFactorResend",
-                      "target": "user",
-                      "params": {
-                        "body": { "challenge_id": "{{_global.twoFactor?.challenge_id}}" }
-                      },
-                      "onSuccess": [
-                        {
-                          "_comment": "같은 시퀀스 안에서는 _global 이 아직 갱신 전이므로 응답 값만 읽는다.",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "twoFactor": {
-                              "required": true,
-                              "challenge_id": "{{response.challenge_id}}",
-                              "provider_id": "{{response.provider_id}}",
-                              "expires_at": "{{response.expires_at}}",
-                              "code": "",
-                              "error": null,
-                              "verifying": false,
-                              "resending": false,
-                              "resent": true
-                            }
-                          }
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "twoFactor.resending": false,
-                            "twoFactor.error": "{{error.message}}"
-                          }
-                        }
-                      ]
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "isLoginAction": true
                     }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                "disabled": "{{_global.isLoggingIn}}"
-              },
-              "text": "$t:auth.two_factor.restart",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "twoFactor": null,
-                    "loginError": null,
-                    "loginErrors": null
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "actions": [
-    {
-      "type": "submit",
-      "handler": "sequence",
-      "actions": [
-        {
-          "handler": "setState",
-          "params": {
-            "target": "local",
-            "isLoginAction": true
-          }
-        },
-        {
-          "handler": "setState",
-          "params": {
-            "target": "global",
-            "isLoggingIn": true,
-            "loginError": null,
-            "loginErrors": null
-          }
-        },
-        {
-          "_comment": "1·2단계는 상호배타다. if 는 시퀀스 시작 시점 스냅샷으로 평가되므로 한 제출에 정확히 하나만 실행된다 — 이 if 가 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다.",
-          "handler": "login",
-          "target": "user",
-          "if": "{{!_global.twoFactor?.required}}",
-          "params": {
-            "body": {
-              "email": "{{form.email}}",
-              "password": "{{form.password}}"
-            }
-          },
-          "onSuccess": [
-            {
-              "_comment": "2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다.",
-              "handler": "setState",
-              "if": "{{response.two_factor_required}}",
-              "params": {
-                "target": "global",
-                "twoFactor": {
-                  "required": true,
-                  "challenge_id": "{{response.challenge_id}}",
-                  "provider_id": "{{response.provider_id}}",
-                  "expires_at": "{{response.expires_at}}",
-                  "code": "",
-                  "error": null,
-                  "verifying": false,
-                  "resending": false,
-                  "resent": false
                 },
-                "isLoggingIn": false
-              }
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "isLoggingIn": true,
+                        "loginError": null,
+                        "loginErrors": null
+                    }
+                },
+                {
+                    "comment": "1·2단계는 상호배타다. if 는 시퀀스 시작 시점 스냅샷으로 평가되므로 한 제출에 정확히 하나만 실행된다 — 이 if 가 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다.",
+                    "handler": "login",
+                    "target": "user",
+                    "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required}}",
+                    "params": {
+                        "body": {
+                            "email": "{{form.email}}",
+                            "password": "{{form.password}}"
+                        }
+                    },
+                    "onSuccess": [
+                        {
+                            "comment": "2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다.",
+                            "handler": "setState",
+                            "if": "{{response.two_factor_required}}",
+                            "params": {
+                                "target": "global",
+                                "isLoggingIn": false,
+                                "twoFactor": {
+                                    "required": true,
+                                    "challenge_id": "{{response.challenge_id}}",
+                                    "provider_id": "{{response.provider_id}}",
+                                    "expires_at": "{{response.expires_at}}",
+                                    "code": "",
+                                    "error": null,
+                                    "verifying": false,
+                                    "resending": false,
+                                    "resent": false
+                                }
+                            }
+                        },
+                        {
+                            "comment": "비밀번호가 만료됐거나 관리자가 정해 준 비밀번호다 — 토큰 없이 변경 단계 식별자만 왔다.",
+                            "handler": "setState",
+                            "if": "{{response.password_change_required}}",
+                            "params": {
+                                "target": "global",
+                                "isLoggingIn": false,
+                                "passwordChange": {
+                                    "required": true,
+                                    "challenge_id": "{{response.challenge_id}}",
+                                    "reason": "{{response.reason}}",
+                                    "can_postpone": "{{response.can_postpone}}",
+                                    "postpone_days": "{{response.postpone_days}}",
+                                    "expired_at": "{{response.expired_at}}",
+                                    "error": null,
+                                    "errors": null
+                                }
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "if": "{{response.password_change_required}}",
+                            "params": {
+                                "target": "local",
+                                "passwordChangeInput": null
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                            "params": {
+                                "target": "global",
+                                "currentUser": "{{response.user}}"
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                            "params": {
+                                "target": "global",
+                                "isLoggingIn": false
+                            }
+                        },
+                        {
+                            "comment": "로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용.",
+                            "handler": "clearGuestOrderToken",
+                            "if": "{{!response.two_factor_required && !response.password_change_required}}"
+                        },
+                        {
+                            "handler": "toast",
+                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                            "params": {
+                                "type": "success",
+                                "message": "$t:auth.login_success"
+                            }
+                        },
+                        {
+                            "comment": "휴면이 풀린 로그인에만 실린다 — 서버가 해제했을 때만 이 키를 보내므로\n                 평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다\n                 풀린 사실을 끝내 모른다.",
+                            "handler": "toast",
+                            "if": "{{!response.two_factor_required && !response.password_change_required && response.dormancy_restored}}",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:auth.dormancy_restored"
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "if": "{{!response.two_factor_required && !response.password_change_required}}",
+                            "params": {
+                                "path": "{{query.redirect ?? '/'}}"
+                            }
+                        }
+                    ],
+                    "onError": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "isLoggingIn": false,
+                            "loginError": "{{error.message}}",
+                            "loginErrors": "{{error.errors}}"
+                        }
+                    }
+                },
+                {
+                    "handler": "loginTwoFactor",
+                    "target": "user",
+                    "if": "{{_global.twoFactor?.required}}",
+                    "params": {
+                        "body": {
+                            "challenge_id": "{{_global.twoFactor?.challenge_id}}",
+                            "code": "{{_global.twoFactor?.code}}"
+                        }
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "isLoggingIn": false,
+                                "twoFactor": null
+                            }
+                        },
+                        {
+                            "comment": "코드가 맞아도 비밀번호 변경 단계가 남았을 수 있다 — 그때는 이동하지 않고 변경 단계로 바꾼다.",
+                            "handler": "setState",
+                            "if": "{{response.password_change_required}}",
+                            "params": {
+                                "target": "global",
+                                "passwordChange": {
+                                    "required": true,
+                                    "challenge_id": "{{response.challenge_id}}",
+                                    "reason": "{{response.reason}}",
+                                    "can_postpone": "{{response.can_postpone}}",
+                                    "postpone_days": "{{response.postpone_days}}",
+                                    "expired_at": "{{response.expired_at}}",
+                                    "error": null,
+                                    "errors": null
+                                }
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "if": "{{response.password_change_required}}",
+                            "params": {
+                                "target": "local",
+                                "passwordChangeInput": null
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "if": "{{!response.password_change_required}}",
+                            "params": {
+                                "target": "global",
+                                "currentUser": "{{response.user}}"
+                            }
+                        },
+                        {
+                            "handler": "clearGuestOrderToken",
+                            "if": "{{!response.password_change_required}}"
+                        },
+                        {
+                            "handler": "toast",
+                            "if": "{{!response.password_change_required}}",
+                            "params": {
+                                "type": "success",
+                                "message": "$t:auth.login_success"
+                            }
+                        },
+                        {
+                            "comment": "2단계 인증 사이트도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에 따라\n                 해제 사실이 보이기도 하고 안 보이기도 한다.",
+                            "handler": "toast",
+                            "if": "{{!response.password_change_required && response.dormancy_restored}}",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:auth.dormancy_restored"
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "if": "{{!response.password_change_required}}",
+                            "params": {
+                                "path": "{{query.redirect ?? '/'}}"
+                            }
+                        }
+                    ],
+                    "onError": {
+                        "comment": "423 잠금은 1단계와 같은 문구 규칙을 따르도록 loginErrors 도 함께 싣는다.",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "isLoggingIn": false,
+                            "twoFactor.error": "{{error.message}}",
+                            "loginErrors": "{{error.errors}}"
+                        }
+                    }
+                },
+                {
+                    "comment": "3단계 — 새 비밀번호로 로그인 완료. 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급한다. 최종 성공 지점의 후처리는 1·2단계와 같다.\n             식별자가 만료·무효(422 `errors.challenge_id`)면 단계를 비우고 1단계로 돌아가 다시 로그인을 안내한다.\n             그 밖의 실패(규칙 위반·같은 값·재사용 422, 잠금 423)는 단계에 머물며 칸 아래·상단에 싣는다.",
+                    "handler": "loginPasswordChange",
+                    "target": "user",
+                    "if": "{{_global.passwordChange?.required}}",
+                    "params": {
+                        "body": {
+                            "challenge_id": "{{_global.passwordChange?.challenge_id}}",
+                            "password": "{{_local.passwordChangeInput?.password}}",
+                            "password_confirmation": "{{_local.passwordChangeInput?.password_confirmation}}"
+                        }
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "currentUser": "{{response.user}}",
+                                "isLoggingIn": false,
+                                "passwordChange": null
+                            }
+                        },
+                        {
+                            "handler": "clearGuestOrderToken"
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "success",
+                                "message": "$t:auth.password_change.changed_toast"
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "if": "{{response.dormancy_restored}}",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:auth.dormancy_restored"
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{query.redirect ?? '/'}}"
+                            }
+                        }
+                    ],
+                    "onError": [
+                        {
+                            "handler": "setState",
+                            "if": "{{error.errors?.challenge_id}}",
+                            "params": {
+                                "target": "global",
+                                "isLoggingIn": false,
+                                "passwordChange": null,
+                                "loginError": "{{$t('auth.password_change.restart_required')}}",
+                                "loginErrors": null
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "if": "{{error.errors?.challenge_id}}",
+                            "params": {
+                                "target": "local",
+                                "passwordChangeInput": null
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "if": "{{!error.errors?.challenge_id}}",
+                            "params": {
+                                "target": "global",
+                                "isLoggingIn": false,
+                                "passwordChange.error": "{{error.errors?.password || error.errors?.password_confirmation ? null : error.message}}",
+                                "passwordChange.errors": "{{error.errors ?? null}}",
+                                "loginErrors": "{{error.errors}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "props": {
+        "className": "space-y-6"
+    },
+    "children": [
+        {
+            "comment": "API 에러 메시지 표시",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.loginError}}",
+            "props": {
+                "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
             },
-            { "handler": "setState", "if": "{{!response.two_factor_required}}", "params": { "target": "global", "currentUser": "{{response.user}}" } },
-            { "handler": "setState", "if": "{{!response.two_factor_required}}", "params": { "target": "global", "isLoggingIn": false } },
-            {
-              "_comment": "로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용.",
-              "handler": "clearGuestOrderToken",
-              "if": "{{!response.two_factor_required}}"
-            },
-            { "handler": "toast", "if": "{{!response.two_factor_required}}", "params": { "type": "success", "message": "$t:auth.login_success" } },
-            { "handler": "navigate", "if": "{{!response.two_factor_required}}", "params": { "path": "{{query.redirect ?? '/'}}" } }
-          ],
-          "onError": [
-            { "handler": "setState", "params": { "target": "global", "isLoggingIn": false, "loginError": "{{error.message}}", "loginErrors": "{{error.errors}}" } }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "{{_global.loginError}}"
+                },
+                {
+                    "comment": "계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 사용자는 계속 눌러 보게 된다",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.loginErrors?.locked_until}}",
+                    "props": {
+                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.loginErrors?.permanent === true}}",
+                    "props": {
+                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:auth.locked_permanent"
+                }
+            ]
         },
         {
-          "handler": "loginTwoFactor",
-          "target": "user",
-          "if": "{{_global.twoFactor?.required}}",
-          "params": {
-            "body": {
-              "challenge_id": "{{_global.twoFactor?.challenge_id}}",
-              "code": "{{_global.twoFactor?.code}}"
-            }
-          },
-          "onSuccess": [
-            { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}", "isLoggingIn": false, "twoFactor": null } },
-            { "handler": "clearGuestOrderToken" },
-            { "handler": "toast", "params": { "type": "success", "message": "$t:auth.login_success" } },
-            { "handler": "navigate", "params": { "path": "{{query.redirect ?? '/'}}" } }
-          ],
-          "onError": [
-            {
-              "_comment": "423 잠금은 1단계와 같은 문구 규칙을 따르도록 loginErrors 도 함께 싣는다.",
-              "handler": "setState",
-              "params": {
-                "target": "global",
-                "isLoggingIn": false,
-                "twoFactor.error": "{{error.message}}",
-                "loginErrors": "{{error.errors}}"
-              }
-            }
-          ]
+            "comment": "이메일 입력 필드 (1단계)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required}}",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                    },
+                    "text": "$t:auth.email"
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "props": {
+                        "type": "email",
+                        "name": "email",
+                        "placeholder": "$t:auth.email_placeholder",
+                        "className": "{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
+                        "required": true,
+                        "disabled": "{{_global.isLoggingIn}}"
+                    }
+                },
+                {
+                    "comment": "이메일 필드 에러 메시지",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.loginErrors?.email}}",
+                    "props": {
+                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}"
+                }
+            ]
+        },
+        {
+            "comment": "비밀번호 입력 필드 (1단계)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required}}",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                    },
+                    "text": "$t:auth.password"
+                },
+                {
+                    "type": "basic",
+                    "name": "PasswordInput",
+                    "props": {
+                        "name": "password",
+                        "placeholder": "$t:auth.password_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
+                        "required": true,
+                        "disabled": "{{_global.isLoggingIn}}",
+                        "showToggle": true,
+                        "error": "{{_global.loginErrors?.password?.[0] ?? (_global.loginErrors?.password ?? '')}}"
+                    }
+                }
+            ]
+        },
+        {
+            "comment": "로그인 버튼 (1단계)",
+            "type": "basic",
+            "name": "Button",
+            "if": "{{!_global.twoFactor?.required && !_global.passwordChange?.required}}",
+            "props": {
+                "type": "submit",
+                "className": "w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                "disabled": "{{_global.isLoggingIn}}"
+            },
+            "children": [
+                {
+                    "comment": "버튼 내 스피너",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.isLoggingIn}}",
+                    "props": {
+                        "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{!_global.isLoggingIn}}",
+                    "text": "$t:auth.login"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_global.isLoggingIn}}",
+                    "text": "$t:auth.login_processing"
+                }
+            ]
+        },
+        {
+            "comment": "2단계 인증 — 비밀번호 확인만 통과한 상태다. 인증번호를 확인해야 로그인이 완료된다.\n         상태를 _global 에 두는 이유는 위와 같다(바깥 화면·재발송 버튼이 함께 읽는다). 「인증번호 다시 받기」는 새 challenge 를 받아 입력값을 비우고, 「처음부터」는 1단계로 되돌린다.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.twoFactor?.required}}",
+            "props": {
+                "className": "space-y-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800",
+                        "role": "status",
+                        "aria-live": "polite"
+                    },
+                    "children": [
+                        {
+                            "comment": "인증 앱은 서버가 아무것도 보내지 않는다 — 「보냈습니다」로 안내하면 오지 않는 메일을 기다리게 된다.",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}",
+                            "props": {
+                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:auth.two_factor.sent"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
+                            "props": {
+                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:auth.two_factor.sent_app"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}",
+                            "props": {
+                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:auth.two_factor.resent"
+                        }
+                    ]
+                },
+                {
+                    "comment": "인증번호 오류",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.twoFactor?.error}}",
+                    "props": {
+                        "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
+                        "role": "alert"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{_global.twoFactor?.error ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "if": "{{_global.twoFactor?.provider_id !== 'totp'}}",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                            },
+                            "text": "$t:auth.two_factor.code_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                            },
+                            "text": "$t:auth.two_factor.code_label_app"
+                        },
+                        {
+                            "comment": "자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "event": "onChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "twoFactor.code": "{{$event.target.value}}",
+                                        "twoFactor.error": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "two_factor_code",
+                                "value": "{{_global.twoFactor?.code ?? ''}}",
+                                "inputMode": "numeric",
+                                "autoComplete": "one-time-code",
+                                "maxLength": "{{_global.twoFactor?.provider_id === 'totp' ? 24 : 10}}",
+                                "placeholder": "{{_global.twoFactor?.provider_id === 'totp' ? $t('auth.two_factor.code_placeholder_app') : $t('auth.two_factor.code_placeholder')}}",
+                                "className": "w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
+                                "disabled": "{{_global.isLoggingIn}}"
+                            }
+                        },
+                        {
+                            "comment": "유효시각 정적 표기 — 남은 시간 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.twoFactor?.expires_at}}",
+                            "props": {
+                                "className": "mt-2 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.twoFactor?.provider_id === 'totp'}}",
+                            "props": {
+                                "className": "mt-2 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:auth.two_factor.backup_hint"
+                        }
+                    ]
+                },
+                {
+                    "comment": "인증번호 확인 — submit 이라 Enter 키로도 제출된다",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "submit",
+                        "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                        "disabled": "{{!_global.twoFactor?.code || _global.twoFactor.code.length < 4 || _global.isLoggingIn}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.isLoggingIn}}",
+                            "props": {
+                                "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_global.isLoggingIn}}",
+                            "text": "$t:auth.two_factor.verify"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.isLoggingIn}}",
+                            "text": "$t:auth.two_factor.verifying"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col sm:flex-row gap-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급\n             이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다.",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{_global.twoFactor?.provider_id !== 'totp'}}",
+                            "actions": [
+                                {
+                                    "comment": "인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해\n                 입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "twoFactor.resending": true,
+                                                "twoFactor.error": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "loginTwoFactorResend",
+                                            "target": "user",
+                                            "params": {
+                                                "body": {
+                                                    "challenge_id": "{{_global.twoFactor?.challenge_id}}"
+                                                }
+                                            },
+                                            "onSuccess": {
+                                                "comment": "같은 시퀀스 안에서는 _global 이 아직 갱신 전이므로 응답 값만 읽는다.",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "twoFactor": {
+                                                        "required": true,
+                                                        "challenge_id": "{{response.challenge_id}}",
+                                                        "provider_id": "{{response.provider_id}}",
+                                                        "expires_at": "{{response.expires_at}}",
+                                                        "code": "",
+                                                        "error": null,
+                                                        "verifying": false,
+                                                        "resending": false,
+                                                        "resent": true
+                                                    }
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "twoFactor.resending": false,
+                                                    "twoFactor.error": "{{error.message}}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                "disabled": "{{_global.twoFactor?.resending || _global.isLoggingIn}}"
+                            },
+                            "text": "$t:auth.two_factor.resend"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "처음부터 — 2단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌린다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "twoFactor": null,
+                                        "loginError": null,
+                                        "loginErrors": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                "disabled": "{{_global.isLoggingIn}}"
+                            },
+                            "text": "$t:auth.two_factor.restart"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "3단계 비밀번호 변경 — 비밀번호(와 켜져 있으면 2단계 인증)는 통과했지만 새 비밀번호를 정해야 로그인이 끝난다(#736).\n         2단계 인증과 같은 짜임으로 로그인 카드 안에서 바뀌고 제목은 그대로다. 사유와 「다음에 변경」 가능 여부는 서버 응답대로 그린다.\n         규칙 목록은 PasswordInput 이 화면에서 바로 확인하는 것(길이·특수문자·조합)이고, 재사용·아이디·반복·연속·현재와 같은 값은\n         서버만 확인할 수 있어 작은 글로 알린다.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.passwordChange?.required}}",
+            "props": {
+                "className": "space-y-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 space-y-1",
+                        "role": "status",
+                        "aria-live": "polite"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-semibold text-yellow-800 dark:text-yellow-300"
+                            },
+                            "text": "$t:auth.password_change.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.passwordChange?.reason !== 'admin_assigned' && !_global.passwordChange?.can_postpone}}",
+                            "props": {
+                                "className": "text-sm text-yellow-700 dark:text-yellow-400"
+                            },
+                            "text": "$t:auth.password_change.reason_expired|date={{_global.passwordChange?.expired_at | date}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.passwordChange?.reason !== 'admin_assigned' && _global.passwordChange?.can_postpone}}",
+                            "props": {
+                                "className": "text-sm text-yellow-700 dark:text-yellow-400"
+                            },
+                            "text": "$t:auth.password_change.reason_remind|count={{_global.passwordChange?.postpone_days ?? 0}}|date={{_global.passwordChange?.expired_at | date}}|days={{_global.passwordChange?.postpone_days ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.passwordChange?.reason === 'admin_assigned'}}",
+                            "props": {
+                                "className": "text-sm text-yellow-700 dark:text-yellow-400"
+                            },
+                            "text": "$t:auth.password_change.reason_admin_assigned"
+                        }
+                    ]
+                },
+                {
+                    "comment": "변경 단계 상단 오류(잠금·그 밖의 실패) — 규칙 위반은 칸 아래에 싣는다",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.passwordChange?.error}}",
+                    "props": {
+                        "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
+                        "role": "alert"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{_global.passwordChange?.error ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.loginErrors?.locked_until}}",
+                            "props": {
+                                "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                            },
+                            "text": "$t:auth.password_change.new_password"
+                        },
+                        {
+                            "comment": "새 비밀번호 — 자동바인딩 대신 상태가 값을 소유한다(실패해도 남고, 처음부터 누르면 함께 비워진다). 값은 `_global` 이 아니라\n             이 화면의 `_local.passwordChangeInput` 에 둔다 — 비밀번호를 전역 상태에 남기지 않는다(단계 정보만 바깥 화면이 읽어 `_global`).",
+                            "type": "basic",
+                            "name": "PasswordInput",
+                            "actions": [
+                                {
+                                    "event": "onChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "passwordChangeInput.password": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "password_change_new",
+                                "value": "{{_local.passwordChangeInput?.password ?? ''}}",
+                                "placeholder": "$t:auth.password_change.new_password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}",
+                                "autoComplete": "new-password",
+                                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
+                                "disabled": "{{_global.isLoggingIn}}",
+                                "showToggle": true,
+                                "showValidation": true,
+                                "enableRules": "{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}",
+                                "error": "{{_global.passwordChange?.errors?.password?.[0] ?? ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.settings?.security?.password_reuse_prevention_enabled || !!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}",
+                            "props": {
+                                "className": "mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:auth.password_rules.server_intro"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_global.settings?.security?.password_reuse_prevention_enabled}}",
+                                    "text": "$t:auth.password_rules.reuse|count={{_global.settings?.security?.password_reuse_count ?? 3}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_global.settings?.security?.password_block_identifier}}",
+                                    "text": "$t:auth.password_rules.identifier"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_global.settings?.security?.password_block_repeated_chars}}",
+                                    "text": "$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_global.settings?.security?.password_block_sequential_chars}}",
+                                    "text": "$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:auth.password_rules.not_current"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                            },
+                            "text": "$t:auth.password_change.confirm_password"
+                        },
+                        {
+                            "comment": "새 비밀번호 확인 — 같은 방식으로 상태가 값을 소유한다.",
+                            "type": "basic",
+                            "name": "PasswordInput",
+                            "actions": [
+                                {
+                                    "event": "onChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "passwordChangeInput.password_confirmation": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "password_change_confirm",
+                                "value": "{{_local.passwordChangeInput?.password_confirmation ?? ''}}",
+                                "placeholder": "$t:auth.password_confirm_placeholder",
+                                "autoComplete": "new-password",
+                                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
+                                "disabled": "{{_global.isLoggingIn}}",
+                                "showToggle": true,
+                                "isConfirmField": true,
+                                "confirmTarget": "{{_local.passwordChangeInput?.password ?? ''}}",
+                                "error": "{{_global.passwordChange?.errors?.password_confirmation?.[0] ?? ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "변경하고 로그인 — submit 이라 Enter 키로도 제출된다",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "submit",
+                        "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                        "disabled": "{{_global.isLoggingIn}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.isLoggingIn}}",
+                            "props": {
+                                "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_global.isLoggingIn}}",
+                            "text": "$t:auth.password_change.submit"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.isLoggingIn}}",
+                            "text": "$t:auth.login_processing"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col sm:flex-row gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{_global.passwordChange?.can_postpone}}",
+                            "actions": [
+                                {
+                                    "comment": "다음에 변경 — 만료 시 동작이 「다음에 변경 허용」일 때만 보인다. 로그인을 마치고 연기 종료일을 알린 뒤 원래 가려던 곳으로 보낸다\n                 (최종 성공 지점의 후처리 — 현재 사용자·비회원 조회 토큰 정리·토스트·휴면 안내·이동 — 는 다른 단계와 같다).\n                 식별자가 만료·무효면 처음부터 다시 로그인하게 한다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLoggingIn": true,
+                                                "passwordChange.error": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "loginPasswordChangePostpone",
+                                            "target": "user",
+                                            "params": {
+                                                "body": {
+                                                    "challenge_id": "{{_global.passwordChange?.challenge_id}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "currentUser": "{{response.user}}",
+                                                        "isLoggingIn": false,
+                                                        "passwordChange": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "clearGuestOrderToken"
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:auth.password_change.postponed_toast|date={{response.postponed_until | date}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "if": "{{response.dormancy_restored}}",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:auth.dormancy_restored"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{query.redirect ?? '/'}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "if": "{{error.errors?.challenge_id}}",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isLoggingIn": false,
+                                                        "passwordChange": null,
+                                                        "loginError": "{{$t('auth.password_change.restart_required')}}",
+                                                        "loginErrors": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "if": "{{error.errors?.challenge_id}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "passwordChangeInput": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "if": "{{!error.errors?.challenge_id}}",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isLoggingIn": false,
+                                                        "passwordChange.error": "{{error.message}}",
+                                                        "loginErrors": "{{error.errors}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                "disabled": "{{_global.isLoggingIn}}"
+                            },
+                            "text": "$t:auth.password_change.postpone"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "처음부터 — 두 단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌리고, 입력하던 새 비밀번호(로컬)도 비운다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "twoFactor": null,
+                                                "passwordChange": null,
+                                                "loginError": null,
+                                                "loginErrors": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "passwordChangeInput": null
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                "disabled": "{{_global.isLoggingIn}}"
+                            },
+                            "text": "$t:auth.two_factor.restart"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

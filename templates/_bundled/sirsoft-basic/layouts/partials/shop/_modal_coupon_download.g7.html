@@ -1,0 +1,101 @@
+<!-- 받아 갈 수 있는 쿠폰을 모아 보여 주는 창. 상품 상세와 주문서가 같은 창을 열고, 목록은 각 화면이
+     제 데이터소스로 채워 넣는다 — 창 자신은 무엇을 받을 수 있는지 알지 못한다. -->
+<partial description="쿠폰 다운로드 모달 - 다운로드 가능 쿠폰 목록 (2열 카드 그리드, 스크롤)" editor_label="$t:user.modal_label.shop.coupon_download_modal">
+  <modal data-type="composite" data-ref="coupon_download_modal" title="$t:shop.coupon_download.modal_title" size="lg">
+    <!-- 초기 로딩 상태 (데이터 없을 때만) -->
+    <div data-if="{{(_local.downloadableCouponsLoading ?? $parent._local.downloadableCouponsLoading) &amp;&amp; !(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data}}" class="flex flex-col items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-3"/>
+      <span class="text-sm text-gray-500 dark:text-gray-400">$t:shop.coupon_download.loading</span>
+    </div>
+    <!-- 빈 상태 (쿠폰 없음) -->
+    <div data-if="{{!(_local.downloadableCouponsLoading ?? $parent._local.downloadableCouponsLoading) &amp;&amp; (!(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data || (_local.downloadableCoupons ?? $parent._local.downloadableCoupons).data.length === 0)}}" class="flex flex-col items-center justify-center py-12 text-center">
+      <icon name="ticket" class="text-3xl text-gray-300 dark:text-gray-600 mb-3"/>
+      <p class="text-gray-500 dark:text-gray-400 text-sm">$t:shop.coupon_download.empty</p>
+    </div>
+    <!-- 쿠폰 카드 그리드 -->
+    <div data-if="{{(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data?.length > 0}}" class="flex flex-col">
+      <!-- 2열 그리드 (모바일 1열) - 무한스크롤 영역 -->
+      <div class="relative grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+        <on type="scroll">
+          <!-- 무한스크롤: 하단 근접 시 다음 페이지 로드 (로딩 중/마지막 페이지 제외). debounce 로 연속 스크롤 이벤트 중복 호출 방지 -->
+          <conditions :debounce="200">
+            <when if="{{($event.target.scrollTop + $event.target.clientHeight >= $event.target.scrollHeight - 80) &amp;&amp; !(_local.downloadingMore ?? $parent._local.downloadingMore) &amp;&amp; ((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.current_page < (_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.last_page)}}">
+              <sequence>
+                <set-state target="local" :downloadingMore="true"/>
+                <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/downloadable?per_page=8&amp;page={{((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.current_page ?? 1) + 1}}" auth_mode="required" method="GET">
+                  <success>
+                    <!-- 기존 목록에 다음 페이지 결과 누적 + 페이지 메타 갱신 -->
+                    <set-state target="local" downloadableCoupons="{{Object.assign({}, response.data, { data: [...((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data ?? []), ...response.data.data] })}}" :downloadingMore="false"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :downloadingMore="false"/>
+                    <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </when>
+          </conditions>
+        </on>
+        <!-- 쿠폰 카드 -->
+        <div data-each="coupon, couponIdx in {{(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data ?? []}}" class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-sm transition-shadow">
+          <!-- 할인 금액/비율 -->
+          <div class="mb-2">
+            <!-- 정율 할인 -->
+            <span data-if="{{coupon.discount_type === 'rate'}}" class="text-xl font-bold text-blue-600 dark:text-blue-400">{{coupon.discount_value}}%</span>
+            <!-- 정액 할인 — 선택 통화 환산 (A1-④, formatted 가 기호 포함) -->
+            <span data-if="{{coupon.discount_type === 'fixed' &amp;&amp; coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xl font-bold text-blue-600 dark:text-blue-400">{{coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}</span>
+            <!-- 정액 할인 — 폴백(환산 부재 시 기본통화 숫자 + 단위) -->
+            <span data-if="{{coupon.discount_type === 'fixed' &amp;&amp; !coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xl font-bold text-blue-600 dark:text-blue-400">{{Number(coupon.discount_value).toLocaleString()}}$t:shop.coupon_download.currency_unit</span>
+          </div>
+          <!-- 쿠폰명 -->
+          <p class="text-sm font-medium text-gray-900 dark:text-white mb-1 line-clamp-1">{{coupon.localized_name ?? coupon.name}}</p>
+          <!-- 최소 주문 금액 — 선택 통화 환산 (A1-④, formatted 가 기호 포함) -->
+          <p data-if="{{coupon.min_order_amount > 0 &amp;&amp; coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}</p>
+          <!-- 최소 주문 금액 — 폴백(환산 부재 시) -->
+          <p data-if="{{coupon.min_order_amount > 0 &amp;&amp; !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:shop.coupon_download.min_order_amount {{Number(coupon.min_order_amount).toLocaleString()}}$t:shop.coupon_download.currency_unit</p>
+          <!-- 유효기간 -->
+          <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : '$t:shop.coupon_download.no_expiry'}}</p>
+          <!-- 다운로드 버튼 - 이미 받은 쿠폰 -->
+          <button data-if="{{coupon.is_downloaded}}" type="button" :disabled="true" class="w-full py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-md cursor-not-allowed">$t:shop.coupon_download.already_downloaded</button>
+          <!-- 다운로드 버튼 - 다운로드 진행 중 -->
+          <button data-if="{{!coupon.is_downloaded &amp;&amp; _local.downloadingCouponId === coupon.id}}" type="button" :disabled="true" class="w-full py-2 text-sm font-medium text-blue-400 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-md cursor-not-allowed">$t:shop.coupon_download.downloading</button>
+          <!-- 다운로드 버튼 - 다운로드 가능 -->
+          <button data-if="{{!coupon.is_downloaded &amp;&amp; _local.downloadingCouponId !== coupon.id}}" type="button" class="w-full py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-md transition-colors">
+            <on type="click">
+              <set-state target="local" downloadingCouponId="{{coupon.id}}"/>
+              <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/{{coupon.id}}/download" auth_mode="required" method="POST">
+                <success>
+                  <set-state target="local" :downloadingCouponId="null"/>
+                  <!-- 모달 _local의 쿠폰 목록에서 해당 쿠폰의 is_downloaded를 true로 변경 -->
+                  <set-state target="local" downloadableCoupons="{{Object.assign({}, (_local.downloadableCoupons ?? $parent._local.downloadableCoupons), { data: (_local.downloadableCoupons ?? $parent._local.downloadableCoupons).data.map(c => c.id === coupon.id ? Object.assign({}, c, { is_downloaded: true }) : c) })}}"/>
+                  <!-- 상품 상세 쿠폰 목록 갱신 - 다운로드 상태 반영 -->
+                  <refetch-data-source dataSourceId="productDownloadableCoupons"/>
+                  <toast type="success" message="$t:shop.coupon_download.download_success"/>
+                  <!-- 체크아웃 데이터 갱신 - 새로 다운로드한 쿠폰이 셀렉트박스에 반영되도록 -->
+                  <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="required" method="PUT" body="{{_local.checkout ?? $parent._local.checkout}}">
+                    <success>
+                      <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </success>
+                <fail>
+                  <set-state target="local" :downloadingCouponId="null"/>
+                  <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.download_failed'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            $t:shop.coupon_download.download_btn
+          </button>
+        </div>
+      </div>
+      <!-- 다음 페이지 로딩 인디케이터 (무한스크롤) -->
+      <div data-if="{{_local.downloadingMore ?? $parent._local.downloadingMore}}" class="flex flex-col items-center justify-center py-4">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400 mb-2"/>
+        <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.coupon_download.loading</span>
+      </div>
+    </div>
+  </modal>
+</partial>

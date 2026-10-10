@@ -1,0 +1,30 @@
+feature: pg_payment_data
+
+description: |
+  주문 생성 응답의 PG 결제창 요청 데이터(pg_payment_data — OrderController::buildPgPaymentData).
+  결제 플러그인은 이 값만 보고 결제창을 연다 — 주문명·고객 정보·청구 금액/통화·에스크로 상품·가상계좌 입금 기한.
+
+  수정 이력 (이커머스 전수 실측 S2 — S2-D7, 제품 결정 「쇼핑몰 설정을 단일 기한으로」):
+    - 주문서는 「입금 기한: N일 이내」(order_settings.auto_cancel_days)로 안내하고 주문 생성 때 같은 값으로 vbank_due_at 을
+      정하는데, 결제창에 넘기지 않아 결제사가 자기 기본 기한(KG 30일·나이스 10일·KCP 플러그인 일수)으로 계좌를 열고 승인
+      콜백이 그 값으로 주문 기한을 덮어썼다. 가상계좌 주문이면 vbank_due_at 을 한국 시각 ISO 8601 로 싣고, 결제 플러그인이
+      결제사 형식으로 바꿔 넘긴다(KG·나이스·KCP 각 플러그인 매니페스트 vbank-expiry-from-order.yaml).
+
+axes:
+  payment_method: [vbank, card]
+
+effects:
+  - order_name_is_localized_with_a_count_suffix                 # 주문명 = 현재 로케일 첫 상품명 + 「외 N건」
+  - customer_fields_come_from_the_shipping_address              # 주문자 이름·이메일·전화(숫자만), 배송지 없으면 null
+  - guest_order_has_no_customer_key                             # 비회원 customer_key = null
+  - charge_currency_defaults_to_krw                             # 스냅샷에 결제 통화가 없으면 KRW
+  - charge_amount_is_converted_to_the_payment_currency_minor_unit # 기준 통화 ≠ 결제 통화면 스냅샷 환율로 최소 단위 정수
+  - escrow_products_localized_unit_price_per_item               # 에스크로 상품 상세: 개당가·수량·로케일 상품명
+  - pg_payment_data_carries_the_order_vbank_due_in_kst          # 가상계좌: vbank_due_at = 주문 입금 기한(+09:00)
+  - non_vbank_order_omits_the_vbank_due                         # 가상계좌가 아니면 키 없음
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Controllers/Public/BuildPgPaymentDataTest.php
+
+validation:
+  browser_check: 전용 Chrome 실측 — 가상계좌 결제창 폼의 결제사 기한 파라미터와 주문 완료 「입금 기한」이 주문 시각 + 자동취소 일수와 같은지

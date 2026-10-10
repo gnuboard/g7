@@ -18,6 +18,11 @@ return [
         // Short field labels for validation error messages (without "(SRB prefix)" hint).
         'live_mid_attribute' => 'Live MID',
         'live_api_key_attribute' => 'Live API Key',
+        'is_test_mode_attribute' => 'Test Mode',
+        'test_mid_attribute' => 'Test MID',
+        'test_api_key_attribute' => 'Test API Key',
+        'duplicate_field_attribute' => 'Duplicate Check Basis',
+        'duplicate_block_enabled_attribute' => 'Block Duplicate Registration',
         'duplicate_field' => 'Duplicate Identifier',
         'duplicate_block_enabled' => [
             'label' => 'Duplicate Registration Block',

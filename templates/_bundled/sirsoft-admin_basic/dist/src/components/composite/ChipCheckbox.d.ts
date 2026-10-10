@@ -11,6 +11,8 @@ export interface ChipCheckboxProps {
     className?: string;
     style?: React.CSSProperties;
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    /** 비활성 — 체크 입력을 막고 흐리게 보인다(레이아웃 읽기 전용 게이트) */
+    disabled?: boolean;
     /**
      * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
      */

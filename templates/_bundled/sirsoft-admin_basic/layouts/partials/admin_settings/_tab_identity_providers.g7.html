@@ -1,0 +1,43 @@
+<!-- 본인인증 탭의 **제공자** 하위 구획 — 목적마다 어느 제공자를 쓸지 짝지어 두고, 등록된 제공자의
+  상세를 함께 보여 준다. 제공자 자체는 플러그인이 들여오므로 여기서 만들거나 지우지 않는다.
+  기본 구획과 마찬가지로 저장은 화면 하단 공용 버튼이 맡는다. -->
+<partial description="환경설정 > 본인인증 탭 > 프로바이더 sub-tab — 목적별 프로바이더 매핑 + 등록된 프로바이더 상세">
+  <div data-ref="identity_section_providers" class="space-y-6 scroll-mt-44">
+    <div data-ref="card_identity_purposes" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.identity.purposes.title</h3>
+      <div class="card-description">$t:admin.settings.identity.purposes.desc</div>
+      <div data-ref="purpose_rows" class="row-stack">
+        <div data-each="purpose in identityPurposes?.data ?? []" class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div>
+            <span class="text-heading block">{{purpose.label ?? purpose.id}}</span>
+            <p data-if="{{purpose.description}}" class="text-tertiary">{{purpose.description ?? ''}}</p>
+          </div>
+          <div class="w-full md:w-64">
+            <select name="identity.purpose_providers.{{purpose.id}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.purpose_providers.' + purpose.id] ? 'text-primary w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm'}}" options="{{[{value: '', label: '$t:admin.settings.identity.purposes.use_default'}].concat((identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; }))}}"/>
+            <span data-if="{{_local.errors?.['identity.purpose_providers.' + purpose.id]}}" class="form-error">{{_local.errors?.['identity.purpose_providers.' + purpose.id]?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-if="{{(identityPurposes?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.purposes.empty</div>
+      </div>
+    </div>
+    <div data-ref="card_identity_providers" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.identity.providers.title</h3>
+      <div class="card-description">$t:admin.settings.identity.providers.desc</div>
+      <div data-ref="provider_cards" class="card-stack">
+        <div data-each="provider in identityProviders?.data ?? []" class="card-stack-item">
+          <div class="flex-between mb-2">
+            <div>
+              <span class="text-primary text-sm font-semibold block">{{provider.label}}</span>
+              <span class="text-tertiary font-mono">{{provider.id}}</span>
+            </div>
+            <span class="{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-success-soft' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{provider.is_available ? '$t:admin.settings.identity.providers.available' : '$t:admin.settings.identity.providers.unavailable'}}</span>
+          </div>
+          <div data-each="channel in provider.channels ?? []" class="flex flex-wrap gap-2 mt-2">
+            <span class="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-info-soft">{{channel}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{(identityProviders?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.providers.empty</div>
+    </div>
+  </div>
+</partial>

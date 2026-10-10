@@ -1,0 +1,51 @@
+<!-- 공통정보 편집 중 다른 항목을 고르려 할 때 뜨는 이탈 확인 창.
+  가려던 항목은 목록이 `_global.pendingItem*` 에 잡아 두고, 이 창의 "버리고 이동" 이 그 값을 실제
+  선택으로 옮긴다 — 즉 **이 창이 이동을 완결하는 자리**이고, 여기서 옮기지 않으면 클릭이 사라진다.
+  버리기 쪽이 세 번에 나눠 쓴다: 선택 이동(+ 대기 항목 비우기) → 폼 상태 비우기 → 폼을 빈 초깃값
+  으로 다시 세우기. 마지막이 필요한 것은 폼이 `null` 인 채로는 다음 편집에서 입력칸이 값을 못
+  찾기 때문이다. -->
+<partial description="Common Info Editing In Progress Confirm Modal">
+  <modal data-type="composite" data-ref="editing_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.editing.title" size="sm">
+    <div class="flex justify-center mb-4">
+      <div class="flex-center w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 justify-center">
+        <icon name="exclamation" size="lg" class="text-yellow-600 dark:text-yellow-400"/>
+      </div>
+    </div>
+    <p class="text-body mb-2 text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.message</p>
+    <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.confirm_message</p>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.common_info.modal.editing.continue
+      </button>
+      <button class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+        <on type="click">
+          <!-- 입력을 버리고 대기 중이던 항목으로 이동 — 대기 값을 실제 선택으로 옮기고 폼을 빈 초깃값으로 다시 세운다. -->
+          <sequence>
+            <set-state target="global" selectedId="{{_global.pendingItemId}}" selectedItem="{{_global.pendingItem}}" panelMode="view" :pendingItemId="null" :pendingItem="null"/>
+            <set-state target="local" :form="null" :errors="null" :isSaving="false" :showPreview="false"/>
+            <set-state target="local">
+              <field name="form">
+                <field name="name">
+                  <field name="ko" value=""/>
+                  <field name="en" value=""/>
+                </field>
+                <field name="content">
+                  <field name="ko" value=""/>
+                  <field name="en" value=""/>
+                </field>
+                <field name="content_mode" value="text"/>
+                <field name="is_default" :value="false"/>
+                <field name="is_active" :value="true"/>
+              </field>
+            </set-state>
+            <close-modal/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.admin.common_info.modal.editing.discard
+      </button>
+    </div>
+  </modal>
+</partial>

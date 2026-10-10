@@ -6,6 +6,14 @@
 return [
     'errors' => [
         'payment_failed' => 'Payment could not be completed. Please try again in a moment.',
+        'approval_verification_cancel_reason' => 'Automatically cancelled because the payment approval could not be verified',
+    ],
+    'claim' => [
+        'invalid_callback' => 'The callback parameters required to approve the claim payment (paymentKey, orderId, amount) are missing.',
+        'order_id_mismatch' => 'The callback order id does not match the claim payment number being approved.',
+        'deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
+        'amount_mismatch' => 'The charge changed after the payment window was opened. Please start the payment again from the claim.',
+        'amount_mismatch_cancel_reason' => 'Automatically cancelled due to a claim payment approval amount mismatch',
     ],
     'refund' => [
         'missing_payment_key' => 'Cannot process refund: TossPayments payment key not found.',
@@ -21,5 +29,8 @@ return [
     'settings_validation' => [
         'vbank_valid_hours_range' => 'Virtual account deposit deadline must be between :min and :max hours (max 90 days).',
         'use_escrow_invalid' => 'The escrow usage setting value is invalid.',
+    ],
+    'settings' => [
+        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, / or http(s):// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
     ],
 ];

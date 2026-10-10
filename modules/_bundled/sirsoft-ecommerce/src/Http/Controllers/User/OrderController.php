@@ -32,10 +32,18 @@ use Modules\Sirsoft\Ecommerce\Services\OrderService;
  * (주문 생성, 주문번호로 상세 조회, PG 결제창 닫기 기록)과 비회원 토큰 후속 액션은
  * Public\OrderController 가 담당합니다.
  *
- * 본 컨트롤러는 AuthBaseController 상속으로 모든 메서드에 auth:sanctum 이 강제 적용됩니다.
+ * 인증은 라우트 그룹(`user` 접두 + `auth:sanctum`)이 강제합니다 — 이 클래스는 생성자를 재정의하므로
+ * `AuthBaseController` 생성자의 미들웨어 등록은 실행되지 않습니다.
  */
 class OrderController extends AuthBaseController
 {
+    /**
+     * 마이페이지 주문 액션의 협력자를 주입받습니다.
+     *
+     * @param  OrderCancellationService  $cancellationService  주문 취소 서비스
+     * @param  OrderService  $orderService  주문 조회·수정 서비스
+     * @param  CartService  $cartService  장바구니 서비스 (재주문)
+     */
     public function __construct(
         private OrderCancellationService $cancellationService,
         private OrderService $orderService,
@@ -68,7 +76,7 @@ class OrderController extends AuthBaseController
         $collection = new UserOrderCollection($orders);
 
         return ResponseHelper::success('sirsoft-ecommerce::messages.orders.retrieved',
-            $collection->withStatistics($statistics)
+            $collection->withStatistics($statistics, $this->orderService->getUserStatusSummary($statistics))
         );
     }
 
@@ -124,6 +132,9 @@ class OrderController extends AuthBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: $cancelledBy,
                     refundPriority: $request->getRefundPriority(),
+                    // 구매자 본인 요청 — 고객 축으로 접수한다(출처 DIRECT · 고객 창구 자격 ·
+                    // 화면에 노출되는 사유만). 운영자 축으로 접수되면 본인이 철회·수정할 수 없다.
+                    buyerRequest: true,
                 );
             } else {
                 $result = $this->cancellationService->cancelOrder(
@@ -132,6 +143,9 @@ class OrderController extends AuthBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: $cancelledBy,
                     refundPriority: $request->getRefundPriority(),
+                    // 구매자 본인 요청 — 고객 축으로 접수한다(출처 DIRECT · 고객 창구 자격 ·
+                    // 화면에 노출되는 사유만). 운영자 축으로 접수되면 본인이 철회·수정할 수 없다.
+                    buyerRequest: true,
                 );
             }
 
@@ -143,11 +157,16 @@ class OrderController extends AuthBaseController
                 new OrderResource($updatedOrder)
             );
         } catch (OrderCancellationException $e) {
-            // 취소 도메인 규칙 위반 — 사용자에게 안내 가능한 상황이므로 422
-            return ResponseHelper::error(
-                'sirsoft-ecommerce::exceptions.order_cancel_failed',
-                422
-            );
+            // 취소 도메인 규칙 위반 — 사용자에게 안내 가능한 상황이므로 422.
+            // 사유 키가 실려 오면(클레임 수량 잠금·상태 자격 등) 그 사유를 안내한다 — 환불 예상
+            // (`estimateRefund`)과 같은 규칙이다. 키가 없으면(PG 거절 등) 원문을 싣지 않고 일반 실패
+            // 문구만 낸다 — 이 면은 구매자 화면이라 PG 원문(가맹점 설정·내부 코드)을 내보내지 않는다.
+            // PG 원문을 품는 키(`pg_refund_failed`)는 공개 면에 내보내지 않는다(`publicMessageKey()`).
+            $messageKey = $e->publicMessageKey();
+
+            return $messageKey === null
+                ? ResponseHelper::error('sirsoft-ecommerce::exceptions.order_cancel_failed', 422)
+                : ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             Log::error('주문 취소 실패', [
                 'order_id' => $request->getOrder()->id,
@@ -182,6 +201,15 @@ class OrderController extends AuthBaseController
                 'sirsoft-ecommerce::messages.order.estimate_refund_success',
                 $result->toPreviewArray()
             );
+        } catch (OrderCancellationException $e) {
+            // 클레임 수량 잠금 등 도메인 거절 — 취소 실행과 같은 422 로 미리보기/실행 비대칭을 없앤다.
+            // 사유 키가 실려 오면 그대로 안내한다(관리자 면과 같은 근거) — 없으면 일반 실패 키다.
+            // PG 원문을 품는 키(`pg_refund_failed`)는 공개 면에 내보내지 않는다(`publicMessageKey()`).
+            $messageKey = $e->publicMessageKey();
+
+            return $messageKey === null
+                ? ResponseHelper::error('sirsoft-ecommerce::exceptions.order_cancel_failed', 422)
+                : ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             Log::error('환불 예상금액 계산 실패', [
                 'order_id' => $request->getOrder()->id,

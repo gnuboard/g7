@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Tosspayments\Tests\Unit\Upgrade;
 
 use App\Upgrades\Data\Ext\Plugins\SirsoftTosspayments\V1_0_0\Migrations\BackfillShopBaseRedirectUrls;
+use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
@@ -19,12 +20,16 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  *
  * @effects legacy_default_redirect_is_backfilled, operator_custom_redirect_survives_backfill,
  *          redirect_backfill_is_idempotent
- *
- * @group payment
- * @group upgrade
  */
+#[Group('payment')]
+#[Group('upgrade')]
 class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
 {
+    /**
+     * 각 테스트 전에 공통 준비를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +38,13 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         require_once base_path('plugins/_bundled/sirsoft-tosspayments/upgrades/data/1.0.0/migrations/BackfillShopBaseRedirectUrls.php');
     }
 
+    /**
+     * 예전 기본값이 저장돼 있으면 자리표시자로 바꾼다.
+     *
+     * @effects legacy_default_redirect_is_backfilled
+     *
+     * @return void 반환값 없음
+     */
     public function test_예전_기본값이_저장돼_있으면_자리표시자로_바꾼다(): void
     {
         [$settings, $updated] = BackfillShopBaseRedirectUrls::apply([
@@ -45,6 +57,13 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         $this->assertSame(['redirect_success_url', 'redirect_fail_url'], $updated);
     }
 
+    /**
+     * 운영자가 직접 넣은 주소는 건드리지 않는다.
+     *
+     * @effects operator_custom_redirect_survives_backfill
+     *
+     * @return void 반환값 없음
+     */
     public function test_운영자가_직접_넣은_주소는_건드리지_않는다(): void
     {
         $custom = [
@@ -58,6 +77,13 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         $this->assertSame([], $updated);
     }
 
+    /**
+     * 한쪽만 예전 기본값이면 그쪽만 바꾼다.
+     *
+     * @effects legacy_default_redirect_is_backfilled
+     *
+     * @return void 반환값 없음
+     */
     public function test_한쪽만_예전_기본값이면_그쪽만_바꾼다(): void
     {
         [$settings, $updated] = BackfillShopBaseRedirectUrls::apply([
@@ -70,6 +96,13 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         $this->assertSame(['redirect_success_url'], $updated);
     }
 
+    /**
+     * 재실행해도 변화가 없다.
+     *
+     * @effects redirect_backfill_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_재실행해도_변화가_없다(): void
     {
         [$once] = BackfillShopBaseRedirectUrls::apply([
@@ -83,6 +116,13 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         $this->assertSame([], $updated);
     }
 
+    /**
+     * 키가 없으면 추가하지 않는다.
+     *
+     * @effects redirect_backfill_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_키가_없으면_추가하지_않는다(): void
     {
         [$settings, $updated] = BackfillShopBaseRedirectUrls::apply(['is_test_mode' => true]);

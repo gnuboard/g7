@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\CashReceiptService;
 
@@ -46,6 +45,7 @@ class PurgeCashReceiptIdentifierListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -58,18 +58,14 @@ class PurgeCashReceiptIdentifierListener implements HookListenerInterface
      * 이미 폐기되었거나 애초에 저장된 적 없는 경우에도 안전하다 (멱등).
      *
      * @param  Order  $order  구매확정된 주문
+     * @return void 반환값 없음
      */
     public function purgeIdentifier(Order $order): void
     {
-        try {
-            $order->loadMissing('payment');
+        // 실패를 삼키지 않는다(B7) — 큐 리스너라 재시도(3회)가 다시 폐기를 시도한다. 삼키면 큐 재시도도 함께 사라져
+        // 개인정보(현금영수증 식별번호 암호문)가 무기한 남았다. 폐기는 멱등이라 재시도해도 안전하다.
+        $order->loadMissing('payment');
 
-            $this->cashReceiptService->purgeIdentifier($order);
-        } catch (\Throwable $e) {
-            Log::error('PurgeCashReceiptIdentifierListener: 식별번호 폐기 실패', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        $this->cashReceiptService->purgeIdentifier($order);
     }
 }

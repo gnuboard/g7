@@ -1,0 +1,144 @@
+<!-- 본인인증 정책별 문구를 **새로 만드는** 창(알림 설정 > 분류 「본인인증」 > [정책별 문구 추가]).
+  7.0.x 의 본인인증 탭 「메시지 정의 추가」 창을 알림 정의 API 로 옮긴 것이다 — 필드·검증·오류 표시는 같고,
+  보내는 곳과 본문 모양만 바뀌었다(`POST /api/admin/notification-definitions`, category=identity).
+
+  이 창의 성질 셋:
+  ⑴ 상태를 전역 **한 객체**(`identity_notification_add_modal`) 아래 모은다 — 폼·언어·저장중·오류가 한
+     덩어리라, 성공 시 그 객체를 통째로 비우면 다음에 열 때 새 창이 된다.
+  ⑵ 다국어 입력은 언어 탭이 고른 로케일 한 칸만 보여 주고, 값은 `{ko: …, en: …}` 객체에 쌓는다.
+     그래서 입력마다 **기존 객체를 복사해 그 로케일 키만 갈아 끼운다**(통째로 덮으면 다른 언어가 날아간다).
+  ⑶ 정책은 운영자가 추가한 본인인증 정책 중 **아직 문구가 없는 것**만 고른다(판정은 서버가 실어 주는 `policy_key` —
+     100자를 넘는 키는 type 이 해시로 줄어 화면이 type 문자열로는 맞출 수 없다). 정의의 소유·type·채널·변수는
+     서버가 정한다 — 보내지 않는다. -->
+<partial description="본인인증 정책별 문구(알림 정의) 추가 모달 — 언어 탭 + 고정 footer + 검증 에러 영역" editor_label="$t:admin.modal_label.admin_settings.modal_notification_identity_definition_add">
+  <modal data-type="composite" data-ref="modal_notification_identity_definition_add" size="xl" title="$t:admin.settings.notification_definitions.identity_add.title" :closeOnOverlayClick="false">
+    <div data-ref="identity_notification_add_container" data-blur-until-loaded="{{_global.identity_notification_add_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
+      <div class="flex-1 overflow-y-auto space-y-5 pr-1">
+        <p class="text-label-subtle">$t:admin.settings.notification_definitions.identity_add.help</p>
+        <div data-ref="identity_notification_add_errors" data-if="{{_global.identity_notification_add_modal?.errors}}" class="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3">
+          <p class="text-error-strong mb-1">$t:admin.settings.notification_definitions.identity_add.errors_title</p>
+          <ul class="text-danger-soft list-disc pl-5 space-y-0.5">
+            <li data-each="errMsg in {{Object.values(_global.identity_notification_add_modal?.errors ?? {}).flat()}}">{{errMsg}}</li>
+          </ul>
+        </div>
+        <div data-ref="identity_notification_add_policy_key">
+          <label class="form-label">
+            <span>$t:admin.settings.notification_definitions.identity_add.policy_key</span>
+            <span class="text-required">*</span>
+          </label>
+          <select data-if="{{(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).length &gt; 0}}" value="{{_global.identity_notification_add_modal?.form?.policy_key ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800" placeholder="$t:admin.settings.notification_definitions.identity_add.policy_key_placeholder" options="{{(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).map(p =&gt; ({ value: p.key, label: p.key }))}}">
+            <on type="change">
+              <!-- 어느 정책에 붙일 문구인지 고른다. 선택지는 **운영자 정책 목록**에서 오되, 이미 문구가 있는 정책은
+                   뺀다 — 서버는 같은 정책에 두 번째 정의를 중복으로 거절한다(422). 고를 정책이 없으면 안내 문구가 뜬다. -->
+              <set-state target="global" identity_notification_add_modal.form.policy_key="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <p data-if="{{(adminIdentityPolicies?.data?.data ?? []).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_empty</p>
+          <p data-if="{{(adminIdentityPolicies?.data?.data ?? []).length &gt; 0 &amp;&amp; (adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_all_defined</p>
+        </div>
+        <div data-ref="identity_notification_add_variables" class="rounded-md bg-gray-100 dark:bg-gray-700 p-3">
+          <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:admin.settings.notification_definitions.identity_add.variables_title</h4>
+          <div class="flex flex-wrap gap-1">
+            <span data-each='varItem in [{"key":"code"},{"key":"action_url"},{"key":"expire_minutes"},{"key":"purpose_label"},{"key":"app_name"},{"key":"site_url"},{"key":"recipient_email"}]' class="px-2 py-1 text-[11px] rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-mono">{{'{' + varItem.key + '}'}}</span>
+          </div>
+        </div>
+        <div data-ref="identity_notification_add_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.identity_notification_add_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
+            <on type="click">
+              <!-- 편집 언어 전환 — 아래 세 칸(이름·제목·본문)이 함께 이 로케일을 바라본다.
+                   입력값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다. -->
+              <set-state target="global" identity_notification_add_modal.editLang="{{loc}}"/>
+            </on>
+            {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+          </button>
+        </div>
+        <div data-ref="identity_notification_add_name" class="row-stack">
+          <div>
+            <label class="form-label">
+              <span>$t:admin.settings.notification_definitions.identity_add.name</span>
+              <span class="text-required">*</span>
+            </label>
+            <input type="text" value="{{_global.identity_notification_add_modal?.form?.name?.[_global.identity_notification_add_modal?.editLang ?? $locale] ?? ''}}" class=" focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              <on type="input">
+                <!-- 문구 이름(언어별). 기존 객체를 복사해 **지금 탭의 로케일 키만** 갈아 끼운다. -->
+                <set-state target="global" identity_notification_add_modal.form.name="{{Object.assign({}, _global.identity_notification_add_modal?.form?.name, {[_global.identity_notification_add_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+        <div data-ref="identity_notification_add_subject" class="row-stack">
+          <div>
+            <label class="form-label">
+              <span>$t:admin.settings.notification_definitions.identity_add.subject</span>
+              <span class="text-required">*</span>
+            </label>
+            <input type="text" value="{{_global.identity_notification_add_modal?.form?.subject?.[_global.identity_notification_add_modal?.editLang ?? $locale] ?? ''}}" class=" focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              <on type="input">
+                <!-- 메일 제목(언어별) — 이름 칸과 같은 방식이다. -->
+                <set-state target="global" identity_notification_add_modal.form.subject="{{Object.assign({}, _global.identity_notification_add_modal?.form?.subject, {[_global.identity_notification_add_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+        <div data-ref="identity_notification_add_body" class="row-stack">
+          <div>
+            <label class="form-label">
+              <span>$t:admin.settings.notification_definitions.identity_add.body</span>
+              <span class="text-required">*</span>
+            </label>
+            <html-editor data-type="composite" content="{{_global.identity_notification_add_modal?.form?.body?.[_global.identity_notification_add_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
+              <on type="change">
+                <!-- 메일 본문(언어별). 편집기라 `input` 이 아니라 `change` 로 받는다. 위 안내의 `{code}` 같은 변수를 그대로 쓴다. -->
+                <set-state target="global" identity_notification_add_modal.form.body="{{Object.assign({}, _global.identity_notification_add_modal?.form?.body, {[_global.identity_notification_add_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+              </on>
+            </html-editor>
+          </div>
+        </div>
+      </div>
+      <div data-ref="identity_notification_add_footer" class="flex justify-end gap-2 pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
+        <button type="button" class="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.identity_notification_add_modal?.isSaving ?? false}}">
+          <on type="click">
+            <close-modal target="modal_notification_identity_definition_add"/>
+          </on>
+          $t:common.cancel
+        </button>
+        <!-- 저장은 고를 수 있는 정책을 골랐을 때만 열린다. 연달아 누르면 마지막 한 번만 보낸다(debounce) — 잠금(isSaving)은 첫 클릭의 상태 반영보다 두 번째 클릭이 빠르면 못 막는다(실측: 더블클릭 POST 2회 → 201·422). -->
+        <button data-ref="identity_notification_add_save_button" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.identity_notification_add_modal?.isSaving ?? false) || !(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).some(p =&gt; p.key === (_global.identity_notification_add_modal?.form?.policy_key ?? ''))}}">
+          <on type="click">
+            <!-- 저장. 성공하면 목록·선택지를 다시 받고 창 상태를 통째로 비운다(다음에 열면 빈 폼이다).
+                 실패는 필드 오류를 상단 상자에 남기고 창을 닫지 않는다(예: 중복 422). -->
+            <sequence :debounce="400">
+              <set-state target="global" :identity_notification_add_modal.isSaving="true" :identity_notification_add_modal.errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/notification-definitions" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="notificationDefinitions"/>
+                  <refetch-data-source dataSourceId="identityPolicyDefinitions"/>
+                  <toast message="$t:admin.settings.notification_definitions.identity_add.save_success" type="success"/>
+                  <close-modal target="modal_notification_identity_definition_add"/>
+                  <set-state target="global" :identity_notification_add_modal="null"/>
+                </success>
+                <fail>
+                  <set-state target="global" :identity_notification_add_modal.isSaving="false" identity_notification_add_modal.errors="{{error.errors}}"/>
+                  <toast message="{{error.message ?? '$t:admin.settings.notification_definitions.identity_add.save_failed'}}" type="error"/>
+                </fail>
+                <field name="body">
+                  <field name="category" value="identity"/>
+                  <field name="policy_key" value="{{_global.identity_notification_add_modal?.form?.policy_key ?? ''}}"/>
+                  <field name="name" value="{{_global.identity_notification_add_modal?.form?.name ?? null}}"/>
+                  <field name="templates">
+                    <field name="mail">
+                      <field name="subject" value="{{_global.identity_notification_add_modal?.form?.subject ?? null}}"/>
+                      <field name="body" value="{{_global.identity_notification_add_modal?.form?.body ?? null}}"/>
+                    </field>
+                  </field>
+                </field>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.identity_notification_add_modal?.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
+          <span>{{_global.identity_notification_add_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

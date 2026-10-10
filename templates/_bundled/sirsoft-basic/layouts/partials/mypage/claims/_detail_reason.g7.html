@@ -1,0 +1,51 @@
+<partial description="클레임 상세 - 신청 사유 (사유 · 귀책 · 상세 사유 · 첨부 사진 · 반려 사유)" editor_label="$t:user.modal_label.mypage_claims.detail_reason">
+  <!-- §6-2 — 사유·귀책·상세 사유·이미지. 귀책은 배송비를 누가 부담하는지를 정하는 값이라 사유 바로 옆에 둔다. 반려된 신청서는 운영자가 적은 반려 사유가 이 카드에서 가장 중요한 정보이므로 맨 위로 올린다.
+첨부는 한시 서명 URL(download_url)로만 열린다 — 화면이 해시로 주소를 조립하면 서명이 빠져 403 이 된다. 클릭 확대는 modal_claim_image_viewer 가 맡는다(셸이 마운트). -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+    <!-- 섹션 제목 -->
+    <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <icon name="comment-dots" class="text-base text-gray-900 dark:text-white"/>
+      <h2 class="text-base font-bold text-gray-900 dark:text-white">$t:claim.detail.reason_title</h2>
+    </div>
+    <!-- 반려 사유 — 운영자가 거절하며 적은 사유. 이 카드에서 가장 먼저 읽혀야 한다. 신청서 **전체가** 반려됐을 때만 선다(S3) — 일부 상품만 반려됐으면 사유는 그 상품 줄에 있고, 나머지 상품이 진행 중인데 이 카드가 반려를 외치면 구매자가 신청 전체가 거절된 것으로 읽는다. -->
+    <div data-if="{{claim.data?.claim?.status === 'rejected' &amp;&amp; !!claim.data?.claim?.reject_reason}}" class="flex items-start gap-2 p-3 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <icon name="circle-exclamation" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-red-800 dark:text-red-200">$t:claim.detail.reject_reason</p>
+        <p class="text-sm text-red-700 dark:text-red-300 mt-0.5 whitespace-pre-line">{{claim.data?.claim?.reject_reason}}</p>
+      </div>
+    </div>
+    <div class="space-y-2">
+      <div class="flex items-baseline justify-between gap-3">
+        <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.reason_label</span>
+        <span class="text-sm text-gray-900 dark:text-white text-right">{{claim.data?.claim?.reason_label ?? '—'}}</span>
+      </div>
+      <!-- 귀책 — 배송비를 누가 부담하는지의 근거. 판매자·배송사 귀책이면 청구가 0원이다. -->
+      <div data-if="{{!!claim.data?.claim?.fault_type_label}}" class="flex items-baseline justify-between gap-3">
+        <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.fault_type</span>
+        <span class="text-sm text-gray-900 dark:text-white text-right">{{claim.data?.claim?.fault_type_label}}</span>
+      </div>
+      <div data-if="{{!!claim.data?.claim?.reason_detail}}" class="pt-2">
+        <p class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.reason_detail</p>
+        <p class="text-sm text-gray-900 dark:text-white mt-1 whitespace-pre-line">{{claim.data?.claim?.reason_detail}}</p>
+      </div>
+    </div>
+    <!-- 첨부 사진 — 클릭하면 확대해서 본다. 취소 이력에는 첨부가 없다(서버가 빈 배열을 내려준다). -->
+    <div data-if="{{(claim.data?.claim?.images ?? []).length > 0}}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">$t:claim.detail.images</p>
+      <!-- 격자는 부모가 한 번만 갖고 사진 버튼이 반복된다 — 반복 노드가 격자를 들면 사진마다 격자가 따로 생겨 한 줄에 하나씩 쌓인다. -->
+      <div class="grid grid-cols-5 gap-2">
+        <responsive on="portable" class="grid grid-cols-3 gap-2"/>
+        <!-- 사진을 누르면 확대 창을 연다 — 확대 창은 페이지 로컬에서 대상을 읽으므로 그 사진의 서명 주소와 파일명을 먼저 세운 뒤 연다. -->
+        <button data-each="claimImage in {{claim.data?.claim?.images ?? []}}" type="button" class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-90 transition-opacity">
+          <on type="click">
+            <set-state target="local" claimImageViewerUrl="{{claimImage.download_url ?? ''}}" claimImageViewerName="{{claimImage.original_name ?? ''}}"/>
+            <open-modal target="modal_claim_image_viewer"/>
+          </on>
+          <img src="{{claimImage.download_url ?? ''}}" alt="{{claimImage.original_name ?? ''}}" class="w-full h-full object-cover"/>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

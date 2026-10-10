@@ -1,0 +1,41 @@
+feature: _pending·_bundled 원본 디렉토리는 목록·설치·삭제·로드·업데이트 감지에서 정해진 역할만 한다
+
+description: |
+  모듈·플러그인·템플릿은 활성 디렉토리 외에 두 원본 디렉토리를 가진다 — `_pending`(GitHub·ZIP 으로 받은 임시 스테이징)과
+  `_bundled`(코어에 동봉된 원본). 두 디렉토리의 확장은 설치 전까지 활성 확장이 아니며, 설치·삭제로 사라지지 않는다.
+
+  이 매니페스트가 고정하는 계약:
+    - 미설치 목록: `_pending`·`_bundled` 확장이 출처 표시(is_pending/is_bundled, 템플릿은 source)와 필수 메타데이터를 갖고 실린다.
+      이미 활성인 확장은 `_pending` 목록에서, 이미 `_pending` 에 있는 확장은 `_bundled` 목록에서 빠진다.
+      템플릿은 template.json 이 있는 디렉토리만 원본으로 인정한다.
+    - 설치: 원본을 활성 디렉토리로 복사하고 원본은 그대로 남긴다.
+    - 삭제: 활성 디렉토리만 지우고 원본 디렉토리는 남긴다.
+    - 로드: loadModules/loadPlugins/loadTemplates 와 오토로드 수집은 원본 디렉토리를 활성 확장으로 읽지 않는다.
+    - 업데이트 감지: `_bundled` 만 업데이트 원본이다. `_pending` 은 같은 식별자로 더 높은 버전이 있어도 감지에 쓰지 않는다.
+
+axes:
+  ext_type: [module, plugin, template]
+  source_dir: [pending, bundled]
+  stage: [uninstalled_listing, install_copy, uninstall, load_skip, update_detection]
+
+effects:
+  - pending_listed_as_uninstalled
+  - bundled_listed_as_uninstalled
+  - listing_excludes_active_or_pending_duplicates
+  - source_metadata_contains_required_fields
+  - template_manifest_read_from_template_json
+  - install_copies_source_to_active
+  - install_preserves_source_copy
+  - uninstall_deletes_active_directory
+  - uninstall_preserves_source_directory
+  - source_dirs_skipped_in_autoload_collection
+  - source_dirs_not_loaded_as_active
+  - pending_ignored_for_update_detection
+  - bundled_used_as_update_source
+
+test_files:
+  - tests/Feature/Extension/ExtensionPendingBundledTest.php
+
+notes:
+  - 오토로드 수집 제외(collectModuleAutoloads)는 모듈 경로로만 검증한다. 플러그인·템플릿의 load_skip 조합은 loadPlugins/loadTemplates 로 덮는다.
+  - _pending 의 Composer 선행 설치는 extension-pending-composer-preinstall.yaml, 모듈 관리자 단위 업데이트 판정은 module-manager-pending-bundled-update.yaml 이 소유한다.

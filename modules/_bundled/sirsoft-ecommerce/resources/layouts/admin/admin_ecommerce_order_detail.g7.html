@@ -1,0 +1,213 @@
+<!-- 주문 상세 (운영자) — 주문정보·결제정보·활동로그 세 구획을 한 페이지에 이어 붙이고 탭은 스크롤
+  위치를 따라간다. 배송지 수정·상태 일괄변경·취소/환불·안내 발송이 모두 여기서 일어나므로,
+  화면 상태(_local)는 `<init>` 한 곳에서 전 필드를 미리 깔아 두고 시작한다.
+  운영자가 누른 유형 서브탭. 비어 있으면 computed claimHistoryActiveType 이 접수 건이 있는 첫 유형을 고른다 — 여기에 'exchange' 를 박으면 그 판정이 영영 돌지 않는다.
+  탭 배열과 섹션 존재는 같은 조건으로 함께 분기한다 (D17-①). '클레임 내역' 은 접수 건이 없어도 섹션이 남으므로(빈 유형 안내가 그 자리다) 탭도 상시 존재하고, 뱃지 숫자만 응답을 따라간다.
+  유형 서브탭 4종 (D20). 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 claims 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다.
+  지금 보는 유형 서브탭. 운영자가 누른 값(_local.claimHistoryType)이 있으면 그것, 없으면 접수 건이 있는 첫 유형 — 순서는 교환 → 반품 → 취소 → 환불이고 넷 다 비었으면 교환이다. 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였다. 판정은 뱃지와 같은 counts 를 읽는다 — claims 배열을 세면 상한이 걸린 응답에서 뱃지와 갈린다. computed 는 다른 computed 를 읽지 못하므로 아래 claimHistoryRows 가 같은 식을 되풀이한다 — 순서를 바꾸면 두 곳을 함께 바꾼다.
+  서브탭 필터는 화면이 claim_type 으로 거른다 (S6c 판정 ⑤ — 서버는 전 유형 평면 배열 하나를 신청 역순으로 내려준다). 별도 데이터소스를 만들지 않으므로 서브탭 전환에 재조회가 없다. 기준 유형은 claimHistoryActiveType 과 같은 식이다(computed 간 참조 불가). -->
+<layout name="admin_ecommerce_order_detail" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.order.detail.title" description="$t:sirsoft-ecommerce.admin.order.detail.description"/>
+  <!-- 주문 본체. `blocking` 인 것은 아래 구획이 전부 이 응답 위에 서기 때문이고, 응답이 오면 배송지 입력값을 폼에 심는다(국내/해외 주소가 서로 다른 필드에 담겨 양쪽을 같이 받는다).
+       환불 계좌 세 필드는 주문 시 입력값을 취소 모달에 프리필해 두는 자리다(운영자가 고칠 수 있다) — cancelOrderHandlers 가 이 _local 키를 읽어 refund_bank 로 보낸다. -->
+  <data-source id="order" label_key="$t:sirsoft-ecommerce.editor.data_source.order" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <init-local>
+      <field name="order_number" value="{{data.order_number ?? ''}}"/>
+      <field name="form.recipient_name" value="{{data.recipient_name ?? ''}}"/>
+      <field name="form.recipient_phone" value="{{data.recipient_phone ?? ''}}"/>
+      <field name="form.recipient_tel" value="{{data.recipient_tel ?? ''}}"/>
+      <field name="form.recipient_zipcode" value="{{data.recipient_zipcode ?? ''}}"/>
+      <field name="form.recipient_address" value="{{data.recipient_address ?? ''}}"/>
+      <field name="form.recipient_detail_address" value="{{data.recipient_detail_address ?? ''}}"/>
+      <field name="form.recipient_country_code" value="{{data.shipping_address?.recipient_country_code ?? 'KR'}}"/>
+      <field name="form.address_line_1" value="{{data.shipping_address?.address_line_1 ?? ''}}"/>
+      <field name="form.address_line_2" value="{{data.shipping_address?.address_line_2 ?? ''}}"/>
+      <field name="form.intl_city" value="{{data.shipping_address?.intl_city ?? ''}}"/>
+      <field name="form.intl_state" value="{{data.shipping_address?.intl_state ?? ''}}"/>
+      <field name="form.intl_postal_code" value="{{data.shipping_address?.intl_postal_code ?? ''}}"/>
+      <field name="form.delivery_memo" value="{{data.delivery_memo ?? ''}}"/>
+      <field name="form.admin_memo" value="{{data.admin_memo ?? ''}}"/>
+      <field name="refundBankCode" value="{{data.payment?.refund_bank_code ?? ''}}"/>
+      <field name="refundBankAccount" value="{{data.payment?.refund_bank_account ?? ''}}"/>
+      <field name="refundBankHolder" value="{{data.payment?.refund_bank_holder ?? ''}}"/>
+    </init-local>
+  </data-source>
+  <!-- 환불 계좌 은행 목록 (order_settings.banks) — 취소 모달의 은행 Select 가 사용한다. 무통장 입금 계좌와 동일한 목록이다. -->
+  <data-source id="paymentSettings" label_key="$t:sirsoft-ecommerce.editor.data_source.paymentSettings" type="api" endpoint="/api/modules/sirsoft-ecommerce/settings/payment" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- 운송장 입력 시 고를 택배사 목록 — 사용 중인 것만 받는다 -->
+  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <!-- 택배사 목록은 설정 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 억제하지 않으면 상세에 들어갈 때마다 「해당 권한이 없습니다」 알림이 뜬다(목록 화면 S3-D6 과 같은 처리). 비면 운송장 입력의 택배사 선택지만 빈다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 활동로그 구획 전용. 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다(클라이언트 정렬이 아니다) -->
+  <data-source id="order_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.order_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs" method="GET" :auto_fetch="true" :auth_required="true">
+    <params per_page="{{_local.logsPerPage ?? 10}}" page="{{_local.logsPage ?? 1}}" sort_order="{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"/>
+  </data-source>
+  <!-- 주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다. -->
+  <data-source id="orderClaims" label_key="$t:sirsoft-ecommerce.editor.data_source.orderClaims" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="counts" :value="{}"/>
+        <field name="claims" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 클레임 열람 권한이 없는 주문 담당자에게는 정상적인 응답이다 — 상위(레이아웃) errorHandling 으로 전파되면 주문 화면 전체가 오류 페이지가 된다. -->
+        <suppress/>
+      </on-code>
+      <default>
+        <!-- 500·네트워크 실패도 같다 — 클레임 내역 한 섹션의 실패가 주문 화면 전체를 막지 않게 끊고, fallback 의 unavailable 로 섹션이 '못 불러왔다' 를 말한다. -->
+        <suppress/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 관리자 직권 접수 문맥 (§3-11) — 선택 바 [교환 접수]·[반품 접수]·[취소·환불 접수] 가 켜지는 물리 게이트(D5) 상태 목록과 접수 창의 사유·청구 방식 선택지. 게이트(claims.create)가 화면 라우트(orders.read)보다 좁아 권한이 없는 운영자에게는 403 이다 — suppress 로 끊고 fallback 의 빈 게이트로 세 버튼이 꺼진 채 선다. 게이트 computed(`claimRequestGate*`)는 고른 상품이 **모두** 그 유형의 상태 목록에 있어야 참이다 — 화면이 목록을 적으면 서버 판정과 갈린다. -->
+  <data-source id="claimRequestContext" label_key="$t:sirsoft-ecommerce.editor.data_source.claimRequestContext" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims/request-context" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="gates" :value="{}"/>
+        <field name="reasons" :value="{}"/>
+        <field name="charge_methods" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 실패의 종류를 남긴다 — 403(접수 권한 없음)과 그 밖(500·네트워크)을 선택 바 안내가 가른다. 전부 「권한 없음」 으로 알리면 권한이 있는 운영자가 엉뚱하게 권한을 요청하러 간다. 이 핸들러가 실패를 받아 끊으므로 주문 화면 전체 오류로 번지지 않는다. -->
+        <set-state target="local" claimRequestContextError="forbidden"/>
+      </on-code>
+      <default>
+        <set-state target="local" claimRequestContextError="failed"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다 -->
+  <data-source id="refundReasons" label_key="$t:sirsoft-ecommerce.editor.data_source.refundReasons" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claim-reasons/active" method="GET" :auto_fetch="true" :auth_required="true">
+    <params type="refund"/>
+    <error-handling>
+      <on-code code="403">
+        <!-- 사유 목록은 설정 조회·클레임 조회 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 비면 취소/환불 창의 사유 선택지만 빈다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="selectedProducts" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="batchOrderStatus" value=""/>
+    <field name="batchCarrierId" value=""/>
+    <field name="batchTrackingNumber" value=""/>
+    <field name="activeOrderTab" value="order_info"/>
+    <field name="claimHistoryType" value=""/>
+    <field name="expandedCashReceiptHistory" :value="[]"/>
+  </init-local>
+  <computed name="claimHistoryTotal">{{Number(orderClaims?.data?.counts?.exchange ?? 0) + Number(orderClaims?.data?.counts?.return ?? 0) + Number(orderClaims?.data?.counts?.cancel ?? 0) + Number(orderClaims?.data?.counts?.refund ?? 0)}}</computed>
+  <computed name="orderDetailTabs">{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((_computed.claimHistoryTotal ?? 0) > 0 ? ' (' + _computed.claimHistoryTotal + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}</computed>
+  <computed name="claimHistoryTypes">{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}</computed>
+  <computed name="claimHistoryActiveType">{{_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')}}</computed>
+  <computed name="claimHistoryRows">{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}</computed>
+  <computed name="claimRequestGateExchange">{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.exchange ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}</computed>
+  <computed name="claimRequestGateReturn">{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.return ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}</computed>
+  <computed name="claimRequestGateRefund">{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.refund ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>active_carriers</wait-for>
+    <wait-for>order_logs</wait-for>
+    <wait-for>refundReasons</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local" activeOrderTab="order_info" claimHistoryType="" :selectedProducts="[]" :selectAll="false" batchOrderStatus="" batchCarrierId="" batchTrackingNumber="" :logsPage="1" :logsPerPage="10" logsSort="date_desc" :changeQuantities="[]" smsPhone="" smsMessage="" emailAddress="" emailMessage="" :isSending="false" :emailErrors="null" order_number="" :isSaving="false" :errors="null" :cancelItems="[]" cancelReason="" cancelReasonDetail="" :refundEstimate="null" :refundLoading="false" :isCancelling="false" :cancelError="null">
+      <field name="form">
+        <field name="recipient_name" value=""/>
+        <field name="recipient_phone" value=""/>
+        <field name="recipient_tel" value=""/>
+        <field name="recipient_zipcode" value=""/>
+        <field name="recipient_address" value=""/>
+        <field name="recipient_detail_address" value=""/>
+        <field name="recipient_country_code" value="KR"/>
+        <field name="address_line_1" value=""/>
+        <field name="address_line_2" value=""/>
+        <field name="intl_city" value=""/>
+        <field name="intl_state" value=""/>
+        <field name="intl_postal_code" value=""/>
+        <field name="delivery_memo" value=""/>
+        <field name="admin_memo" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="order_detail_wrapper" class="admin-page-content">
+      <div data-ref="page_header_section" class="mb-6">
+        <div data-ref="page_header" class="page-header-padded">
+          <div>
+            <h1 class="page-title">$t:sirsoft-ecommerce.admin.order.detail.title</h1>
+            <div class="page-description flex-center gap-2 flex-wrap">
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_number:</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.order_number}}</span>
+              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_date:</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.ordered_at_formatted}}</span>
+              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.status:</span>
+              <badge data-type="composite" variant="{{order.data.order_status_variant}}">{{order.data.order_status_label}}</badge>
+              <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) -->
+              <badge data-type="composite" data-if="{{order.data.is_partially_cancelled}}" variant="warning">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</badge>
+            </div>
+          </div>
+          <div class="page-actions">
+            <!-- 주문 목록으로. 보던 검색·상태 필터·페이지를 그대로 이고 간다 — 주문 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
+            <button data-ref="list_button" type="button" class="btn btn-outline">
+              <on type="click">
+                <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.common.list
+            </button>
+          </div>
+        </div>
+        <include src="partials/admin_ecommerce_order_detail/_partial_order_progress.g7.html"/>
+        <!-- 탭 클릭·스크롤 추적은 컴포넌트가 제 상태로 맡는다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 내부 활성 탭 갱신이 꺼져(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다. -->
+        <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" activeTabId="{{_local.activeOrderTab ?? 'order_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_" tabs="{{_computed.orderDetailTabs ?? []}}"/>
+      </div>
+      <div data-ref="tab_content_area" class="tab-content">
+        <include src="partials/admin_ecommerce_order_detail/_partial_order_info.g7.html"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_payment_info.g7.html"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_claim_history.g7.html"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_activity_log.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 선택한 주문상품들의 주문상태·운송장을 한꺼번에 바꾸기 전 확인 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.g7.html"/>
+  <!-- 주문자에게 SMS 안내 발송 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_sms.g7.html"/>
+  <!-- 주문자에게 메일 안내 발송 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_email.g7.html"/>
+  <!-- 취소/환불 — 취소할 옵션과 수량을 고르면 환불 예상액을 서버에서 다시 계산해 보여 준다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_cancel_order.g7.html"/>
+  <!-- 관리자 직권 접수 창 (교환·반품 — §3-11). 취소·환불 접수는 위 취소 모달을 그대로 쓴다(같은 서비스로 위임). -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_admin_claim_request.g7.html"/>
+  <!-- 현금영수증 발급 — 무통장·가상계좌 결제 건에 대해 운영자가 대신 발급한다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.g7.html"/>
+  <!-- 비회원 주문 조회 비밀번호 재설정 — 주문자가 비밀번호를 잊었을 때 운영자가 열어 준다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_reset_guest_password.g7.html"/>
+  <!-- 무통장 입금 확인 처리 — 입금 대기 주문을 결제 완료로 넘긴다 -->
+  <modal src="partials/admin_ecommerce_order_detail/_modal_confirm_deposit.g7.html"/>
+</layout>

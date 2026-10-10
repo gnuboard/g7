@@ -11,8 +11,8 @@
  *  - order      : OrderResource (유저 주문상세 — options/shippings/payments/promotions snapshot)
  *  - orders     : UserOrderCollection (data[]/statistics/pagination, UserOrderListResource 행)
  *
- * 바인딩 SSoT: layouts/shop/{cart,order_complete}.json,
- *              layouts/mypage/orders.json, mypage/orders/show.json (+ partials).
+ * 바인딩 SSoT: layouts/shop/{cart,order_complete}.g7.html,
+ *              layouts/mypage/orders.g7.html, mypage/orders/show.g7.html (+ partials).
  */
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';

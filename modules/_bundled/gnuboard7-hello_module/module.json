@@ -5,16 +5,24 @@
         "ko": "Hello 모듈",
         "en": "Hello Module"
     },
-    "version": "0.1.2",
+    "version": "0.2.0",
     "license": "MIT",
     "description": {
-        "ko": "학습용 최소 샘플 모듈 (Memo CRUD)",
-        "en": "Learning minimal sample module (Memo CRUD)"
+        "ko": "학습용 최소 샘플 모듈 (Memo CRUD + 컴포넌트 제공)",
+        "en": "Learning minimal sample module (Memo CRUD + component provisioning)"
     },
-    "g7_version": ">=7.0.0",
+    "g7_version": ">=7.1.0",
     "hidden": true,
     "dependencies": {
         "modules": {},
         "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-module-gnuboard7-hello_module",
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-gnuboard7-hello_module/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/hello-module.iife.js"
+        }
     }
 }

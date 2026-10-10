@@ -1,0 +1,28 @@
+feature: 공통정보 기본 설정 저장·취소
+
+description: |
+  공통정보 편집에서 「기본 설정」 을 켜고 확인한 뒤 저장하면 기본값이 실제로 저장되는지
+  
+  공통정보 편집 패널에서 「기본 설정」 스위치를 켜고 확인 창의 [확인] 을 누른 뒤 저장하면, 화면의 스위치는
+  켜져 보이지만 저장 요청에는 `is_default: false` 가 나가 기본값이 바뀌지 않았다(이커머스 전수 실측 S5,
+  2026-10-07 — 같은 저장에서 「활성화」 끔은 반영). 스위치를 켤 때 확인 창만 열고 폼 값 `form.is_default` 를
+  켜지 않았고, [확인] 도 창만 닫았다. [취소] 는 창 안의 `local` 을 고쳐 패널 폼을 되돌리지 못했다.
+  
+  켤 때 폼 값을 바로 켜고, [취소] 는 창을 닫기 **전에** 부모 문맥(`$parent._local`) 의 폼 값을 끈다.
+
+  수정 이력: 이커머스 전수 실측 S5-D27 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06]
+  # c01: 기본 설정 스위치를 찾았다
+  # c02: 켤 때(확인 창을 여는 갈래) 폼 값 form.is_default 를 true 로 넣는다
+  # c03: [취소] 는 창을 닫기 전에 저장이 읽는 자리(global _local)를 false 로 되돌린다
+  # c04: [취소] 는 창을 닫기 전에 화면이 읽는 자리($parent._local.form.is_default)도 false 로 되돌린다
+  # c05: [취소] 는 `$parent._local` 에 점 찍은 이름을 쓰지 않는다(한 칸으로 들어가 아무 데도 닿지 않는다)
+  # c06: [확인] 은 폼 값을 건드리지 않고 창만 닫는다(켜진 값이 저장 때 나간다)
+
+effects:
+  - default_toggle_saved_and_cancel_reverts
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/commonInfoDefaultToggleSave.test.ts

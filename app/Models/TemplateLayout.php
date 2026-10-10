@@ -40,7 +40,19 @@ class TemplateLayout extends Model
         'updated_by',
         'original_content_hash',
         'original_content_size',
+        'original_content',
         'lock_version',
+    ];
+
+    /**
+     * 직렬화에서 숨길 속성 — 원본 본문은 3자 병합 기준 전용이라 API 응답·편집기로 내보내지 않는다.
+     *
+     * 캐스트를 두지 않는다: 문자열 그대로 두어야 빈 map(`{}`) 모양이 보존된다.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'original_content',
     ];
 
     /**
@@ -59,6 +71,8 @@ class TemplateLayout extends Model
 
     /**
      * 템플릿과의 관계
+     *
+     * @return BelongsTo 소속 템플릿 관계
      */
     public function template(): BelongsTo
     {
@@ -67,6 +81,8 @@ class TemplateLayout extends Model
 
     /**
      * 부모 레이아웃과의 관계 (레이아웃 상속)
+     *
+     * @return BelongsTo|null 부모 레이아웃 관계, 상속하지 않으면 null
      */
     public function parent(): ?BelongsTo
     {
@@ -80,6 +96,8 @@ class TemplateLayout extends Model
 
     /**
      * 레이아웃 버전 목록 (최신순)
+     *
+     * @return HasMany 버전 관계
      */
     public function versions(): HasMany
     {
@@ -89,6 +107,8 @@ class TemplateLayout extends Model
 
     /**
      * 최신 버전 조회
+     *
+     * @return TemplateLayoutVersion|null 최신 버전, 이력이 없으면 null
      */
     public function latestVersion(): ?TemplateLayoutVersion
     {
@@ -97,6 +117,9 @@ class TemplateLayout extends Model
 
     /**
      * 특정 버전 조회
+     *
+     * @param  int  $version  버전 번호
+     * @return TemplateLayoutVersion|null 버전, 없으면 null
      */
     public function getVersion(int $version): ?TemplateLayoutVersion
     {
@@ -107,6 +130,10 @@ class TemplateLayout extends Model
 
     /**
      * 소스 타입으로 필터링하는 스코프
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  LayoutSourceType  $sourceType  소스 타입
+     * @return Builder 필터가 걸린 쿼리
      */
     public function scopeBySourceType(Builder $query, LayoutSourceType $sourceType): Builder
     {
@@ -115,6 +142,9 @@ class TemplateLayout extends Model
 
     /**
      * 모듈 레이아웃만 조회하는 스코프
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 필터가 걸린 쿼리
      */
     public function scopeFromModules(Builder $query): Builder
     {
@@ -123,6 +153,10 @@ class TemplateLayout extends Model
 
     /**
      * 특정 모듈의 레이아웃만 조회하는 스코프
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return Builder 필터가 걸린 쿼리
      */
     public function scopeByModule(Builder $query, string $moduleIdentifier): Builder
     {
@@ -132,6 +166,9 @@ class TemplateLayout extends Model
 
     /**
      * 플러그인 레이아웃만 조회하는 스코프
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 필터가 걸린 쿼리
      */
     public function scopeFromPlugins(Builder $query): Builder
     {
@@ -140,6 +177,10 @@ class TemplateLayout extends Model
 
     /**
      * 특정 플러그인의 레이아웃만 조회하는 스코프
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $pluginIdentifier  플러그인 식별자
+     * @return Builder 필터가 걸린 쿼리
      */
     public function scopeByPlugin(Builder $query, string $pluginIdentifier): Builder
     {
@@ -149,6 +190,9 @@ class TemplateLayout extends Model
 
     /**
      * 템플릿 레이아웃만 조회하는 스코프 (오버라이드 포함)
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 필터가 걸린 쿼리
      */
     public function scopeFromTemplates(Builder $query): Builder
     {
@@ -157,6 +201,10 @@ class TemplateLayout extends Model
 
     /**
      * 특정 소스 식별자로 필터링하는 스코프
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $identifier  소스 식별자
+     * @return Builder 필터가 걸린 쿼리
      */
     public function scopeBySourceIdentifier(Builder $query, string $identifier): Builder
     {

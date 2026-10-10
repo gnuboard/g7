@@ -40,6 +40,7 @@ class HookListenerRegistrar
      *
      * @param  string  $listenerClass  HookListenerInterface 구현 클래스의 FQCN
      * @param  string|null  $source  등록 출처 (로그용: 'core', 모듈/플러그인 식별자)
+     * @return void 반환값 없음
      */
     public static function register(string $listenerClass, ?string $source = null): void
     {
@@ -77,6 +78,7 @@ class HookListenerRegistrar
      * @param  string  $listenerClass  리스너 FQCN
      * @param  array<string, array<string, mixed>>  $subscribedHooks  사전 계산된 getSubscribedHooks() 결과
      * @param  string|null  $source  등록 출처 ('core', 모듈/플러그인 식별자)
+     * @return void 반환값 없음
      */
     public static function registerFromCache(string $listenerClass, array $subscribedHooks, ?string $source = null): void
     {
@@ -97,6 +99,7 @@ class HookListenerRegistrar
      * @param  string  $listenerClass  리스너 FQCN
      * @param  array<string, array<string, mixed>>  $subscribedHooks  구독 훅 매핑
      * @param  string|null  $source  등록 출처
+     * @return void 반환값 없음
      */
     private static function applySubscribedHooks(string $listenerClass, array $subscribedHooks, ?string $source): void
     {
@@ -149,6 +152,7 @@ class HookListenerRegistrar
      * @param  array<int, mixed>  $boundArgs  훅 발화 인자 앞에 고정으로 붙일 인자 (직렬화 가능해야 함)
      * @param  int  $priority  실행 우선순위
      * @param  bool  $sync  true 면 큐 래핑 없이 즉시 동기 실행 (큐 드라이버 무관)
+     * @return void 반환값 없음
      */
     public static function registerDynamicAction(
         string $hookName,
@@ -181,6 +185,7 @@ class HookListenerRegistrar
      * @param  string  $method  큐 워커에서 호출할 메서드명
      * @param  int  $priority  실행 우선순위
      * @param  array<int, mixed>  $boundArgs  훅 발화 인자 앞에 고정으로 붙일 인자
+     * @return void 반환값 없음
      */
     private static function addQueuedAction(
         string $hookName,
@@ -204,6 +209,8 @@ class HookListenerRegistrar
      *
      * 모듈 install/uninstall 시나리오 또는 테스트 격리가 필요할 때 호출.
      * 캐시 비운 후 register() 호출하면 listener 가 다시 HookManager 에 추가됨.
+     *
+     * @return void 반환값 없음
      */
     public static function clear(): void
     {

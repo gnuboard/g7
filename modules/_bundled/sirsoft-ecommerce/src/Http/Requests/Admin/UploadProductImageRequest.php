@@ -3,15 +3,19 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Modules\Sirsoft\Ecommerce\Enums\ProductImageCollection;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 
 /**
  * 상품 이미지 업로드 요청
  */
 class UploadProductImageRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인합니다.
      *
@@ -27,7 +31,7 @@ class UploadProductImageRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙을 반환합니다.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -37,13 +41,13 @@ class UploadProductImageRequest extends FormRequest
                 'file',
                 'image',
                 'mimes:jpeg,png,jpg,gif,webp',
-                'max:10240', // 10MB
+                // 상한은 **운영자 설정**이 정한다(환경설정 > 업로드의 MB → config 의 KB 변환은
+                // `SettingsServiceProvider` 단 한 곳). 리터럴로 두면 같은 화면에서 코어 첨부는
+                // 설정을 따르는데 상품 이미지만 10MB 에 묶여, 설정을 올려도 반영되지 않는다.
+                // 폴백 값은 종전 리터럴 그대로라 설정이 없는 환경의 동작이 바뀌지 않는다.
+                'max:'.(int) config('attachment.max_file_size', 10240),
             ],
-            'temp_key' => [
-                'nullable',
-                'string',
-                'max:64',
-            ],
+            'temp_key' => $this->tempKeyRules(),
             'collection' => [
                 'nullable',
                 'string',
@@ -85,7 +89,6 @@ class UploadProductImageRequest extends FormRequest
             'file.mimes' => __('sirsoft-ecommerce::validation.product_images.file.mimes'),
             'file.max' => __('sirsoft-ecommerce::validation.product_images.file.max'),
             'temp_key.string' => __('sirsoft-ecommerce::validation.product_images.temp_key.string'),
-            'temp_key.max' => __('sirsoft-ecommerce::validation.product_images.temp_key.max'),
             'collection.Illuminate\Validation\Rules\Enum' => __('sirsoft-ecommerce::validation.product_images.collection.enum'),
             'alt_text.array' => __('sirsoft-ecommerce::validation.product_images.alt_text.array'),
         ];

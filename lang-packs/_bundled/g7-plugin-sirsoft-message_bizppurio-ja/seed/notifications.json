@@ -1,17 +1,17 @@
 {
   "bizppurio_balance_low": {
     "definition": {
-      "name": "Bizssprrio残高不足",
-      "description": "Bizssprrio ウォレット残高が不足しており、SMS/アラートトーク送信に失敗した場合、管理者に送信されます"
+      "name": "ビズプーリオ残高不足",
+      "description": "ビズプーリオウォレット残高が不足してSMS/アラートトーク送信に失敗した時に管理者に送信"
     },
     "templates": {
       "mail": {
-        "subject": "[{app_name}] Bizssprrio 残高が不足しています",
-        "body": "{name}様、Bizssprrio ウォレット残高が不足しているため、{channel_label} 送信に失敗しました (コード: {result_code})。チャージ後、送信が正常化されます。"
+        "subject": "[{app_name}] ビズプーリオ残高が不足しています",
+        "body": "{name}様、ビズプーリオウォレット残高が不足して{channel_label}送信に失敗しました (コード: {result_code})。チャージ後に送信が正常化されます。設定画面: {settings_url}"
       },
       "database": {
-        "subject": "Bizssprrio残高不足",
-        "body": "Bizssprrio残高不足により、{channel_label} 送信に失敗しました (コード: {result_code})。"
+        "subject": "ビズプーリオ残高不足",
+        "body": "ビズプーリオ残高不足により{channel_label}送信に失敗しました (コード: {result_code})。"
       }
     }
   }

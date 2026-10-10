@@ -66,15 +66,40 @@ effects:
   - quick_replies_restricted_linktypes
   - highlight_length_depends_on_thumbnail_presence
   - server_prunes_irrelevant_type_fields_before_save
+  - draft_save_accepts_partial_content_and_request_validates_fully
   # 이미지 업로드 프록시 (S2 — 부록 A-7)
   - image_upload_proxies_to_kapi_and_returns_url
   - image_upload_rejects_out_of_spec_file_before_kapi
+  # 상한 안내가 두 화면·서버 상수와 어긋나지 않는다 (#599 후속 F8)
+  - template_image_hint_matches_the_server_constraint
+  - template_image_widget_copies_stay_identical
+  - template_image_hint_keeps_numbers_out_of_the_sentence
+  - template_image_hint_passes_params_in_the_engine_form
   # 동기화 (S3)
   - scheduler_skips_kapi_when_no_requested_rows
   - scheduler_uses_list_batch_not_per_row_detail
   - approval_transition_freezes_content_into_approved_content
   - rejection_transition_stores_comments_detail
   - manual_sync_updates_single_row
+  # 휴면 해제 (release 후 카카오측 실제 상태를 다시 읽어 반영)
+  - dormant_release_calls_kapi_and_restores_status
+  - release_outside_dormant_rejected_422
+  # 관리 API 계약 (목록, 맵, 상세, 생성, 발송 설정, 권한, 404)
+  - list_requires_view_permission
+  - list_joins_definition_label_with_pagination
+  - list_supports_status_filter_and_search
+  - list_search_matches_localized_definition_name
+  - unknown_status_filter_rejected_422
+  - map_returns_summary_keyed_by_notification_type
+  - detail_returns_content_with_rejection_reasons
+  - create_requires_manage_permission
+  - create_starts_as_draft
+  - unknown_definition_rejected_422
+  - delivery_upsert_creates_draft_row_when_missing
+  - missing_row_returns_404
+  - view_permission_cannot_reach_mutation_routes
+  - image_upload_requires_manage_permission
+  - validation_messages_use_korean_field_labels
   # 화면 (S5 — 제품 결정 2026-08-23: 편집 모달 통합)
   - bizppurio_tab_replaces_sms_and_alimtalk_tabs
   - tab_visible_when_any_of_tab_channels_active
@@ -91,10 +116,29 @@ effects:
   - sms_modal_edits_body_per_locale_tab
   # 코어 [기본값 복원] — 플러그인이 시드한 alimtalk/sms 행도 복원된다 (§18.7 C2 실측 결함)
   - core_reset_restores_seeded_channel_template_defaults
+  # 시딩 — 코어 공통 시딩 훅(core.notification.filter_seed_definitions) 하나에만 답한다(코어 7.1.0).
+  # 도메인 언어팩 시딩 훅을 이름으로 고르던 때는 목록에 없는 새 모듈의 알림에 행이 생기지 않았다.
+  - seed_answered_via_single_core_hook_without_domain_names
+  - arbitrary_extension_definitions_augmented_via_core_seed_hook
+  - seeded_channel_templates_survive_resync
+  # 활성화 시 이미 설치·활성인 모듈·플러그인의 알림 정의만 코어 진입점으로 재동기화(2026-09-28 결정) —
+  # 설치본만 읽고(_bundled 아님) 권한·메뉴는 건드리지 않으며 운영자 수정(user_overrides)은 보존
+  - activation_resyncs_installed_plugin_definitions
+  - activation_resync_preserves_user_overrides
+  # 증강 규칙 (SeedChannelTemplatesListener — 소유자와 무관하게 동일)
+  - member_facing_definitions_gain_sms_and_alimtalk_templates
+  - augmented_body_reuses_database_plain_text
+  - augmented_body_strips_mail_html_when_no_database
+  - admin_only_definitions_not_augmented
+  - existing_channel_template_not_duplicated
+  - definitions_without_recipients_treated_as_member_facing
   # 업로드 진행 상태 배선 (라운드 5 — 이 축이 effect 에 없어 배선 단언만 지우면 룰이 조용했다)
   - upload_in_progress_locks_save_buttons_not_cancel
   - upload_rejects_concurrent_selection_while_in_flight
   - upload_result_discarded_when_modal_reseeded
+  # 업로드 요청 경로 (#639) — 코어 API 클라이언트 경유(Bearer·401·로케일은 코어), 실패 시 이미지 값 무효화
+  - image_upload_sent_through_core_api_client
+  - image_upload_failure_clears_image_value
   # 화면·서버 판정 일치 (라운드 5)
   - save_chain_click_actions_carry_reentrancy_guard
   - manage_row_actions_match_row_footer_visibility
@@ -126,6 +170,8 @@ scenarios:
       - manage_list_mobile_card_view_and_unified_toolbar
 
 test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Http/Requests/TemplateDraftValidationTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/templateDraftSave.test.ts
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Enums/BizppurioTemplateStatusTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Models/BizppurioTemplateTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/BizppurioTemplateServiceTest.php
@@ -133,10 +179,14 @@ test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Template/SyncTemplateStatusCommandTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/CoreTemplateResetDefaultsTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Listeners/SeedChannelTemplatesListenerTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Installation/ChannelTemplateSeedViaCoreHookTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/handlers/uploadTemplateImage.test.ts
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_lifecycle.test.tsx
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin_settings_manage.test.tsx
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/template_request_reentrancy_guard.test.ts
+  # 이미지 위젯 2벌 드리프트 — 상한 숫자가 PHP 상수·두 레이아웃·번역문 네 곳에 흩어져 있어
+  # 한쪽만 고치면 그 화면을 여는 운영자에게만 어긋난 안내가 남는다.
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/template_image_upload_parity.test.ts
   # 3면 패리티(오버레이 전문 동일성) — 파일째 지워도 룰이 울지 않던 사각을 닫는다.
   # plugin_settings.test.tsx 는 plugin-settings.yaml 이 소유하므로 여기에 중복 등재하지 않는다.
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_board_ecommerce.test.tsx

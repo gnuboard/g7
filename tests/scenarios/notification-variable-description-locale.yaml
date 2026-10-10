@@ -1,0 +1,26 @@
+feature: 알림 템플릿 편집 창 「사용 가능한 변수」 설명이 화면 언어를 따른다 (7.1.0 실측 QE-O4)
+
+description: |
+  알림 정의의 변수 설명은 선언(config/core.php·확장 getNotificationDefinitions())에 한국어 문자열로만 있고
+  정의 응답이 그대로 실어, 영어·일본어 화면의 편집 창에서도 변수 설명이 한국어로 보였다
+  (코어·게시판·이커머스·GDPR·문자 발송·환율 편집 창 공통). 변수 설명은 운영자가 고칠 수 없는 시스템 문구라
+  언어 파일 키(코어 notification.variables.*, 확장 {식별자}::messages.notification_variables.*, ja 는 언어팩
+  backend 파일)로 옮기고, 정의 응답(NotificationDefinitionResource)이 요청 언어로 바꿔 싣는다.
+  언어 파일에 없는 변수(외부 확장·새 변수)는 선언 문자열을 그대로 둔다.
+
+axes:
+  case: [ecommerce_admin_variant, undeclared_variable, definition_response, declared_population, ja_pack_parity]
+
+effects:
+  - notification_variable_description_follows_locale
+  - notification_variable_description_falls_back_to_declaration
+  - notification_definition_response_localizes_variables
+  - every_declared_notification_variable_is_translated
+  - notification_variable_description_ja_pack_parity
+
+test_files:
+  - tests/Unit/Notifications/NotificationVariableDescriptionLocaleTest.php
+
+notes: |
+  e2e_browser=measured — 이커머스·코어·게시판 알림 템플릿 편집 창을 en·ja 로 열어 변수 설명을 재는 실측은
+  결과 파일(브라우저 측정값)에 남긴다. 편집 창은 저장하지 않고 취소로 닫는다.

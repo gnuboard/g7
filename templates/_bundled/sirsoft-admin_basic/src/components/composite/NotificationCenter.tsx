@@ -7,9 +7,22 @@ import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /**
  * 알림 아이템 인터페이스
  */
+/**
+ * 닫을 때 읽음 처리로 한 번에 넘기는 id 의 최대 개수.
+ *
+ * 코어 읽음 일괄 API(`POST .../notifications/read-batch`)의 `ids` 상한(NotificationBatchReadRequest `max:100`)과 같다.
+ */
+export const READ_BATCH_MAX_IDS = 100;
+
 export interface NotificationItem {
   id: string | number;
   title: string;
@@ -47,7 +60,7 @@ export interface NotificationCenterProps {
   unreadOnly?: boolean;
   /** 알림 클릭 핸들러 (알림 전체 객체 전달) */
   onNotificationClick?: (notification: NotificationItem) => void;
-  /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록) */
+  /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록 — READ_BATCH_MAX_IDS 건 단위로 나눠 여러 번 호출될 수 있음) */
   onClose?: (visibleUnreadIds: (string | number)[]) => void;
   /** 추가 로드 요청 */
   onLoadMore?: () => void;
@@ -59,6 +72,13 @@ export interface NotificationCenterProps {
   onDelete?: (notification: NotificationItem) => void;
   /** "미읽음만" 체크박스 토글 */
   onUnreadOnlyToggle?: (checked: boolean) => void;
+  /**
+   * 읽음 처리 권한 — false 면 「모두 읽음」 버튼을 숨기고, 닫을 때 보인 미읽음 id 를 onClose 로 보내지 않는다.
+   * 생략하면 true(기존 동작). 관리자 헤더는 응답 abilities.can_update 를 넘긴다.
+   */
+  canUpdate?: boolean;
+  /** 삭제 권한 — false 면 「모두 삭제」·개별 삭제 버튼을 숨긴다. 생략하면 true(기존 동작) */
+  canDelete?: boolean;
   /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
   dropdownAlign?: 'left' | 'right';
   className?: string;
@@ -94,14 +114,16 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   unreadCount = 0,
   hasMore = false,
   loading = false,
-  titleText = 'Notifications',
-  emptyText = 'No notifications',
-  markAllReadText = 'Mark all as read',
-  deleteAllText = 'Delete all',
-  unreadOnlyText = 'Unread only',
+  titleText: titleTextProp,
+  emptyText: emptyTextProp,
+  markAllReadText: markAllReadTextProp,
+  deleteAllText: deleteAllTextProp,
+  unreadOnlyText: unreadOnlyTextProp,
   unreadOnly = false,
   onNotificationClick,
   onClose,
+  canUpdate = true,
+  canDelete = true,
   onLoadMore,
   onMarkAllRead,
   onDeleteAll,
@@ -112,6 +134,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const titleText = titleTextProp ?? tOr('admin.notifications', 'Notifications');
+  const emptyText = emptyTextProp ?? tOr('admin.no_notifications', 'No notifications');
+  const markAllReadText = markAllReadTextProp ?? tOr('admin.notifications_mark_all_read', 'Mark all as read');
+  const deleteAllText = deleteAllTextProp ?? tOr('admin.notifications_delete_all', 'Delete all');
+  const unreadOnlyText = unreadOnlyTextProp ?? tOr('admin.notifications_unread_only', 'Unread only');
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -207,19 +235,22 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
    */
   const handleClose = useCallback(() => {
     if (showNotifications) {
-      if (displayCount > 0) {
+      // 읽음 처리 권한이 없으면 서버가 403 으로 거절하므로 요청하지 않는다.
+      if (canUpdate && displayCount > 0) {
         const unreadIds = Array.from(visibleUnreadIdsRef.current).filter((id) => {
           const n = notifications.find((item) => String(item.id) === String(id));
           return n && !n.read;
         });
-        if (unreadIds.length > 0) {
-          onClose?.(unreadIds);
+        // 읽음 일괄 API 는 한 번에 READ_BATCH_MAX_IDS 건까지만 받는다 — 더보기로 많이 펼친 뒤
+        // 닫으면 그 수를 넘을 수 있어, 넘긴 채 보내면 요청 전체가 422 로 거절된다. 한도 단위로 나눠 보낸다.
+        for (let i = 0; i < unreadIds.length; i += READ_BATCH_MAX_IDS) {
+          onClose?.(unreadIds.slice(i, i + READ_BATCH_MAX_IDS));
         }
       }
       visibleUnreadIdsRef.current.clear();
       setShowNotifications(false);
     }
-  }, [showNotifications, onClose, displayCount, notifications]);
+  }, [showNotifications, onClose, displayCount, notifications, canUpdate]);
 
   /**
    * 외부 클릭 감지 — 드롭다운이 열려 있을 때만 리스너 등록
@@ -294,7 +325,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       >
         <Icon name={IconName.Bell} className="text-sm text-slate-500 dark:text-slate-400" />
         {displayCount > 0 && (
-          <Span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 dark:bg-red-600 rounded-full">
+          // 20px 원 안에 12px `99+` 는 넘친다(실측 23.28px) — 세 자리 표시일 때만 9px 로 줄인다
+          <Span className={`absolute top-0 right-0 flex items-center justify-center w-5 h-5 ${displayCount > 99 ? 'text-[9px]' : 'text-xs'} font-bold text-white bg-red-500 dark:bg-red-600 rounded-full`}>
             {displayCount > 99 ? '99+' : displayCount}
           </Span>
         )}
@@ -326,7 +358,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               )}
             </Div>
             <Div className="flex items-center gap-3 flex-shrink-0">
-              {onMarkAllRead && displayCount > 0 && (
+              {onMarkAllRead && canUpdate && displayCount > 0 && (
                 <Button
                   onClick={() => {
                     onMarkAllRead();
@@ -337,7 +369,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   {markAllReadText}
                 </Button>
               )}
-              {onDeleteAll && notifications.length > 0 && (
+              {onDeleteAll && canDelete && notifications.length > 0 && (
                 <Button
                   onClick={() => {
                     // 드롭다운은 닫지 않음 — 확인 모달이 닫히면 다시 자연스럽게 노출되어야 하고,
@@ -409,14 +441,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         {isUnread && (
                           <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />
                         )}
-                        {onDelete && (
+                        {onDelete && canDelete && (
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
                               onDelete(notification);
                             }}
                             className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                            aria-label="Delete notification"
+                            aria-label={tOr('common.delete_notification', 'Delete notification')}
                           >
                             <Icon name={IconName.Trash} className="w-4 h-4" />
                           </Button>

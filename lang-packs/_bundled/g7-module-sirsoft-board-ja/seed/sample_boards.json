@@ -1,0 +1,38 @@
+{
+  "notice": {
+    "name": "お知らせ",
+    "description": "重要なお知らせをご確認ください"
+  },
+  "free": {
+    "name": "自由掲示板",
+    "description": "自由にお話しください"
+  },
+  "gallery": {
+    "name": "ギャラリー",
+    "description": "写真や画像を共有しましょう"
+  },
+  "event": {
+    "name": "イベント",
+    "description": "開催中のイベントをご確認ください"
+  },
+  "qna": {
+    "name": "Q&A",
+    "description": "気になることを質問して回答を受け取りましょう"
+  },
+  "members": {
+    "name": "会員専用",
+    "description": "会員のみご利用いただける掲示板です"
+  },
+  "inquiry": {
+    "name": "お問い合わせ",
+    "description": "個別にお問い合わせいただけます"
+  },
+  "archive": {
+    "name": "アーカイブ",
+    "description": "過去の投稿のアーカイブです(現在は無効)"
+  },
+  "product-inquiry": {
+    "name": "商品お問い合わせ",
+    "description": "商品について気になることをお問い合わせください"
+  }
+}

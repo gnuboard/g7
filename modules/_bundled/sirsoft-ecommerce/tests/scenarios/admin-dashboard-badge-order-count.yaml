@@ -1,0 +1,34 @@
+feature: 대시보드 「오늘」 상태 배지는 주문 수를 센다 — 배지로 연 주문 목록 건수와 같다 (7.1.0 전수 실측 · 결정 2026-10-08 4차)
+
+description: |
+  배지(결제대기·결제완료·준비중·배송준비·배송중·취소·반품)는 일 집계 표(ecommerce_stats)의 옵션 상태별 수량을 읽고,
+  배지를 눌러 여는 주문 목록은 주문 수를 셌다 — 한 주문에 수량이 2개면 배지 「결제완료 2건」 → 목록 「총 1개」.
+  결정: 배지가 주문 수를 세게 해 목록 건수와 같게 한다.
+
+  - 배지 숫자는 배지 링크가 여는 목록과 같은 조건(주문 상태·사이트 표준시의 하루·주문일·삭제 제외)으로 주문 표에서 바로 센다.
+    목록 필터 단일 출처(OrderRepository::applyListFilters)를 그대로 써서 두 숫자가 갈릴 길을 막는다.
+  - 일 집계(매시)를 기다리지 않는다 — 집계 표의 상태별 수량은 배지가 읽지 않는다(판매 추세 그래프의 수량·매출은 그대로 집계 표).
+  - 「준비중」은 목록 상태 필터처럼 상품준비중+배송준비중을 함께 센다. 「취소」는 주문 전체가 취소된 주문, 「반품」은 반품 완료
+    신청서가 있는 주문(배지 링크도 반품 완료 조건을 싣는다).
+  - 주문 조회 권한 범위(orders.read 의 본인·역할 범위)도 목록과 같게 건다 — 범위가 좁혀진 관리자의 배지 = 그 관리자의 목록 건수.
+  - 배지 조건 표는 서버(EcommerceDashboardService::BADGE_LIST_FILTERS)와 레이아웃 링크 두 곳에 있다 — PHPUnit 이 레이아웃 링크를
+    읽어 서버 표와 같은지 잠근다.
+
+axes:
+  metric: [order_count]
+  badge: [payment_complete, all]
+
+effects:
+  - dashboard_badge_counts_orders_not_option_quantities
+  - dashboard_badge_equals_linked_order_list_total
+  - dashboard_badge_reads_orders_without_waiting_for_hourly_aggregate
+  - dashboard_badges_follow_list_status_semantics
+  - dashboard_badge_links_carry_list_status_conditions
+  - dashboard_badge_applies_order_list_permission_scope
+  - dashboard_badge_server_conditions_equal_layout_links
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/DashboardBadgeOrderCountTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminDashboardBadgeOrderCount.test.ts
+  # 브라우저 E2E — 수량 2 주문이 섞인 사이트 오늘 주문으로 배지 = 목록 건수를 ko·en 으로 밟는다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-dashboard-badge-site-day.spec.ts

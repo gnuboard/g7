@@ -1,0 +1,48 @@
+feature: 게시판 관리자 게시글·댓글 화면 abilities 게이트 — 화면 잠금과 서버 판정을 같은 권한으로 (7.1.0 abilities 게이트 최종 점검 board-admin-b)
+
+description: |
+  - 댓글 본인 판정이 config 에 없는 권한명('admin.write')을 봐 댓글 쓰기 권한만 가진 작성자도 자기 댓글을 못 고쳤다.
+    서버는 'admin.comments.write' 로, 화면 점 메뉴는 댓글 응답 키 can_write 로 판정한다. 수정은 쓰기 AND (본인 OR 관리).
+  - 글 점 메뉴 수정도 수정 API(글쓰기 권한)에 맞춰 쓰기 AND (본인 OR 관리)로 잠근다.
+  - 남의 글 수정 폼: form-meta 가 저장과 같은 판정(can_modify)을 실어 읽기 전용으로 연다. 본문 편집기는 readOnly 도 받는다.
+  - 첨부 업로더는 업로드 권한(can_upload)으로 잠그고 안내한다. 내려받기는 관리자 다운로드 라우트 + can_download.
+  - 관리자 글 저장·수정 API 는 공지 지정·해제를 게시판 관리 권한(admin.manage·manager) 또는 공지 등록 권한(posts.write-notice)으로만
+    허용한다(S1·G30) — 사용자 경로와 같은 판정(canSetNotice)이다. 같은 값의 평소 저장은 막지 않는다.
+  - 관리자 글쓰기 폼의 공지 체크박스는 form-meta 의 can_write_notice(서버 공지 판정과 같은 값)로 잠근다(B7-2).
+  - 신고 목록 행 체크박스는 관리 권한일 때만 그린다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostCommentAbilityGateTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-post-comment-ability-gate.test.ts
+
+axes:
+  case:
+    - comment_owner_write_only
+    - comment_other_write_only
+    - comment_manage_only
+    - post_manage_only
+    - notice_store_without_manage
+    - notice_store_with_manage
+    - notice_update_without_manage
+    - notice_with_write_notice_only
+    - form_meta_can_write_notice
+    - form_meta_can_modify
+    - upload_without_permission
+    - download_without_permission
+    - reports_selectable
+
+effects:
+  - own_comment_editable_with_comments_write
+  - other_comment_not_editable_without_manage
+  - comment_edit_requires_write
+  - post_edit_requires_write
+  - notice_requires_manage_on_server
+  - notice_requires_manage_or_write_notice_on_server
+  - form_meta_reports_can_write_notice
+  - notice_checkbox_follows_can_write_notice
+  - form_meta_reports_can_modify
+  - form_read_only_for_others_post
+  - editor_read_only_prop
+  - uploader_locked_without_upload
+  - download_uses_admin_route_and_gate
+  - reports_selectable_by_manage

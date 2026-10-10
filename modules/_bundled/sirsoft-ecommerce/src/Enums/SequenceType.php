@@ -35,6 +35,23 @@ enum SequenceType: string
     case REFUND = 'refund';
 
     /**
+     * 교환 번호
+     */
+    case EXCHANGE = 'exchange';
+
+    /**
+     * 반품 번호
+     *
+     * `return` 은 PHP 예약어라 케이스 이름에 쓸 수 없어 ORDER_RETURN 으로 둔다.
+     */
+    case ORDER_RETURN = 'order_return';
+
+    /**
+     * 클레임 추가결제 번호 (PG merchant_order_id 로도 사용)
+     */
+    case CLAIM_PAYMENT = 'claim_payment';
+
+    /**
      * 모든 타입 값을 문자열 배열로 반환
      *
      * @return array<string>
@@ -47,7 +64,7 @@ enum SequenceType: string
     /**
      * 유효한 타입 값인지 확인
      *
-     * @param string $value 확인할 값
+     * @param  string  $value  확인할 값
      * @return bool
      */
     public static function isValid(string $value): bool
@@ -96,6 +113,27 @@ enum SequenceType: string
             self::REFUND => [
                 'algorithm' => SequenceAlgorithm::TIMESTAMP,
                 'prefix' => 'RF',
+                'pad_length' => 0,
+                'max_value' => PHP_INT_MAX,
+                'max_history_count' => 0,
+            ],
+            self::EXCHANGE => [
+                'algorithm' => SequenceAlgorithm::TIMESTAMP,
+                'prefix' => 'EX',
+                'pad_length' => 0,
+                'max_value' => PHP_INT_MAX,
+                'max_history_count' => 0,
+            ],
+            self::ORDER_RETURN => [
+                'algorithm' => SequenceAlgorithm::TIMESTAMP,
+                'prefix' => 'RT',
+                'pad_length' => 0,
+                'max_value' => PHP_INT_MAX,
+                'max_history_count' => 0,
+            ],
+            self::CLAIM_PAYMENT => [
+                'algorithm' => SequenceAlgorithm::TIMESTAMP,
+                'prefix' => 'CP',
                 'pad_length' => 0,
                 'max_value' => PHP_INT_MAX,
                 'max_history_count' => 0,

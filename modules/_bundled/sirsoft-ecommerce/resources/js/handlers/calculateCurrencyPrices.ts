@@ -108,10 +108,25 @@ function applyRounding(price: number, unit: string, method: string): number {
 }
 
 /**
+ * 원화 접두·접미 번역을 읽습니다 (백엔드 `messages.currency.prefix/suffix.KRW` 와 같은 구성).
+ *
+ * 빈 문자열도 유효한 번역 값입니다(예: 한국어 접두 없음). 번역이 없어 키가 그대로 돌아오면 null 입니다.
+ *
+ * @param part 접두(prefix) 또는 접미(suffix)
+ * @returns 번역 값 (없으면 null)
+ */
+function krwAffix(part: 'prefix' | 'suffix'): string | null {
+    const key = `sirsoft-ecommerce.currency.krw_${part}`;
+    const value = (window as any).G7Core?.t?.(key);
+
+    return typeof value === 'string' && value !== key ? value : null;
+}
+
+/**
  * 통화별 가격을 포맷팅합니다.
  *
  * 통화 기호를 하드코딩하지 않고 설정(symbol)·소수 자릿수(decimal_places)를 따릅니다.
- * 원화(KRW)는 "3,000원"처럼 기호를 금액 뒤에 붙이고, 그 외 통화는 기호를 앞에 붙입니다
+ * 원화(KRW)는 보는 언어의 접두·접미(예: 한국어 "3,000원"·영어 "₩3,000")로 적고, 그 외 통화는 기호를 앞에 붙입니다
  * (백엔드 messages.currency.prefix/suffix 와 동일한 표기 규칙). 위안화(CNY)는 엔화(¥)와
  * 구분되도록 元 기호를 사용합니다. currency 객체가 없으면 코드만으로 폴백 기호를 적용합니다.
  *
@@ -139,8 +154,17 @@ export function formatCurrency(
         return formattedNumber + ' ' + code;
     }
 
-    // 원화 계열(₩/원)은 금액 뒤에 "원", 그 외는 기호를 앞에 표기
+    // 원화 계열(₩/원)은 보는 사람의 언어 접두·접미를 따른다 — 서버(`formatPrice`)가 언어별 접두·접미로 적으므로
+    // 고정 「원」이면 영어 화면에서 서버 금액(₩5,000)과 화면 계산 금액(5,000원)이 섞인다(S3-D23).
+    // 번역을 읽지 못하면 종전 표기(금액 뒤 「원」)로 돌아간다.
     if (code === 'KRW' || symbol === '₩' || symbol === '원') {
+        const prefix = krwAffix('prefix');
+        const suffix = krwAffix('suffix');
+
+        if (prefix !== null || suffix !== null) {
+            return (prefix ?? '') + formattedNumber + (suffix ?? '');
+        }
+
         return formattedNumber + '원';
     }
 

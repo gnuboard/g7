@@ -1,4 +1,5 @@
 {
+    "comment": "사용자용 메모 목록 화면 — 관리자 목록과 같은 데이터를 비인증 공개 엔드포인트로 받는다.",
     "version": "1.0.0",
     "layout_name": "user_memo_list",
     "extends": "_user_base",
@@ -15,7 +16,7 @@
             "auto_fetch": true,
             "auth_required": false,
             "params": {
-                "page": "{{query.page}}",
+                "page": "{{query.page ?? 1}}",
                 "per_page": "{{query.per_page ?? 10}}"
             },
             "fallback": {
@@ -28,7 +29,8 @@
                         "total": 0
                     }
                 }
-            }
+            },
+            "comment": "공개 메모 목록(비인증). 페이지·건수를 URL query 에서 받고, 실패 시 fallback 이 빈 목록 + 1페이지 메타를 세운다."
         }
     ],
     "slots": {
@@ -42,31 +44,44 @@
                 },
                 "children": [
                     {
+                        "comment": "사용자 화면은 어느 사용자 템플릿에서나 있는 유틸리티 클래스로 쓴다(관리자 템플릿의 의미 클래스는 사용자 템플릿에 정의가 없다).",
                         "id": "user_memo_title",
                         "type": "basic",
                         "name": "H1",
                         "props": {
-                            "className": "text-page-heading mb-6"
+                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6"
                         },
                         "text": "$t:gnuboard7-hello_module.user.memos.index.title"
                     },
                     {
-                        "id": "user_memo_items_{{idx}}",
+                        "comment": "메모가 0건이면 빈 화면 대신 안내 문구를 보인다",
+                        "id": "user_memo_empty",
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{(memos?.data?.data ?? []).length === 0}}",
+                        "props": {
+                            "className": "block py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                        },
+                        "text": "$t:gnuboard7-hello_module.user.memos.index.empty"
+                    },
+                    {
+                        "comment": "반복은 카드에 둔다 — 묶음(space-y-3)에 두면 메모마다 묶음이 새로 생겨 카드 사이 간격이 사라진다.",
+                        "id": "user_memo_items",
                         "type": "basic",
                         "name": "Div",
                         "props": {
                             "className": "space-y-3"
-                        },
-                        "iteration": {
-                            "source": "{{memos?.data?.data ?? []}}",
-                            "item_var": "memo",
-                            "index_var": "idx"
                         },
                         "children": [
                             {
                                 "id": "user_memo_item_{{idx}}",
                                 "type": "basic",
                                 "name": "Div",
+                                "iteration": {
+                                    "source": "{{memos?.data?.data ?? []}}",
+                                    "item_var": "memo",
+                                    "index_var": "idx"
+                                },
                                 "props": {
                                     "className": "p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
                                 },
@@ -75,15 +90,15 @@
                                         "type": "basic",
                                         "name": "H2",
                                         "props": {
-                                            "className": "section-heading"
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
                                         },
                                         "text": "{{memo.title ?? ''}}"
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "P",
+                                        "name": "Span",
                                         "props": {
-                                            "className": "mt-2 text-sm text-gray-600 dark:text-gray-300"
+                                            "className": "block mt-2 text-sm text-gray-600 dark:text-gray-300"
                                         },
                                         "text": "{{memo.content ?? ''}}"
                                     }

@@ -1,7 +1,7 @@
 {
-  "view_profile": "プロフィール表示",
-  "view_posts": "投稿一覧",
-  "guest_badge": "ゲスト",
+  "view_profile": "プロフィールを表示",
+  "view_posts": "投稿を表示",
+  "guest_badge": "非会員",
   "no_image": "画像なし",
   "withdrawn_user": "退会したユーザー"
 }

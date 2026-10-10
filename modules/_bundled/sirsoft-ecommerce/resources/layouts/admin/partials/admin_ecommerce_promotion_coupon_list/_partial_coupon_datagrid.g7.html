@@ -1,0 +1,230 @@
+<!-- 쿠폰 목록 — 결과 표. 좁은 화면(768px 미만)에서는 DataGrid 가 스스로 카드 보기로 바꿔 그리므로
+  목록을 따로 두 벌 두지 않는다. 예전에 있던 별도 카드 블록은 아무도 채우지 않는 `_global.isPortable`
+  에 묶여 한 번도 보이지 않아 걷어냈다(2026-10-04 결정 3).
+  
+  정렬·페이지·페이지당 개수는 전부 URL query 로 나간다(재진입·뒤로가기·주소 공유에서 같은
+  화면이 서야 한다). 정렬 select 의 값이 `created_at_desc` 처럼 한 덩어리인데 서버로는
+  `sort_by`·`sort_order` 둘로 갈라 보내는 이유는 select 가 값을 하나만 가질 수 있어서다.
+  
+  행마다 무엇을 할 수 있는지는 서버가 준 `abilities` 가 정한다 — 화면이 임의로 판단하지 않는다. -->
+<partial description="Coupon List - DataGrid Section with Bulk Actions">
+  <div data-ref="coupon_datagrid_section" class="mt-6">
+    <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+      <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.promotion_coupon.table.selected_count|count={{(_local.selectedItems || []).length}}</span>
+      <select name="bulkIssueStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkIssueStatus || ''}}" disabled="{{coupons?.data?.abilities?.can_update !== true}}">
+        <options>
+          <option value="" disabled>$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.select_status</option>
+          <option value="issuing">$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing</option>
+          <option value="stopped">$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped</option>
+        </options>
+        <on type="change">
+          <!-- 일괄 발급상태 선택. 여기서는 고르기만 하고 실제 변경은 확인 창을 거친다 — 되돌리기 번거로운 동작이라 한 번 더 묻는다. -->
+          <set-state target="_local" bulkIssueStatus="{{$event.target.value}}"/>
+        </on>
+      </select>
+      <div class="flex-1"/>
+      <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50" disabled="{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}">
+        <on type="click">
+          <!-- 일괄변경 확인 창 열기. 고른 쿠폰과 바꿀 방향을 _global 로 옮겨 담고 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다. -->
+          <sequence>
+            <set-state target="global" bulkIssueStatus="{{_local.bulkIssueStatus}}" bulkSelectedItems="{{_local.selectedItems}}"/>
+            <open-modal target="modal_status_change_confirm"/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply
+      </button>
+    </div>
+    <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+      <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}</span>
+      <div class="flex-center gap-3">
+        <select name="sortBy" class="w-40" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+          <options>
+            <option value="created_at_desc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_desc</option>
+            <option value="created_at_asc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_asc</option>
+            <option value="name_asc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_asc</option>
+            <option value="name_desc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_desc</option>
+            <option value="valid_to_asc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_asc</option>
+            <option value="valid_to_desc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_desc</option>
+          </options>
+          <on type="change">
+            <!-- 정렬. 값을 바꾸면 페이지도 1로 되돌린다 — 안 되돌리면 3쪽을 보던 상태에서 다른 정렬의 3쪽으로 튄다. -->
+            <navigate path="/admin/ecommerce/promotion-coupons" :replace="true" :mergeQuery="true" transition_overlay_target="pc_data_table__body">
+              <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <select name="perPage" class="w-20" value="{{query.per_page || '10'}}">
+          <options>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </options>
+          <on type="change">
+            <!-- 페이지당 개수. 정렬과 같은 이유로 페이지를 1로 되돌린다. -->
+            <navigate path="/admin/ecommerce/promotion-coupons" :replace="true" :mergeQuery="true" transition_overlay_target="pc_data_table__body">
+              <query per_page="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+      </div>
+    </div>
+    <data-grid data-type="composite" data-ref="pc_data_table" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
+      <blur-until-loaded sources="coupons"/>
+      <prop name="rowActions">
+        <item id="edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+        <item id="issue_history" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" iconName="fa-solid fa-list"/>
+        <item id="direct_issue" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.direct_issue" iconName="fa-solid fa-gift" disabledField="abilities.can_update"/>
+        <item id="divider" :divider="true"/>
+        <item id="delete" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
+      </prop>
+      <column field="checkbox" header="" width="40px" :selectable="true"/>
+      <column field="target_type_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type" width="80px">
+        <cell>
+          <badge data-type="composite" color="{{row.target_type_badge_color}}" text="{{row.target_type_label}}"/>
+        </cell>
+      </column>
+      <column field="name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" width="200px">
+        <cell>
+          <!-- 수정 화면은 쿠폰 수정 권한이 있어야 열린다 — 권한이 없으면 링크 대신 이름만 보인다(행 「수정」과 같은 키). -->
+          <span data-ref="coupon_name_text" data-if="{{row.abilities?.can_update !== true}}" class="font-medium text-gray-900 dark:text-gray-100">{{row.localized_name}}</span>
+          <!-- 쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다 -->
+          <a data-ref="coupon_name_link" data-if="{{row.abilities?.can_update === true}}" href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
+            <on type="click">
+              <navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            {{row.localized_name}}
+          </a>
+        </cell>
+      </column>
+      <column field="benefit_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount" width="150px">
+        <cell>
+          <div class="flex items-center gap-1">
+            <badge data-type="composite" color="{{row.discount_type === 'fixed' ? 'blue' : 'teal'}}" text="{{row.discount_type_label}}" size="sm"/>
+            <span>{{row.benefit_formatted}}</span>
+          </div>
+        </cell>
+      </column>
+      <column field="valid_period_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period" width="170px"/>
+      <column field="issue_period_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period" width="170px"/>
+      <column field="issue_count_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count" width="100px" align="center">
+        <cell>
+          <!-- 발급수량 숫자 클릭 → 발급내역 모달 (링크 외형: 파란색 + hover 밑줄) -->
+          <button type="button" class="text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-pointer">
+            <on type="click">
+              <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">
+                <field name="issueHistoryCoupon">
+                  <field name="id" value="{{row.id}}"/>
+                  <field name="name" value="{{row.localized_name}}"/>
+                  <field name="can_update" value="{{row.abilities?.can_update === true}}"/>
+                </field>
+              </set-state>
+              <refetch-data-source dataSourceId="couponIssues"/>
+              <open-modal target="modal_issue_history"/>
+            </on>
+            {{row.issue_count_formatted}}
+          </button>
+        </cell>
+      </column>
+      <column field="issue_method_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method" width="80px">
+        <cell>
+          <badge data-type="composite" color="{{row.issue_method_badge_color}}" text="{{row.issue_method_label}}"/>
+        </cell>
+      </column>
+      <column field="issue_condition_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition" width="80px">
+        <cell>
+          <badge data-type="composite" color="{{row.issue_condition_badge_color}}" text="{{row.issue_condition_label}}"/>
+        </cell>
+      </column>
+      <column field="issue_status_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status" width="80px">
+        <cell>
+          <badge data-type="composite" color="{{row.issue_status_badge_color}}" text="{{row.issue_status_label}}"/>
+        </cell>
+      </column>
+      <column field="created_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at" width="100px"/>
+      <column field="created_by_name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by" width="150px">
+        <cell>
+          <span data-if="{{!row.created_by}}" class="text-gray-500 dark:text-gray-400">-</span>
+          <action-menu data-type="composite" data-if="{{!!row.created_by}}" position="right">
+            <prop name="items">
+              <item id="view_member" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user" if="{{!!row.created_by}}"/>
+              <item id="search_by_creator" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.search_by_creator" iconName="search"/>
+            </prop>
+            <on event="onItemClick">
+              <!-- 만든 사람을 눌렀을 때의 갈래. "회원 보기" 는 새 창으로 열어 지금 목록을 잃지 않게 하고, "이 사람이 만든 것만" 은 화면 필터와 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다). -->
+              <switch>
+                <case when="view_member">
+                  <open-window path="/admin/users/{{row.created_by}}"/>
+                </case>
+                <case when="search_by_creator">
+                  <set-state target="local" filter.createdBy="{{row.created_by}}" creatorSearchResults="{{[{ value: row.created_by, label: row.created_by_name, description: row.created_by_email }]}}"/>
+                  <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true" :replace="true" transition_overlay_target="pc_data_table__body">
+                    <query created_by="{{row.created_by}}" :page="1"/>
+                  </navigate>
+                </case>
+              </switch>
+            </on>
+            <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+              <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+              <div class="min-w-0 flex-1">
+                <span class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.created_by_name}}</span>
+                <span data-if="{{!!row.created_by_email}}" class="text-tertiary truncate block">({{row.created_by_email}})</span>
+              </div>
+            </div>
+          </action-menu>
+        </cell>
+      </column>
+      <on type="change" event="onPageChange">
+        <!-- 쪽 이동. `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다. -->
+        <navigate path="/admin/ecommerce/promotion-coupons" :replace="true" :mergeQuery="true" transition_overlay_target="pc_data_table__body">
+          <query page="{{$args[0]}}"/>
+        </navigate>
+      </on>
+      <on event="onSelectionChange">
+        <!-- 체크한 쿠폰. 일괄 발급상태 변경이 이 목록을 읽는다. -->
+        <set-state target="_local" selectedItems="{{$args[0]}}"/>
+      </on>
+      <on event="onRowAction">
+        <!-- 행 액션(넓은 화면 표). 수정은 이동, 발급내역·즉시발급·삭제는 창을 연다 — 창을 여는 갈래는 대상 쿠폰을 `_global` 에 먼저 담는다(창은 부모 `_local` 을 못 본다). -->
+        <switch>
+          <case when="edit">
+            <navigate path="/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </case>
+          <case when="issue_history">
+            <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">
+              <field name="issueHistoryCoupon">
+                <field name="id" value="{{$args[1].id}}"/>
+                <field name="name" value="{{$args[1].localized_name}}"/>
+                <field name="can_update" value="{{$args[1].abilities?.can_update === true}}"/>
+              </field>
+            </set-state>
+            <refetch-data-source dataSourceId="couponIssues"/>
+            <open-modal target="modal_issue_history"/>
+          </case>
+          <case when="direct_issue">
+            <set-state target="global" :directIssueSelectedUsers="[]" directIssueSearchKeyword="" :directIssueSearchResults="[]" :directIssueSearchResultsKeyword="null" :directIssueSubmitting="false">
+              <field name="directIssueCoupon">
+                <field name="id" value="{{$args[1].id}}"/>
+                <field name="name" value="{{$args[1].localized_name}}"/>
+              </field>
+            </set-state>
+            <open-modal target="modal_direct_issue"/>
+          </case>
+          <case when="delete">
+            <set-state target="global">
+              <field name="deleteTarget">
+                <field name="id" value="{{$args[1].id}}"/>
+                <field name="name" value="{{$args[1].localized_name}}"/>
+              </field>
+            </set-state>
+            <open-modal target="modal_delete_confirm"/>
+          </case>
+        </switch>
+      </on>
+    </data-grid>
+  </div>
+</partial>

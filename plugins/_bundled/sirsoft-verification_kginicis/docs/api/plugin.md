@@ -163,5 +163,6 @@ _에러 응답 없음 — 인증/검증이 없고 query 파라미터가 모두 �
 - 페이지에 주입되는 payload 는 `JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT` 로 인코딩되어 script 컨텍스트에서 안전합니다.
 - `sessionStorage` 키는 코어 IDV launcher 의 `IDENTITY_REDIRECT_STASH_KEY` 와 동일해야 복원이 동작합니다 (폼 값 복원인 formStash 처리는 launcher 책임).
 - 이 URL 은 사용자가 직접 호출하는 API 가 아니라 callback 의 redirect 목적지입니다.
+- 형식이 틀린 쿼리(`?verification_token[]=x` 등)는 직전 페이지(Referer)·요청 Host 로 돌아가지 않고 사이트 주소의 같은 브리지 `?identity_error=UNKNOWN` 으로 302 이동해 본인확인 실패로 끝납니다(JSON 을 요구한 요청은 422).
 
 

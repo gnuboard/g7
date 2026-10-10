@@ -1,0 +1,44 @@
+feature: 관리자 기본 템플릿 — 알림 템플릿 수신자 규칙·Monaco 선심기·컴포넌트 문구·매니페스트 정합 (#599 validate P7)
+
+description: |
+  #599 브랜치 검수(08 FE-4)가 찾은 관리자 기본 템플릿 결함을 닫는다.
+
+  ① 알림 템플릿 수신자 규칙 종류 전환이 앞 종류의 값(value·display_names·relation)을 그대로 남겨
+     회원 UUID 가 역할 식별자로 저장되고 수신자가 0명이 됐다. 관련 사용자로 바꾸면 서버가 필수로 받는
+     relation 이 비어 422 가 났다. 전환 시 새 종류의 빈 규칙으로 갈아 끼우고, 관련 사용자면 선언된
+     첫 관계를 채운다. 관계 선택칸에 안내 선택지를, 선언 밖 관계에는 경고를 둔다.
+  ② 다중 선택 트리거 문구가 컴포넌트 영어 기본값("2 selected")으로 떴다 — 번역 키를 넘긴다.
+  ③ Monaco 선심기 제한 시간이 지나면 loader.init() 이 두 번째 AMD 로더를 넣었다 — 부르지 않고 폴백한다.
+  ④ StatusBadge·CodeEditor 의 한국어 리터럴을 번역 키로 옮긴다.
+  ⑤ components.json 에 Badge icon·variant, SearchableDropdown selectedCountLabel 을 싣는다.
+
+axes:
+  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, prime_timeout, primed, prime_slow_after_loader, marker_beyond_model_lines, non_korean, en, Badge, SearchableDropdown, status_badge_regression]
+
+effects:
+  - recipient_rule_type_switch_clears_previous_value
+  - recipient_rule_related_user_seeds_first_declared_relation
+  - recipient_rule_exclude_trigger_user_only_carries_between_group_types
+  - recipient_relation_select_shows_placeholder
+  - recipient_relation_select_shows_relation_names
+  - recipient_relation_outside_declaration_warns
+  - recipient_multi_select_count_label_is_translated
+  - vendored_amd_loader_is_not_injected_twice_after_prime_timeout
+  - prime_waits_for_editor_main_once_loader_script_loaded
+  - marker_beyond_model_lines_is_deferred_not_thrown
+  - vendored_amd_loader_runs_exactly_once
+  - component_default_texts_come_from_translation_keys
+  - component_manifest_lists_every_source_prop
+  - status_badge_renders_translated_default_label_and_style
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-notification-template-recipient-rule-reset.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/CodeEditor.primeTimeout.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/CodeEditor.markerRange.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/StatusBadgeCodeEditor.i18n.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/componentsManifestBadgeDropdownProps.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/StatusBadge.test.tsx
+
+notes: |
+  e2e_browser=not_applicable — 이 묶음은 표현식·컴포넌트 계약 수정이라 레이아웃 표현식을 엔진에 그대로 넣어
+  평가하는 Vitest 로 잠근다. 브라우저 실측은 #599 통합 단계(dist 빌드 뒤)에서 한다.

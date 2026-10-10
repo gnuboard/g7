@@ -1,6 +1,7 @@
 {
-    "target_layout": "admin_notification_log_list",
     "comment": "코어 알림 발송 이력 화면에 비즈뿌리오 발송 결과 컬럼을 얹는다(A-2). 코어 화면·코어 앱·코어 테이블은 전혀 건드리지 않는다 — 연결 표식은 우리 dispatch(bizppurio_dispatches.notification_log_id)에만 있고, 현재 페이지의 코어 로그 id 배열로 결과를 배치 조회(dispatchResults)해 row.id 로 매칭한다. 매칭 안 되는 행(메일·DB 등 비-비즈뿌리오)은 빈 셀. 컬럼은 코어 datagrid columns 배열 끝에 _append 로 1개만 추가(전체 컬럼 재정의 안 함).",
+    "target_layout": "admin_notification_log_list",
+    "priority": 330,
     "data_sources": [
         {
             "id": "dispatchResults",
@@ -15,14 +16,14 @@
                 "data": {
                     "results": {}
                 }
-            }
+            },
+            "comment": "최근 발송 결과 맵(로그 id 키) — 코어 발송 이력 목록에 결과 컬럼을 그리기 위해 받는다. 실패하면 빈 맵으로 폴백해 컬럼만 비운다."
         }
     ],
     "injections": [
         {
             "target_id": "notification_log_datagrid",
             "position": "inject_props",
-            "comment": "코어 datagrid columns 끝에 비즈뿌리오 결과 컬럼 1개만 추가. columns 는 정적 배열이라 _append 적용 가능.",
             "props": {
                 "expandChildren": {
                     "_append": [
@@ -145,7 +146,7 @@
                             "required": false,
                             "comment": "컬럼(헤더 포함) 자체를 탭별로 노출 제어. 컬럼 정의는 datagrid props 로 페이지 컨텍스트에서 평가되므로(셀과 달리) query 접근 가능. 메일·사이트내알림(mail/database) 탭이면 hidden=true 로 컬럼 숨김. 전체·sms·lms·알림톡 탭에선 표시.",
                             "hidden": "{{['mail','database'].includes(query.channel ?? '')}}",
-            "cellChildren": [
+                            "cellChildren": [
                                 {
                                     "comment": "비즈뿌리오 발송 행(row.channel 이 sms/lms/alimtalk)에서만 결과 표시. 메일·사이트내알림(mail/database) 행은 셀을 비운다. 셀 렌더 컨텍스트는 row/value 만 있고 query 는 없으므로(코어 DataGrid renderCellChildren 계약) 탭이 아니라 row.channel 로 판별한다.",
                                     "type": "basic",
@@ -205,6 +206,5 @@
                 }
             }
         }
-    ],
-    "priority": 330
+    ]
 }

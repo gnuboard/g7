@@ -7,4 +7,10 @@ return [
             'channel_database' => '사이트 알림',
         ],
     ],
+    'reactions' => [
+        'badges' => [
+            'post' => '게시글',
+            'comment' => '댓글',
+        ],
+    ],
 ];

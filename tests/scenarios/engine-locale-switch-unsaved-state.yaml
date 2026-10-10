@@ -1,0 +1,37 @@
+feature: 언어 전환 때 미저장 입력 보존과 수동 데이터소스 재조회 (engine-v1.79.0)
+
+description: |
+  언어를 바꾸면 엔진이 템플릿을 내리고 같은 경로로 다시 들어온다. 재진입이 init 과 initLocal 을 다시 돌려
+  저장 전 입력이 사라졌고, 리마운트로 업로더가 고른 미저장 첨부도 사라졌다(7.1.0 실측 O-G3-3).
+  같은 경로 재진입은 `auto_fetch=false` 로 이미 받은 목록을 다시 받지 않아 이전 언어 문구가 남았다(O-K1-3).
+
+  계약:
+    1) 언어 전환 재진입은 전환 직전 `_local` 로 그리고 initLocal 을 다시 적용하지 않는다.
+    2) 전환 직전 화면에서 이미 받은 `auto_fetch=false` api 소스는 새 언어로 다시 받는다. `_local` 은 건드리지 않는다.
+    3) 재진입이 실패했거나 에러 페이지 경로면 다시 받지 않는다.
+    4) 컴포넌트 상태는 `G7Core.locale.handoff` 로 넘긴다 — 전환 중에만 맡길 수 있고, 한 번만 꺼내며, 다음 이동에서 비운다.
+    5) 언어 전환이 아닌 같은 경로 재진입은 종전대로 initLocal 을 적용한다.
+
+axes:
+  case: [unsaved_title_kept, manual_source_refetched, normal_reentry_applies_init_local, handoff_store, error_page_no_refetch, reentry_failed_no_refetch, locale_switch_role_form_browser]
+
+effects:
+  - unsaved_local_kept
+  - init_local_not_applied
+  - manual_source_refetched_in_new_locale
+  - manual_refetch_does_not_touch_local
+  - normal_reentry_applies_init_local
+  - handoff_accepts_stash_only_while_switching
+  - handoff_take_once
+  - handoff_cleared_on_next_navigation
+  - stale_manual_source_not_refetched
+  - manual_refetch_skipped_when_reentry_failed
+  - no_page_errors
+
+test_files:
+  - resources/js/core/__tests__/TemplateApp.localeSwitch.test.ts
+  - tests/Playwright/specs/admin/same-layout-route-locale-state.spec.ts
+
+notes: |
+  업로더 쪽 인계는 각 템플릿의 file-uploader-locale-handoff.yaml. 한계(관측): initLocal 로 복사해 둔 번역 데이터는
+  이전 언어로 남고, 모달의 저장소 A 와 `_isolated` 는 복원하지 않는다.

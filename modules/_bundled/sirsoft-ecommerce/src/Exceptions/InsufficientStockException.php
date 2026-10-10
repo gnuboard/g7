@@ -12,8 +12,8 @@ use Exception;
 class InsufficientStockException extends Exception
 {
     /**
-     * @param string $message 예외 메시지
-     * @param array $insufficientItems 재고 부족 상품 목록
+     * @param  string  $message  예외 메시지
+     * @param  array  $insufficientItems  재고 부족 상품 목록
      */
     public function __construct(
         string $message,
@@ -26,17 +26,17 @@ class InsufficientStockException extends Exception
      * 재고 부족 상품 목록 반환
      *
      * @return array 재고 부족 상품 배열
-     * [
-     *   [
-     *     'product_option_id' => int,
-     *     'product_name' => string,
-     *     'option_name' => string|null,
-     *     'requested_quantity' => int,
-     *     'available_quantity' => int,
-     *     'shortage' => int,
-     *   ],
-     *   ...
-     * ]
+     *               [
+     *               [
+     *               'product_option_id' => int,
+     *               'product_name' => string,
+     *               'option_name' => string|null,
+     *               'requested_quantity' => int,
+     *               'available_quantity' => int,
+     *               'shortage' => int,
+     *               ],
+     *               ...
+     *               ]
      */
     public function getInsufficientItems(): array
     {
@@ -46,7 +46,7 @@ class InsufficientStockException extends Exception
     /**
      * 재고 부족 상품이 있는지 확인
      *
-     * @return bool
+     * @return bool 재고 부족 상품이 있으면 true
      */
     public function hasInsufficientItems(): bool
     {
@@ -56,7 +56,7 @@ class InsufficientStockException extends Exception
     /**
      * 로깅용 전체 데이터 반환
      *
-     * @return array
+     * @return array 메시지·재고 부족 상품 목록을 담은 로깅용 배열
      */
     public function toArray(): array
     {
@@ -70,13 +70,13 @@ class InsufficientStockException extends Exception
     /**
      * 재고 부족 상품 목록으로 예외 생성 (팩토리 메서드)
      *
-     * @param array $items 재고 부족 상품 목록
-     * @return static
+     * @param  array  $items  재고 부족 상품 목록
+     * @return static 재고 부족 예외
      */
     public static function fromItems(array $items): static
     {
         $count = count($items);
-        $message = __('sirsoft-ecommerce::exceptions.insufficient_stock', ['count' => $count]);
+        $message = trans_choice('sirsoft-ecommerce::exceptions.insufficient_stock', $count);
 
         return new static($message, $items);
     }

@@ -1,0 +1,38 @@
+<!-- 글 작성 폼의 첨부 구획. 개수·용량·확장자 한도는 그 게시판 설정에서 그대로 가져오고(없으면 안전한 기본값), 파일은 고르는 즉시가 아니라 저장 버튼이 쏘는 이벤트를 받아서야 올라간다(`autoUpload=false`) — 글보다 파일이 먼저 올라가므로 `tempKey` 가 둘을 잇는다 -->
+<partial description="Post Form - Attachments Section (Compact List Style)">
+  <div data-ref="attachments_card" data-if="{{form_meta?.data?.board?.use_file_upload}}" class="admin-card">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div class="flex-center gap-2 mb-4">
+      <icon name="paperclip" class="text-xl text-gray-700 dark:text-gray-300"/>
+      <h3 class="section-heading-md">$t:sirsoft-board.admin.posts.form.attachments</h3>
+    </div>
+    <div>
+      <p data-ref="attachments_desc" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:sirsoft-board.admin.posts.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
+      <p data-ref="attachments_no_permission" data-if="{{!_computed.isReadOnly &amp;&amp; form_meta?.data?.board?.user_abilities?.can_upload !== true}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:sirsoft-board.admin.posts.form.attachments_no_permission</p>
+      <file-uploader data-type="composite" disabled="{{_computed.isReadOnly || form_meta?.data?.board?.user_abilities?.can_upload !== true}}" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" size="sm" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message">
+        <prop name="uploadParams">
+          <field name="temp_key" value="{{_local.tempKey}}"/>
+        </prop>
+        <prop name="apiEndpoints">
+          <field name="upload" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments"/>
+          <field name="delete" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id"/>
+          <field name="reorder" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"/>
+        </prop>
+        <on type="change" event="onFilesChange">
+          <!-- 파일을 더하거나 뺀 것도 「변경 있음」으로 친다 — 그래야 본문을 손대지 않고 첨부만 바꿔도 저장 버튼이 열린다. 이미 켜져 있으면 다시 쓰지 않는다 -->
+          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+        </on>
+        <on type="change" event="onUploadError">
+          <!-- 업로드 실패 — 저장은 「첨부 올리기 → 본문 보내기」 순서라, 여기서 저장 중 표시를 내려 주지 않으면 버튼이 잠긴 채로 남는다 -->
+          <sequence>
+            <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
+            <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+          </sequence>
+        </on>
+      </file-uploader>
+    </div>
+  </div>
+</partial>

@@ -1,0 +1,16 @@
+feature: template:uninstall 의 --force · --delete-data 옵션
+
+description: |
+  #138 실측 ⑤. 모듈·플러그인 제거 명령에는 확인을 건너뛰는 --force 와 데이터 삭제를 고르는 --delete-data 가
+  있는데 템플릿 제거 명령에만 없었다. CLI 로 제거하면 확인 질문을 건너뛸 수 없고, 관리자 화면의 「데이터도
+  삭제」 선택을 줄 수 없어 after_uninstall 구독자·활동 로그가 받는 deleteData 가 늘 false 였다. 템플릿의
+  deleteData 는 제거 동작을 바꾸지 않고 훅 인자로만 전달된다(Manager 계약).
+
+axes:
+  case: [force_with_delete_data, confirm_without_delete_data]
+
+effects:
+  - template_uninstall_force_skips_confirm_and_forwards_delete_data
+
+test_files:
+  - tests/Feature/Console/Commands/Template/UninstallTemplateCommandOptionsTest.php

@@ -9,11 +9,11 @@ use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\User;
 use App\Services\IdentityMessageDispatcher;
+use App\Support\SiteUrl;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 /**
@@ -41,6 +41,9 @@ class MailIdentityProvider implements IdentityVerificationInterface
     public const ID = 'g7:core.mail';
 
     /**
+     * 메일 본인인증 프로바이더를 생성합니다.
+     *
+     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 challenge 로그 저장소
      * @param  array  $config  withConfig() 로 전달되는 런타임 설정 (code_length, code_ttl_minutes, link_ttl_minutes 등)
      */
     public function __construct(
@@ -198,6 +201,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
             linkToken: $linkToken,
             ttlMinutes: $ttlMinutes,
             expiresAt: $expiresAt,
+            userId: $target instanceof User ? $target->id : null,
         );
 
         $this->logRepository->updateById($log->id, [
@@ -353,6 +357,14 @@ class MailIdentityProvider implements IdentityVerificationInterface
         return $clone;
     }
 
+    /**
+     * 인증 목적에 맞는 메일 렌더링 방식을 결정합니다.
+     *
+     * 비밀번호 재설정은 검증 링크, 그 외 목적은 숫자 인증코드로 보낸다.
+     *
+     * @param  string  $purpose  인증 목적 (signup, password_reset 등)
+     * @return string 렌더링 방식 (`link` 또는 `text_code`)
+     */
     protected function resolveRenderHint(string $purpose): string
     {
         return $purpose === 'password_reset' ? 'link' : 'text_code';
@@ -390,6 +402,15 @@ class MailIdentityProvider implements IdentityVerificationInterface
         return $code;
     }
 
+    /**
+     * 검증 완료 후 후속 요청에 제출할 본인인증 토큰을 생성합니다.
+     *
+     * 목적·대상 해시·무작위 UUID 를 앱 키로 HMAC-SHA256 서명해 추측할 수 없는 값을 만든다.
+     *
+     * @param  string  $purpose  인증 목적
+     * @param  string  $targetHash  인증 대상 이메일의 SHA-256 해시
+     * @return string 64자 16진수 본인인증 토큰
+     */
     protected function generateVerificationToken(string $purpose, string $targetHash): string
     {
         return hash_hmac(
@@ -400,11 +421,18 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * IDV 전용 메시지 디스패처를 통해 메일을 발송합니다.
+     * 본인인증 메시지 디스패처(알림 시스템 경유)를 통해 메일을 발송합니다.
      *
+     * @param  string  $email  수신자 이메일 주소
+     * @param  string  $purpose  인증 목적
      * @param  string  $renderHint  text_code | link
+     * @param  string  $challengeId  challenge ID
+     * @param  string|null  $policyKey  challenge 를 발생시킨 정책 키 (없으면 null)
      * @param  string|null  $code  text_code 흐름 시 평문 인증 코드
      * @param  string|null  $linkToken  link 흐름 시 서명 링크용 raw 토큰
+     * @param  int  $ttlMinutes  인증 유효 시간(분) — 메일 본문 안내용
+     * @param  Carbon  $expiresAt  challenge 만료 시각
+     * @param  int|null  $userId  챌린지 사용자 ID (비회원이면 null) — 수신 주소가 그 회원의 이메일이면 회원으로 보낸다
      * @return bool 발송 성공 여부
      */
     protected function dispatchMessage(
@@ -417,6 +445,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
         ?string $linkToken,
         int $ttlMinutes,
         Carbon $expiresAt,
+        ?int $userId = null,
     ): bool {
         try {
             $actionUrl = $linkToken !== null
@@ -442,6 +471,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
                 context: [
                     'challenge_id' => $challengeId,
                     'render_hint' => $renderHint,
+                    'user_id' => $userId,
                 ],
             );
         } catch (\Throwable $e) {
@@ -457,24 +487,28 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * link 흐름용 서명 링크를 생성합니다.
+     * link 흐름용 검증 링크를 생성합니다.
+     *
+     * 보안: 메일 링크는 다른 사람(수신자)에게 가는 절대 URL 이다 — 요청 Host 로 만들어지는 서명 라우트
+     * URL 대신 언제나 사이트 주소로 만든다. 링크 토큰 자체가 검증 수단이고 만료는 challenge 가 소유한다.
+     *
+     * @param  string  $challengeId  challenge ID
+     * @param  string  $linkToken  링크 검증 토큰
+     * @param  Carbon  $expiresAt  만료 시각 (만료 판정은 challenge 가 소유 — 링크에는 싣지 않는다)
+     * @return string 사이트 주소 기준 검증 링크
      */
     protected function buildSignedLink(string $challengeId, string $linkToken, Carbon $expiresAt): string
     {
-        try {
-            return URL::temporarySignedRoute(
-                'api.identity.challenges.verify',
-                $expiresAt,
-                ['challenge_id' => $challengeId, 'token' => $linkToken],
-            );
-        } catch (\Throwable) {
-            // 라우트 미존재 환경(테스트 등)에서는 경로 + query 로 fallback
-            return rtrim((string) config('app.url'), '/').'/identity/verify?challenge='.$challengeId.'&token='.$linkToken;
-        }
+        return SiteUrl::absolute(
+            '/identity/verify?challenge='.rawurlencode($challengeId).'&token='.rawurlencode($linkToken)
+        );
     }
 
     /**
      * purpose 라벨(다국어)을 현재 로케일 문자열로 해석합니다.
+     *
+     * @param  string  $purpose  인증 목적
+     * @return string 번역된 목적 라벨 (번역 키가 없으면 목적 문자열 그대로)
      */
     protected function resolvePurposeLabel(string $purpose): string
     {

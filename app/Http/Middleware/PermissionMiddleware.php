@@ -65,9 +65,14 @@ class PermissionMiddleware
                 ]);
             }
         } else {
+            // 다중 권한은 회원과 같은 규칙(requireAll 기본 true=AND)을 따른다 — 비회원만 OR 로 판정하면
+            // 같은 라우트가 회원에게는 닫히고 비회원에게는 열리는 역전이 생긴다.
+            $guestCheck = fn ($perm) => $this->checkGuestPermission($perm, $permissionType);
             $hasPermission = count($resolvedPermissions) === 1
-                ? $this->checkGuestPermission($resolvedPermissions[0], $permissionType)
-                : collect($resolvedPermissions)->contains(fn ($perm) => $this->checkGuestPermission($perm, $permissionType));
+                ? $guestCheck($resolvedPermissions[0])
+                : (filter_var($requireAll ?? 'true', FILTER_VALIDATE_BOOLEAN)
+                    ? collect($resolvedPermissions)->every($guestCheck)
+                    : collect($resolvedPermissions)->contains($guestCheck));
 
             if (! $hasPermission) {
                 return ResponseHelper::unauthorized('auth.guest_permission_denied', [

@@ -1,0 +1,46 @@
+<!-- 상품 공지 템플릿을 고칠 때, 그 템플릿을 이미 쓰고 있는 상품들에도 함께 반영할지 확인받는 창.
+  템플릿은 여러 상품이 참조하므로 한 번의 수정이 넓게 번진다 — 그래서 저장 전에 한 번 묻는다.
+  이 창은 저장하지 않는다. 확인을 누르면 폼이 잡아 둔 값(`_global.tempFormForBulkChange`)을
+  **이벤트로 되돌려 보내고**(`notice:bulkChangeConfirmed`), 실제 저장은 그 이벤트를 받은 폼이 한다
+  — 폼은 다른 조각이라 이 창의 지역 상태에 손이 닿지 않는다. -->
+<partial description="Product Notice Template Bulk Change Confirmation Modal">
+  <modal data-type="composite" data-ref="bulk_change_modal" title="$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.title" size="medium">
+    <div>
+      <div class="flex-start gap-3">
+        <div class="flex-shrink-0 mt-0.5">
+          <icon name="info-circle" class="text-xl text-blue-600 dark:text-blue-400"/>
+        </div>
+        <div class="flex-1">
+          <p class="text-primary text-base mb-2">$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.message</p>
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+            <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.preview_label</p>
+            <p class="text-primary font-medium mt-1">$t:sirsoft-ecommerce.admin.product_notice_template.form.detail_reference</p>
+          </div>
+          <p class="text-sm text-amber-600 dark:text-amber-400 mt-3">$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.notice</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
+        <on type="click">
+          <!-- 확인 — 잡아 둔 폼 값을 폼 쪽으로 되돌려 보내고 창을 닫는다. 저장은 그 이벤트를 받은 폼이 하므로 여기에는 API 호출이 없다. -->
+          <sequence>
+            <emit-event event="notice:bulkChangeConfirmed">
+              <field name="data">
+                <field name="form" value="{{_global.tempFormForBulkChange}}"/>
+              </field>
+            </emit-event>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

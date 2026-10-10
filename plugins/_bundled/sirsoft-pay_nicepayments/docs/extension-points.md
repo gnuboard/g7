@@ -9,11 +9,11 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-pay_nicepayments.payment.after_authorize` | action | 나이스페이먼츠 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:257` |
-| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:312` |
-| `sirsoft-pay_nicepayments.payment.before_authorize` | action | 나이스페이먼츠 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:252` |
-| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:289` |
-| `sirsoft-pay_nicepayments.payment.refund_failed` | action | — | `src/Listeners/PaymentRefundListener.php:131` |
+| `sirsoft-pay_nicepayments.payment.after_authorize` | action | 나이스페이먼츠 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:325` |
+| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:347` |
+| `sirsoft-pay_nicepayments.payment.before_authorize` | action | 나이스페이먼츠 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:320` |
+| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:324` |
+| `sirsoft-pay_nicepayments.payment.refund_failed` | action | — | `src/Listeners/PaymentRefundListener.php:187` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -30,12 +30,18 @@
 |---|---|---|---|---|
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 40 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
-| `core.layout_extension.after_apply` | filter | `EnsureAdminOrderListTestBadgeLayoutListener` | `ensureTestBadgeLayout` | 60 |
-| `core.plugins.updated` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
+| `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
+| `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
+| `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
+| `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
+| `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | `ProvidePaymentMethodDisplayLabelListener` | `provideDisplayLabel` | 10 |
+| `sirsoft-ecommerce.payment.close_vbank` | filter | `VbankCloseListener` | `closeVbank` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | `RegisterPgProviderListener` | `registerProvider` | 10 |
+| `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | `PaymentRefundListener` | `supportsPartialCancel` | 10 |
 | `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | `RegisterEasyPayMethodsListener` | `injectEasyPayMethods` | 40 |
 <!-- @generated:hooks-subscribed END -->
 
@@ -46,6 +52,30 @@
 방식을 하나의 필터 훅에서 한 번에 주입하는 이유는 §settings.md 의 설정 스키마와 대칭을
 맞추기 위함입니다 — 설정 키가 8개인데 훅 등록이 여러 곳으로 흩어지면 한쪽만 갱신되는
 사각이 생깁니다.
+
+`sirsoft-ecommerce.claim_payment.approve` / `.refund` 두 필터는 클레임 추가결제(`CP` 채번)의
+승인·환급을 이 플러그인이 맡는 접합면입니다. 콜백 컨트롤러는 결제번호가 `CP` 로 시작하면 주문
+경로를 타지 않고 모듈의 `approvePgPayment()` 에 위임하며, 그 안에서 이 필터가 발화합니다 —
+서버 콜백 경로와 API 승인 경로가 같은 구현을 탑니다. 인자·반환 키·멱등 규칙은 쇼핑몰 모듈
+`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
+
+승인 리스너는 서명 금액(`Amt`)을 승인 호출 **전에** 청구액과 대조하고(다르면 PG 호출 없이
+`AMOUNT_MISMATCH`), 콜백·응답의 주문번호(`Moid`)가 이 결제 건이 아니면 거절하며, 응답 금액이 서명
+금액과 다르거나 응답에 승인 금액이 없으면(숫자가 아닌 값 포함) 망취소한 뒤 실패로 돌려줍니다. 모듈에 넘기는
+`paid_amount` 는 브라우저 콜백 금액이 아니라 승인 응답의 금액입니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+`sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
+콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
+한 구현입니다.
+
+콜백 컨트롤러의 `CP` 분기는 결제번호 단위 캐시 락(`sirsoft-pay_nicepayments:callback:{문맥}:{sha1(결제번호)}`)으로
+직렬화됩니다. 락을 기다리다 시간을 넘기면 오류(500)가 아니라 결제 건 상태를 읽어 신청서 상세로
+돌려보냅니다 — 이미 결제완료면 `?claim_payment=success`, 아니면 `?claim_payment=failed&error=callback_locked`.
+
+주입하는 결제수단 항목은 이커머스의 결제수단 **능력 키**를 함께 선언합니다. 그중
+`auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, 이 플러그인이 등록하는 것은
+모두 간편결제라 나이스페이먼츠 결제취소 API 가 그 자리에서 환불을 끝냅니다 — 전부 `true` 입니다.
+선언을 빠뜨리면(코어 기본값 `false`) 그 수단의 환불이 전부 운영자 승인 대기로 쌓입니다. 계약은
+이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "결제수단 능력 선언" 절이 갖습니다.
 <!-- @intent END -->
 
 ## 활동 로그 훅
@@ -78,19 +108,31 @@
 |---|---|---|---|---|
 | `AdjustEcommercePaymentMethodsLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/AdjustEcommercePaymentMethodsLayoutListener.php` |
 | `CancelActivityLogListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/CancelActivityLogListener.php` |
+| `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
+| `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
-| `EnsureAdminOrderListTestBadgeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php` |
-| `PaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
+| `PaymentRefundListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
+| `ProvidePaymentMethodDisplayLabelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvidePaymentMethodDisplayLabelListener.php` |
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
+| `ValidateRedirectUrlSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateRedirectUrlSettingsListener.php` |
+| `VbankCloseListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/VbankCloseListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
 `RestoreLayoutExtensionsAfterUpdateListener`는 `plugin:update`가 레이아웃 확장 조각(§레이아웃
 확장)의 활성/비활성 상태를 초기화할 수 있어서 존재합니다 — 운영자가 특정 화면을 꺼둔 상태로
-업데이트해도 그 선택이 사라지지 않도록 복원합니다. 8개 리스너 전부가
-`HookListenerInterface`를 구현하는 것은 이 저장소의 전 리스너 공통 계약입니다.
+업데이트해도 그 선택이 사라지지 않도록 복원합니다. 대상 화면에 덧붙이는 조각(overlay)뿐 아니라
+확장점에 붙는 조각(주문 목록 테스트 결제 배지)도 되살리며, 확장점 조각은 그 확장점을 가진 레이아웃이
+있는 템플릿에만 등록합니다. 리스너 전부가 `HookListenerInterface`를 구현하는 것은 이 저장소의 전
+리스너 공통 계약입니다.
+
+`ProvidePaymentMethodDisplayLabelListener` 는 관리자 주문 목록의 결제수단 이름을 채웁니다. 이커머스는
+PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문도 기본 결제수단 이름만 압니다. 이 리스너가
+필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 **자기 결제(`pg_provider`)의
+간편결제 주문에만** 「원 수단 (기본 수단)」 이름을 채우고, 자기 결제가 아니거나 앞선 구독자가 채운 값은
+그대로 돌려줍니다 — 한 목록에 여러 PG 의 주문이 섞이기 때문입니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장
@@ -98,20 +140,39 @@
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/admin_order_list_test_badge.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/admin_order_payment_query.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/checkout_easy_pay.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user_mypage_order_receipt.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/user_order_complete_receipt.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/admin_order_list_payment_method_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_order_list_payment_method_badges` |
+| `resources/extensions/admin_order_payment_query.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
+| `resources/extensions/user_mypage_order_receipt.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_payment_provider_slot` |
+| `resources/extensions/user_order_complete_receipt.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/order_complete` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-5개 조각은 각각 독립적인 화면 관심사입니다 — 관리자 주문 목록의 테스트배지, 관리자 주문
+5개 조각은 각각 독립적인 화면 관심사입니다 — 관리자 주문 목록의 테스트 결제 배지, 관리자 주문
 상세의 거래조회 UI, 체크아웃의 간편결제 버튼, 마이페이지·주문완료의 영수증 버튼이 서로
-다른 화면에 주입되므로 하나로 합치지 않았습니다. `user_mypage_order_receipt.json`과
-`user_order_complete_receipt.json`이 별도 파일인 것은 두 화면의 컴포넌트 트리와 데이터
+다른 화면에 주입되므로 하나로 합치지 않았습니다. `user_mypage_order_receipt.g7.html`과
+`user_order_complete_receipt.g7.html`이 별도 파일인 것은 두 화면의 컴포넌트 트리와 데이터
 소스가 다르기 때문입니다(§AGENTS.md "설계 원칙" — 상태는 이커머스 소유이므로 화면마다
 필요한 조회 방식이 다를 수 있습니다).
+
+조각의 **고유 키는 파일 이름**입니다(`fragment_key` — 확장자를 뗀 기본 이름). 같은 확장이 같은 대상
+화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치 경로와
+`RestoreLayoutExtensionsAfterUpdateListener` 가 **같은 키**를 써야 하므로, 리스너는
+`LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
+등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
+어느 행인지 가리지 못한 채 조용히 멈춥니다.
+`user_mypage_order_receipt.g7.html` 은 대상 레이아웃 이름이 아니라 **공용 확장 슬롯**
+(`mypage_order_payment_provider_slot`)을 겨냥합니다. 이 슬롯이 사는 결제 정보 카드
+(`partials/mypage/orders/_payment`)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용하기
+때문입니다. `target_layout`(`mypage/orders/show`)으로 겨냥하면 그 한 화면에서만 뜨고, 나머지
+화면은 카드는 나오는데 이 블록만 빠진 채 열립니다 — 오류도 경고도 남지 않아 알아채기 어렵습니다.
+슬롯은 partial 을 따라가므로 그 카드가 새 화면에 마운트돼도 조각이 함께 갑니다.
+
+**템플릿 요구 사항 — `mypage_order_payment_provider_slot` 슬롯이 필수입니다.** 이 조각은 예전처럼 대상
+화면 이름(`target_layout: mypage/orders/show`)으로 붙지 않고 이 슬롯에만 붙습니다. 그래서 사용자 템플릿의
+결제 정보 카드에 이 확장점이 없으면(자체 제작 템플릿, 슬롯 도입 전에 복사한 템플릿) 주문 상세·클레임
+신청서 상세 어디에도 이 블록이 뜨지 않으며, 오류도 경고도 남지 않습니다. 사용자 템플릿을 만들거나 고칠 때는
+결제 정보 카드 partial 에 `<extension-point name="mypage_order_payment_provider_slot">` 을 둡니다 — 기본
+사용자 템플릿(sirsoft-basic)은 `partials/mypage/orders/_payment` 에 두고 있습니다.
 <!-- @intent END -->
 
 ## 미들웨어

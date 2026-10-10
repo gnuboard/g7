@@ -5,6 +5,8 @@
     "template": "テンプレート"
   },
   "alerts": {
+    "language_pack_install_failed": "一緒に選択した言語パックをインストールできませんでした（{{names}}）：{{reason}}",
+    "language_pack_awaiting_host": "一緒に選択した言語パック（{{names}}）は、この拡張機能がまだ無効のため無効の状態でインストールしました。拡張機能を有効にすると一緒に有効になります。",
     "incompatible_deactivated": "{{type}} \"{{name}}\" が自動的に無効化されました",
     "incompatible_message": "必要なバージョン: {{required}}、現在インストール済み: {{installed}}",
     "recovered_title": "{{type}} \"{{name}}\" が再び互換性を備えています",
@@ -13,7 +15,9 @@
     "dismissed": "通知を閉じました。",
     "auto_deactivated_listed": "自動的に無効化された拡張のリストです。",
     "recover_action": "再度有効化",
-    "dismiss_action": "通知を閉じる"
+    "dismiss_action": "通知を閉じる",
+    "open_action": "開く",
+    "layout_include_skipped": "見つからないフラグメント参照 {{count}} 件を空のまま登録しました。サーバーログまたは php artisan layout:check-installed で確認してください。"
   },
   "badges": {
     "incompatible": "コアのアップグレードが必要です",
@@ -28,11 +32,30 @@
   },
   "update_modal": {
     "compat_warning_title": "コアバージョン互換性警告",
-    "compat_warning_message": "この{{type}}はコア {{required}} 以上が必要です。(現在: {{installed}})",
+    "compat_warning_message": "この{{type}}に必要なコアバージョン: {{required}}(現在: {{installed}})",
     "compat_guide_link": "コアアップグレードガイドを表示",
     "force_label": "警告を無視して強制アップデート (推奨されません)",
     "rebuild_search_index_title": "検索インデックス",
     "rebuild_search_index_label": "アップデート後、インデックスが未反映の検索インデックスを再生成",
     "rebuild_search_index_desc": "再生成中は対象インデックスがロックされるか再インデックスされます。稼働中のサイトではチェックせず、メンテナンス時間帯に別途実行してください。"
+  },
+  "view_mode": {
+    "toggle_label": "表示方法",
+    "gallery": "ギャラリー表示",
+    "list": "一覧表示",
+    "gallery_aria": "ギャラリーで表示",
+    "list_aria": "一覧で表示"
+  },
+  "card": {
+    "open_detail": "{{name}} 詳細表示"
+  },
+  "icon": {
+    "alt": "{{name}} アイコン",
+    "locale_badge_sr": "{{locale}} 言語パック"
+  },
+  "manifest_preview": {
+    "icon_present": "アイコン含む: {{path}}",
+    "icon_missing": "アイコンがないため、デフォルトアイコンが表示されます。",
+    "icon_invalid": "アイコンが規格に適合していないため、デフォルトアイコンが表示されます。"
   }
 }

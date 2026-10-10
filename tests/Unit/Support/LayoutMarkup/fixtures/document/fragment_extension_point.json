@@ -1,0 +1,36 @@
+{
+    "extension_point": "inquiry_board_setting",
+    "mode": "replace",
+    "priority": 100,
+    "data_sources": [
+        {
+            "id": "board_list",
+            "endpoint": "/api/modules/sirsoft-board/admin/boards",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "per_page": "200"
+            }
+        }
+    ],
+    "components": [
+        {
+            "id": "inquiry_settings_panel",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "settings-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "text": "문의 게시판 설정"
+                    }
+                }
+            ]
+        }
+    ]
+}

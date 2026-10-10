@@ -1,0 +1,93 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
+#   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit 단위·Feature 테스트가
+#   커버하고 green 이다.
+
+feature: 방문자 통계 개인정보 모드 — 저장 수준과 익명 폴백 (이슈 #682 S1)
+
+description: |
+  방문자를 어디까지 식별해 저장할지 세 모드로 고르고, 마스킹·익명화·가명화 토글이
+  저장 직전에 적용된다.
+
+  배경:
+    - 통계를 켜는 순간 개인정보가 쌓이므로, 무엇을 남길지는 운영자가 정해야 한다.
+    - 동의 모드인데 동의를 확인할 곳(GDPR 플러그인)이 없으면 수집이 0 이 된다 —
+      운영자는 이유도 모른 채 데이터를 잃는다. 그래서 익명 모드로 내려가 개인정보를
+      남기지 않고 계속 센다.
+    - 익명 모드의 방문자 키는 날마다 바뀌는 솔트로 만든 해시다. 솔트가 며칠 뒤
+      지워지면 어제의 키와 오늘의 키를 이어 붙일 방법이 원리적으로 없어진다 —
+      그래서 재방문을 셀 수 없고, 그것이 이 모드의 목적이다.
+
+  적용 지점:
+    - `app/Services/Analytics/PrivacyService` 가 저장 값(IP·IP 해시·회원 식별)을 정한다.
+    - `app/Analytics/VisitorRecognizer` 가 쿠키 키와 일자 해시를 만든다.
+    - `app/Analytics/IpAddress::mask` 가 옥텟 수만큼 주소 하위를 지운다.
+
+# 축 조합이 많아 전건을 도는 대신 쌍 단위로 덮는다(계획서 §7.1).
+coverage_strategy: pairwise
+
+axes:
+  mode: [full, consent, anonymous]
+  mask_octets: [0, 1, 2, 3, over_max]
+  geo_before_mask: [true, false]
+  referrer_anon: [none, domain_only]
+  pseudonymize: [true, false]
+  consent_provider: [active_consented, active_declined, inactive, absent]
+  ip_family: [ipv4, ipv6]
+  # 모드가 판정을 바꾸는 자리 — 수집 매니페스트의 같은 이름 축 중 이 매니페스트가 쓰는 값
+  exclusion: [none, consent, dnt]
+  visitor: [guest, member]
+  visit_state: [new, open]
+
+exclusions:
+  - { mode: anonymous, consent_provider: active_consented, reason: "익명 모드는 동의 출처와 무관하게 동작한다 — 동의 축이 판정에 관여하지 않는다" }
+  - { geo_before_mask: false, mask_octets: 0, reason: "마스킹이 없으면 조회 순서가 결과를 바꾸지 않는다" }
+
+effects:
+  - full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
+  - consented_visitor_is_recorded_in_full_mode_when_the_consent_plugin_is_active
+  - consent_is_answered_through_the_consent_provider_contract   # 동의 판정은 범용 동의 제공자 계약으로 묻는다 (#639, 옛 분석 전용 필터·API 대체)
+  - full_mode_stores_masked_ip_and_issues_cookie
+  - full_mode_reports_returning_visitors
+  - anonymous_mode_stores_no_ip
+  - anonymous_mode_failure_log_stores_no_ip
+  - anonymous_mode_stores_salted_ip_hash_instead
+  - anonymous_mode_issues_no_cookie
+  - anonymous_mode_leaves_returning_flag_null
+  - anonymous_visitor_key_is_deterministic_within_a_day
+  - anonymous_visitor_key_differs_across_environments
+  - anonymous_server_fallback_and_beacon_share_a_visit
+  - consent_mode_with_granted_consent_behaves_like_full
+  - consent_mode_with_declined_consent_records_nothing
+  - consent_lookup_uses_the_consent_providers_guest_session_id
+  - consent_mode_without_consent_source_falls_back_to_anonymous
+  - ip_masking_clears_requested_octets_for_ipv4
+  - ip_masking_clears_requested_blocks_for_ipv6
+  - ip_masking_never_clears_the_entire_address
+  - geo_lookup_runs_before_masking_when_configured
+  - referrer_anonymization_keeps_domain_only
+  - pseudonymized_user_id_is_replaced_by_a_hash
+  - tightening_privacy_settings_offers_retroactive_anonymization
+  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다 (#703 실측)
+  - loosening_privacy_settings_offers_nothing
+  - past_date_ip_hash_is_unavailable_once_the_salt_is_gone
+  - failure_log_applies_the_same_ip_masking_rule
+  - bot_hit_log_applies_the_same_ip_masking_rule
+  # 모드와 무관하게 적용되는 제외 (추적 거부·동의 없음이 원장에 닿지 않고 사유로 세어진다)
+  - excluded_requests_record_nothing
+  - each_exclusion_reason_is_counted_separately
+
+test_files:
+  - tests/Feature/Analytics/PrivacyModeTest.php
+  - tests/Feature/Analytics/VisitServiceTest.php
+  - tests/Feature/Analytics/CollectControllerTest.php
+  - tests/Feature/Analytics/TrackBotHitMiddlewareTest.php
+  - tests/Feature/Analytics/GeoIpLocationTest.php
+  - tests/Unit/Analytics/IpAddressTest.php
+  - tests/Unit/Analytics/ReferrerClassifierTest.php
+  - tests/Unit/Analytics/VisitorRecognizerTest.php
+  - tests/Unit/Analytics/VisitExclusionPipelineTest.php
+
+# E2E axis 없음 (S1): 개인정보 모드의 브라우저 표면은 설정 화면(S3)이고, 소급 익명화
+# 모달의 왕복은 S3 의 analytics-settings-privacy.spec.ts 가 덮는다. 이 단계는 저장 값
+# 자체를 행으로 단언한다.

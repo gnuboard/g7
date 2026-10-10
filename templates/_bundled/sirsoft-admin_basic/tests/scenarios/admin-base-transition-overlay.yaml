@@ -1,0 +1,81 @@
+feature: 어드민 베이스 레이아웃의 선언 계약 (전환 오버레이 · 사이드바 구성)
+
+description: |
+  화면 전환 중 «빈 판» 이 보이지 않게 하는 장치는 `_admin_base` 의 `transition_overlay` 하나이고,
+  자식 레이아웃들은 그 규약을 **선언으로** 지킨다 — 어느 요소를 덮을지(`transition_overlay_target`),
+  이동이 이력을 쌓지 않는지(`replace: true`), 무엇을 기다릴지(`wait_for`). 이 계약은 런타임이
+  아니라 레이아웃 JSON 에 적혀 있으므로, 한 페이지만 규약을 빠뜨려도 그 페이지에서만 조용히
+  깜빡임이 돌아온다(이슈 #245).
+
+  같은 베이스가 사이드바 구성도 소유한다 — 프로필·계정 UI 는 상단 헤더 드롭다운으로 옮겼고
+  사이드바에는 남기지 않는다(#384/#399), 다만 「사이트 보기」 크로스 이동 링크는 유지한다(#450).
+  베이스 한 곳이 두 계약을 함께 들고 있어 한 파일에서 함께 잠근다.
+
+  본 매니페스트는 #476 코드 편집기 개편에서 이 파일을 건드리며(컨테이너 id `mobile_file_selector`
+  → `file_tree_picker` 개명 추적) 소유 매니페스트가 없다는 것이 드러나 신설했다.
+
+axes:
+  subject: [base, child_layout]
+  contract:
+    - overlay_declared
+    - overlay_target_scope
+    - navigate_replace
+    - wait_for_complete
+    - extends_base
+    - no_full_page_blur
+    - sidebar_composition
+    - scan_population
+
+axis_notes:
+  subject: >-
+    base = `_admin_base` 자신의 선언, child_layout = 베이스를 상속하는 어드민 페이지들.
+    계약이 갈리는 지점이 정확히 이 둘이다 — 베이스는 «오버레이를 켜고 어디에 씌울지» 를 정하고,
+    자식은 «자기 이동·조회가 그 규약을 따르는지» 를 정한다.
+  contract: >-
+    레이아웃 JSON 에 적히는 선언 종류다. overlay_declared = 오버레이 활성·타입,
+    overlay_target_scope = 덮을 요소의 범위(전체 판이 아니라 내용 영역),
+    navigate_replace = target 을 쓰는 이동이 `replace: true` 인가,
+    wait_for_complete = progressive 데이터소스를 빠짐없이 기다리는가,
+    extends_base = 베이스를 상속하는가, no_full_page_blur = 폼 컨테이너에 전체 blur 가 없는가,
+    sidebar_composition = 사이드바에 무엇을 두고 무엇을 두지 않는가,
+    scan_population = 전수 스캔의 모집단이 비지 않았는가(가드가 조용히 0건을 훑는 회귀 방지).
+  removed_runtime: >-
+    `runtime`(선언 / 실제 렌더) 은 축에서 뺐다. 이 파일은 **레이아웃 JSON 을 읽는** 계약 테스트이고
+    실제 전환 렌더는 Playwright `admin-base-transition-overlay` 계열이 따로 잰다 — 한 파일에
+    두 층을 섞으면 어느 층이 깨졌는지 실패 메시지가 말해 주지 않는다.
+
+exclusions:
+  # 베이스에만 있는 계약 / 자식에만 있는 계약을 교차곱에서 덜어낸다.
+  - { subject: base, contract: navigate_replace, reason: 베이스에는 navigate 액션이 없다 — 이동은 자식 페이지가 일으킨다 }
+  - { subject: base, contract: wait_for_complete, reason: 베이스에는 progressive 데이터소스가 없다 — wait_for 는 자식이 자기 소스를 두고 적는다 }
+  - { subject: base, contract: extends_base, reason: 베이스 자신은 상속 대상이지 상속하는 쪽이 아니다 }
+  - { subject: base, contract: no_full_page_blur, reason: 폼 컨테이너는 자식 페이지에만 있다 }
+  - { subject: base, contract: scan_population, reason: 전수 스캔의 모집단은 자식 페이지 목록이다 — 베이스는 한 장이라 셀 것이 없다 }
+  - { subject: child_layout, contract: overlay_declared, reason: 오버레이 활성·타입은 베이스가 한 번 정한다. 자식이 다시 켜면 규약이 두 곳으로 갈린다 }
+  - { subject: child_layout, contract: sidebar_composition, reason: 사이드바는 베이스 소유다 — 자식은 그리지 않는다 }
+
+effects:
+  - admin_base_declares_spinner_overlay                     # 베이스가 spinner 오버레이를 켠다
+  - admin_base_overlay_targets_the_content_wrapper          # right_content_area 가 main_content 의 부모
+  - admin_sidebar_has_no_profile_ui                         # 프로필·계정은 헤더 드롭다운으로 (#384/#399), 사이트 보기 링크는 유지 (#450)
+  - overlay_guards_scan_at_least_one_admin_page             # 전수 가드의 모집단이 비지 않는다
+  - pagination_navigate_targets_the_grid_body               # 페이지네이션은 DataGrid body 만 덮는다
+  - overlay_target_navigate_uses_replace_true               # target 을 쓰는 이동은 이력을 쌓지 않는다
+  - channel_tabs_target_their_own_wrapper                   # 채널 서브 탭은 자기 wrapper 를 덮는다
+  - settings_tabs_target_the_tab_content_pane               # 환경설정 탭은 탭 콘텐츠 영역만
+  - child_layouts_declare_wait_for_for_progressive_sources  # progressive 데이터소스를 빠짐없이 기다린다
+  - admin_child_layouts_extend_the_base                     # 자식은 모두 _admin_base 를 상속
+  - admin_form_containers_do_not_blur_the_whole_page        # 폼 컨테이너에 blur_until_loaded 금지
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-transition-overlay.test.tsx
+
+validation:
+  note: |
+    이 파일은 레이아웃 JSON 을 직접 읽어 **선언이 규약대로 적혔는가** 만 판정한다. 그래서 전수
+    스캔형 테스트가 많고, 테스트 이름이 스캔 대상마다 동적으로 만들어진다
+    (`` it(`${page.name}: …`) ``). 동적 이름은 지문이 되지 못하므로 축 매핑은 **소스의 `it(` 한
+    자리마다** 붙이고, 그 한 자리가 자기 모집단 전체를 덮는다 — `scan_population` 축이 그
+    모집단이 비지 않았음을 따로 잠그는 이유가 이것이다.
+
+    실제 전환 화면(오버레이가 눈에 보이는가·언제 걷히는가)은 이 매니페스트의 대상이 아니다.

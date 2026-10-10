@@ -1,0 +1,141 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
+#   이 매니페스트의 축은 화면이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이
+#   갈리는 분기가 아니다. 예컨대 표 컬럼 구성을 재는 테스트에 검색 대상·읽음 상태·회원
+#   한정 값을 곱해도 재는 대상이 달라지지 않는다 — 전개하면 인위적인 조합만 늘어난다.
+#   실제 커버리지 계약은 effects 목록이며, 선언한 항목은 모두 테스트가 재고 green 이다.
+
+feature: 관리자 스크랩 관리 (전 회원·전 게시판)
+
+description: |
+  이슈 #524 WP-A. 스크랩은 회원 본인만 볼 수 있었다 — 운영자는 「누가 무엇을 스크랩했나」를
+  알 방법이 없어, 특정 글이 왜 갑자기 조회수가 뛰는지·어떤 회원이 무엇을 모으고 있는지를
+  물어 오면 DB 를 직접 열어야 했다. 이 작업은 그 축을 화면으로 세운다.
+
+  회원 상세 「스크랩」 탭은 **요약만** 낸다(결정 R1) — 건수와 최근 시각, 그리고 이 회원으로
+  좁힌 목록으로 가는 링크. 같은 표를 회원 상세 안에 한 벌 더 두지 않는다.
+
+  스크랩 레코드는 원글·게시판이 지워져도 남는다. 목록에서 감추면 정리할 대상을 찾지 못하므로,
+  삭제된 원글의 제목과 게시판 삭제 여부를 배지로 드러낸다.
+
+  엔드포인트:
+    - GET    /api/modules/sirsoft-board/admin/scraps        (전 회원 목록, 검색 6갈래·게시판·기간·회원)
+    - DELETE /api/modules/sirsoft-board/admin/scraps/bulk   (일괄 해제 — `{id}` 보다 먼저 선언)
+    - DELETE /api/modules/sirsoft-board/admin/scraps/{id}   (단건 해제)
+
+  권한: `sirsoft-board.scraps.view`(조회) · `sirsoft-board.scraps.manage`(삭제).
+  삭제는 훅 `after_toggle` 을 «스크랩 소유자» id 로 발화하되, 활동 로그의 행위자는 관리자다
+  (`ResolvesActivityLogType::logActivity` 가 로그인한 주체로 채운다 — 계획서 §8.2 T4b).
+
+# 입력 axis
+#  surface     : 조회 지점 (관리자 목록 / 회원 상세 탭)
+#  permission  : 운영자가 가진 권한 (view 만 / manage 까지)
+#  search_field: 검색 대상 6갈래
+#  member_scope: 회원 한정(user_uuid) 으로 들어왔는가
+#  board_state : 원글이 속한 게시판 상태
+axes:
+  surface: [admin_list, member_detail_tab]
+  permission: [view, manage]
+  search_field: [all, post_title, post_content, board_name, member, author_name]
+  member_scope: [true, false]
+  board_state: [alive, deleted]
+
+# 의미 없는 조합 컷:
+#  - 회원 상세 탭은 요약만 내므로 검색 갈래가 없다
+#  - 회원 상세 탭은 언제나 그 회원 한정이라 member_scope=false 가 성립하지 않는다
+exclusions:
+  - { surface: member_detail_tab, search_field: post_title, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, search_field: post_content, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, search_field: board_name, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, search_field: member, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, search_field: author_name, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, member_scope: false, reason: "탭 자체가 그 회원 한정" }
+
+effects:
+  # 백엔드 — 목록·검색·필터
+  - admin_scrap_index_requires_view_permission
+  - admin_scrap_index_lists_all_members
+  - admin_scrap_index_filters_by_user
+  - admin_scrap_index_filters_by_user_uuid
+  - admin_scrap_index_unknown_uuid_returns_empty
+  - admin_scrap_index_filters_by_board
+  - admin_scrap_index_filters_by_date_range
+  - admin_scrap_index_sort_order_asc
+  - admin_scrap_index_rejects_per_page_over_limit
+  - admin_scrap_search_all
+  - admin_scrap_search_post_title
+  - admin_scrap_search_post_content
+  - admin_scrap_search_board_name
+  - admin_scrap_search_member
+  - admin_scrap_search_author_name
+  - admin_scrap_row_exposes_deleted_post_title_and_status
+  - admin_scrap_row_exposes_board_flags
+  - admin_scrap_index_carries_board_options_meta
+  - admin_scrap_index_server_error_returns_500
+  # 백엔드 — 삭제
+  - admin_scrap_destroy_requires_manage_permission
+  - admin_scrap_destroy_removes_and_decrements_count
+  - admin_scrap_destroy_missing_returns_404
+  - admin_scrap_destroy_fires_after_toggle_with_owner_id
+  - admin_scrap_destroy_logs_actor
+  - admin_scrap_bulk_destroy_returns_count
+  - admin_scrap_bulk_destroy_rejects_unknown_ids
+  - admin_scrap_bulk_destroy_requires_manage_permission
+  # 백엔드 — 회원 상세 주입과 권한·메뉴 선언
+  - admin_user_detail_includes_scrap_summary
+  # K2 실측(2026-10-06) — 스크랩 조회 권한 없는 관리자에게 회원 상세 요약이 실려 탭 링크가 403 으로 끝났다
+  - admin_user_detail_omits_scrap_summary_without_view_permission
+  - profile_endpoint_omits_scrap_summary
+  - module_declares_scrap_permissions_and_menu
+  # 레이아웃 — 관리자 목록
+  - admin_list_datasource_passes_all_filters
+  # K2 실측(2026-10-06) — 스크랩 조회만 가진 매니저는 게시판 목록 API 가 403 이라 게시판 셀렉트가 비었다
+  - admin_list_board_select_source_is_response_meta
+  - admin_list_board_select_iterates_response_meta
+  - admin_list_requires_view_permission
+  - admin_list_route_bound_to_view_permission
+  - admin_list_search_field_offers_six_targets
+  - admin_list_search_action_builds_filters_query
+  - admin_list_search_keeps_member_scope
+  - admin_list_search_entrypoints_share_named_action
+  - admin_list_init_restores_search_from_query
+  - admin_list_member_banner_shows_only_when_scoped
+  - admin_list_member_banner_clear_keeps_other_filters
+  - admin_list_selectable_requires_manage
+  - admin_list_grid_selection_scoped_to_page
+  - admin_list_grid_columns_fixed_six
+  - admin_list_selection_lifts_to_global
+  - admin_list_page_change_clears_selection
+  - admin_list_sort_change_clears_selection
+  - admin_list_row_actions_three_branches
+  # K2 실측(2026-10-06) — 게시판이 삭제된 행의 「게시글 보기」가 /admin/board//post/N 404 로 갔다
+  - admin_list_go_to_post_disabled_without_board
+  - admin_list_marks_deleted_board_and_post
+  - admin_list_bulk_button_requires_manage_and_selection
+  - admin_list_single_delete_removes_id_from_selection
+  - admin_list_bulk_delete_sends_ids_and_clears_selection
+  - admin_list_bulk_failure_opens_error_modal
+  # 레이아웃 — 회원 상세 탭
+  - member_tab_targets_admin_user_detail
+  - member_tab_injects_button_and_body_separately
+  - member_tab_button_and_body_share_one_id
+  - member_tab_hidden_without_admin_payload
+  - member_tab_label_uses_module_lang_key
+  - member_tab_shows_count_and_latest_only
+  - member_tab_link_hidden_when_empty
+  - member_tab_link_carries_user_uuid
+
+  # 목록 칸 표기 (제보 2026-09-16) — 서버가 두 필드를 다 내므로 «화면이 어느 쪽을 골랐나» 가 축이다
+  - admin_list_shows_absolute_timestamp_with_seconds
+  - admin_list_member_cell_opens_context_menu
+  - admin_list_member_menu_search_scopes_list
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostScrapTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-scraps-index.test.tsx
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-user-scraps-tab.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-scraps-index.spec.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-admin-member-cell-and-timestamp.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

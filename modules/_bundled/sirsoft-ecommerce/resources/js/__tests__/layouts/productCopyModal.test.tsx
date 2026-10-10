@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 상품 복사 모달 레이아웃 검증 테스트
  *
@@ -13,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 // 레이아웃 JSON 임포트
 import productListCopyModal from '../../../layouts/admin/partials/admin_ecommerce_product_list/_modal_copy_product.json';
 import productFormCopyModal from '../../../layouts/admin/partials/admin_ecommerce_product_form/_modal_copy_product.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 재귀적으로 JSON 트리에서 특정 조건의 노드를 찾는 유틸리티 */
 function findNodes(node: any, predicate: (n: any) => boolean, results: any[] = []): any[] {
@@ -64,7 +66,7 @@ describe('상품 복사 모달 — 체크박스 이벤트 바인딩 검증', () 
                 expect(checkboxNodes.length).toBe(11);
 
                 for (const checkbox of checkboxNodes) {
-                    const changeActions = checkbox.actions.filter((a: any) => a.type === 'change');
+                    const changeActions = actionsOf(checkbox).filter((a: any) => a.type === 'change');
                     expect(changeActions.length).toBeGreaterThanOrEqual(1);
 
                     for (const action of changeActions) {
@@ -85,7 +87,7 @@ describe('상품 복사 모달 — 체크박스 이벤트 바인딩 검증', () 
                 );
 
                 for (const checkbox of checkboxNodes) {
-                    const changeActions = checkbox.actions.filter((a: any) => a.type === 'change');
+                    const changeActions = actionsOf(checkbox).filter((a: any) => a.type === 'change');
                     for (const action of changeActions) {
                         expect(action.params.target).toBe('$parent._local');
                     }

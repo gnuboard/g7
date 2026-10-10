@@ -1,0 +1,35 @@
+<!-- 개인정보처리방침 모달 조각 — 약관 모달과 짜임이 같고 싣는 문서만 다르다(privacyContent). 데이터소스는 조각을 품는 화면 소유. -->
+<partial description="개인정보처리방침 모달" editor_label="$t:user.modal_label.auth.privacyModal">
+  <modal data-type="composite" data-ref="privacyModal" title="$t:policy.privacy.title" size="lg" class="overflow-hidden">
+    <!-- 내부 레이아웃 (flex column, Body 스크롤 비활성화) -->
+    <div class="flex flex-col">
+      <!-- 로딩 상태 -->
+      <div data-if="{{privacyContent?.loading}}" class="flex justify-center items-center py-12">
+        <div class="w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin"/>
+      </div>
+      <!-- 발행일 (고정) -->
+      <div data-if="{{!privacyContent?.loading &amp;&amp; privacyContent?.data?.published_at}}" class="flex-shrink-0 flex items-center gap-2 mb-3">
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:policy.published_at: {{privacyContent?.data?.published_at | date}}</span>
+      </div>
+      <!-- 개인정보처리방침 내용 (스크롤) -->
+      <div data-if="{{!privacyContent?.loading &amp;&amp; privacyContent?.data}}" class="flex-1 overflow-y-auto min-h-0 max-h-96">
+        <extension-point name="html_content" data-ref="privacy_html_content" content="{{privacyContent?.data?.content ?? ''}}" isHtml="{{(privacyContent?.data?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300">
+          <default>
+            <html-content data-type="composite" content="{{privacyContent?.data?.content ?? ''}}" isHtml="{{(privacyContent?.data?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
+          </default>
+        </extension-point>
+      </div>
+      <!-- 내용 없음 -->
+      <div data-if="{{!privacyContent?.loading &amp;&amp; !privacyContent?.data}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:policy.no_content</div>
+      <!-- 푸터 버튼 (고정) -->
+      <div class="flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.close
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

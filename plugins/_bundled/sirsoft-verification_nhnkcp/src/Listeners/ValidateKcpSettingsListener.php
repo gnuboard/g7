@@ -25,6 +25,19 @@ class ValidateKcpSettingsListener implements HookListenerInterface
     private const IDENTIFIER = 'sirsoft-verification_nhnkcp';
 
     /**
+     * 검증 오류 문구에 언어별 항목 이름을 달 설정 필드(설정 스키마 전 항목).
+     *
+     * 이름은 `messages.settings.{field}_attribute` 번역에서 읽는다 — ko/en 은 플러그인 lang,
+     * 그 밖의 언어(ja 등)는 언어팩이 채운다.
+     *
+     * @var array<int, string>
+     */
+    private const SETTINGS_FIELDS = [
+        'is_test_mode', 'test_site_cd', 'test_enc_key', 'live_site_cd', 'live_enc_key',
+        'web_siteid', 'duplicate_field', 'duplicate_block_enabled',
+    ];
+
+    /**
      * 구독 훅 메타데이터.
      *
      * @return array<string, array<string, mixed>>
@@ -51,6 +64,7 @@ class ValidateKcpSettingsListener implements HookListenerInterface
      * 인터페이스 표준 진입점 — getSubscribedHooks 가 method='addLiveModeRules' 를 명시하므로 미사용.
      *
      * @param  mixed  ...$args  사용 안 함
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -71,6 +85,13 @@ class ValidateKcpSettingsListener implements HookListenerInterface
             return $rules;
         }
 
+        // 저장 검증이 확정된 이 시점(HTTP 요청 처리 중)에 현재 로케일로 항목 이름을 등록한다.
+        // 라이브 모드 여부와 상관없이 모든 설정 항목에 단다 — 스키마 label 은 ko/en 만 있어, 등록하지 않으면
+        // ja 화면의 형식 오류(웹사이트 ID 길이 등)가 기본 언어(ko) 항목 이름으로 나간다.
+        // 요청 처리 시점에는 플러그인 lang 네임스페이스와 언어팩이 모두 준비돼 있어 폴백 없이 정확한
+        // 로케일 이름이 잡힌다.
+        $this->registerSettingsAttributeLabels();
+
         // is_test_mode 가 명시적으로 false 일 때만 라이브 모드로 간주한다.
         // 입력값은 코어 UpdatePluginSettingsRequest 가 본 필터의 3번째 인자로 넘겨준다 —
         // "현재 입력한 모드에 따라 필수 항목이 달라지는" 조건부 규칙을 만들기 위한 값이며,
@@ -84,11 +105,6 @@ class ValidateKcpSettingsListener implements HookListenerInterface
         if ($isTestMode !== false) {
             return $rules;
         }
-
-        // 라이브 모드 검증이 확정된 이 시점(HTTP 요청 처리 중)에 현재 로케일로 항목 라벨을
-        // 등록한다. 요청 처리 시점에는 플러그인 lang 네임스페이스가 준비돼 있어 폴백 없이
-        // 정확한 로케일 라벨이 잡힌다.
-        $this->registerLiveCredentialAttributeLabels();
 
         foreach (['live_site_cd', 'live_enc_key'] as $field) {
             $fieldRules = (array) ($rules[$field] ?? []);
@@ -145,13 +161,16 @@ class ValidateKcpSettingsListener implements HookListenerInterface
     }
 
     /**
-     * 라이브 자격증명 필드의 검증 에러 메시지 항목 라벨을 현재 요청 로케일로 등록한다.
+     * 설정 필드의 검증 에러 메시지 항목 이름을 현재 요청 로케일로 등록한다.
      *
-     * 코어 검증 에러 메시지에서 항목 이름이 영문 키(`live site cd`)로 노출되지 않도록 전역
-     * validation.attributes 에 표시 이름을 런타임 병합한다. 코어 검증기를 수정하지 않고
+     * 코어 검증 에러 메시지에서 항목 이름이 영문 키(`live site cd`)나 다른 언어(ja 화면의 한국어
+     * 「테스트 모드」)로 노출되지 않도록 전역 validation.attributes 에 표시 이름을 런타임 병합한다.
+     * 코어 검증기는 이 번역선을 스키마 label 보다 먼저 쓴다. 코어 검증기를 수정하지 않고
      * Laravel 의 attribute 해석 메커니즘만 활용한다.
+     *
+     * @return void 반환값 없음
      */
-    private function registerLiveCredentialAttributeLabels(): void
+    private function registerSettingsAttributeLabels(): void
     {
         $locale = app()->getLocale();
 
@@ -160,9 +179,17 @@ class ValidateKcpSettingsListener implements HookListenerInterface
         // 회귀가 발생한다. 따라서 addLines 전에 validation 그룹을 먼저 로드시킨다.
         Lang::get('validation.required', [], $locale);
 
-        Lang::addLines([
-            'validation.attributes.live_site_cd' => __(self::IDENTIFIER.'::messages.settings.live_site_cd_attribute', [], $locale),
-            'validation.attributes.live_enc_key' => __(self::IDENTIFIER.'::messages.settings.live_enc_key_attribute', [], $locale),
-        ], $locale);
+        $lines = [];
+        foreach (self::SETTINGS_FIELDS as $field) {
+            $key = self::IDENTIFIER."::messages.settings.{$field}_attribute";
+            // 번역이 없는 언어에서는 키 문자열이 돌아온다 — 그때는 등록하지 않고 스키마 label 폴백에 맡긴다.
+            if (Lang::has($key, $locale)) {
+                $lines["validation.attributes.{$field}"] = __($key, [], $locale);
+            }
+        }
+
+        if ($lines !== []) {
+            Lang::addLines($lines, $locale);
+        }
     }
 }

@@ -10,6 +10,7 @@
   },
   "detail": {
     "title": "注文詳細",
+    "progress_title": "進行段階",
     "description": "注文詳細情報を確認します",
     "placeholder": "注文詳細がここに表示されます",
     "order_number": "注文番号",
@@ -114,7 +115,8 @@
       },
       "earn_status": {
         "earned": "積立完了",
-        "pending": "積立予定"
+        "pending": "積立予定",
+        "cancelled": "積立なし"
       },
       "cancel_reason": {
         "title": "キャンセル理由",
@@ -132,6 +134,7 @@
       "bulk_change_success": "{{count}}個のオプションのステータスが変更されました。",
       "bulk_change_failed": "ステータス変更に失敗しました。",
       "memo_save_success": "管理者メモが保存されました。",
+      "memo_save_failed": "管理者メモの保存に失敗しました。",
       "address_save_success": "配送先情報が保存されました。"
     },
     "batch_modal": {
@@ -148,97 +151,35 @@
       "confirm": "確認"
     },
     "claim_history": {
+      "source_claim": "元の申請 {{number}}",
       "title": "クレーム履歴",
-      "tabs": {
-        "refund": "返金履歴",
-        "return": "返品履歴",
-        "exchange": "交換履歴"
-      },
-      "view_refund_management": "返金管理で表示",
-      "view_return_management": "返品管理で表示",
-      "view_exchange_management": "交換管理で表示",
-      "empty": {
-        "refund": "返金履歴がありません",
-        "return": "返品履歴がありません",
-        "exchange": "交換履歴がありません"
-      },
-      "sort": {
-        "label": "並べ替え",
-        "request_date_desc": "申請日時 最新順"
-      },
-      "per_page": "ページあたり",
-      "items_count": "{{count}}個",
       "columns": {
-        "request_date": "申請日時",
-        "refund_number": "返金番号",
-        "return_number": "返品番号",
-        "exchange_number": "交換番号",
-        "product_info": "商品情報",
-        "amount_info": "金額情報",
         "quantity": "数量",
-        "refund_method": "返金方法",
-        "refund_status": "返金ステータス",
-        "return_status": "返品ステータス",
-        "exchange_status": "交換ステータス",
-        "refund_reason": "返金理由",
-        "return_reason": "返品理由",
-        "exchange_reason": "交換理由"
+        "claim_number": "申請番号",
+        "product": "商品",
+        "amount": "金額",
+        "status": "ステータス"
       },
-      "amount": {
-        "actual_price": "実価格",
-        "expected_refund": "返金予定額",
-        "actual_refund": "実返金額",
-        "return_request": "返品申請",
-        "original_order": "元注文",
-        "order_quantity": "注文",
-        "difference": "差額"
+      "readonly_badge": "閲覧専用",
+      "subtabs": {
+        "exchange": "交換",
+        "return": "返品",
+        "cancel": "キャンセル",
+        "refund": "返金"
       },
-      "method": {
-        "direct_refund": "直接返金",
-        "deposit": "預かり金"
+      "unavailable": "クレーム履歴を読み込めませんでした。",
+      "reject_reason": "却下理由",
+      "shipping_fee": "往復送料",
+      "total_charge": "合計請求額",
+      "original_product": "元の商品",
+      "exchange_product": "交換商品",
+      "amount_type": {
+        "charge": "追加請求",
+        "refund": "返金",
+        "none": "-"
       },
-      "status": {
-        "refund_rejected": "返金却下",
-        "refund_hold": "返金保留",
-        "refund_approved": "返金承認",
-        "refund_completed": "返金完了",
-        "return_requested": "返品受付",
-        "return_pickup_in_progress": "返品回収中",
-        "return_pickup_completed": "返品回収到着",
-        "return_completed": "返品完了",
-        "exchange_requested": "交換受付",
-        "exchange_shipping": "交換配送",
-        "exchange_completed": "交換完了"
-      },
-      "delivery": {
-        "carrier": "配送業者",
-        "tracking_number": "送り状番号",
-        "pickup_carrier": "回収配送業者",
-        "pickup_tracking": "回収送り状番号",
-        "shipping_carrier": "発送配送業者",
-        "shipping_tracking": "発送送り状番号",
-        "pickup_fee": "回収配送料",
-        "round_trip_fee": "往復配送料"
-      },
-      "reason": {
-        "customer_fault": "顧客責任",
-        "seller_fault": "販売者責任",
-        "simple_change": "単純変心",
-        "wrong_color": "色が異なる",
-        "defect": "初期不良",
-        "defective_product": "商品不良",
-        "color_change": "色変更",
-        "size_exchange": "サイズ交換"
-      },
-      "product": {
-        "original_product": "元商品",
-        "exchange_product": "交換商品",
-        "same_product": "同一商品交換",
-        "same_product_exchange": "同一商品交換",
-        "size": "サイズ",
-        "color": "色",
-        "capacity": "容量"
-      }
+      "empty": "受け付けた件がありません。",
+      "pending_refund_badge": "返金未受け取り"
     },
     "payment_info": {
       "title": "決済情報",
@@ -271,15 +212,17 @@
       "method": {
         "credit_card": "クレジットカード",
         "bank_transfer": "銀行振込",
-        "virtual_account": "バーチャルアカウント"
+        "virtual_account": "仮想口座"
       },
       "account_info": "{{bank}} {{account}} ({{holder}})",
       "cancelled_amount": "キャンセル金額",
       "refunded_amount": "返金金額",
       "refund_status": "返金ステータス",
-      "refund_points_amount": "マイレージ返金",
+      "refund_points_amount": "使用マイレージ返還",
+      "refund_mileage_credit_amount": "└ マイレージで返金(現金分)",
       "payment_currency": "決済通貨: {{currency}}",
-      "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求"
+      "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求",
+      "claim_additional_paid": "クレーム追加決済合計"
     },
     "activity_log": {
       "title": "アクティビティログ",
@@ -357,7 +300,7 @@
       },
       "cancel": {
         "title": "注文キャンセル",
-        "description": "選択した商品の注文をキャンセルします。",
+        "description": "キャンセルしてもすぐに返金されるわけではありません。返金申請書が作成され、承認・返金完了を経て注文キャンセルが確定します。",
         "validation_error_title": "入力値を確認してください",
         "pg_error_title": "PG返金失敗",
         "pg_error_description": "PG返金処理に失敗しました。エラーの内容を確認してから再試行するか、PG管理者画面から直接返金処理を行ってください。",
@@ -365,8 +308,10 @@
         "unit_price_col": "単価",
         "cancel_quantity_col": "キャンセル数量",
         "status_col": "現在のステータス",
-        "cancel_pg": "PG決済も一緒にキャンセルします",
-        "cancel_pg_description": "チェックを外すと、注文ステータスのみが変更され、PG返金は別途行う必要があります。",
+        "auto_advance_refund_label": "返金まで一度に処理",
+        "auto_advance_refund_hint": "チェックすると返金申請書を作成したあと、承認・返金完了まで自動的に進めます。口座へ送金が必要な返金手段は返金申請で止まり、運営者が承認・送金したあと[返金する]で完了します。",
+        "auto_advance_refund_no_permission": "返金実行の権限がないため、この項目をオンにできません。受け付けた返金申請書は、権限のある管理者がクレーム詳細で処理します。",
+        "auto_advance_refund_blocked_hint": "この注文の決済手段は人が送金しないと返金が完了しないため、チェックしても返金申請の状態で止まります。承認したうえで[返金する]で送金を完了してください。",
         "cancel_reason_type_label": "キャンセル理由",
         "reason_placeholder": "キャンセル理由を選択してください",
         "reason": {
@@ -388,7 +333,7 @@
         "refund_product_amount": "商品返金額",
         "refund_shipping_diff": "配送費変動",
         "refund_discount_diff": "割引調整",
-        "refund_points_amount": "マイレージ返金",
+        "refund_points_amount": "使用マイレージ返還",
         "refund_total": "最終返金予定額",
         "remaining_pg_balance": "返金後のPG残高",
         "remaining_points_balance": "返金後のマイレージ残高",
@@ -419,13 +364,19 @@
         "close_btn": "閉じる",
         "estimate_failed": "返金予想金額の計算に失敗しました。",
         "cancel_success": "注文がキャンセルされました。",
+        "refund_request_created": "返金申請書が受け付けられました。承認・返金完了を経て注文キャンセルが確定します。",
+        "refund_request_created_no_claim_access": "返金申請書 {{number}} が受け付けられました。クレーム権限のある運営者が承認・返金完了を処理すると注文キャンセルが確定します。",
+        "refund_request_auto_stopped": "返金申請書を受け付けました。自動返金できない決済手段のため自動処理は止まりました — 申請書で承認したあと[返金する]で返金完了を処理すると注文キャンセルが確定します。",
         "cancel_failed": "注文のキャンセルに失敗しました。",
         "refund_bank_label": "返金口座",
         "refund_bank_select": "銀行を選択",
         "refund_bank_account_placeholder": "口座番号 (ハイフンなしで入力)",
         "refund_bank_holder_placeholder": "口座名義人",
         "refund_bank_required_hint": "入金が完了した仮想口座注文は返金口座が必要です。",
-        "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。"
+        "refund_bank_empty_hint": "返金口座に選べる銀行が登録されていません。環境設定 > 注文設定の[銀行管理]で先に登録してください。",
+        "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。",
+        "partial_unsupported": "この注文の決済手段は全額キャンセルのみ可能です。一部の商品・数量だけをキャンセルすると決済代行会社が拒否します。",
+        "partial_unsupported_vbank_awaiting": "入金前の仮想口座注文は全額キャンセルのみ可能です。発行済みの仮想口座金額は変更できないため、一部だけキャンセルするとお客様が入金しても確認されません。"
       },
       "reset_guest_password": {
         "title": "非会員閲覧パスワード再設定",
@@ -453,8 +404,10 @@
         "cancel": "キャンセル",
         "confirm": "入金確認",
         "confirm_success": "入金が確認され、決済完了処理されました。",
+        "confirm_failed": "入金確認に失敗しました。",
         "mark_order_complete": "注文を決済完了として処理",
-        "mark_order_complete_hint": "チェックすると入金記録とともに注文ステータスを決済完了に変更します(ポイント積立·在庫減少·通知送信含む)。チェックしないと入金内訳のみ記録します。"
+        "mark_order_complete_hint": "チェックすると入金記録とともに注文ステータスを決済完了に変更します(ポイント積立·在庫減少·通知送信含む)。チェックしないと入金内訳のみ記録します。",
+        "past_payment_hint": "この注文はすでに{{status}}の段階のため、入金内訳と決済金額のみ記録し、注文ステータスは変更しません。"
       }
     },
     "cash_receipt": {
@@ -479,6 +432,7 @@
       "issue": "現金領収書発行",
       "cancel": "キャンセル",
       "cancel_issue": "発行取消",
+      "cancel_confirm": "この現金領収証の発行を取り消します。決済会社で取り消され、元に戻せません。続行しますか?",
       "reissue": "手動再発行",
       "view_receipt": "領収書を表示",
       "history": "発行履歴 ({{count}}件)",
@@ -488,6 +442,15 @@
       "cancel_failed": "現金領収書の発行キャンセルに失敗しました。",
       "reissue_failed": "再発行失敗",
       "reissue_success": "現金領収書が再発行されました。"
+    },
+    "deposit_after_cancel": {
+      "warning": "キャンセル済み注文の仮想口座に{{amount}}が入金されました。自動では返金されないため、お客様に返金してください。"
+    },
+    "vbank_close_failed": {
+      "warning": "入金前にキャンセルしましたが、決済代行会社で仮想口座を閉じられませんでした。お客様が入金しないよう、決済代行会社の管理画面で仮想口座を直接閉じてください。"
+    },
+    "tax_invoice": {
+      "needs_review": "この注文にはキャンセルが発生していますが、発行済みの税金計算書がそのまま残っています。税金計算書の取消・修正発行は自動処理されないため、国税庁ホームタックスで直接処理してください。"
     }
   },
   "preset": {
@@ -529,6 +492,7 @@
   },
   "filter": {
     "date": "日時",
+    "date_type_select": "日付の基準",
     "date_type": {
       "order_date": "注文日",
       "payment_date": "決済日",
@@ -536,6 +500,7 @@
     },
     "start_date": "開始日",
     "end_date": "終了日",
+    "site_day_notice": "ダッシュボードの「本日」バッジと同じサイトのタイムゾーン（{{timezone}}）の1日で絞り込んだ一覧です。日付・期間を変更して検索すると、ご自身のタイムゾーン基準に戻ります。",
     "date_quick": {
       "today": "本日",
       "week": "1週間",
@@ -611,6 +576,7 @@
     "category": "商品カテゴリー",
     "category_level": "カテゴリー{{level}}",
     "price": "購入金額",
+    "currency_select": "通貨",
     "min_price": "最小金額",
     "max_price": "最大金額",
     "currency": "ウォン",
@@ -644,6 +610,20 @@
       "all": "すべて",
       "member": "会員",
       "guest": "非会員"
+    },
+    "claim": {
+      "block_title": "クレーム基準",
+      "block_hint": "この注文に受け付けられたクレームのタイプ·ステータスで注文を絞ります。タイプ別ステータスを指定しない場合、タイプに関わらず絞ります。ただし帰責を指定するとキャンセルは除外されます — キャンセルには帰責情報がありません。",
+      "presence": "クレーム",
+      "presence_none": "クレームなし",
+      "presence_any": "クレームあり",
+      "presence_active": "進行中のみ",
+      "exchange": "交換",
+      "return": "返品",
+      "refund": "返金",
+      "cancel": "キャンセル",
+      "fault": "帰責",
+      "requested_at": "クレーム申請日"
     }
   },
   "action": {
@@ -747,6 +727,7 @@
     "shipping": "配送中",
     "delivered": "配送完了",
     "cancelled": "注文キャンセル",
+    "returned": "返品完了",
     "confirmed": "購入確定"
   },
   "datagrid": {
@@ -776,7 +757,8 @@
     "option_search": "現在の検索条件でダウンロード",
     "option_search_desc": "合計{{count}}件の注文書がダウンロードされます",
     "option_selected": "選択した注文書のみダウンロード",
-    "option_selected_desc": "{{count}}件の注文書がダウンロードされます"
+    "option_selected_desc": "{{count}}件の注文書がダウンロードされます",
+    "download_failed": "Excelファイルをダウンロードできませんでした"
   },
   "bulk": {
     "selected_count": "{{count}}件選択されています",
@@ -798,7 +780,8 @@
     "confirm_tracking_label": "運送状番号: ",
     "confirm_cancel": "キャンセル",
     "confirm_apply": "変更を適用",
-    "confirm_no_changes": "変更する項目がありません。"
+    "confirm_no_changes": "変更する項目がありません。",
+    "error": "一括処理に失敗しました。"
   },
   "column": {
     "no": "番号",
@@ -818,7 +801,8 @@
     "first_order": "初回購入",
     "action": "作業",
     "mileage_used_short": "マイレージ -{{amount}}",
-    "points_earned_short": "ポイント +{{amount}}"
+    "points_earned_short": "ポイント +{{amount}}",
+    "claim": "クレーム"
   },
   "device": {
     "mobile": "モバイル",
@@ -856,6 +840,83 @@
       "reshipping": "交換発送",
       "reshipping_completed": "交換配送完了",
       "completed": "交換完了"
+    }
+  },
+  "claim_request": {
+    "button_exchange": "交換受け取り",
+    "button_return": "返品受け取り",
+    "button_cancel_refund": "キャンセル·返金受け取り",
+    "gate_hint": "選択した商品の状態では受け取ることができません — 交換·返品は配送中·配送完了·購入確定のみ、キャンセル·返金はまだ送られていない商品のみ受け取ります。",
+    "no_permission": "交換·返品·キャンセル受け取り権限がありません。",
+    "title_exchange": "交換受け取り（顧客の代わりに）",
+    "title_return": "返品受け取り（顧客の代わりに）",
+    "editor_label": "顧客に代わる交換・返品受付ウィンドウ",
+    "description": "顧客の代わりに受け取ります。申請期間·申請可能ステータス設定は適用されません。",
+    "same_option": "同じオプションで交換",
+    "sold_out": "品切れ",
+    "reason": "理由",
+    "reason_placeholder": "理由を選択",
+    "seller_fault": "販売者責任",
+    "reason_detail_placeholder": "詳細な理由（相談内容など）",
+    "charge_method": "請求方法",
+    "charge_method_auto": "自動（請求額がある場合に選択）",
+    "redelivery_address": "再発送先",
+    "recipient_name": "受け取り人",
+    "phone": "連絡先",
+    "zipcode": "郵便番号",
+    "address1": "住所",
+    "address2": "詳細な住所",
+    "city": "都市",
+    "state": "州/道",
+    "shipping_fee": "配送料",
+    "total_charge": "請求額 {{amount}}",
+    "refund_estimate": "返金予定 {{amount}}",
+    "preview_needs_reason": "理由を選択すると配送料と請求額が計算されます。",
+    "approve": "受け取りと共に承認",
+    "approve_no_permission": "クレームステータス変更の権限がないため、受付のみ行います。承認は権限のある管理者がクレーム詳細で処理します。",
+    "customer_notice": "顧客に「販売者がお客様の代わりに受け取りました」通知が届き、顧客はこの申請を取り下げ·修正することができません。",
+    "submit": "受け取り",
+    "success": "顧客の代わりに受け取りました。",
+    "error": "受け取ることができませんでした。",
+    "reason_required": "理由を選択してください。",
+    "preview_error": "請求額を計算できませんでした。",
+    "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。"
+  },
+  "manual_paid": {
+    "title": "決済処理項目",
+    "description": "選択した注文のうち{{count}}件は未決済またはキャンセル済みです。一緒に処理する項目を選んでください。",
+    "description_single": "この注文は未決済またはキャンセル済みです。一緒に処理する項目を選んでください。",
+    "loading": "決済処理項目を確認しています…",
+    "preview_error": "決済処理項目を読み込めませんでした。閉じてもう一度お試しください。",
+    "stock_label": "在庫を差し引く（{{count}}件）",
+    "stock_label_single": "在庫を差し引く（商品{{count}}点）",
+    "stock_hint": "注文数量分の在庫を減らします。",
+    "stock_off_warning": "在庫を差し引かない場合、後でこの注文をキャンセルしても在庫は戻りません。",
+    "mileage_label": "使用マイレージを差し引く（{{count}}件、{{amount}}）",
+    "mileage_label_single": "使用マイレージを差し引く（{{amount}}）",
+    "mileage_hint": "この注文で使ったマイレージを会員残高から差し引きます。キャンセル注文を復活させる場合、キャンセル時に戻したマイレージを再度差し引きます。",
+    "mileage_short_warning": "残高不足のため変更できない注文：{{order_numbers}}",
+    "mileage_short_warning_single": "会員のマイレージ残高（{{balance}}）が不足しているため変更できません。差し引きをオフにすると変更できます。",
+    "mileage_off_warning": "マイレージを差し引かない場合、後の返金でマイレージは戻りません。",
+    "record_label": "決済金額を記録（{{count}}件、{{amount}}）",
+    "record_label_single": "決済金額を記録（{{amount}}）",
+    "record_hint": "決済予定金額を受領済みとして記録します。PG管理画面で承認を確認した場合のみオンにしてください。PG取引番号は記録されません。",
+    "record_off_warning": "記録しない場合、決済金額は0のままとなり、後のキャンセル・返品で現金返金できる金額は0になります。",
+    "auto_sync_note": "入金記録済みの{{count}}件は、記録された入金額で決済金額を合わせます。",
+    "auto_sync_note_single": "記録済みの入金額{{amount}}で決済金額を合わせます。",
+    "never_paid_note": "決済記録なしでキャンセルされた注文{{count}}件は、「決済金額を記録」をオンにすると復活した注文合計を受領済みとして記録します。オフの場合は未収金として残ります。",
+    "never_paid_note_single": "決済記録なしでキャンセルされた注文です。「決済金額を記録」をオンにすると復活した合計を受領済みとして記録し、オフの場合は未収金として残ります。",
+    "restoration_label": "キャンセル商品の復活・注文合計の再計算（{{count}}件、商品{{quantity}}点）",
+    "restoration_label_single": "キャンセルされた商品{{quantity}}点を復活させ、注文合計を{{before}}→{{after}}に再計算します",
+    "restoration_hint": "キャンセルで0になった注文金額・送料・割引とクーポン使用記録を、最初の注文条件に戻します。キャンセル・返金の履歴はそのまま残ります。",
+    "restoration_hint_partial": "復活させる商品を含めて注文金額・送料・割引を再計算します。キャンセル・返金履歴はそのまま残ります。",
+    "restoration_coupon_conflict": "この注文で使ったクーポンが他の注文で使用済みのため復活できない注文：{{order_numbers}}",
+    "restoration_coupon_conflict_single": "この注文で使ったクーポン（{{coupons}}）が他の注文で使用済みのため復活できません。",
+    "restoration_legacy_snapshot": "{{count}}件は最初の注文のクーポン情報が残っていないため、現在のクーポン情報で再計算します。合計が最初の注文と異なる場合があります。",
+    "restoration_legacy_snapshot_single": "最初の注文のクーポン情報が残っていないため、現在のクーポン情報で再計算します。合計が最初の注文と異なる場合があります。",
+    "warning": {
+      "pg_already_cancelled": "カードなどのPG決済が既にキャンセルされた注文です。以後の返金は口座返金またはマイレージで処理する必要があります。",
+      "pg_already_cancelled_orders": "カードなどのPG決済が既にキャンセルされた注文です（{{order_numbers}}）。以後の返金は口座返金またはマイレージで処理する必要があります。"
     }
   }
 }

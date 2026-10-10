@@ -1,0 +1,66 @@
+feature: 방문자 동의 런타임 — 브라우저의 동의 스냅샷 (#639, 공개 gnuboard/g7#129 요청 7가지)
+
+description: |
+  코어가 `/api/consent` 를 들고 `_global.consent` 를 채우며, 다른 확장은 그 상태·`G7Core.consent`·`consent:changed`
+  로 읽는다. #129 요청 7가지(스냅샷 조회·refresh·변경 구독·인증 변경 무효화·stale 응답 차단·최소 스키마·
+  contractVersion)를 런타임 인스턴스로 잡는다.
+
+  엔진 회귀 사례 대조에서 나온 방어(2026-10-05):
+    - 비인증이면 토큰 없이 조회 — 폐기 토큰 잔류 방문자가 공개 페이지에서 로그인 화면으로 튕기지 않게.
+    - `_global` 사본 전체를 되쓰는 쓰기가 consent 를 옛 값으로 되돌리면 다음 틱에 되싣는다.
+    - 제공자 없는(none) 사이트는 로그인해도 unknown 으로 비우지 않는다(재렌더 절감).
+
+axes:
+  surface: [runtime, handler, facade]
+  change: [boot, refresh, login, same_auth, stale_global]
+  response: [ok, error, none, same]
+
+exclusions:
+  - { surface: handler, change: boot, reason: "핸들러는 부팅 경로가 아니다" }
+  - { surface: handler, change: login, reason: "인증 경계는 런타임 행이 덮는다" }
+  - { surface: handler, change: same_auth, reason: "인증 경계는 런타임 행이 덮는다" }
+  - { surface: handler, change: stale_global, reason: "전역 감시는 런타임 행이 덮는다" }
+  - { surface: facade, change: boot, reason: "파사드는 런타임 위임 — refresh 행이 덮는다" }
+  - { surface: facade, change: login, reason: "파사드는 런타임 위임 — 런타임 행이 덮는다" }
+  - { surface: facade, change: same_auth, reason: "파사드는 런타임 위임" }
+  - { surface: facade, change: stale_global, reason: "파사드는 런타임 위임" }
+  - { surface: handler, response: error, reason: "오류 처리는 런타임 행이 덮는다" }
+  - { surface: handler, response: same, reason: "값 비교는 런타임 행이 덮는다" }
+  - { surface: facade, response: error, reason: "오류 처리는 런타임 행이 덮는다" }
+  - { surface: facade, response: none, reason: "none 처리는 런타임 행이 덮는다" }
+  - { surface: facade, response: same, reason: "값 비교는 런타임 행이 덮는다" }
+  - { change: same_auth, response: error, reason: "재발행 무시는 응답과 무관" }
+  - { change: same_auth, response: none, reason: "재발행 무시는 응답과 무관" }
+  - { change: same_auth, response: same, reason: "재발행 무시는 응답과 무관" }
+  - { change: stale_global, response: error, reason: "되싣기는 응답과 무관" }
+  - { change: stale_global, response: none, reason: "되싣기는 응답과 무관" }
+  - { change: stale_global, response: same, reason: "되싣기는 응답과 무관" }
+  - { change: boot, response: same, reason: "첫 조회에는 비교할 이전 값이 없다" }
+  - { change: login, response: error, reason: "로그인 뒤 실패는 boot/error 와 같은 경로" }
+  - { change: login, response: same, reason: "로그인은 세대를 바꿔 같은 값이어도 다시 쓴다" }
+  - { change: refresh, response: none, reason: "none 은 boot·login 행이 덮는다" }
+  - { change: refresh, response: error, reason: "오류는 boot 행이 덮는다" }
+
+effects:
+  - runtime_loads_snapshot_into_global_and_notifies
+  - runtime_fails_closed_on_bad_response
+  - runtime_shares_inflight_request
+  - runtime_drops_stale_response_after_auth_change
+  - runtime_resets_to_unknown_and_refetches_on_auth_change
+  - runtime_ignores_same_auth_reemission
+  - runtime_notifies_only_on_change
+  - runtime_keeps_none_when_no_provider
+  - runtime_survives_listener_errors
+  - runtime_snapshot_exposes_no_identifiers
+  - runtime_subscribes_auth_once
+  - runtime_restores_global_after_stale_overwrite
+  - runtime_guest_lookup_sends_no_token
+  - refresh_consent_handler_refreshes_runtime_once
+  - consent_facade_is_frozen_and_subscribe_returns_unsubscribe
+
+test_files:
+  - resources/js/core/consent/__tests__/ConsentRuntime.test.ts
+  - resources/js/core/consent/__tests__/defaultDeps.test.ts
+  - resources/js/core/consent/__tests__/consentFacadeAndHandler.test.ts
+
+# E2E: gdpr tests/Playwright/specs/public/consent-runtime-login-boundary.spec.ts (WP4) 가 브라우저 표면을 덮는다.

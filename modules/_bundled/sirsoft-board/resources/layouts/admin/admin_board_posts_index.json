@@ -1,35 +1,12 @@
 {
+    "comment": "게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다",
     "version": "1.0.0",
     "layout_name": "admin_board_posts_index",
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title",
         "description": "{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
     },
-    "state": {
-        "searchField": "all",
-        "searchQuery": ""
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "posts"
-        ]
-    },
-    "init_actions": [
-        {
-            "handler": "setState",
-            "params": {
-                "target": "global",
-                "_local": {
-                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
-                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
-                }
-            }
-        }
-    ],
     "data_sources": [
         {
             "id": "posts",
@@ -75,6 +52,31 @@
                         "message": "{{error.message}}"
                     }
                 }
+            },
+            "comment": "목록 본체 — 검색은 `filters[0][*]` 세 칸(대상 필드·값·연산자)으로 보낸다. 422 만 토스트로 흘리고 403·500 은 화면 자리에 오류 페이지를 세운다 — 앞은 조건이 틀린 것이고 뒤는 화면을 세울 수 없는 것이다"
+        }
+    ],
+    "initLocal": {
+        "searchField": "all",
+        "searchQuery": ""
+    },
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "posts"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
+                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
+                }
             }
         }
     ],
@@ -84,15 +86,15 @@
                 "id": "board_posts_content",
                 "type": "basic",
                 "name": "Div",
-                "props": {
-                    "className": "admin-page-content-fluid"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
                             "className": "admin-page-content-fluid-compact"
                         }
                     }
+                },
+                "props": {
+                    "className": "admin-page-content-fluid"
                 },
                 "children": [
                     {
@@ -143,9 +145,6 @@
                                         "id": "refresh_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "btn-icon"
-                                        },
                                         "actions": [
                                             {
                                                 "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75).",
@@ -158,6 +157,12 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "aria-label": "$t:common.refresh",
+                                            "title": "$t:common.refresh",
+                                            "className": "btn-icon"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -173,12 +178,9 @@
                                         "id": "create_post_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "disabled": "{{posts?.data?.abilities?.can_write !== true}}",
-                                            "className": "flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "새 글 작성. 작성을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -188,6 +190,10 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "disabled": "{{posts?.data?.abilities?.can_write !== true}}",
+                                            "className": "flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -226,26 +232,8 @@
                                 "children": [
                                     {
                                         "id": "search_field_select",
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Select",
-                                        "props": {
-                                            "value": "{{_local.searchField || 'all'}}",
-                                            "className": "select-composite w-32",
-                                            "options": [
-                                                {
-                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.all",
-                                                    "value": "all"
-                                                },
-                                                {
-                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.title_content",
-                                                    "value": "title_content"
-                                                },
-                                                {
-                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.author",
-                                                    "value": "author"
-                                                }
-                                            ]
-                                        },
                                         "actions": [
                                             {
                                                 "type": "change",
@@ -254,18 +242,38 @@
                                                     "searchField": "{{$event.target.value}}"
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "value": "{{_local.searchField || 'all'}}",
+                                            "className": "select-composite w-32",
+                                            "options": [
+                                                {
+                                                    "value": "all",
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.all"
+                                                },
+                                                {
+                                                    "value": "title_content",
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.title_content"
+                                                },
+                                                {
+                                                    "value": "title",
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.title"
+                                                },
+                                                {
+                                                    "value": "content",
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.content"
+                                                },
+                                                {
+                                                    "value": "author",
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.author"
+                                                }
+                                            ]
+                                        }
                                     },
                                     {
                                         "id": "search_input",
                                         "type": "basic",
                                         "name": "Input",
-                                        "props": {
-                                            "type": "text",
-                                            "placeholder": "$t:sirsoft-board.admin.posts.search_placeholder",
-                                            "value": "{{_local.searchQuery || ''}}",
-                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm mr-4"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "change",
@@ -275,13 +283,15 @@
                                                 }
                                             },
                                             {
+                                                "comment": "검색 실행 — 검색 버튼과 동일하게 page 는 1페이지로 되돌린다. 되돌리지 않으면 5페이지를 보던 중 검색 시 결과의 5페이지로 가 빈 화면이 열린다 (#75).",
                                                 "type": "keypress",
                                                 "key": "Enter",
-                                                "comment": "검색 실행 — 검색 버튼과 동일하게 page 는 1페이지로 되돌린다. 되돌리지 않으면 5페이지를 보던 중 검색 시 결과의 5페이지로 가 빈 화면이 열린다 (#75).",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
                                                     "mergeQuery": true,
+                                                    "replace": true,
+                                                    "transition_overlay_target": "posts_data_grid__body",
                                                     "query": {
                                                         "page": "",
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
@@ -290,17 +300,21 @@
                                                     }
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "text",
+                                            "placeholder": "$t:sirsoft-board.admin.posts.search_placeholder",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm mr-4"
+                                        }
                                     },
                                     {
                                         "id": "advanced_search_toggle",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "고급 검색을 펼치고 접는다 — 화면 표시일 뿐이라 URL 에 남기지 않는다(새로고침하면 접힌 채로 시작한다)",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -309,6 +323,9 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "className": "flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -331,19 +348,19 @@
                                 "id": "advanced_filters",
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{_global.showAdvancedSearch}}",
                                 "props": {
                                     "className": "space-y-4 mt-4"
                                 },
-                                "if": "{{_global.showAdvancedSearch}}",
                                 "children": [
                                     {
                                         "id": "category_filter_row",
                                         "type": "basic",
                                         "name": "Div",
+                                        "if": "{{posts?.data?.board?.categories && posts?.data?.board?.categories.length > 0}}",
                                         "props": {
                                             "className": "flex-center flex-wrap gap-3"
                                         },
-                                        "if": "{{posts?.data?.board?.categories && posts?.data?.board?.categories.length > 0}}",
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -355,29 +372,30 @@
                                             },
                                             {
                                                 "id": "category_filter",
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
-                                                "props": {
-                                                    "value": "{{query.category || 'all'}}",
-                                                    "className": "input min-w-[200px]",
-                                                    "options": "{{[{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))}}"
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "분류는 고르는 즉시 적용된다. 「전체」는 빈 문자열로 보내 서버가 조건 없음으로 읽게 하고, 페이지는 1 로 되돌린다. 가려지는 것은 표 본문뿐이라 필터 줄은 그대로 손에 남는다",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/board/{{route.slug}}",
                                                             "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "posts_data_grid__body",
                                                             "query": {
                                                                 "category": "{{$event.target.value === 'all' ? '' : $event.target.value}}",
                                                                 "page": 1
-                                                            },
-                                                            "replace": true,
-                                                            "transition_overlay_target": "posts_data_grid__body"
+                                                            }
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "value": "{{query.category || 'all'}}",
+                                                    "className": "input min-w-[200px]",
+                                                    "options": "{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}"
+                                                }
                                             }
                                         ]
                                     },
@@ -401,13 +419,9 @@
                                                 "id": "date_from",
                                                 "type": "basic",
                                                 "name": "Input",
-                                                "props": {
-                                                    "type": "date",
-                                                    "value": "{{query.created_at_from || ''}}",
-                                                    "className": "input min-w-[200px]"
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "시작 날짜는 고른 즉시 적용하지 않고 전역에 담아 둔다 — 끝 날짜와 짝을 이루어야 뜻이 서므로, 한쪽만 정해진 상태로 목록이 다시 읽히지 않게 검색 버튼까지 미룬다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -415,7 +429,13 @@
                                                             "dateFrom": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "date",
+                                                    "aria-label": "$t:sirsoft-board.admin.posts.filters.date_from",
+                                                    "value": "{{query.created_at_from || ''}}",
+                                                    "className": "input min-w-[200px]"
+                                                }
                                             },
                                             {
                                                 "type": "basic",
@@ -437,13 +457,9 @@
                                                 "id": "date_to",
                                                 "type": "basic",
                                                 "name": "Input",
-                                                "props": {
-                                                    "type": "date",
-                                                    "value": "{{query.created_at_to || ''}}",
-                                                    "className": "input min-w-[200px]"
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "끝 날짜 — 시작 날짜와 같은 이유로 담아만 둔다. 두 값 다 「손대지 않음(undefined)」과 「비움('')」이 구분되고, 검색 버튼이 그 차이로 기존 URL 값을 이어받을지 지울지를 가른다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -451,7 +467,13 @@
                                                             "dateTo": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "date",
+                                                    "aria-label": "$t:sirsoft-board.admin.posts.filters.date_to",
+                                                    "value": "{{query.created_at_to || ''}}",
+                                                    "className": "input min-w-[200px]"
+                                                }
                                             }
                                         ]
                                     },
@@ -475,6 +497,23 @@
                                                 "id": "status_filter",
                                                 "type": "composite",
                                                 "name": "RadioGroup",
+                                                "actions": [
+                                                    {
+                                                        "comment": "상태 필터 변경 — 카테고리 필터와 동일하게 page 를 1페이지로 되돌린다. 되돌리지 않으면 뒤쪽 페이지에서 필터를 바꿀 때 빈 화면이 열린다 (#75).",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/board/{{route.slug}}",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "posts_data_grid__body",
+                                                            "query": {
+                                                                "status": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "status_filter",
                                                     "value": "{{query.status || ''}}",
@@ -501,22 +540,7 @@
                                                             "value": "secret"
                                                         }
                                                     ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "comment": "상태 필터 변경 — 카테고리 필터와 동일하게 page 를 1페이지로 되돌린다. 되돌리지 않으면 뒤쪽 페이지에서 필터를 바꿀 때 빈 화면이 열린다 (#75).",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/board/{{route.slug}}",
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "status": "{{$event.target.value}}",
-                                                                "page": 1
-                                                            }
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             }
                                         ]
                                     }
@@ -526,9 +550,6 @@
                                 "id": "search_buttons",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "flex justify-center gap-2 mt-4"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -536,14 +557,14 @@
                                         }
                                     }
                                 },
+                                "props": {
+                                    "className": "flex justify-center gap-2 mt-4"
+                                },
                                 "children": [
                                     {
                                         "id": "reset_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
@@ -553,6 +574,7 @@
                                         },
                                         "actions": [
                                             {
+                                                "comment": "초기화 ①  손에 들고 있던 검색·필터 값을 먼저 비운다 — 아래 이동이 URL 만 털기 때문에, 이것을 빼면 화면의 입력칸에 지운 값이 남는다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -574,6 +596,9 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -586,9 +611,6 @@
                                         "id": "search_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
@@ -598,12 +620,14 @@
                                         },
                                         "actions": [
                                             {
-                                                "type": "click",
                                                 "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75).",
+                                                "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
                                                     "mergeQuery": true,
+                                                    "replace": true,
+                                                    "transition_overlay_target": "posts_data_grid__body",
                                                     "query": {
                                                         "page": "",
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
@@ -616,6 +640,9 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -636,89 +663,225 @@
                         },
                         "children": [
                             {
-                                "type": "composite",
+                                "type": "basic",
                                 "name": "Select",
+                                "actions": [
+                                    {
+                                        "comment": "정렬 — 선택값 하나에 기준과 방향이 밑줄로 붙어 있어(`created_at_desc`) 마지막 토막을 방향으로 떼고 나머지를 기준으로 되붙인다. 기준 이름 자체에 밑줄이 있어도(`view_count`) 깨지지 않는 이유가 그 «마지막 하나만» 이다",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{route.slug}}",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "posts_data_grid__body",
+                                            "query": {
+                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "name": "sort_by",
                                     "className": "w-40",
                                     "value": "{{(query.sort_by || 'created_at') + '_' + (query.sort_order || 'desc')}}",
                                     "options": [
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.sort.latest",
-                                            "value": "created_at_desc"
+                                            "value": "created_at_desc",
+                                            "label": "$t:sirsoft-board.admin.posts.sort.latest"
                                         },
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.sort.oldest",
-                                            "value": "created_at_asc"
+                                            "value": "created_at_asc",
+                                            "label": "$t:sirsoft-board.admin.posts.sort.oldest"
                                         },
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.sort.view_count_high",
-                                            "value": "view_count_desc"
+                                            "value": "view_count_desc",
+                                            "label": "$t:sirsoft-board.admin.posts.sort.view_count_high"
                                         },
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.sort.view_count_low",
-                                            "value": "view_count_asc"
+                                            "value": "view_count_asc",
+                                            "label": "$t:sirsoft-board.admin.posts.sort.view_count_low"
                                         }
                                     ]
-                                },
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Select",
                                 "actions": [
                                     {
+                                        "comment": "한 쪽에 몇 건 — 개수를 바꾸면 페이지 번호의 뜻이 달라지므로 1 로 되돌린다(50건씩 3페이지에서 15건씩으로 줄이면 3페이지의 내용이 전혀 다른 자리가 된다)",
                                         "type": "change",
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/board/{{route.slug}}",
                                             "mergeQuery": true,
-                                            "query": {
-                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                "page": 1
-                                            },
                                             "replace": true,
-                                            "transition_overlay_target": "posts_data_grid__body"
+                                            "transition_overlay_target": "posts_data_grid__body",
+                                            "query": {
+                                                "per_page": "{{$event.target.value}}",
+                                                "page": 1
+                                            }
                                         }
                                     }
-                                ]
-                            },
-                            {
-                                "type": "composite",
-                                "name": "Select",
+                                ],
                                 "props": {
                                     "name": "per_page",
                                     "className": "w-36",
                                     "value": "{{query.per_page || '15'}}",
                                     "options": [
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.per_page.15",
-                                            "value": "15"
+                                            "value": "15",
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.15"
                                         },
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.per_page.30",
-                                            "value": "30"
+                                            "value": "30",
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.30"
                                         },
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.per_page.50",
-                                            "value": "50"
+                                            "value": "50",
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.50"
                                         },
                                         {
-                                            "label": "$t:sirsoft-board.admin.posts.per_page.100",
-                                            "value": "100"
+                                            "value": "100",
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.100"
                                         }
                                     ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_actions_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bulk-actions-bar"
+                        },
+                        "children": [
+                            {
+                                "id": "selected_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body font-medium"
                                 },
-                                "actions": [
+                                "text": "$t:sirsoft-board.admin.posts.bulk.selected_count|count={{(_global.selectedIds_board_posts || []).length}}"
+                            },
+                            {
+                                "id": "bulk_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2 ml-auto"
+                                },
+                                "children": [
                                     {
-                                        "type": "change",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/board/{{route.slug}}",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "per_page": "{{$event.target.value}}",
-                                                "page": 1
+                                        "id": "bulk_delete",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "갈래를 정하고 직전 사유를 비운다(남겨 두면 다른 갈래의 문장이 그대로 이력에 실린다)",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostAction": "delete",
+                                                    "bulkPostReason": "",
+                                                    "bulkPostLoading": false
+                                                }
                                             },
-                                            "replace": true,
-                                            "transition_overlay_target": "posts_data_grid__body"
-                                        }
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_action_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "admin-post-bulk-delete",
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.bulk.delete"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_blind",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "갈래를 블라인드로 정하고 직전 사유를 비운다 — 공용 모달이 갈래에 따라 문구·사유 입력을 바꾼다",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostAction": "blind",
+                                                    "bulkPostReason": "",
+                                                    "bulkPostLoading": false
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_action_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "admin-post-bulk-blind",
+                                            "className": "px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.bulk.blind"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_restore",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "갈래를 복원으로 정하고 직전 사유를 비운다 — 블라인드 사유가 남아 복원 이력에 실리지 않게",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostAction": "restore",
+                                                    "bulkPostReason": "",
+                                                    "bulkPostLoading": false
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_action_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "admin-post-bulk-restore",
+                                            "className": "px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.bulk.restore"
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -729,8 +892,67 @@
                         "type": "composite",
                         "name": "DataGrid",
                         "blur_until_loaded": true,
+                        "actions": [
+                            {
+                                "comment": "체크한 행들을 전역에 모은다 — 위 일괄 처리 버튼들이 이 목록을 보고 잠기거나 풀린다",
+                                "type": "change",
+                                "event": "onSelectionChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds_board_posts": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "comment": "페이지 이동 — 표가 넘겨준 번호(`$args[0]`)를 URL 에 올려 두면 데이터소스가 그것을 읽어 다시 채운다. 걸어 둔 검색·필터는 `mergeQuery` 로 그대로 남는다",
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "comment": "다음 쪽으로 넘어가면 화면에 없는 글이 선택된 채로 일괄 처리에 실린다 — 먼저 비운다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds_board_posts": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{route.slug}}",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "posts_data_grid__body",
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
                         "props": {
+                            "selectedCountText": "",
                             "rowClassName": "{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}",
+                            "data": "{{posts?.data?.data}}",
+                            "sortable": true,
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 15,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
+                            "selectable": "{{posts?.data?.abilities?.can_manage === true}}",
+                            "selectionScope": "page",
+                            "selectedIds": "{{_global.selectedIds_board_posts || []}}",
+                            "idField": "id",
+                            "responsiveBreakpoint": 768,
+                            "showFirstLast": true,
+                            "columnSelectorText": "$t:common.column_selector",
+                            "emptyMessage": "$t:common.no_data",
+                            "requiredText": "$t:common.required",
                             "columns": [
                                 {
                                     "field": "number",
@@ -741,29 +963,29 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "if": "{{row.row_type === 'notice'}}",
                                             "props": {
                                                 "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
                                             },
-                                            "text": "{{row.number ?? '-'}}",
-                                            "if": "{{row.row_type === 'notice'}}"
+                                            "text": "{{row.number ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "if": "{{row.row_type === 'reply'}}",
                                             "props": {
                                                 "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                                             },
-                                            "text": "{{row.number ?? '-'}}",
-                                            "if": "{{row.row_type === 'reply'}}"
+                                            "text": "{{row.number ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "if": "{{row.row_type === 'normal'}}",
                                             "props": {
                                                 "className": "font-medium text-gray-900 dark:text-white"
                                             },
-                                            "text": "{{row.number ?? '-'}}",
-                                            "if": "{{row.row_type === 'normal'}}"
+                                            "text": "{{row.number ?? '-'}}"
                                         }
                                     ]
                                 },
@@ -786,11 +1008,11 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Icon",
+                                                    "if": "{{row.is_reply}}",
                                                     "props": {
                                                         "name": "level-up-alt",
-                                                        "className": "text-sm fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
-                                                    },
-                                                    "if": "{{row.is_reply}}"
+                                                        "className": "text-sm rotate-90 mt-1 text-gray-400 dark:text-gray-500"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -810,40 +1032,36 @@
                                                                     "comment": "카테고리 배지",
                                                                     "type": "basic",
                                                                     "name": "Span",
+                                                                    "if": "{{row.category}}",
                                                                     "props": {
                                                                         "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                                                                     },
-                                                                    "text": "{{row.category}}",
-                                                                    "if": "{{row.category}}"
+                                                                    "text": "{{row.category}}"
                                                                 },
                                                                 {
                                                                     "comment": "비밀글 아이콘",
                                                                     "type": "basic",
                                                                     "name": "Icon",
+                                                                    "if": "{{row.is_secret}}",
                                                                     "props": {
                                                                         "name": "lock",
                                                                         "className": "text-sm text-gray-500 dark:text-gray-400"
-                                                                    },
-                                                                    "if": "{{row.is_secret}}"
+                                                                    }
                                                                 },
                                                                 {
                                                                     "comment": "블라인드 배지",
                                                                     "type": "basic",
                                                                     "name": "Span",
+                                                                    "if": "{{row?.status === 'blinded'}}",
                                                                     "props": {
                                                                         "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
                                                                     },
-                                                                    "text": "$t:sirsoft-board.admin.posts.status.blinded",
-                                                                    "if": "{{row?.status === 'blinded'}}"
+                                                                    "text": "$t:sirsoft-board.admin.posts.status.blinded"
                                                                 },
                                                                 {
                                                                     "comment": "제목",
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "props": {
-                                                                        "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                                                                    },
-                                                                    "text": "{{row.title}}",
                                                                     "actions": [
                                                                         {
                                                                             "type": "click",
@@ -854,27 +1072,31 @@
                                                                                 "query": {}
                                                                             }
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "props": {
+                                                                        "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                                    },
+                                                                    "text": "{{row.title}}"
                                                                 },
                                                                 {
                                                                     "comment": "첨부파일 아이콘",
                                                                     "type": "basic",
                                                                     "name": "Icon",
+                                                                    "if": "{{row.has_attachment}}",
                                                                     "props": {
                                                                         "name": "paperclip",
                                                                         "className": "text-sm text-gray-400 dark:text-gray-500"
-                                                                    },
-                                                                    "if": "{{row.has_attachment}}"
+                                                                    }
                                                                 },
                                                                 {
                                                                     "comment": "댓글 수",
                                                                     "type": "basic",
                                                                     "name": "Span",
+                                                                    "if": "{{row?.comment_count && row?.comment_count > 0}}",
                                                                     "props": {
                                                                         "className": "text-xs text-blue-600 dark:text-blue-400 font-medium"
                                                                     },
-                                                                    "text": "[{{row?.comment_count}}]",
-                                                                    "if": "{{row?.comment_count && row?.comment_count > 0}}"
+                                                                    "text": "[{{row?.comment_count}}]"
                                                                 },
                                                                 {
                                                                     "comment": "신규 배지",
@@ -890,11 +1112,11 @@
                                                                     "comment": "삭제됨 배지",
                                                                     "type": "basic",
                                                                     "name": "Span",
+                                                                    "if": "{{row?.status === 'deleted'}}",
                                                                     "props": {
                                                                         "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100"
                                                                     },
-                                                                    "text": "$t:sirsoft-board.admin.posts.detail.status_deleted",
-                                                                    "if": "{{row?.status === 'deleted'}}"
+                                                                    "text": "$t:sirsoft-board.admin.posts.detail.status_deleted"
                                                                 }
                                                             ]
                                                         }
@@ -926,10 +1148,6 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "props": {
-                                                                "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                                                            },
-                                                            "text": "{{row.author.name}}",
                                                             "if": "{{!row.author.is_guest}}",
                                                             "actions": [
                                                                 {
@@ -939,36 +1157,40 @@
                                                                         "path": "/admin/users/{{row.author.uuid}}"
                                                                     }
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "props": {
+                                                                "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                            },
+                                                            "text": "{{row.author.name}}"
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "if": "{{row.author.is_guest}}",
                                                             "props": {
                                                                 "className": "font-medium text-gray-900 dark:text-white"
                                                             },
-                                                            "text": "{{row.author.name}}",
-                                                            "if": "{{row.author.is_guest}}"
+                                                            "text": "{{row.author.name}}"
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "if": "{{row.author.is_guest}}",
                                                             "props": {
                                                                 "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                                                             },
-                                                            "text": "$t:sirsoft-board.admin.posts.guest",
-                                                            "if": "{{row.author.is_guest}}"
+                                                            "text": "$t:sirsoft-board.admin.posts.guest"
                                                         }
                                                     ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
+                                                    "if": "{{!row.author.is_guest && row.author.email}}",
                                                     "props": {
                                                         "className": "text-tertiary"
                                                     },
-                                                    "text": "({{row.author.email}})",
-                                                    "if": "{{!row.author.is_guest && row.author.email}}"
+                                                    "text": "({{row.author.email}})"
                                                 }
                                             ]
                                         }
@@ -978,9 +1200,10 @@
                                     "field": "view_count",
                                     "header": "$t:sirsoft-board.admin.posts.columns.view_count",
                                     "sortable": false,
-                                    "if": "{{posts?.data?.board?.show_view_count}}",
+                                    "hidden": "{{posts?.data?.board?.settings?.show_view_count === false}}",
                                     "cellChildren": [
                                         {
+                                            "comment": "게시판이 「조회수 표시」를 끄면 열을 감춘다(DataGrid 열은 prop 이라 if 가 아니라 hidden 으로 감춘다 — 반응 열과 같은 이유). 값은 목록 응답의 settings.show_view_count 다",
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
@@ -991,43 +1214,29 @@
                                     ]
                                 },
                                 {
+                                    "field": "reaction_total",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.reaction_total",
+                                    "sortable": false,
+                                    "hidden": "{{!posts?.data?.board?.settings?.use_reaction}}",
+                                    "cellChildren": [
+                                        {
+                                            "comment": "게시판이 반응을 끄면 열을 감춘다(DataGrid 열은 prop 이라 if 가 아니라 hidden 으로 감춘다). 백엔드도 reaction_total 키 자체를 뺀다",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{row.reaction_total || 0}}"
+                                        }
+                                    ]
+                                },
+                                {
                                     "field": "created_at",
                                     "header": "$t:sirsoft-board.admin.posts.columns.created_at",
                                     "sortable": false
                                 }
-                            ],
-                            "data": "{{posts?.data?.data}}",
-                            "sortable": true,
-                            "pagination": true,
-                            "alwaysShowPagination": true,
-                            "pageSize": 15,
-                            "serverSidePagination": true,
-                            "serverCurrentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
-                            "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
-                            "serverHasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
-                            "selectable": false,
-                            "responsiveBreakpoint": 768,
-                            "showFirstLast": true,
-                            "columnSelectorText": "$t:common.column_selector",
-                            "emptyMessage": "$t:common.no_data",
-                            "requiredText": "$t:common.required"
-                        },
-                        "actions": [
-                            {
-                                "event": "onPageChange",
-                                "type": "change",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/board/{{route.slug}}",
-                                    "mergeQuery": true,
-                                    "query": {
-                                        "page": "{{$args[0]}}"
-                                    },
-                                    "replace": true,
-                                    "transition_overlay_target": "posts_data_grid__body"
-                                }
-                            }
-                        ]
+                            ]
+                        }
                     },
                     {
                         "id": "pagination_info",
@@ -1050,6 +1259,7 @@
     },
     "modals": [
         {
+            "comment": "글 삭제 확인 — 목록에서 고른 행을 `_global.modal_data` 로 받는다(모달은 별도 컨텍스트라 행 변수를 볼 수 없다)",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1085,15 +1295,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1105,14 +1315,10 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.deleteModalLoading}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "삭제 실행 — 지운 뒤 목록을 «같은 조건 그대로» 다시 읽는다(빈 `<query/>` 라 URL 은 그대로이고 이동만 다시 일어난다). 실패해도 토스트가 없는 자리다 — 오류 문구는 데이터소스의 공통 처리로 뜬다",
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {
@@ -1124,8 +1330,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{_global.modal_data?.id}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE"
                                             },
@@ -1156,24 +1362,557 @@
                                                     }
                                                 }
                                             ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "deleteModalLoading": false
-                                                    }
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteModalLoading": false
                                                 }
-                                            ]
+                                            }
                                         }
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.deleteModalLoading}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "일괄 처리 확인 — 제목·본문이 `_global.bulkPostAction` 으로 갈린다. 삭제는 사유가 없고(이력에 남길 문장이 없다), 블라인드·복구는 사유 칸을 둔다.\n         본인인증 정책이 켜져 있으면 확인 클릭이 428 을 받고 엔진 인터셉터가 인증 모달을 연다 — 여기서는 로딩 표시만 내린다",
+            "id": "bulk_post_action_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.bulkPostAction === 'delete' ? '$t:sirsoft-board.admin.posts.bulk.modal.delete_title' : _global.bulkPostAction === 'blind' ? '$t:sirsoft-board.admin.posts.bulk.modal.blind_title' : '$t:sirsoft-board.admin.posts.bulk.modal.restore_title'}}",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "comment": "확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가\n           ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인).",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "data-testid": "admin-post-bulk-modal",
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'delete'}}",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.delete_confirm|count={{(_global.selectedIds_board_posts || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'delete'}}",
+                            "props": {
+                                "className": "text-label-subtle mt-1"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.replies_notice"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'blind'}}",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.blind_confirm|count={{(_global.selectedIds_board_posts || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.bulkPostAction === 'restore'}}",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.restore_confirm|count={{(_global.selectedIds_board_posts || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.bulkPostAction !== 'delete'}}",
+                            "props": {
+                                "className": "mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.bulk.modal.reason_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "actions": [
+                                        {
+                                            "comment": "사유는 전역 bulkPostReason 에 모아 두었다가 확인 시 요청에 싣는다(삭제 갈래에는 입력칸 자체가 없다)",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bulkPostReason": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
+                                        "rows": 3,
+                                        "placeholder": "$t:sirsoft-board.admin.posts.bulk.modal.reason_placeholder",
+                                        "value": "{{_global.bulkPostReason || ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "modal-footer-buttons"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다.\n                 disabled(bulkPostLoading)는 다시 그려진 뒤에야 걸려 더블클릭의 두 번째 클릭이 요청을 한 번 더 보냈고,\n                 두 번째 응답이 방금 처리한 글을 「이미 블라인드된 글」로 건너뛰었다고 띄웠다 — 버튼이 첫 클릭 즉시 스스로 잠근다(lockRepeatClick)",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkPostLoading": true
+                                    }
+                                },
+                                {
+                                    "comment": "실행 ②  갈래마다 메서드와 경로가 다르다. 실패는 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
+                                    "type": "click",
+                                    "handler": "switch",
+                                    "params": {
+                                        "value": "{{_global.bulkPostAction}}"
+                                    },
+                                    "cases": {
+                                        "delete": {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_board_posts}}",
+                                                    "reason": "{{_global.bulkPostReason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "selectedIds_board_posts": [],
+                                                        "bulkPostReason": "",
+                                                        "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "posts"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{result.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_skipped_modal",
+                                                    "if": "{{(response?.data?.skipped ?? []).length > 0}}"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_error_modal"
+                                                }
+                                            ]
+                                        },
+                                        "blind": {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-blind",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_board_posts}}",
+                                                    "reason": "{{_global.bulkPostReason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "selectedIds_board_posts": [],
+                                                        "bulkPostReason": "",
+                                                        "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "posts"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{result.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_skipped_modal",
+                                                    "if": "{{(response?.data?.skipped ?? []).length > 0}}"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_error_modal"
+                                                }
+                                            ]
+                                        },
+                                        "restore": {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-restore",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_board_posts}}",
+                                                    "reason": "{{_global.bulkPostReason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "selectedIds_board_posts": [],
+                                                        "bulkPostReason": "",
+                                                        "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "posts"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{result.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_skipped_modal",
+                                                    "if": "{{(response?.data?.skipped ?? []).length > 0}}"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bulkPostLoading": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "bulk_post_error_modal"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "admin-post-bulk-confirm",
+                                "lockRepeatClick": true,
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}",
+                                "disabled": "{{_global.bulkPostLoading}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.bulkPostLoading}}",
+                                    "text": "$t:common.confirm"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.bulkPostLoading}}",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.processing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.posts.bulk.modal.delete_title"
+            }
+        },
+        {
+            "comment": "일괄 처리에서 건너뛴 글 — 서버가 글마다 제목과 번역된 사유(reason_label)를 실어 보낸다.\n         이미 지워진 글·답글이 달린 글처럼 처리하지 못한 이유가 개수 뒤에 묻히지 않게 한 줄씩 편다",
+            "id": "bulk_post_skipped_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-board.admin.posts.bulk.skipped.title",
+                "size": "md"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "data-testid": "admin-post-bulk-skipped",
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.bulk.skipped.description|count={{(_global.bulkPostSkipped ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "mt-3 divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg max-h-80 overflow-y-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "{{_global.bulkPostSkipped ?? []}}",
+                                        "item_var": "skippedPost"
+                                    },
+                                    "props": {
+                                        "data-testid": "admin-post-bulk-skipped-row",
+                                        "className": "px-3 py-2 flex items-start justify-between gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "min-w-0 text-sm text-gray-900 dark:text-white truncate"
+                                            },
+                                            "text": "#{{skippedPost.id}} {{raw:skippedPost.title ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "flex-shrink-0 text-xs text-gray-500 dark:text-gray-400 text-right"
+                                            },
+                                            "text": "{{skippedPost.reason_label ?? skippedPost.reason}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.posts.bulk.skipped.title"
+            }
+        },
+        {
+            "comment": "일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다",
+            "id": "bulk_post_error_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:common.error",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.errorMessage || $t:common.error_occurred}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
                                 }
                             ]
                         }

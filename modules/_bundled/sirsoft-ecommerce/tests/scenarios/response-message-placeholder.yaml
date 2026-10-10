@@ -1,0 +1,51 @@
+feature: 플레이스홀더를 가진 응답 메시지는 치환값을 함께 넘긴다
+
+description: |
+  `ResponseHelper::moduleSuccess()` 의 인자 순서는
+  `($module, $messageKey, $data, $statusCode, $messageParams)` 다.
+  치환값은 **다섯 번째** `$messageParams` 이고 세 번째는 데이터 페이로드다.
+
+  그래서 `:count` 같은 플레이스홀더를 가진 메시지 키를 부르면서 데이터만 넘기면
+  치환이 일어나지 않는다. 오류도 경고도 없다 — 응답 `message` 에
+  **`:count` 가 문자 그대로 실려 나갈 뿐이다**.
+
+  #599 통합실측 세션2 에서 관리자 주문상세의 상품 상태 일괄변경이 그 상태였다:
+
+    PATCH /admin/orders/{no}/options/bulk-status
+    → 200 {"message": ":count개 옵션의 상태가 변경되었습니다.", "data": {"changed_count": 2}}
+
+  관리자 화면은 자기 프론트 언어키(`{{count}}`)로 토스트를 그려 이 어긋남이 가려져 있었다.
+  그러나 응답 `message` 를 그대로 쓰는 소비자 — 외부 API 연동 · 다른 화면 · 로그 —
+  는 치환되지 않은 원문을 본다. 같은 모양이 일괄 API 5곳에 있었다.
+
+  계약: 플레이스홀더를 가진 메시지 키를 부르는 호출부는 그 치환 배열을 반드시 함께 넘긴다.
+  표에 적은 키가 실제로 플레이스홀더를 갖고 있는지도 같이 잠근다 — 키에서 플레이스홀더가
+  사라지면 이 테스트의 전제가 바뀐 것이므로 조용히 통과시키지 않는다.
+
+  **고정표에서 전수 스캔으로** (#599 세션2 계획서준수검증 결함3):
+
+  처음 이 회귀는 실측에서 찾은 **11곳을 손수 적은 표**였다. 표는 그때 있던 것만 잠근다 —
+  내일 누군가 새 일괄 API 를 추가하며 `$messageParams` 를 빼면 표에 없으니 **조용히
+  통과한다.** 결함이 재발해도 초록인 가드는 가드가 아니다.
+
+  그래서 `modules/_bundled/sirsoft-ecommerce/src/lang/ko/messages.php` 에서 `:이름` 을 가진 키를 **전수 수집**하고
+  (실측 **83개**), `src/Http/Controllers/` 전체에서 그 키의 `moduleSuccess`·`moduleError`
+  호출을 찾아 같은 규칙으로 판정하는 검사를 더했다 — 실측 **26개 호출**을 본다(표는 11개).
+
+  표는 남긴다. 표는 「이 11곳은 실제로 그 결함이었다」는 **실측 기록**이고, 스캔은
+  「앞으로 늘어나는 것까지」를 맡는다. 역할이 다르다.
+
+  스캔이 실제로 무는지 확인했다 — 표에 **없는** `ProductController` 의
+  `messages.products.bulk_updated` 호출에서 치환 배열을 빼자 위반 1건으로 잡혔다.
+
+axes:
+  contract:
+    - message_key_carries_placeholder
+    - call_site_passes_message_params
+
+effects:
+  - placeholder_present_in_ko_and_en
+  - message_params_passed_at_every_placeholder_call_site
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/ResponseMessagePlaceholderTest.php

@@ -37,19 +37,20 @@ class SortableColumnsGateContractTest extends TestCase
      */
     private const GATE_MAP = [
         'app/Repositories/ActivityLogRepository.php' => 'app/Http/Requests/ActivityLog/ActivityLogIndexRequest.php',
-        'app/Repositories/IdentityMessageDefinitionRepository.php' => 'app/Http/Requests/Admin/Identity/AdminIdentityMessageDefinitionIndexRequest.php',
         'app/Repositories/MenuRepository.php' => 'app/Http/Requests/Menu/MenuListRequest.php',
         'app/Repositories/NotificationDefinitionRepository.php' => 'app/Http/Requests/NotificationDefinition/NotificationDefinitionIndexRequest.php',
         'app/Repositories/NotificationLogRepository.php' => 'app/Http/Requests/NotificationLog/NotificationLogIndexRequest.php',
         'app/Repositories/ScheduleHistoryRepository.php' => 'app/Http/Requests/Schedule/ScheduleHistoryListRequest.php',
         'app/Repositories/ScheduleRepository.php' => 'app/Http/Requests/Schedule/ScheduleListRequest.php',
         'app/Repositories/UserRepository.php' => 'app/Http/Requests/User/UserListRequest.php',
+        'modules/_bundled/sirsoft-board/src/Services/BoardService.php' => 'modules/_bundled/sirsoft-board/src/Http/Requests/Admin/IndexBoardRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/CouponRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/CouponListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ExtraFeeTemplateRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ExtraFeeTemplateListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/OrderRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/OrderListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ProductRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ProductListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ShippingPolicyRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ShippingPolicyListRequest.php',
         'modules/_bundled/sirsoft-page/src/Repositories/PageRepository.php' => 'modules/_bundled/sirsoft-page/src/Http/Requests/PageListRequest.php',
+        'plugins/_bundled/sirsoft-ckeditor5/src/Repositories/ImageUploadRepository.php' => 'plugins/_bundled/sirsoft-ckeditor5/src/Http/Requests/IndexUploadsRequest.php',
     ];
 
     /**
@@ -219,6 +220,9 @@ class SortableColumnsGateContractTest extends TestCase
         if (preg_match('/Rule::in\(\[(.*?)\]\)/s', $rule, $ruleInMatch)) {
             preg_match_all("/'([a-zA-Z0-9_]+)'/", $ruleInMatch[1], $columnMatches);
             $columns = $columnMatches[1];
+        } elseif (preg_match('/Rule::in\(self::(\w+)\)/', $rule, $constMatch)) {
+            // 허용 어휘를 상수로 둔 요청(`Rule::in(self::SORTABLE)`) — 저장소 쪽과 같은 상수 해석을 쓴다.
+            $columns = $this->literalColumns($content, 'self::'.$constMatch[1], $constMatch[1], false);
         } elseif (preg_match('/in:([a-zA-Z0-9_,]+)/', $rule, $inMatch)) {
             $columns = explode(',', $inMatch[1]);
         }
@@ -228,6 +232,14 @@ class SortableColumnsGateContractTest extends TestCase
 
     /**
      * 모든 resolveSortSpec 호출처가 매핑에 등록되어 있는지 검사합니다.
+     *
+     * 매핑에만 남고 더 이상 호출하지 않는 항목도 함께 거절한다.
+     *
+     * @scenario contract_check=call_site_mapping
+     *
+     * @effects every_call_site_mapped, stale_gate_map_entry_rejected
+     *
+     * @return void 없음
      */
     public function test_every_call_site_is_mapped(): void
     {
@@ -258,6 +270,11 @@ class SortableColumnsGateContractTest extends TestCase
      *
      * @param  string  $repositoryPath  저장소 상대 경로 (Repository)
      * @param  string  $requestPath  저장소 상대 경로 (FormRequest)
+     * @return void 없음
+     *
+     * @scenario contract_check=whitelist_covers_gate
+     *
+     * @effects repo_whitelist_covers_gate
      */
     #[DataProvider('gatePairProvider')]
     public function test_repository_whitelist_covers_gate(string $repositoryPath, string $requestPath): void

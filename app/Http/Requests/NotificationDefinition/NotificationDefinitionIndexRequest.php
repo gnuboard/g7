@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests\NotificationDefinition;
 
+use App\Enums\NotificationDefinitionCategory;
 use App\Extension\HookManager;
+use App\Repositories\NotificationDefinitionRepository;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class NotificationDefinitionIndexRequest extends FormRequest
 {
@@ -28,11 +31,19 @@ class NotificationDefinitionIndexRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:255'],
             'extension_type' => ['nullable', 'string', 'in:core,module,plugin'],
             'extension_identifier' => ['nullable', 'string', 'max:100'],
+            // 분류 칩 — 'general'(분류 없는 일반 알림) 또는 분류 값(identity). 생략하면 전체.
+            'category' => ['nullable', 'string', Rule::in(array_merge(
+                [NotificationDefinitionRepository::CATEGORY_GENERAL],
+                array_column(NotificationDefinitionCategory::cases(), 'value')
+            ))],
             'channel' => ['nullable', 'string', 'max:50'],
             // 목록에 실을 템플릿을 한 채널로 좁힌다. `channel` 과 다르다 — `channel` 은 정의 행
             // 자체를 거르지만(그 채널을 지원하지 않는 정의는 목록에서 사라진다), 이 값은 행은
-            // 그대로 두고 각 행에 딸려오는 템플릿만 좁힌다. 화면이 한 번에 한 채널만 그리므로
-            // 나머지 채널의 제목·본문은 전송할 이유가 없다.
+            // 그대로 두고 각 행에 딸려오는 템플릿만 좁힌다. 채널을 나눠 그리는 화면은 나머지
+            // 채널의 제목·본문을 전송할 이유가 없다.
+            //
+            // `all` 은 좁히지 않고 전 채널 템플릿을 싣는다 — 켠 채널을 한 목록에 함께 그리는
+            // 화면을 위한 값이다. 응답이 커지므로 정의를 좁혀 부르는 호출자만 쓴다.
             'template_channel' => ['nullable', 'string', 'max:50'],
             'is_active' => ['nullable', 'boolean'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
@@ -40,10 +51,17 @@ class NotificationDefinitionIndexRequest extends FormRequest
             'sort_order' => ['nullable', 'string', 'in:asc,desc'],
         ];
 
-        return HookManager::applyFilters(
+        $rules = HookManager::applyFilters(
             'core.notification_definition.index_validation_rules',
             $rules
         );
+
+        // 7.0.x 본인인증 메시지 목록 검증 필터 — 본인인증 분류 목록에서는 옛 이름으로도 거른다(@deprecated 7.1.0, 8.0 제거).
+        if ($this->query('category') === 'identity') {
+            $rules = HookManager::applyFilters('core.identity.message_definition.index_validation_rules', $rules);
+        }
+
+        return $rules;
     }
 
     /**

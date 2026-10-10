@@ -1,0 +1,85 @@
+feature: claim_advance_exchange
+
+description: |
+  선교환 (#599 후속 §3-3~§3-5 · D1~D3 · D11)
+
+  선교환은 새 물건을 먼저 보내고 헌 물건은 기한 안에 받는다. 운영자가 신청서마다 켜고(D1), 기능 자체는
+  쇼핑몰 설정 `claim.advance_exchange_enabled`(기본 꺼짐)로 끈다.
+
+  조용히 갈리는 지점은 넷이다.
+
+  ① **상태 줄은 발송 단계만 쓴다**(§3-3). 승인 → 발송준비중·발송중·발송도착 → 완료. 회수 3단계는 선교환
+     전이표에 없고, 헌 물건의 회수 진행은 상품 행(회수 송장·도착 시각·미회수 표시)이 따로 말한다.
+     진행단계 카드는 발송 줄 아래 「회수」 줄을 수량으로 센다(행이 갈려도 개수 그대로 — S1-D15).
+
+  ② **완료는 두 축을 모두 본다**(§3-4). 교환품이 발송중·발송도착이고 헌 물건이 오는 중이거나 도착했어야
+     한다. 헌 물건이 출발하지 않은 행은 「미회수로 완료」(D3 — 사유 필수, 재고 불변)로만 끝낸다.
+
+  ③ **발송된 행도 쪼갠다**(D11·R10). 교환품을 이미 보낸 행을 수량으로 쪼개면 후속 주문옵션도 같은 수량으로
+     쪼개지고 금액 합이 보존된다 — 두 조각이 한 후속 옵션을 가리키면 재발송 수량이 오류 없이 어긋난다.
+
+  ④ **반송 기한은 파생값이고 알림은 한 번이다**(§3-5·D2). 기한 = 가장 이른 재발송 도착(없으면 발송) 시각 +
+     설정 일수. 기한이 지나고 헌 물건이 출발하지 않은 행이 있으면 「회수 지연」 이고, 배치가 관리자에게 한 번
+     알린다. 기한이 다시 미래가 되면 알림 기록을 비운다.
+
+  방식 전환 게이트는 화면 버튼 게이트(`exchangeModeBlockReason`)와 서비스 거절이 같은 판정이다. 헤더 도착
+  시각은 헤더가 그 단계에 이를 때만 찍힌다(S2 — 상품별 도착은 행 도착 시각).
+
+# axis 의미:
+#   exchange_mode — 교환 진행 방식.
+#   stage         — 신청서가 선 단계. review=심사(신청~보류), approved=승인, collection=일반 교환 회수 단계,
+#                   redelivery=발송 단계(발송준비중~발송도착·완료).
+axes:
+  exchange_mode: [standard, advance]
+  stage: [review, approved, collection, redelivery]
+
+exclusions:
+  - { exchange_mode: advance, stage: collection, reason: "선교환 전이표에는 회수 단계가 없다(§3-3) — 헌 물건의 회수는 상품 행이 표현한다" }
+  - { exchange_mode: standard, stage: redelivery, reason: "일반 교환의 발송 단계 계약은 claim-exchange-lifecycle·claim-item-tracking 이 소유한다 — 이 매니페스트는 선교환과 갈리는 지점만 잰다" }
+
+effects:
+  - advance_collection_lane_due_date_follows_viewer_timezone  # 회수 줄 반송 기한 날짜는 보는 사람 타임존 날짜 — 지연 배너와 같은 날(Chrome 실측 A-4)
+  # 진행 방식 전환 (D1 · §3-3)
+  - advance_mode_requires_the_setting_but_revert_does_not
+  - advance_mode_is_locked_by_row_tracking
+  - advance_mode_is_limited_to_review_stages
+  - advance_mode_revert_clears_the_due_date_and_fires_mode_hooks
+  # 전이표 · 진행 순서 · 헤더 경로
+  - advance_transition_table_skips_the_collection_stages
+  - advance_header_path_follows_the_mode_table
+  - claim_tracking_enums_expose_values_labels_and_variants
+  - exchange_status_advance_transition_table_is_pinned
+  - exchange_status_advance_progress_sequence_skips_collection
+  - advance_progress_draws_a_collection_lane_by_row_count
+  - advance_collection_lane_counts_quantities_not_rows   # 한 행이 송장마다 갈려도 수량으로 센다 (S1-D15)
+  - header_arrival_stamp_waits_for_every_living_item
+  # 완료 · 미회수 (§3-4 · D3)
+  - advance_completion_needs_both_axes
+  - advance_unreturned_completion_requires_a_reason_and_keeps_stock
+  - advance_complete_filter_can_adjust_unreturned
+  # 발송된 행 쪼개기 (D11 · R10)
+  - advance_split_of_a_redelivered_row_splits_the_successor_option
+  # 반송 기한 · 회수 지연 (§3-5 · D2)
+  - advance_due_date_uses_the_setting_and_the_earliest_base
+  - advance_overdue_needs_a_pending_row_after_the_due_date
+  - advance_overdue_batch_notifies_once_and_resets_on_recalculation
+  - advance_overdue_command_supports_dry_run
+  - collection_overdue_definition_targets_staff_roles
+  # 관리자 화면 실측 (Playwright)
+  - advance_exchange_switch_ship_split_and_complete_on_the_detail_screen
+  - advance_unreturned_completion_from_the_completion_modal
+  # 관리자 화면 구조 (Vitest — adminClaimItemTracking)
+  - advance_overdue_banner_reads_the_server_flag
+  - advance_exchange_mode_row_is_exchange_only
+  - advance_unreturned_section_follows_preview_candidates
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/AdvanceExchangeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimProgressStepsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/StaffNotificationDefinitionsSeedTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-item-tracking.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimItemTracking.test.ts
+
+validation:
+  audit_rule: test-scenario-coverage

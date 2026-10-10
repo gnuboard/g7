@@ -131,6 +131,7 @@ HTTP/1.1 200
 
 **설명** 특정 사용자(`{user}` 는 회원 uuid 로 라우트 바인딩)의 공개 프로필 페이지에 표시할 게시글 목록을 모든 게시판에 걸쳐 반환합니다. 비밀글은 제외되며, `optional.sanctum` 이 적용되어 비로그인 상태에서도 조회할 수 있습니다. `per_page`(1~100, 기본 20)와 `sort`(latest 등) 쿼리 파라미터로 페이지네이션·정렬을 제어합니다.
 
+**게시판 읽기 권한** 열람자가 읽을 수 없는 게시판(`sirsoft-board.{slug}.posts.read` 없음 — 비로그인은 guest 기준)의 글은 목록에서 빠지고 `total` 에도 세지 않습니다. 본인 프로필은 예외입니다.
 
 ### GET /api/modules/sirsoft-board/users/{user}/posts/stats
 <!-- @generated:start:api.modules.sirsoft-board.users.posts.stats -->

@@ -104,6 +104,16 @@ effects:
   - core_lang_partial_ko_en_have_identical_key_set_after_preview_keys_added
   - device_preview_toolbar_labels_resolved_via_t_function
   - preview_canvas_empty_state_resolved_via_t_function
+  # 창 편집 범위와 속성 편집 캔버스 — 상설 E2E(modal-edit-confine, property-edit-ux)가 소유한다
+  - modal_collection_includes_partial_modals
+  - modal_edit_renders_dim_and_blocker
+  - dnd_handles_confined_to_modal_subtree
+  - modal_edit_exit_clears_dim
+  - all_iteration_instances_patched
+  - affordance_offset_30
+  - canvas_dim_on_modal
+  - canvas_undim_on_close
+  - permission_add_enabled
 
 test_files:
   - tests/Feature/Api/Public/LayoutSourceMetaServingTest.php
@@ -113,3 +123,5 @@ test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/utils/layoutTreeUtils.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/components/LayoutEditorChrome.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/i18n/chrome-i18n-coverage.test.ts
+  - tests/Playwright/specs/layout-editor/modal-edit-confine.spec.ts
+  - tests/Playwright/specs/layout-editor/property-edit-ux.spec.ts

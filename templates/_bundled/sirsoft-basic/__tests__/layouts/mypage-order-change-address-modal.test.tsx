@@ -4,7 +4,7 @@
  *
  * 테스트 대상:
  * - templates/.../partials/mypage/orders/_modal_change_address.json
- * - templates/.../partials/mypage/orders/_shipping.json (트리거)
+ * - templates/.../partials/mypage/orders/_shipping.g7.html (트리거)
  *
  * 회귀 차단 (이슈55):
  * - 모달은 부모 _local 미접근 → _global.editingShippingAddress dataKey 자동바인딩
@@ -158,7 +158,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
   });
 
   // ── 증상2: 직접입력 폼 자동 바인딩 (_global 컨텍스트) ──
-  // 핵심: 모달은 부모(_shipping.json)의 _local 을 못 읽는다(별도 React 컨텍스트).
+  // 핵심: 모달은 부모(_shipping.g7.html)의 _local 을 못 읽는다(별도 React 컨텍스트).
   //   따라서 부모 트리거가 채우는 초기 배송지 값은 _global.editingShippingAddress 로 전달하고,
   //   모달 직접입력 폼은 dataKey="_global.editingShippingAddress" 자동바인딩으로 표시한다.
   //   (_modal_address.json 의 _global.editingAddress 와 동일한 검증된 패턴)

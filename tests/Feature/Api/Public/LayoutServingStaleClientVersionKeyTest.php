@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * [case:backend-33] 편집기가 부팅 시점 cache_version 으로 계속 요청해도 저장 뒤에는 최신 content 가 온다
+ * [case:backend-34] 편집기가 부팅 시점 cache_version 으로 계속 요청해도 저장 뒤에는 최신 content 가 온다
  *
  * 레이아웃 편집기는 `window.G7Config.cache_version`(부팅 시점 값)에 nonce 만 붙여
  * `?v={부팅버전}.{nonce}` 로 재로드한다. 저장·복원은 `ext.cache_version` 을 `time()` 으로
@@ -20,6 +20,10 @@ use Tests\TestCase;
  * 두 번째 bump 부터 부팅 버전 키가 영영 지워지지 않아 초기화·복원·409 「최신 불러오기」가
  * 옛 content 를 받는다(실측: 초기화 직후 lock 4 응답, DB 는 lock 7). 서빙 캐시 키는 서버 현재
  * 버전으로만 조립하고 `?v` 는 브라우저 HTTP 캐시 우회용으로만 쓴다.
+ *
+ * @scenario compile_unit=layout,source_health=valid
+ *
+ * @effects serving_cache_key_uses_server_current_version
  */
 class LayoutServingStaleClientVersionKeyTest extends TestCase
 {

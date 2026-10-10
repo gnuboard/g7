@@ -1,0 +1,44 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(정의 종류 × 채널)의 조합마다 테스트를 두지 않는다 — 커버리지 단위는 **선언 전수
+#   순회**이고 한 테스트가 그 전수를 한 번에 돈다. effects 축은 면제하지 않는다.
+feature: staff_notification_definitions
+
+description: |
+  운영자가 자기 일을 통보받게 하는 알림 정의와, 그 선언이 실제로 동작에 닿는 경로.
+
+  핵심 동작:
+    - 운영자 수신 알림은 **역할 기준**이고, 이 상점의 운영 역할 셋
+      (`admin` · `manager` · `sirsoft-ecommerce.manager`)을 전부 나열한다. 하나라도 빠지면
+      그 역할의 사람이 새 주문도 클레임 접수도 통보받지 못한다(이커머스 관리자 누락).
+    - 신설 정의 7종: 클레임 접수 3 · 추가결제 완료 2 · 주문 결제완료 1 · 구매확정 1.
+      고객 정의와 **같은 훅을 공유**한다 — 한 사건에 고객 1통 + 운영자 1통이며 본문이 다르다.
+    - 선언형 산출물이므로 업그레이드 스텝 없이 `module:update` 의 동기화로 DB 에 반영된다.
+      선언만 있고 DB 에 없으면 훅 구독이 일어나지 않아 **알림이 조용히 안 나간다**.
+    - 메일·알림센터 두 채널이 켜진 채로 시드된다(기존 관리자 알림과 같은 기본값).
+
+axes:
+  definition_kind:
+    - claim_requested
+    - claim_payment_completed
+    - order_milestone
+  channel:
+    - mail
+    - database
+
+exclusions:
+  - { definition_kind: claim_payment_completed, channel: database, reason: "채널별 차이는 본문 형식뿐이라 정의 전수 순회가 두 채널을 함께 본다" }
+  - { definition_kind: order_milestone, channel: database, reason: "같은 사유" }
+
+effects:
+  - declared_definitions_are_all_synced_to_the_database
+  - new_staff_definitions_appear_in_the_active_list
+  - new_staff_definitions_are_seeded_with_both_channels_active
+  - staff_definitions_list_every_operational_role
+  - one_definition_per_hook_and_audience
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/StaffNotificationDefinitionsSeedTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Notifications/ClaimNotificationDefinitionsTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

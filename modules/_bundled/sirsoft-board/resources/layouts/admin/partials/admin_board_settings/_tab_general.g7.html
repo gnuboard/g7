@@ -1,0 +1,79 @@
+<!-- 설정의 「일반」 탭 — 「기본값」 탭과 성격이 다르다. 이쪽은 새 게시판이 물려받는 값이 아니라 이미 있는 게시판 전부에 곧바로 걸리는 전역 설정이라 일괄 적용 체크박스가 없다. 날짜 표기 방식(절대/상대)을 카드째 눌러 고른다 -->
+<partial description="게시판 환경설정 기본 설정 탭 콘텐츠 (전역 즉시 적용 설정)">
+  <div data-ref="tab_content_general" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'general'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div data-ref="general_section" class="admin-card">
+      <h2 class="card-title">$t:sirsoft-board.admin.settings.sections.general</h2>
+      <div class="card-description">$t:sirsoft-board.admin.settings.sections.general_description</div>
+      <div data-ref="date_display_format_field">
+        <label class="form-label">$t:sirsoft-board.admin.settings.fields.date_display_format</label>
+        <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.date_display_format_hint</p>
+        <div class="card-stack" role="radiogroup" aria-label="$t:sirsoft-board.admin.settings.fields.date_display_format">
+          <div data-ref="date_format_option_standard" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
+            <on type="click">
+              <!-- 날짜를 「2026-08-04」처럼 그대로 적는 방식. 카드 아무 데나 눌러도 골라지도록 라디오가 아니라 카드에 이벤트를 달았고(라디오 자체는 클릭을 받지 않는다), 폼의 나머지 값을 잃지 않으려 두 층을 각각 펼쳐 담는다 -->
+              <set-state if="{{!_computed.isReadOnly}}" target="local" :hasChanges="true" form.display.date_display_format="standard"/>
+            </on>
+            <input type="radio" name="display.date_display_format" value="standard" aria-label="$t:sirsoft-board.admin.settings.options.date_display_format.standard" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}">
+              <on type="change">
+                <!-- 날짜를 절대 시각으로 보여 준다 -->
+                <set-state target="local" :hasChanges="true" form.display.date_display_format="standard"/>
+              </on>
+            </input>
+            <div class="flex-1 min-w-0">
+              <span class="text-primary block text-sm font-semibold">$t:sirsoft-board.admin.settings.options.date_display_format.standard</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-board.admin.settings.options.date_display_format.standard_description</span>
+              <span class="block text-xs font-mono text-blue-600 dark:text-blue-400 mt-1.5 bg-blue-50 dark:bg-blue-900/30 rounded px-2 py-1">$t:sirsoft-board.admin.settings.options.date_display_format.standard_example</span>
+            </div>
+          </div>
+          <div data-ref="date_format_option_relative" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
+            <on type="click">
+              <!-- 날짜를 「3일 전」처럼 지금과의 사이로 적는 방식 — 위 카드와 같은 짜임이고 담기는 값만 다르다 -->
+              <set-state if="{{!_computed.isReadOnly}}" target="local" :hasChanges="true" form.display.date_display_format="relative"/>
+            </on>
+            <input type="radio" name="display.date_display_format" value="relative" aria-label="$t:sirsoft-board.admin.settings.options.date_display_format.relative" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}">
+              <on type="change">
+                <!-- 날짜를 「3일 전」 같은 상대 표기로 보여 준다 -->
+                <set-state target="local" :hasChanges="true" form.display.date_display_format="relative"/>
+              </on>
+            </input>
+            <div class="flex-1 min-w-0">
+              <span class="text-primary block text-sm font-semibold">$t:sirsoft-board.admin.settings.options.date_display_format.relative</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-board.admin.settings.options.date_display_format.relative_description</span>
+              <span class="block text-xs font-mono text-blue-600 dark:text-blue-400 mt-1.5 bg-blue-50 dark:bg-blue-900/30 rounded px-2 py-1">$t:sirsoft-board.admin.settings.options.date_display_format.relative_example</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="attachment_cleanup_section" class="admin-card mt-6">
+      <h2 class="card-title">$t:sirsoft-board.admin.settings.sections.attachment_cleanup</h2>
+      <div class="card-description">$t:sirsoft-board.admin.settings.sections.attachment_cleanup_description</div>
+      <div data-ref="attachment_purge_enabled_field" class="flex-between gap-4 mt-4">
+        <div class="min-w-0">
+          <label class="form-label">$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled</label>
+          <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled_hint</p>
+        </div>
+        <toggle data-type="composite" name="attachment_settings.purge_enabled" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}" checked="{{!!_local.form?.attachment_settings?.purge_enabled}}">
+          <on type="change">
+            <!-- 오래된 첨부 자동 정리 사용 여부. 켜야 아래 보관 일수가 쓰인다 -->
+            <set-state target="local" :hasChanges="true" form.attachment_settings.purge_enabled="{{$event.target.checked}}"/>
+          </on>
+        </toggle>
+      </div>
+      <div data-ref="attachment_purge_retention_days_field" class="mt-4">
+        <label class="form-label">$t:sirsoft-board.admin.settings.fields.attachment_purge_retention_days</label>
+        <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.attachment_purge_retention_days_hint</p>
+        <input type="number" name="attachment_settings.purge_retention_days" min="{{_local?.form?._meta?.limits?.attachment_purge_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.attachment_purge_retention_days_max ?? 3650}}" class="input w-40" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.attachment_settings?.purge_retention_days ?? 30}}">
+          <on type="change">
+            <!-- 첨부 보관 일수. 이 기간이 지난 첨부가 정리 대상이 된다 -->
+            <set-state target="local" :hasChanges="true" form.attachment_settings.purge_retention_days="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+    </div>
+  </div>
+</partial>

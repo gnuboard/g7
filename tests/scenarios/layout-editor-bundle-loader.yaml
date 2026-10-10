@@ -1,0 +1,22 @@
+feature: 레이아웃 편집기 지연 번들 로더 — 주입·병합·재시도·실패 문구
+
+description: |
+  레이아웃 편집기 화면은 편집기 번들을 진입 때 지연 로드한다(`loadLayoutEditorBundle`). 이미 로드됐으면 다시
+  주입하지 않고, 동시 호출은 진행 중인 로드 하나로 합치며, 실패는 세 번 시도한 뒤 거부한다. 실패 문구는 내부
+  번들 경로를 싣지 않고 화면 언어(<html lang>)를 따른다 — 영어 화면에서 한국어 실패 화면이 뜨던 것을
+  engine-v1.78.6 에서 고쳤다(7.1.0 잔여 관측 O-J4 → R-15).
+
+axes:
+  state: [already_loaded, not_loaded, load_failed]
+
+effects:
+  - loader_returns_immediately_when_already_loaded
+  - loader_injects_script_once_and_returns_component
+  - concurrent_calls_share_one_in_flight_load
+  - load_failure_rejects_after_three_attempts
+  - failure_message_hides_bundle_path
+  - reload_after_failure_injects_again
+  - failure_message_follows_screen_language
+
+test_files:
+  - resources/js/core/__tests__/loadLayoutEditorBundle.test.ts

@@ -1,374 +1,615 @@
 {
-  "target_layout": "mypage/orders/show",
-  "injections": [
-    {
-      "target_id": "order_payment_info_panel",
-      "position": "append_child",
-      "components": [
+    "comment": "내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.\n     e2e:allow S4-D10·D13 — 가상계좌 블록에 영수증 행처럼 고정 id 를 달고, 표시 조건 두 가지(취소 주문엔 안내 숨김·입금 뒤 자동 취소 경고 숨김)만 더했다. 대체 검증: Vitest 조건 평가·조각 렌더 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다.",
+    "extension_point": "mypage_order_payment_provider_slot",
+    "mode": "append",
+    "priority": 100,
+    "data_sources": [
         {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.is_escrow}}",
-          "props": {
-            "className": "pt-2 mt-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "shield-check",
-                    "className": "w-3 h-3"
-                  }
+            "id": "nhnkcp_mock_deposit",
+            "label_key": "$t:sirsoft-pay_nhnkcp.editor.data_source.nhnkcp_mock_deposit",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/vbank-mock-deposit-info",
+            "method": "GET",
+            "if": "{{!!route.order_number}}",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "progressive",
+            "errorHandling": {
+                "401": {
+                    "handler": "suppress"
                 },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-pay_nhnkcp.user.escrow_badge"
+                "403": {
+                    "handler": "suppress"
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.vbank_name}}",
-          "props": {
-            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
-              },
-              "text": "$t:sirsoft-pay_nhnkcp.user.vbank_title"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "space-y-1.5"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_bank_name"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary font-medium"
-                      },
-                      "text": "{{order.data.payment?.vbank_name}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_account"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary font-medium font-mono tracking-wide"
-                      },
-                      "text": "{{order.data.payment?.vbank_number}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_holder"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary font-medium"
-                      },
-                      "text": "{{order.data.payment?.vbank_holder}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_due"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary font-medium"
-                      },
-                      "text": "{{order.data.payment?.due_date_formatted}}"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-xs text-amber-600 dark:text-amber-400"
-              },
-              "text": "$t:sirsoft-pay_nhnkcp.user.vbank_notice"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}",
-          "props": {
-            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1"
-              },
-              "text": "$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-pay_nhnkcp.user.supply_amount"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-medium"
-                  },
-                  "text": "{{order.data.total_taxable_supply_amount_formatted}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-pay_nhnkcp.user.vat_amount"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-medium"
-                  },
-                  "text": "{{order.data.total_vat_amount_formatted}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{order.data.total_tax_free_amount > 0}}",
-              "props": {
-                "className": "flex-between text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-pay_nhnkcp.user.tax_free_amount"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-medium"
-                  },
-                  "text": "{{order.data.total_tax_free_amount_formatted}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.transaction_id && order.data.payment?.paid_at}}",
-          "props": {
-            "id": "kcp-mp-receipt-row",
-            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:sirsoft-pay_nhnkcp.user.receipt_label"
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50",
-                    "disabled": "{{_local._kcpReceiptLoading === true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "_kcpReceiptLoading": true
-                          }
-                        },
-                        {
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/receipt",
-                          "params": {
-                            "method": "GET"
-                          }
-                        },
-                        {
-                          "handler": "callExternal",
-                          "params": {
-                            "constructor": "KcpReceiptPopup",
-                            "args": {
-                              "url": "{{$prev.receipt_url}}",
-                              "cash_url": "{{$prev.cash_receipt_url}}"
-                            }
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "_kcpReceiptLoading": false
-                          }
-                        }
-                      ]
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "if": "{{_local._kcpReceiptLoading === true}}",
-                      "props": {
-                        "name": "spinner",
-                        "className": "w-3.5 h-3.5 animate-spin"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "if": "{{!_local._kcpReceiptLoading}}",
-                      "props": {
-                        "name": "file-text",
-                        "className": "w-3.5 h-3.5"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-pay_nhnkcp.user.receipt_view"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+            "comment": "모의입금 정보 — 로그인 전용 주소라 비회원이면 요청하지 않는다(auth_mode=required). 주소에 주문번호가 있는 주문 상세에서만 부른다(신청서 상세는 주소가 신청번호다). 주문 본체와 따로 늦게 와도 되므로 progressive 다.\n         엔진은 토큰이 없어 요청을 건너뛴 사실을 401 로 알리므로 401·403 은 여기서 조용히 넘긴다 — 처리기가 없으면 템플릿 기본 401 처리(로그인 이동)로 떨어져,\n         이 조각이 붙는 비회원 주문 상세가 로그인 화면으로 튕겼다(7.1.0 리허설 실측). 결제대행사·결제수단은 이 단계(조건 평가는 route·query·_global 만 본다)에서\n         가를 수 없어 정보 API 가 가린다 — NHN KCP 가상계좌 입금 대기·테스트 모드·본인 주문이 아니면 available=false 다."
         }
-      ]
-    }
-  ]
+    ],
+    "components": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.is_escrow}}",
+            "props": {
+                "className": "pt-2 mt-1"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "shield-halved",
+                                "className": "text-xs"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-pay_nhnkcp.user.escrow_badge"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "가상계좌 안내는 이 조각만 그린다(#639 에서 주입 스크립트를 옮김). id(kcp-mp-vbank-row)는 영수증 행(kcp-mp-receipt-row)처럼 고정해 화면 점검이 블록 수를 셀 수 있게 한다.\n         취소된 주문엔 입금 계좌를 보이지 않는다(취소 뒤 입금을 부르지 않게). 자동 취소 경고는 입금 전에만.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.vbank_name && order.data.payment?.payment_status !== 'cancelled' && order.data.order_status !== 'cancelled'}}",
+            "props": {
+                "id": "kcp-mp-vbank-row",
+                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                    },
+                    "text": "$t:sirsoft-pay_nhnkcp.user.vbank_title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-1.5"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.vbank_bank_name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium"
+                                    },
+                                    "text": "{{order.data.payment?.vbank_name}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.vbank_account"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium font-mono tracking-wide"
+                                    },
+                                    "text": "{{order.data.payment?.vbank_number}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.vbank_holder"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium"
+                                    },
+                                    "text": "{{order.data.payment?.vbank_holder}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "입금 금액 — 실제로 입금할 결제예정금액(마일리지 차감 뒤). 비회원 응답에는 없어(비회원은 마일리지를 못 쓴다) 주문금액으로 대신한다",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.vbank_amount"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium"
+                                    },
+                                    "text": "{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.vbank_due"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium"
+                                    },
+                                    "text": "{{order.data.payment?.due_date_formatted}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!order.data.payment?.paid_at}}",
+                    "props": {
+                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                    },
+                    "text": "$t:sirsoft-pay_nhnkcp.user.vbank_notice"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}",
+            "props": {
+                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1"
+                    },
+                    "text": "$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-pay_nhnkcp.user.supply_amount"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                            },
+                            "text": "{{order.data.total_taxable_supply_amount_formatted}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-pay_nhnkcp.user.vat_amount"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                            },
+                            "text": "{{order.data.total_vat_amount_formatted}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data.total_tax_free_amount > 0}}",
+                    "props": {
+                        "className": "flex-between text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-pay_nhnkcp.user.tax_free_amount"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                            },
+                            "text": "{{order.data.total_tax_free_amount_formatted}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.transaction_id && order.data.payment?.paid_at}}",
+            "props": {
+                "id": "kcp-mp-receipt-row",
+                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-pay_nhnkcp.user.receipt_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "매출전표 보기 — 전표를 받아 외부 팝업 생성자에 넘긴다(새 창은 사용자 클릭 안에서 열어야 차단되지 않는다)",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "_kcpReceiptLoading": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{order.data.order_number}}/receipt",
+                                            "auth_mode": "optional",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET",
+                                                "headers": {
+                                                    "X-Guest-Order-Token": "{{_global.guestOrderToken ?? ''}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "callExternal",
+                                            "params": {
+                                                "constructor": "KcpReceiptPopup",
+                                                "args": {
+                                                    "url": "{{$prev.data.receipt_url}}",
+                                                    "cash_url": "{{$prev.data.cash_receipt_url}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "_kcpReceiptLoading": false
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50",
+                                "disabled": "{{_local._kcpReceiptLoading === true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local._kcpReceiptLoading === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "text-sm animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_local._kcpReceiptLoading}}",
+                                    "props": {
+                                        "name": "file-text",
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.receipt_view"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "테스트 모드 모의입금 도구 — 입금 대기 가상계좌 주문에서 정보 API 가 쓸 수 있다고 답할 때만 보인다(운영 모드·남의 주문이면 available=false). 입력값을 KCP 테스트 입금통보 화면으로 새 창 POST 한다",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.payment_method === 'vbank' && nhnkcp_mock_deposit?.data?.available === true}}",
+            "props": {
+                "data-testid": "nhnkcp-mock-deposit",
+                "className": "pt-4 mt-2 border-t border-dashed border-orange-300 dark:border-orange-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2 mb-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-300 dark:border-orange-700"
+                            },
+                            "text": "$t:sirsoft-pay_nhnkcp.user.test_mode_badge"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-semibold text-orange-700 dark:text-orange-300"
+                            },
+                            "text": "$t:sirsoft-pay_nhnkcp.user.mock_title"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Form",
+                    "props": {
+                        "method": "post",
+                        "action": "{{nhnkcp_mock_deposit.data.mock_url ?? ''}}",
+                        "target": "_blank",
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.mock_trade_no"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "e_trade_no",
+                                        "value": "{{nhnkcp_mock_deposit.data.trade_no ?? ''}}",
+                                        "readOnly": true,
+                                        "className": "flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.mock_deposit_no"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "deposit_no",
+                                        "value": "{{nhnkcp_mock_deposit.data.account_no ?? ''}}",
+                                        "readOnly": true,
+                                        "className": "flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.mock_depositor"
+                                },
+                                {
+                                    "comment": "입금자명 — 테스트 입금통보에 실을 이름이라 직접 고칠 수 있다",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "req_name",
+                                        "value": "NHN KCP",
+                                        "className": "flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.mock_notify_url"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "noti_url",
+                                        "value": "{{nhnkcp_mock_deposit.data.notify_url ?? ''}}",
+                                        "readOnly": true,
+                                        "className": "flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "pt-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "submit",
+                                        "className": "w-full py-1.5 text-xs font-semibold rounded border border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.user.mock_submit"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{nhnkcp_mock_deposit.data.is_admin_view === true}}",
+                    "props": {
+                        "className": "mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium"
+                    },
+                    "text": "$t:sirsoft-pay_nhnkcp.user.mock_admin_notice"
+                }
+            ]
+        }
+    ]
 }

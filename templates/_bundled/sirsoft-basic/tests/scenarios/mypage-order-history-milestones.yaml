@@ -1,0 +1,47 @@
+feature: 마이페이지 주문 이력의 생애주기 일시 행 (S2-D8)
+
+description: |
+  주문 상세의 「주문 이력」 섹션은 그 주문이 **언제 무엇을 지났는지**를 보여 준다.
+  생애주기는 주문 → 결제 → 배송완료 → **구매확정** → (취소) 로 간다.
+
+  그런데 그 섹션이 **구매확정일시만 빠뜨리고 있었다.** 구매확정은 적립이 확정되고
+  취소·환불이 막히는 전이라 고객에게 가장 중요한 분기 중 하나인데, 확정이 끝난
+  주문을 열어도 이력에는 「주문일시 · 결제일시」 두 줄만 섰다.
+
+  백엔드는 이미 값을 내보내고 있었다 — `OrderResource` 의 `confirmed_at_formatted`.
+  DB 에도 값이 있었다. **화면 쪽 행과 라벨만 없었다.**
+
+  #599 통합실측 세션2 실측(주문 107 · 2026-09-15):
+
+    order_status            = confirmed
+    confirmed_at            = 2026-09-15 07:52:28   (DB)
+    confirmed_at_formatted  = 2026-09-15 16:52:28   (API 응답에 실림)
+    화면 「주문 이력」       = 주문일시 · 결제일시 **2줄뿐**
+
+  같은 확인에서 곁가지 하나가 더 드러났다 — 레이아웃의 `delivered_at` 행이 부르는
+  라벨 키 `mypage.order_detail.delivered_at` 이 **ko·en 양쪽에 없었다.**
+  그 행이 뜨는 주문에서는 원문 키가 그대로 노출됐을 것이다. 함께 채웠다.
+
+  계약: 이 매니페스트는 **화면이 생애주기 일시를 빠짐없이 그리는 것**과
+  **부르는 라벨이 모든 로케일에 실재하는 것**을 잠근다. 값을 만드는 쪽
+  (`confirmed_at` 기록·`OrderResource` 노출)은 모듈 쪽 테스트가 잠근다.
+
+axes:
+  order_history_row:
+    - confirmed_at
+    - all_milestones
+    - conditional_rendering
+    - label_keys_exist
+
+effects:
+  - order_history_shows_purchase_confirmed_at
+  - order_history_covers_every_lifecycle_timestamp
+  - order_history_rows_are_hidden_until_the_timestamp_exists
+  - order_history_labels_are_translated_in_every_locale
+
+test_files:
+  # 정적 — 레이아웃 JSON 의 행 구성·바인딩·라벨 키 실재
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-order-history-milestones.test.tsx
+  # 브라우저 — API 가 준 값이 실제로 화면에 찍히는지
+  # (레이아웃에 행이 있어도 DB 동기화가 빠지면 화면은 그대로인데, 정적 테스트로는 못 잡는다)
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mypage-order-history-confirmed-at.spec.ts

@@ -1,0 +1,128 @@
+<partial description="클레임 신청서 작성 - 교환 재발송지 (D14)" editor_label="$t:user.modal_label.mypage_claims.apply_redelivery">
+  <!-- 교환 재발송지는 원 배송지가 기본값이고 [변경] 으로만 바뀐다. 우편번호·국가가 바뀌면 도서산간이 다시 판정되므로 적용 시 미리보기를 다시 부른다(D14). 국가는 바꿀 수 없다 — 교환은 해외배송을 지원하지 않아 서버가 원 배송지와 다른 국가를 422 로 거절한다. -->
+  <div data-ref="claim_apply_redelivery" data-if="{{_local.claimType === 'exchange'}}" class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+    <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-2">
+        <icon name="truck" class="text-base text-gray-700 dark:text-gray-300"/>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+          $t:claim.apply.redelivery_title
+        </h3>
+      </div>
+      <button data-if="{{_local.claimRedeliveryEditing !== true}}" type="button" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.startClaimRedeliveryEdit"/>
+        </on>
+        $t:claim.apply.redelivery_change
+      </button>
+    </div>
+    <!-- 표시 모드 — 편집 중이 아닐 때는 적용된 주소(변경 전이면 원 배송지)를 보여 준다. -->
+    <div data-if="{{_local.claimRedeliveryEditing !== true}}" class="space-y-1">
+      <p class="text-sm text-gray-900 dark:text-white">{{(_local.claimRedelivery?.recipient_name ?? order.data.shipping_address?.recipient_name ?? '') + ' / ' + (_local.claimRedelivery?.phone ?? order.data.shipping_address?.recipient_phone ?? '')}}</p>
+      <!-- 해외 주문은 국내 칸(우편번호·주소·상세주소)이 빈 문자열이라 `||` 로 해외 칸에 넘어가고, 도시·주는 뒤에 붙인다 — 국내 칸만 이으면 주소 없이 빈 괄호만 남는다(S2-D8). -->
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{'(' + (_local.claimRedelivery?.zipcode ?? (order.data.shipping_address?.zipcode || order.data.shipping_address?.intl_postal_code || '')) + ') ' + [_local.claimRedelivery?.address1 ?? (order.data.shipping_address?.address || order.data.shipping_address?.address_line_1), _local.claimRedelivery?.address2 ?? (order.data.shipping_address?.address_detail || order.data.shipping_address?.address_line_2)].filter(Boolean).join(' ') + [_local.claimRedelivery ? _local.claimRedelivery.city : order.data.shipping_address?.intl_city, _local.claimRedelivery ? _local.claimRedelivery.state : order.data.shipping_address?.intl_state].filter(Boolean).map(part => ', ' + part).join('')}}</p>
+      <!-- 재발송지를 바꿔 도서산간이 다시 판정된 경우 — 배송비가 왜 달라졌는지 밝힌다(D14). -->
+      <p data-if="{{_local.claimEstimate?.shipping_fee?.redelivery_changed === true}}" class="text-xs text-amber-600 dark:text-amber-400 mt-2">$t:claim.apply.redelivery_fee_recalculated</p>
+      <!-- 적용해 둔 재발송지를 버리고 원 배송지로 돌아간다. 그러면 신청서에 재발송지가 실리지 않고, 도서산간 판정이 달라질 수 있어 미리보기를 다시 부른다. -->
+      <button data-if="{{!!_local.claimRedelivery}}" type="button" class="mt-2 text-sm text-gray-500 dark:text-gray-400 hover:underline cursor-pointer">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.resetClaimRedelivery" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+        </on>
+        $t:claim.apply.redelivery_reset
+      </button>
+    </div>
+    <!-- 편집 모드 -->
+    <div data-if="{{_local.claimRedeliveryEditing === true}}" class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <responsive on="portable" class="grid grid-cols-1 gap-3"/>
+        <div>
+          <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.recipient_name</label>
+          <!-- 교환품을 받을 사람 — 원 주문의 수령인과 달라도 된다. 금액과 무관한 칸이라 입력 중에는 미리보기를 부르지 않고, 편집 중인 주소에 쌓였다가 제출 때 함께 실린다. -->
+          <input type="text" :maxLength="50" value="{{_local.claimRedelivery?.recipient_name ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <on type="input">
+              <set-state target="_local" claimRedelivery.recipient_name="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.recipient_phone</label>
+          <!-- 재발송 연락처 — 칸의 최대 길이는 서버 규칙과 같은 값이라, 길이 초과로 제출이 거절되는 일을 입력 단계에서 막는다. -->
+          <input type="text" :maxLength="20" value="{{_local.claimRedelivery?.phone ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <on type="input">
+              <set-state target="_local" claimRedelivery.phone="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.zipcode</label>
+        <!-- 우편번호는 도서산간 판정의 입력이라 이 카드에서 배송비를 바꿀 수 있는 유일한 칸이다. 입력마다 다시 계산하지 않고 [적용]에서 한 번 미리보기를 부르며, 비워 두면 재발송지가 신청서에 아예 실리지 않는다. -->
+        <input type="text" :maxLength="20" value="{{_local.claimRedelivery?.zipcode ?? ''}}" class="w-40 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <on type="input">
+            <set-state target="_local" claimRedelivery.zipcode="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.address1</label>
+        <!-- 기본 주소 — 처음 [변경]을 누르면 원 배송지 값으로 채워지고, 한 번 적용한 뒤에는 그 값에서 다시 고친다. 주소 검색 없이 직접 고치는 칸이다. -->
+        <input type="text" :maxLength="255" value="{{_local.claimRedelivery?.address1 ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <on type="input">
+            <set-state target="_local" claimRedelivery.address1="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.address2</label>
+        <!-- 상세 주소 — 비워 둬도 접수가 막히지 않는 선택 칸이다(서버 규칙이 재발송지의 모든 칸을 비워 둘 수 있게 둔다). -->
+        <input type="text" :maxLength="255" value="{{_local.claimRedelivery?.address2 ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <on type="input">
+            <set-state target="_local" claimRedelivery.address2="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <!-- 해외 주문의 도시·주 — 서버 스냅샷이 두 칸을 따로 담는다(S2-D8). 국내 주문에는 해당 칸이 없어 그리지 않는다. 금액과 무관해 미리보기를 부르지 않는다. -->
+      <div data-if="{{(_local.claimRedelivery?.country_code || order.data.shipping_address?.recipient_country_code || 'KR') !== 'KR'}}" class="grid grid-cols-2 gap-3">
+        <responsive on="portable" class="grid grid-cols-1 gap-3"/>
+        <div>
+          <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.city</label>
+          <input type="text" :maxLength="100" value="{{_local.claimRedelivery?.city ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <on type="input">
+              <!-- 해외 재발송지의 도시 칸 값을 신청서 재발송지(claimRedelivery.city)에 그대로 둔다 -->
+              <set-state target="_local" claimRedelivery.city="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.state</label>
+          <input type="text" :maxLength="100" value="{{_local.claimRedelivery?.state ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <on type="input">
+              <!-- 해외 재발송지의 주·도 칸 값을 신청서 재발송지(claimRedelivery.state)에 그대로 둔다 -->
+              <set-state target="_local" claimRedelivery.state="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400">$t:claim.apply.redelivery_country_locked|country={{$localized(order.data.shipping_address?.recipient_country_name) || order.data.shipping_address?.recipient_country_code || ''}}</p>
+      <div class="flex gap-2 pt-1">
+        <!-- [적용] — 편집을 닫고 미리보기를 다시 부른다. 미리보기에는 우편번호·국가만 실려 도서산간 여부가 다시 판정되고, 나머지 칸은 제출할 때 함께 간다. -->
+        <button type="button" class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.applyClaimRedelivery" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+          </on>
+          $t:claim.apply.redelivery_apply
+        </button>
+        <!-- 편집 중에 누르면 입력하던 값뿐 아니라 이미 적용해 둔 재발송지까지 버리고 원 배송지로 돌아간다. 편집만 닫는 취소 버튼은 따로 두지 않았다. -->
+        <button type="button" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.resetClaimRedelivery" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+          </on>
+          $t:claim.apply.redelivery_reset
+        </button>
+      </div>
+    </div>
+    <!-- 재발송지 거절 사유 (§6-3 P13) — 서버는 `redelivery_address.*` 7키로 쪼개 돌려주므로 핸들러가 접두사로 묶은 값을 읽는다. 국가 불변 규칙(ExchangeRedeliveryCountryUnchanged)의 거절도 이 자리에 선다. 표시·편집 두 모드 밖에 두는 것은 편집을 닫은 뒤 제출해도 사유가 남아야 하기 때문이다. -->
+    <p data-if="{{!!_local.claimFieldErrors?.redelivery}}" class="text-xs text-red-500 dark:text-red-400 mt-2">{{_local.claimFieldErrors?.redelivery ?? ''}}</p>
+  </div>
+</partial>

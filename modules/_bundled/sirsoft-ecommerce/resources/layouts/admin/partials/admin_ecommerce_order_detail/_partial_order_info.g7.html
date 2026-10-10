@@ -1,0 +1,532 @@
+<!-- 주문 상세의 주문 정보 구역 — 상품 목록과 일괄 변경, 주문자·수령인 정보, 관리자 메모까지 한 화면에
+  담는 이 화면의 본체다.
+  **위쪽 일괄 변경 줄이 조건에 따라 자란다** — 배송 관련 상태를 고르면 택배사·송장 칸이 나타나고,
+  취소를 고르면 PG 취소 여부 칸이 나타난다(PG 결제가 섞인 주문일 때만). 그래서 상태 선택 하나가
+  옆 칸들의 존재를 결정한다.
+  **[일괄 변경] 버튼은 바로 바꾸지 않는다** — 확인 창에 보여 줄 자료를 핸들러가 만들어 두면 그 창이
+  열린다. 실제 변경은 그 창에서 일어난다.
+  주문자 이름은 작은 메뉴이고, 회원 상세를 새 창으로 열거나 그 회원의 주문만 걸러 볼 수 있다.
+  메일 보내기는 받는 주소를 지역 상태에 담고 창을 연다 — **그 창이 값을 `$parent._local` 에서
+  읽으므로** 여기서 담는 자리가 그 창의 입력이 된다.
+  수정 가능한 칸은 전부 서버 권한(`abilities.can_update`)으로 잠긴다. -->
+<partial description="e2e:allow 상품 일괄 상태 Select 폭 클래스(w-48)만 변경 — Chrome MCP 매트릭스(이력 20260913_2132)가 대체 커버. Order Detail - Order Info Tab">
+  <div data-ref="section_order_info" data-section-id="order_info">
+    <div data-ref="order_info_card" data-key="form" data-debounce="300" class="admin-card">
+      <h2 data-ref="order_info_title" class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.order.detail.order_info.title</h2>
+      <div data-ref="order_products_section">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">$t:sirsoft-ecommerce.admin.order.detail.order_info.order_products</h3>
+        <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+          <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.detail.order_info.selected_count|count={{(_local.selectedProducts || []).length}}</span>
+          <div class="flex-center flex-wrap gap-2">
+            <select name="batchOrderStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchOrderStatus || ''}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="" disabled>$t:sirsoft-ecommerce.admin.order.detail.order_info.change_status</option>
+                <option value="pending_payment">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_pending</option>
+                <option value="payment_complete">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_complete</option>
+                <option value="shipping_hold">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_hold</option>
+                <option value="preparing">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</option>
+                <option value="shipping_ready">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_ready</option>
+                <option value="shipping">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping</option>
+                <option value="delivered">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</option>
+                <option value="confirmed">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.confirmed</option>
+              </options>
+              <on type="change">
+                <!-- 일괄 변경할 상태. 이 값 하나가 옆 칸들의 등장을 정한다 — 배송 관련 상태면 택배사·송장이, 취소면 PG 취소 체크가 나타난다. -->
+                <set-state target="local" batchOrderStatus="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+          <div data-if="{{_local.batchOrderStatus === 'shipping_ready' || _local.batchOrderStatus === 'shipping' || _local.batchOrderStatus === 'delivered'}}" class="flex-center gap-2">
+            <span class="text-label whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.bulk.shipping_label</span>
+            <select name="batchCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchCarrierId || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier" disabled="{{order?.data?.abilities?.can_update !== true}}" options="{{active_carriers?.data ?? []}}">
+              <on type="change">
+                <!-- 택배사. 선택지는 활성 택배사 목록에서 오고, 확인 창이 이 id 를 이름으로 되짚어 보여 준다. -->
+                <set-state target="local" batchCarrierId="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <input type="text" name="batchTrackingNumber" class="w-40 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" placeholder="$t:sirsoft-ecommerce.admin.order.bulk.tracking_placeholder" value="{{_local.batchTrackingNumber}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
+              <on type="change">
+                <!-- 송장번호. 확인 창의 실행 버튼이 택배사와 이 값을 **둘 다** 요구한다 — 추적할 수 없는 배송중 상태가 고객에게 나가는 것을 막는다. -->
+                <set-state target="local" batchTrackingNumber="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+          <div class="flex-1"/>
+          <!-- 관리자 직권 접수 (§3-11) — 고객을 대신해 교환·반품·취소·환불을 접수한다. 입구는 이 선택 바 하나다(입구가 둘이면 게이트가 둘이 된다 — 종전 「취소」 상태 선택은 [취소·환불 접수] 로 대체). 버튼은 고른 상품이 모두 그 유형의 물리 게이트 상태일 때만 켜진다(D5 — 신청 기간·신청 가능 상태 설정은 따르지 않는다). -->
+          <div data-ref="claim_request_buttons" class="flex-center flex-wrap gap-2">
+            <button data-ref="crb_001_exchange" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateExchange !== true}}">
+              <on type="click">
+                <!-- 고른 주문상품으로 운영자 직권 교환 신청 창을 연다 — 배송지·옵션을 창 문맥으로 넘긴다 -->
+                <action handler="sirsoft-ecommerce.openAdminClaimRequest" type="exchange" orderNumber="{{route.orderNumber}}" selectedIds="{{_local.selectedProducts ?? []}}" options="{{order?.data?.options ?? []}}" shippingAddress="{{order?.data?.shipping_address ?? null}}" payment="{{order?.data?.payment ?? null}}" currency="{{order?.data?.base_currency ?? null}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_exchange
+            </button>
+            <button data-ref="crb_002_return" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateReturn !== true}}">
+              <on type="click">
+                <!-- 고른 주문상품으로 운영자 직권 반품 신청 창을 연다 — 교환과 같은 창을 type 만 바꿔 쓴다 -->
+                <action handler="sirsoft-ecommerce.openAdminClaimRequest" type="return" orderNumber="{{route.orderNumber}}" selectedIds="{{_local.selectedProducts ?? []}}" options="{{order?.data?.options ?? []}}" shippingAddress="{{order?.data?.shipping_address ?? null}}" payment="{{order?.data?.payment ?? null}}" currency="{{order?.data?.base_currency ?? null}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_return
+            </button>
+            <button data-ref="crb_003_cancel_refund" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateRefund !== true}}">
+              <on type="click">
+                <!-- 종전 취소 모달을 그대로 연다 — 같은 서비스(`cancel-refund`)로 위임한다. -->
+                <action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="cancelled" batchCarrierId="" batchTrackingNumber=""/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_cancel_refund
+            </button>
+            <!-- 꺼진 이유 — 고른 상품이 있는데 버튼이 하나라도 꺼졌으면 그 까닭(교환·반품은 보낸 뒤, 취소·환불은 보내기 전)을 곁에 둔다. 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다(Chrome 실측 P-1). -->
+            <span data-ref="crb_004_disabled_hint" data-if="{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; claimRequestContext?.data?.unavailable !== true &amp;&amp; (_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true)}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.gate_hint</span>
+            <!-- 접수 권한(`claims.create`)이 없으면 버튼 셋이 꺼진 채 서고 그 까닭을 곁에 둔다 — 버튼을 숨기면 기능이 있는지조차 모른다(Chrome 실측 P-6). -->
+            <span data-ref="crb_005_no_permission_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError !== 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.no_permission</span>
+            <!-- 권한은 있는데 문맥을 못 받은 경우(500·네트워크) — 「권한 없음」 으로 뜨면 운영자는 권한을 요청하러 간다. 실패 종류는 데이터 소스 `error-handling` 이 `_local.claimRequestContextError` 에 남긴다(403=forbidden, 그 밖=failed). -->
+            <span data-ref="crb_005b_context_error_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError === 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.context_load_failed</span>
+          </div>
+          <!-- 고른 상품만 부분 취소·환불한다. 대상 선택이 표 안에 있고 그 표는 페이지를 나누지 않으므로 선택 범위를 free 로 둔다 -->
+          <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change
+          </button>
+        </div>
+        <data-grid data-type="composite" data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
+          <column field="product_info" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.product_info" width="auto" :sortable="false" :required="true">
+            <cell>
+              <div class="flex items-start gap-3">
+                <a href="{{'/admin/ecommerce/products/' + (row.product_snapshot?.product_code ?? row.product_id) + '/edit'}}" target="_blank" class="flex-shrink-0">
+                  <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.product_name}}" class="w-14 h-14 object-cover rounded border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"/>
+                  <div data-if="{{!row.thumbnail_url}}" class="w-14 h-14 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <icon name="image" class="text-xl text-gray-400 dark:text-gray-500"/>
+                  </div>
+                </a>
+                <div>
+                  <a href="{{'/admin/ecommerce/products/' + (row.product_snapshot?.product_code ?? row.product_id) + '/edit'}}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 block">{{row.product_name}}</a>
+                  <span class="text-tertiary block">{{row.sku}}</span>
+                  <span data-if="{{row.option_name}}" class="text-sm text-gray-600 dark:text-gray-300 block">{{row.option_name}}</span>
+                  <!-- 선택된 추가옵션 (스냅샷 — 옵션명 아래 별행, D14) -->
+                  <div data-if="{{row.additional_options?.length > 0}}" data-each="addOpt in {{row.additional_options ?? []}}" class="mt-0.5">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 block">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) !== 0 ? ' (' + (addOpt.price_adjustment_formatted ?? '') + ')' : ''}}</span>
+                  </div>
+                </div>
+              </div>
+            </cell>
+          </column>
+          <column field="price" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.price" width="130px" :sortable="false">
+            <cell>
+              <div class="text-right whitespace-nowrap">
+                <span data-if="{{row.list_price_formatted &amp;&amp; Number(row.list_price) !== Number(row.unit_price)}}" class="text-sm text-gray-400 dark:text-gray-500 line-through block">{{row.list_price_formatted}}</span>
+                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{row.unit_price_formatted}}</span>
+                <!-- 판매가 보조 통화 — 윗줄은 주문의 기준 통화 금액이므로 목록에서 빼는 것도 기준 통화다(이 표의 보조 통화 줄 다섯 곳이 같은 규칙).
+                  관리자가 헤더에서 고른 표시 통화를 빼면, 기준 통화가 그와 다른 상점(기준 엔화·표시 원화)에서 원화가 사라지고 엔화가 두 번 선다(실측 2026-10-03).
+                  클레임 비교 카드와 주문 취소 창은 이미 같은 순서(base_currency 먼저)로 거른다. -->
+                <div data-each="currency in {{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+                  <span class="text-tertiary">{{currency[1]?.formatted}}</span>
+                </div>
+              </div>
+            </cell>
+          </column>
+          <column field="quantity" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.quantity" width="110px" :sortable="false">
+            <cell>
+              <div class="flex flex-col items-end gap-1 whitespace-nowrap">
+                <span class="text-sm text-gray-900 dark:text-gray-100">{{row.quantity}} 개</span>
+                <!-- 재고 적용 여부 배지 -->
+                <badge data-type="composite" data-if="{{row.is_stock_deducted}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.deducted</badge>
+                <badge data-type="composite" data-if="{{!row.is_stock_deducted}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.not_deducted</badge>
+              </div>
+            </cell>
+          </column>
+          <column field="discount" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.discount" width="260px" :sortable="false">
+            <cell>
+              <div class="text-right whitespace-normal">
+                <span data-if="{{row.subtotal_discount_amount > 0}}" class="text-sm text-red-600 dark:text-red-400 font-medium block">-{{row.subtotal_discount_amount_formatted}}</span>
+                <!-- 적용 쿠폰 목록 -->
+                <div data-if="{{(row.promotions_applied_snapshot?.coupons ?? []).length > 0}}">
+                  <div data-each="coupon in {{row.promotions_applied_snapshot?.coupons ?? []}}" class="flex items-center justify-end gap-1 mt-0.5">
+                    <icon name="ticket" class="text-xs text-red-400 dark:text-red-500"/>
+                    <span class="text-tertiary">{{coupon.name ?? ''}} -{{coupon.total_discount_formatted ?? ''}}</span>
+                  </div>
+                </div>
+                <!-- 적용 할인코드 목록 -->
+                <div data-if="{{(row.promotions_applied_snapshot?.discount_codes ?? []).length > 0}}">
+                  <div data-each="discountCode in {{row.promotions_applied_snapshot?.discount_codes ?? []}}" class="flex items-center justify-end gap-1 mt-0.5">
+                    <icon name="tag" class="text-xs text-orange-400 dark:text-orange-500"/>
+                    <span class="text-tertiary">{{discountCode.name ?? discountCode.code ?? ''}} -{{discountCode.total_discount_formatted ?? ''}}</span>
+                  </div>
+                </div>
+                <!-- 적용 이벤트 목록 -->
+                <div data-if="{{(row.promotions_applied_snapshot?.events ?? []).length > 0}}">
+                  <div data-each="event in {{row.promotions_applied_snapshot?.events ?? []}}" class="flex items-center justify-end gap-1 mt-0.5">
+                    <icon name="gift" class="text-xs text-purple-400 dark:text-purple-500"/>
+                    <span class="text-tertiary">{{event.name ?? ''}} -{{event.total_discount_formatted ?? ''}}</span>
+                  </div>
+                </div>
+                <span data-if="{{row.referral_discount_amount > 0}}" class="text-tertiary block pl-2 mt-0.5">$t:sirsoft-ecommerce.admin.order.detail.order_info.discount_details.referral: -{{row.referral_discount_amount_formatted}}</span>
+              </div>
+            </cell>
+          </column>
+          <column field="actual_price" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.actual_price" width="130px" :sortable="false">
+            <cell>
+              <div class="text-right whitespace-nowrap">
+                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{row.final_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_tax_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.taxable: {{row.subtotal_tax_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_vat_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{row.subtotal_vat_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_points_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{row.subtotal_points_used_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_deposit_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{row.subtotal_deposit_used_amount_formatted}}</span>
+              </div>
+            </cell>
+          </column>
+          <column field="points" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.points" width="100px" :sortable="false">
+            <cell>
+              <div class="flex flex-col items-end gap-1 whitespace-nowrap">
+                <span class="text-sm text-blue-600 dark:text-blue-400 font-medium">{{row.subtotal_earned_points_amount | number}}P</span>
+                <!-- 실제 적립 여부 배지 (적립예정액이 있을 때만 노출) -->
+                <badge data-type="composite" data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earned}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.earned</badge>
+                <badge data-type="composite" data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; !row.is_points_earned &amp;&amp; !row.is_points_earn_cancelled}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.pending</badge>
+                <!-- S1-D19: 취소된 옵션은 다시 적립 대상이 되지 않는다 — 「적립예정」이 아니라 「적립 없음」 -->
+                <badge data-type="composite" data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earn_cancelled}}" size="sm" color="red">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.cancelled</badge>
+              </div>
+            </cell>
+          </column>
+          <column field="status" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.status" width="100px" :sortable="false">
+            <cell>
+              <div class="whitespace-nowrap">
+                <badge data-type="composite" variant="{{row.option_status_variant}}" icon="{{row.option_status_icon ?? ''}}">{{row.option_status_label}}</badge>
+              </div>
+            </cell>
+          </column>
+          <column field="delivery" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.delivery" width="170px" :sortable="false">
+            <cell>
+              <div class="whitespace-nowrap">
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100 block">{{row.shipping_type_label ?? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.parcel')}}</span>
+                <span data-if="{{row.shipping_policy_name}}" class="text-tertiary block">{{row.shipping_policy_name}}</span>
+                <!-- 취소된 줄은 배송비를 지지 않는다(행 몫 0 — 부분취소·재활성 재계산이 0 으로 쓴다). 「무료배송 0원」 으로 읽히지 않게 숨긴다. -->
+                <span data-if="{{row.option_status !== 'cancelled'}}" class="text-tertiary block">{{Number(row.shipping_amount) > 0 ? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.paid_shipping') : $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.free_shipping')}}</span>
+                <span data-if="{{row.option_status !== 'cancelled'}}" class="text-xs text-gray-600 dark:text-gray-300 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}</span>
+                <span data-if="{{row.carrier_name}}" class="text-xs text-gray-600 dark:text-gray-300 block">{{row.carrier_name}}</span>
+                <!-- 운송장 번호 — tracking_url 있으면 택배사 배송조회 링크 -->
+                <a data-if="{{row.tracking_url}}" href="{{row.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 block">{{row.tracking_number ?? ''}}</a>
+                <!-- 운송장 번호 폴백 — tracking_url 없을 때 텍스트만 -->
+                <span data-if="{{!row.tracking_url &amp;&amp; row.tracking_number}}" class="text-xs text-blue-600 dark:text-blue-400 block">{{row.tracking_number}}</span>
+              </div>
+            </cell>
+          </column>
+          <column field="subtotal" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.subtotal" width="130px" :sortable="false">
+            <cell>
+              <div class="text-right whitespace-nowrap">
+                <span class="text-base font-bold text-gray-900 dark:text-gray-100 block">{{row.subtotal_price_formatted}}</span>
+                <!-- 소계 보조 통화 -->
+                <div data-each="currency in {{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+                  <span class="text-tertiary">{{currency[1]?.formatted}}</span>
+                </div>
+              </div>
+            </cell>
+          </column>
+          <footer-cell field="product_info">
+            <span class="text-base font-bold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.total</span>
+          </footer-cell>
+          <footer-cell field="price">
+            <div class="text-right whitespace-nowrap">
+              <span data-if="{{order.data?.total_list_price !== order.data?.subtotal_amount}}" class="text-label-subtle line-through block">$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.original_price: {{order.data?.total_list_price_formatted}}</span>
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.selling_price: {{order.data?.subtotal_amount_formatted}}</span>
+              <!-- 판매가 합계 보조 통화 -->
+              <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+                <span class="text-tertiary">{{currency[1]?.formatted}}</span>
+              </div>
+            </div>
+          </footer-cell>
+          <footer-cell field="quantity" text="{{order.data?.total_quantity ?? 0}}개" class="text-center text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"/>
+          <footer-cell field="discount">
+            <div class="text-right whitespace-normal">
+              <span data-if="{{order.data?.total_discount_amount > 0}}" class="text-sm text-red-600 dark:text-red-400 font-medium block">-{{order.data?.total_discount_amount_formatted}}</span>
+              <span data-if="{{order.data?.total_coupon_discount_amount > 0}}" class="text-tertiary block pl-2">$t:sirsoft-ecommerce.admin.order.detail.order_info.discount_details.coupon: -{{order.data?.total_coupon_discount_amount_formatted}}</span>
+              <span data-if="{{order.data?.total_code_discount_amount > 0}}" class="text-tertiary block pl-2">$t:sirsoft-ecommerce.admin.order.detail.order_info.discount_details.discount_code: -{{order.data?.total_code_discount_amount_formatted}}</span>
+            </div>
+          </footer-cell>
+          <footer-cell field="actual_price">
+            <div class="text-right whitespace-nowrap">
+              <span class="text-sm font-bold text-gray-900 dark:text-gray-100 block">{{order.data?.total_amount_formatted}}</span>
+              <span data-if="{{order.data?.total_tax_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.taxable: {{order.data?.total_tax_amount_formatted}}</span>
+              <span data-if="{{order.data?.total_vat_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{order.data?.total_vat_amount_formatted}}</span>
+              <span data-if="{{order.data?.total_points_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{order.data?.total_points_used_amount_formatted}}</span>
+              <span data-if="{{order.data?.total_deposit_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{order.data?.total_deposit_used_amount_formatted}}</span>
+            </div>
+          </footer-cell>
+          <footer-cell field="points" text="{{order.data?.total_earned_points_amount | number}}P" class="text-center text-sm text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap"/>
+          <footer-cell field="status"/>
+          <footer-cell field="delivery" text="$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? ''}}" class="text-label whitespace-nowrap"/>
+          <footer-cell field="subtotal">
+            <div class="text-right whitespace-nowrap">
+              <span class="text-lg font-bold text-gray-900 dark:text-gray-100 block">{{order.data?.subtotal_amount_formatted}}</span>
+              <!-- 소계 합계 보조 통화 -->
+              <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+                <span class="text-tertiary">{{currency[1]?.formatted}}</span>
+              </div>
+            </div>
+          </footer-cell>
+          <footer-card>
+            <div class="row-stack">
+              <div class="flex justify-between items-end">
+                <span class="font-bold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.total</span>
+                <div class="text-right">
+                  <span class="text-lg font-bold text-gray-900 dark:text-gray-100 block">{{order.data?.subtotal_amount_formatted}}</span>
+                  <!-- 합계 보조 통화 -->
+                  <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+                    <span class="text-tertiary">{{currency[1]?.formatted}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </footer-card>
+          <on type="change" event="onSelectionChange">
+            <!-- 체크한 상품 id 묶음 — 위 일괄 변경 버튼의 잠금 조건이자 그 처리의 대상이다. -->
+            <set-state target="_local" selectedProducts="{{$args[0]}}"/>
+          </on>
+        </data-grid>
+      </div>
+      <div data-ref="orderer_info_section" class="mt-8 pt-8">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.title</h3>
+        <div class="row-stack">
+          <div class="grid-2col-responsive">
+            <div>
+              <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.name</span>
+              <action-menu data-type="composite" data-if="{{!!order.data?.user_id}}" position="left">
+                <prop name="items">
+                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member" iconName="user"/>
+                  <item id="search_by_orderer" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.search_by_member" iconName="magnifying-glass"/>
+                </prop>
+                <on event="onItemClick">
+                  <!-- 주문자 이름 메뉴 — 회원 상세는 **새 창**으로(보던 주문을 잃지 않게), 그 회원 주문만 보기는 같은 창에서 주문 목록으로 넘어간다. -->
+                  <switch>
+                    <case when="view_member">
+                      <open-window path="/admin/users/{{order.data?.user_id}}"/>
+                    </case>
+                    <case when="search_by_orderer">
+                      <!-- 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75). -->
+                      <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_product_datagrid__body">
+                        <query search_field="orderer_name" search_keyword="{{order.data?.orderer_name}}" orderer_uuid="" :page="1"/>
+                      </navigate>
+                    </case>
+                  </switch>
+                </on>
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+                  <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                  <div class="min-w-0 flex-1">
+                    <span class="text-sm text-gray-900 dark:text-gray-100 truncate block">{{order.data?.orderer_name}} ({{order.data?.orderer_email ?? order.data?.user_login_id ?? ''}})</span>
+                  </div>
+                </div>
+              </action-menu>
+              <!-- 비회원 주문자명 -->
+              <div data-if="{{!order.data?.user_id}}" class="flex-center gap-2 px-1 py-0.5">
+                <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                <span class="text-secondary">{{order.data?.orderer_name}}</span>
+                <span class="text-sm text-gray-400 dark:text-gray-500">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                <!-- 비회원 조회 비밀번호 재설정 버튼 — 주문 수정 권한(can_update)으로 잠근다(형제 [메일 보내기]와 같은 키, 서버도 403). -->
+                <button data-ref="order_reset_guest_password_button" type="button" class="ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                  <on type="click">
+                    <open-modal target="modal_reset_guest_password"/>
+                  </on>
+                  <icon name="key" size="sm"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.detail.order_info.reset_guest_password</span>
+                </button>
+              </div>
+            </div>
+            <div>
+              <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.phone</span>
+              <div class="flex-center gap-2">
+                <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{order.data?.orderer_phone}}</div>
+              </div>
+            </div>
+          </div>
+          <div class="grid-2col-responsive">
+            <div>
+              <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.tel</span>
+              <div class="bg-gray-100 dark:bg-gray-800 rounded px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{order.data?.orderer_tel ?? '-'}}</div>
+            </div>
+            <div>
+              <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.email</span>
+              <div class="flex-center gap-2">
+                <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{order.data?.orderer_email}}</div>
+                <button type="button" class="btn btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                  <on type="click">
+                    <!-- 메일 보내기 — 받는 주소를 먼저 담고 창을 연다. 그 창은 자기 `_local` 이 아니라 `$parent._local` 에서 주소를 읽으므로 이 자리가 그 창의 입력이다(순서를 뒤집으면 빈 주소로 열린다). -->
+                    <sequence>
+                      <set-state target="local" emailAddress="{{order.data?.orderer_email}}"/>
+                      <open-modal target="modal_send_email"/>
+                    </sequence>
+                  </on>
+                  $t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="receiver_info_section" class="mt-8 pt-8">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.title</h3>
+        <!-- Validation Error 배너 -->
+        <div data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="alert-danger">
+          <div class="flex-start gap-2">
+            <icon name="circle-exclamation" class="text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0"/>
+            <div class="min-w-0 flex-1">
+              <span class="text-error-strong block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.validation_error_title</span>
+              <div data-each="errorMsg in {{Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])}}" class="text-error-soft">{{errorMsg}}</div>
+            </div>
+          </div>
+        </div>
+        <div class="row-stack">
+          <div class="grid-2col-responsive">
+            <!-- 배송국가 (D9 — 항상 표시 KR 포함. 해외배송 활성 시 변경 가능, 아니면 표시 전용 — D7) -->
+            <div>
+              <span class="text-label-subtle mb-1 block">$t:sirsoft-ecommerce.common.shipping_country_label</span>
+              <select data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" name="recipient_country_code" value="{{_local.form.recipient_country_code ?? order?.data?.shipping_address?.recipient_country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}" class="w-full" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                <on type="change">
+                  <!-- 수령 국가 — 해외배송을 켠 쇼핑몰에서만 고를 수 있고, 끈 상태에서는 이 선택칸 자리에 나라 이름만 글자로 보인다. -->
+                  <set-state target="local" form.recipient_country_code="{{$event.target.value}}"/>
+                </on>
+              </select>
+              <span data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled !== true}}" class="text-gray-900 dark:text-white">{{$localized(order?.data?.shipping_address?.recipient_country_name) || order?.data?.shipping_address?.recipient_country_code || 'KR'}}</span>
+            </div>
+            <div>
+              <div class="flex-center gap-1 mb-1">
+                <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.name</span>
+                <span class="text-red-500 dark:text-red-400">*</span>
+              </div>
+              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_name ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_name}}" name="recipient_name" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+              <span data-if="{{_local.errors?.recipient_name}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_name?.[0] ?? ''}}</span>
+            </div>
+            <div>
+              <div class="flex-center gap-1 mb-1">
+                <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone</span>
+                <span class="text-red-500 dark:text-red-400">*</span>
+              </div>
+              <div class="flex-center gap-2">
+                <input type="text" class="input flex-1 disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_phone ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_phone}}" name="recipient_phone" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+              </div>
+              <span data-if="{{_local.errors?.recipient_phone}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_phone?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div class="grid-2col-responsive">
+            <div>
+              <div class="flex-center gap-1 mb-1">
+                <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel</span>
+                <span class="text-red-500 dark:text-red-400">*</span>
+              </div>
+              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_tel ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_tel}}" name="recipient_tel" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+              <span data-if="{{_local.errors?.recipient_tel}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_tel?.[0] ?? ''}}</span>
+              <span class="text-hint mt-1 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone_or_tel_hint</span>
+            </div>
+            <!-- 국내(KR) 우편번호 — 해외 주문이면 숨김 (D7) -->
+            <div data-if="{{(_local.form.recipient_country_code ?? 'KR') === 'KR'}}">
+              <div class="flex-center gap-1 mb-1">
+                <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.zipcode</span>
+                <span class="text-red-500 dark:text-red-400">*</span>
+              </div>
+              <div class="flex-center gap-2">
+                <input type="text" class="{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}" value="{{_local.form.recipient_zipcode}}" name="recipient_zipcode" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+                <!-- 콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다 -->
+                <extension-point name="address_search_slot" data-ref="order_detail_address_search_slot" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                  <prop name="readOnlyFields">
+                    <item>recipient_zipcode</item>
+                  </prop>
+                  <callback name="onAddressSelect">
+                    <set-state target="local" form.recipient_zipcode="{{$event.zipcode}}" form.recipient_address="{{$event.address}}"/>
+                  </callback>
+                </extension-point>
+              </div>
+              <span data-if="{{_local.errors?.recipient_zipcode}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_zipcode?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <!-- 국내(KR) 주소 — 해외 주문이면 숨김 (D7) -->
+          <div data-if="{{(_local.form.recipient_country_code ?? 'KR') === 'KR'}}">
+            <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address</span>
+            <input type="text" class="input-readonly w-full" value="{{_local.form.recipient_address ?? ''}}" name="recipient_address" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+          </div>
+          <!-- 국내(KR) 상세주소 — 해외 주문이면 숨김 (D7) -->
+          <div data-if="{{(_local.form.recipient_country_code ?? 'KR') === 'KR'}}">
+            <div class="flex-center gap-1 mb-1">
+              <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address_detail</span>
+              <span class="text-red-500 dark:text-red-400">*</span>
+            </div>
+            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_detail_address ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_detail_address}}" name="recipient_detail_address" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <span data-if="{{_local.errors?.recipient_detail_address}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_detail_address?.[0] ?? ''}}</span>
+          </div>
+          <!-- 해외 주소 (D7 — KR 외 국가 주문 시. 체크아웃/주소록과 동일 필드: address_line_1/2, intl_city/state/postal_code) -->
+          <div data-if="{{(_local.form.recipient_country_code ?? 'KR') !== 'KR'}}" class="space-y-2">
+            <div class="flex-center gap-1 mb-1">
+              <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address</span>
+              <span class="text-red-500 dark:text-red-400">*</span>
+            </div>
+            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.address_line_1 ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.address_line_1 ?? ''}}" name="address_line_1" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address1_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <span data-if="{{_local.errors?.address_line_1}}" class="form-error-xs mt-1 block">{{_local.errors?.address_line_1?.[0] ?? ''}}</span>
+            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.form.address_line_2 ?? ''}}" name="address_line_2" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address2_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.intl_city ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.intl_city ?? ''}}" name="intl_city" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_city_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.form.intl_state ?? ''}}" name="intl_state" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_state_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            </div>
+            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.intl_postal_code ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.intl_postal_code ?? ''}}" name="intl_postal_code" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_postal_code_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <span data-if="{{_local.errors?.intl_city || _local.errors?.intl_postal_code}}" class="form-error-xs mt-1 block">{{_local.errors?.intl_city?.[0] ?? _local.errors?.intl_postal_code?.[0] ?? ''}}</span>
+          </div>
+          <div>
+            <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.delivery_message</span>
+            <!-- 주문시점 배송 메모 라벨 (프리셋 선택 시 표시, read-only) -->
+            <span data-if="{{order?.data?.shipping_address?.delivery_memo_label}}" class="block mb-1 text-sm text-gray-900 dark:text-white">{{order?.data?.shipping_address?.delivery_memo_label ?? ''}}</span>
+            <textarea class="input w-full textarea-sm disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.delivery_memo ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.delivery_memo}}" name="delivery_memo" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <span data-if="{{_local.errors?.delivery_memo}}" class="form-error-xs mt-1 block">{{_local.errors?.delivery_memo?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="admin_memo_section" class="mt-8 pt-8">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">$t:sirsoft-ecommerce.admin.order.detail.order_info.admin_memo.title</h3>
+        <textarea class="input w-full textarea-md disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.admin_memo ? 'border border-red-500 dark:border-red-500' : ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.admin_memo.placeholder" value="{{_local.form.admin_memo}}" name="admin_memo" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+        <span data-if="{{_local.errors?.admin_memo}}" class="form-error-xs mt-1 block">{{_local.errors?.admin_memo?.[0] ?? ''}}</span>
+        <div class="flex justify-end mt-3">
+          <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true || _local.isSaving}}">
+            <on type="click">
+              <!-- 주문 정보 저장 — 수령인·메모 등 이 화면에서 고친 값들을 한 번에 보낸다.
+                성공해도 주문을 다시 불러오지 않는다. 화면이 이미 고친 값을 들고 있고, 서버가 파생
+                시키는 값(상태·금액)은 여기서 바뀌지 않기 때문이다. -->
+              <sequence>
+                <set-state target="local" :isSaving="true" :errors="null"/>
+                <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/orders/{{_local.order_number}}" method="PATCH">
+                  <success>
+                    <set-state target="local" :isSaving="false" :errors="null"/>
+                    <toast type="success" message="$t:sirsoft-ecommerce.admin.order.detail.order_info.save_success"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.order.detail.order_info.save_error'}}"/>
+                  </fail>
+                  <body recipient_name="{{_local.form.recipient_name}}" recipient_phone="{{_local.form.recipient_phone}}" recipient_tel="{{_local.form.recipient_tel}}" recipient_country_code="{{_local.form.recipient_country_code ?? 'KR'}}" recipient_zipcode="{{_local.form.recipient_zipcode}}" recipient_address="{{_local.form.recipient_address}}" recipient_detail_address="{{_local.form.recipient_detail_address}}" address_line_1="{{_local.form.address_line_1}}" address_line_2="{{_local.form.address_line_2}}" intl_city="{{_local.form.intl_city}}" intl_state="{{_local.form.intl_state}}" intl_postal_code="{{_local.form.intl_postal_code}}" delivery_memo="{{_local.form.delivery_memo}}" admin_memo="{{_local.form.admin_memo}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.isSaving}}" name="spinner" :spin="true" class="mr-2"/>
+            <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.admin.order.detail.order_info.save</span>
+            <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="cancel_reason_section" data-if="{{(order.data?.cancels?.data ?? order.data?.cancels ?? []).length > 0}}" class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">$t:sirsoft-ecommerce.admin.order.detail.order_info.cancel_reason.title</h3>
+        <div class="space-y-3">
+          <!-- 취소 건별 카드 (부분취소 다건 목록) -->
+          <div data-each="cancel in order.data?.cancels?.data ?? order.data?.cancels ?? []" class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-2 min-w-0">
+                <span data-if="{{cancel.cancel_type_label}}" class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 shrink-0">{{cancel.cancel_type_label ?? ''}}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{cancel.cancel_reason_label ?? ''}}</span>
+              </div>
+              <span data-if="{{cancel.cancelled_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{cancel.cancelled_at_formatted ?? ''}}</span>
+            </div>
+            <!-- 상세 사유 (기타 입력 시) -->
+            <div data-if="{{cancel.cancel_reason_detail}}" class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+              <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.cancel_reason.detail</span>
+              <p class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line">{{cancel.cancel_reason_detail ?? ''}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

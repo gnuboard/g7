@@ -43,6 +43,11 @@ class BundledInstanceRedeclarationGuardTest extends TestCase
     /** 임시 확장 루트 (modules/ 와 plugins/ 를 담는다) */
     private string $tempRoot;
 
+    /**
+     * 테스트 준비 — 임시 확장 루트 경로를 정합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,6 +55,11 @@ class BundledInstanceRedeclarationGuardTest extends TestCase
         $this->tempRoot = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-redeclare-guard-'.bin2hex(random_bytes(6));
     }
 
+    /**
+     * 테스트 정리 — 임시 확장 루트를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (is_dir($this->tempRoot)) {
@@ -106,6 +116,7 @@ PHP);
      * @param  object  $manager  ModuleManager / PluginManager 인스턴스
      * @param  string  $property  경로 프로퍼티명
      * @param  string  $path  새 경로
+     * @return void 반환값 없음
      */
     private function repointRoot(object $manager, string $property, string $path): void
     {
@@ -115,6 +126,15 @@ PHP);
         $prop->setValue($manager, $path);
     }
 
+    /**
+     * 활성 사본이 선언된 상태에서 모듈 번들 인스턴스 조회는 번들 사본을 재선언 없이 읽는다.
+     *
+     * @scenario ext_type=module, load_order=active_then_bundled_preview
+     *
+     * @effects bundled_preview_reads_bundled_copy_without_redeclare
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_bundled_instance_does_not_redeclare_active_copy(): void
     {
         $activePath = $this->writeFixture('modules', 'g7guard-module_fixture', 'G7guard\\ModuleFixture');
@@ -140,6 +160,15 @@ PHP);
         );
     }
 
+    /**
+     * 활성 사본이 선언된 상태에서 플러그인 번들 인스턴스 조회는 번들 사본을 재선언 없이 읽는다.
+     *
+     * @scenario ext_type=plugin, load_order=active_then_bundled_preview
+     *
+     * @effects bundled_preview_reads_bundled_copy_without_redeclare
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_bundled_instance_does_not_redeclare_active_copy(): void
     {
         $activePath = $this->writeFixture('plugins', 'g7guard-plugin_fixture', 'G7guard\\PluginFixture');

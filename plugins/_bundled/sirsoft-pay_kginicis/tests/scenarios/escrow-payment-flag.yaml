@@ -1,0 +1,23 @@
+feature: KG이니시스 에스크로 결제 표시
+
+description: |
+  「에스크로 사용」 을 켠 상점에서 결제창은 useescrow 를 실어 에스크로 MID(테스트 iniescrow0)로 결제하고,
+  승인(PC·모바일)·가상계좌 발급 콜백은 결제 행에 is_escrow 를 남긴다. 마이페이지 [구매결정]·관리자 에스크로 배송 등록·
+  구매결정 확인 조회·에스크로 환불 분기는 이 표시로만 에스크로 결제를 알아본다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D18):
+    - 콜백이 is_escrow 를 남기지 않아 에스크로로 받은 결제가 모두 일반 결제로 보였다(실측: 주문 736 tid …iniescrow0…, is_escrow=0).
+      간편결제를 고른 결제는 결제창이 useescrow 를 빼므로 에스크로가 아니다.
+
+axes:
+  case: [vbank_escrow_on, card_escrow_on, escrow_off, pc_easy_pay, mobile_escrow_on, mobile_easy_pay]
+
+effects:
+  - escrow_payment_flagged          # 에스크로 켠 상점의 가상계좌 발급·카드·PC 간편결제·모바일 승인 → is_escrow=1 (PC 결제창은 간편결제에도 useescrow 를 둔다 — S4-D21)
+  - non_escrow_payment_not_flagged  # 에스크로 끔·모바일 간편결제(결제창이 useescrow 를 뺌) → is_escrow=0
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/EscrowPaymentFlagTest.php
+
+validation:
+  browser_check: 전용 Chrome 실측 — 배타 창에서 KG 에스크로 켬·가상계좌 KG, m2 가상계좌 주문 → 결제 행 is_escrow=1, 로컬 입금 뒤 마이페이지 [구매결정] 버튼

@@ -1,0 +1,88 @@
+<!-- **필요한 확장이 없는데도** 활성하겠다는 확인 창. 목록 토글이 409 를 받았을 때 열린다.
+  무엇이 없는지는 서버가 보낸 오류를 목록이 전역 `activateWarningData` 에 담아 준 것을 읽는다.
+  취소도 그냥 닫지 않는다 — 목록을 다시 받아 **켜진 채로 남은 스위치를 서버 값으로 되돌린다**.
+  같은 이유로 성공/취소 어느 쪽이든 경고 데이터를 비운다(다음 확장에서 옛 목록이 보이지 않게). -->
+<partial description="모듈 강제 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_force_activate_modal">
+  <modal data-type="composite" data-ref="module_force_activate_modal" title="$t:admin.modules.modals.activate_warning_title" size="sm">
+    <div class="py-2">
+      <div class="alert-warning">
+        <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <div>
+          <p class="text-warning-soft">$t:admin.modules.modals.activate_warning_message</p>
+        </div>
+      </div>
+      <div data-if="{{_global.activateWarningData?.missing_modules?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.modules.modals.missing_modules</p>
+        <div>
+          <div data-each="module in _global.activateWarningData?.missing_modules ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{module.name || module.identifier}}</span>
+            <span data-if="{{module.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
+            <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">$t:admin.modules.status.not_installed</span>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.activateWarningData?.missing_plugins?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.modules.modals.missing_plugins</p>
+        <div>
+          <div data-each="plugin in _global.activateWarningData?.missing_plugins ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="plug" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{plugin.name || plugin.identifier}}</span>
+            <span data-if="{{plugin.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
+            <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded">$t:admin.plugins.status.not_installed</span>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-label">$t:admin.modules.modals.force_activate_description</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
+        <on type="click">
+          <!-- 취소 — 목록을 다시 받는 것이 요점이다. 토글은 이미 눌린 모양이라 그냥 닫으면
+               켜진 것처럼 보이는 채로 남는다. -->
+          <sequence>
+            <set-state target="global" :activateWarningData="null"/>
+            <refetch-data-source dataSourceId="modules"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
+        <on type="click">
+          <!-- 강제 활성 실행. 목록·사이드바 메뉴 갱신과 프론트 확장 번들 재적재를 **동시에** 낸다 —
+               서로 기다릴 이유가 없다. 메뉴를 빼먹으면 방금 켠 확장의 메뉴가 안 보인다. -->
+          <sequence>
+            <set-state target="global" :isForceActivating="true"/>
+            <api-call :auth_required="true" target="/api/admin/modules/activate" method="POST">
+              <success>
+                <set-state target="global" :isForceActivating="false" :activateWarningData="null"/>
+                <parallel>
+                  <refetch-data-source dataSourceId="modules"/>
+                  <refetch-data-source dataSourceId="admin_menu"/>
+                  <reload-extensions moduleInfo="{{result.data?.module ?? result}}" action="add"/>
+                </parallel>
+                <toast type="success" message="$t:admin.modules.activate_success"/>
+                <!-- 토글과 같은 활성화 API 다 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록했으면 몇 건인지 경고로 알린다. -->
+                <toast if="{{(response?.data?.layout_warnings?.length ?? 0) &gt; 0}}" type="warning" message="$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"/>
+                <close-modal/>
+                <!-- 확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —
+                     서버는 목록을 건넨 뒤 지우므로 여기서 묻지 않으면 되살릴 기회가 사라진다. 일괄 활성은
+                     언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다. -->
+                <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}"/>
+                <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="module_reactivate_language_packs_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isForceActivating="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body module_name="{{_global.selectedModule.identifier}}" :force="true"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isForceActivating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isForceActivating ? '$t:admin.modules.activating' : '$t:admin.modules.modals.confirm_activate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

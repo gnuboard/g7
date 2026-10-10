@@ -58,8 +58,8 @@ class ActivityLogControllerTest extends TestCase
     /**
      * 관리자 역할 생성 및 할당 (스코프 지정 가능)
      *
-     * @param array $permissions 사용자에게 부여할 권한 식별자 목록
-     * @param string|null $scopeType 스코프 타입 (null: 전체, 'self': 본인, 'role': 소유역할)
+     * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
+     * @param  string|null  $scopeType  스코프 타입 (null: 전체, 'self': 본인, 'role': 소유역할)
      * @return User
      */
     private function createAdminUser(array $permissions = ['core.activities.read'], ?string $scopeType = null): User
@@ -158,7 +158,7 @@ class ActivityLogControllerTest extends TestCase
     /**
      * 테스트용 활동 로그 생성
      *
-     * @param array $overrides 오버라이드할 속성
+     * @param  array  $overrides  오버라이드할 속성
      * @return ActivityLog
      */
     private function createActivityLog(array $overrides = []): ActivityLog

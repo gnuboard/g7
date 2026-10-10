@@ -1,0 +1,68 @@
+{
+  "page_title": "Scrap Management",
+  "page_description": "Browse and clean up posts scrapped by all members.",
+  "search_placeholder": "Enter a keyword",
+  "search": "Search",
+  "reset": "Reset",
+  "advanced_search": "Advanced search",
+  "selected_count": "{{count}} selected",
+  "search_fields": {
+    "all": "All",
+    "post_title": "Post title",
+    "post_content": "Post content",
+    "board_name": "Board name",
+    "member": "Member (name, email)",
+    "author_name": "Author name"
+  },
+  "filters": {
+    "board_label": "Board",
+    "board_all": "All boards",
+    "scrapped_at_label": "Scrapped on",
+    "member_filter_notice": "Showing scraps for one member only",
+    "member_filter_clear": "Clear member filter",
+    "date_quick_today": "Today",
+    "date_quick_3days": "3 days",
+    "date_quick_week": "1 week",
+    "date_quick_month": "1 month",
+    "date_quick_3months": "3 months",
+    "date_quick_all": "All"
+  },
+  "columns": {
+    "scrapped_at": "Scrapped on",
+    "member": "Member",
+    "board_name": "Board",
+    "post_title": "Post title",
+    "author_name": "Author",
+    "post_status": "Status"
+  },
+  "cell": {
+    "view_member": "View member",
+    "search_member": "Search by this member"
+  },
+  "badges": {
+    "deleted_post": "Deleted post",
+    "board_deleted": "Board deleted",
+    "scrap_off": "Scrap off",
+    "withdrawn": "Withdrawn"
+  },
+  "actions": {
+    "go_to_post": "View post",
+    "go_to_member": "Member details",
+    "delete": "Delete",
+    "bulk_delete": "Delete selected"
+  },
+  "modals": {
+    "delete_title": "Delete this scrap?",
+    "delete_confirm": "It will disappear from the member's scrap list. The post itself is not deleted.",
+    "delete_editor_label": "Scrap delete confirmation",
+    "bulk_delete_title": "Delete the selected scraps?",
+    "bulk_delete_confirm": "Delete {{count}} selected scraps? They will disappear from the members' scrap lists.",
+    "bulk_delete_confirm_one": "Delete {{count}} selected scrap? It will disappear from the member's scrap list.",
+    "bulk_delete_editor_label": "Scrap bulk delete confirmation",
+    "processing": "Processing..."
+  },
+  "pagination_info": "{{from}}-{{to}} of {{total}}",
+  "table_empty": "No scraps match the current filters.",
+  "refresh": "Refresh",
+  "total_count": "{{count}} total"
+}

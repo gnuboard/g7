@@ -1,13 +1,16 @@
 {
+    "comment": "언어팩 목록의 **전체 범위** 진입점. 화면 본체는 전부 `admin_language_pack_list` 가 갖고 있고,\n  이 파일은 `scopeContext` 한 값만 바꿔 상속한다 — 같은 형태가 module/plugin/template 셋 더 있다.\n  메뉴마다 URL 을 따로 주면서 목록 구현은 한 벌로 두기 위한 분리다.",
     "version": "1.0.0",
     "layout_name": "admin_language_packs",
-    "permissions": ["core.language_packs.read"],
     "extends": "admin_language_pack_list",
     "meta": {
         "title": "$t:admin.language_packs.page_title",
         "description": "$t:admin.language_packs.page_description"
     },
-    "state": {
+    "initLocal": {
         "scopeContext": "all"
-    }
+    },
+    "permissions": [
+        "core.language_packs.read"
+    ]
 }

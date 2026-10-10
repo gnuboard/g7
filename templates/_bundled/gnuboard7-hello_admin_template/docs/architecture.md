@@ -31,14 +31,14 @@ SEO 설정 · 확장 오버라이드. `sirsoft-admin_basic` 과 나란히 보면
 template.json          manifest — type: admin · 컴포넌트 레지스트리 · error_config
 routes.json            `*/admin` → admin_dashboard
      │
-layouts/_admin_base.json     관리자 공통 뼈대 (헤더 · 사이드바 · 콘텐츠 슬롯)
+layouts/_admin_base.g7.html     관리자 공통 뼈대 (헤더 · 사이드바 · 콘텐츠 슬롯)
      │  extends
-     ├─ layouts/admin_dashboard.json
+     ├─ layouts/admin_dashboard.g7.html
      └─ layouts/errors/{401,403,404,500,503,maintenance}.json   ← 6종 필수
      │
 src/components/basic/  Div · Button · H1 · H2 · H3 · A · Span · Img
      │
-src/index.ts           initTemplate() — ComponentRegistry 에 8개 등록 (재시도 루프)
+src/index.ts           Basic 8개 + templateMetadata export 만 (등록은 코어가 components.json 기준으로)
      │
 dist/                  커밋되는 빌드 산출물
 __tests__/layouts/     createLayoutTest() 기반 렌더링 테스트
@@ -47,10 +47,12 @@ __tests__/layouts/     createLayoutTest() 기반 렌더링 테스트
 **서버 코드가 없습니다.** 템플릿은 화면만 담당하며 데이터는 코어·모듈의 공개 API 에서
 옵니다 — 그래서 템플릿을 갈아 끼워도 데이터는 그대로입니다.
 
-`src/index.ts` 의 **재시도 루프**가 눈여겨볼 부분입니다. `initTemplate()` 이 모듈 로드 시
-스스로 실행되지만, 그 시점에 코어 `ComponentRegistry` 가 아직 없을 수 있어 100ms 간격으로 최대
-50회 다시 시도합니다(`window.load` 이후 시작). 재시도가 없으면 로드 순서에 따라 등록이
-건너뛰어지고, 레이아웃이 참조하는 컴포넌트 이름을 찾지 못해 화면이 조용히 빕니다.
+`src/index.ts` 가 **export 만 한다**는 점이 눈여겨볼 부분입니다. 템플릿은 컴포넌트를 스스로
+등록하지 않습니다 — 코어 `ComponentRegistry` 가 `components.json` 을 읽고, 번들이 내보낸 전역
+`window.Gnuboard7HelloAdminTemplate` 에서 선언된 이름의 구현체를 찾아 등록합니다. 코어는 엔진과
+템플릿 번들이 모두 적재된 뒤에 초기화하므로 템플릿 쪽에서 적재 순서를 기다릴 일이 없습니다.
+대신 export 이름과 `components.json` 의 `name` 이 어긋나면 그 컴포넌트는 등록되지 않고, 레이아웃이
+그 이름을 참조하는 자리가 조용히 빕니다.
 
 레이아웃 렌더링 테스트는 **이 템플릿 디렉토리에 둡니다**(`__tests__/layouts/`). 코어
 디렉토리에 두면 그 템플릿을 지울 때 테스트만 남습니다.
@@ -63,11 +65,12 @@ __tests__/layouts/     createLayoutTest() 기반 렌더링 테스트
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update gnuboard7-hello_admin_template --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update gnuboard7-hello_admin_template --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update gnuboard7-hello_admin_template --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update gnuboard7-hello_admin_template --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update gnuboard7-hello_admin_template --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update gnuboard7-hello_admin_template --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update gnuboard7-hello_admin_template --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

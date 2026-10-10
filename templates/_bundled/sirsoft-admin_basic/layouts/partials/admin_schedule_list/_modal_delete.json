@@ -1,163 +1,165 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "스케줄 삭제 확인 모달",
-    "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_delete_modal"
-  },
-  "id": "schedule_delete_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.schedules.modals.delete_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-gray-700 dark:text-gray-300"
-      },
-      "text": "$t:admin.schedules.modals.delete_confirm"
+    "comment": "예약 작업 하나를 지우기 전 되묻는 창. 지울 대상은 **이름과 번호를 따로** 담아 온다 — 화면에는\n  이름을, 요청에는 번호를 쓰기 때문이고, 그래서 이 창은 서버를 다시 부르지 않는다.\n  지나간 실행 이력이 함께 사라지는지는 서버가 정한다. 창은 그 부분을 다루지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "스케줄 삭제 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_delete_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-primary font-medium"
-          },
-          "text": "{{_global.deleteTargetName}}"
-        }
-      ]
+    "id": "schedule_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.schedules.modals.delete_title",
+        "size": "sm"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isDeleting}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal",
-              "target": "schedule_delete_modal"
-            }
-          ],
-          "text": "$t:common.cancel"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:admin.schedules.modals.delete_confirm"
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isDeleting}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isDeleting": true
-                  }
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-primary font-medium"
+                    },
+                    "text": "{{_global.deleteTargetName}}"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "schedule_delete_modal"
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isDeleting}}"
+                    },
+                    "text": "$t:common.cancel"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/schedules/{{_global.deleteTargetId}}",
-                  "params": {
-                    "method": "DELETE"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDeleting": false
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "지운 뒤 담아 뒀던 대상을 비운다 — 이름·번호가 전역이라 남겨 두면 다음에 연 창이 이미 없는 작업을 가리킨다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/schedules/{{_global.deleteTargetId}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "deleteTargetId": null,
+                                                "deleteTargetName": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.schedules.messages.delete_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "schedules"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "schedule_delete_modal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.schedules.errors.delete_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isDeleting}}"
                     },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "deleteTargetId": null,
-                        "deleteTargetName": ""
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.schedules.messages.delete_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "schedules"
-                      }
-                    },
-                    {
-                      "handler": "closeModal",
-                      "target": "schedule_delete_modal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDeleting": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message ?? '$t:admin.schedules.errors.delete_failed'}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isDeleting}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

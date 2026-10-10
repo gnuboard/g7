@@ -3,10 +3,12 @@
 namespace Tests\Feature\Dashboard;
 
 use App\Enums\ExtensionOwnerType;
+use App\Enums\PermissionType;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\ExtensionCompatibilityAlertService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -27,6 +29,11 @@ class ExtensionCompatibilityAlertTest extends TestCase
 
     private string $token;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,13 +42,19 @@ class ExtensionCompatibilityAlertTest extends TestCase
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
     }
 
+    /**
+     * 테스트용 관리자를 만듭니다.
+     *
+     * @return User 생성된 관리자
+     */
     private function createAdminUser(): User
     {
         $user = User::factory()->create([
             'password' => Hash::make('password123'),
         ]);
 
-        $permissions = ['core.dashboard.read'];
+        // 시스템 알림 API 는 시스템 알림 권한을 요구한다(7.1.0 — 화면 블록 게이트와 같은 권한).
+        $permissions = ['core.dashboard.read', 'core.dashboard.alerts'];
         $permissionIds = [];
         foreach ($permissions as $permIdentifier) {
             $permission = Permission::firstOrCreate(
@@ -51,7 +64,7 @@ class ExtensionCompatibilityAlertTest extends TestCase
                     'description' => json_encode(['ko' => $permIdentifier, 'en' => $permIdentifier]),
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
-                    'type' => \App\Enums\PermissionType::Admin,
+                    'type' => PermissionType::Admin,
                 ]
             );
             $permissionIds[] = $permission->id;
@@ -89,6 +102,11 @@ class ExtensionCompatibilityAlertTest extends TestCase
         return $user->fresh();
     }
 
+    /**
+     * 인증 헤더를 붙인 요청 체인을 돌려줍니다.
+     *
+     * @return static 인증 헤더가 붙은 요청 체인
+     */
     private function authRequest(): static
     {
         return $this->withHeaders([
@@ -97,6 +115,15 @@ class ExtensionCompatibilityAlertTest extends TestCase
         ]);
     }
 
+    /**
+     * 시스템 알림 API 가 배열을 돌려준다.
+     *
+     * @scenario area=alerts
+     *
+     * @effects dashboard_alerts_endpoint_returns_array_payload
+     *
+     * @return void 반환값 없음
+     */
     public function test_dashboard_alerts_endpoint_returns_array_payload(): void
     {
         $response = $this->authRequest()->getJson('/api/admin/dashboard/alerts');
@@ -105,6 +132,15 @@ class ExtensionCompatibilityAlertTest extends TestCase
             ->assertJsonStructure(['success', 'data']);
     }
 
+    /**
+     * 호환성 알림 리스너가 필터 훅으로 등록된다.
+     *
+     * @scenario area=compatibility_listener
+     *
+     * @effects listener_subscribed_hook_registered_with_filter_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_subscribed_hook_registered_with_filter_type(): void
     {
         $hooks = ExtensionCompatibilityAlertListener::getSubscribedHooks();
@@ -114,7 +150,16 @@ class ExtensionCompatibilityAlertTest extends TestCase
         $this->assertSame('addCompatibilityAlerts', $hooks['core.dashboard.alerts']['method']);
     }
 
-    public function test_listener_addCompatibilityAlerts_returns_array_unchanged_when_no_records(): void
+    /**
+     * 자동 비활성 기록이 없으면 알림 배열을 그대로 둔다.
+     *
+     * @scenario area=compatibility_listener
+     *
+     * @effects listener_addCompatibilityAlerts_returns_array_unchanged_when_no_records
+     *
+     * @return void 반환값 없음
+     */
+    public function test_listener_add_compatibility_alerts_returns_array_unchanged_when_no_records(): void
     {
         $listener = new ExtensionCompatibilityAlertListener;
 
@@ -123,9 +168,18 @@ class ExtensionCompatibilityAlertTest extends TestCase
         $this->assertIsArray($result);
     }
 
+    /**
+     * 알림 닫기가 사용자별로 저장된다.
+     *
+     * @scenario area=compatibility_dismiss
+     *
+     * @effects dismiss_alert_persists_for_user
+     *
+     * @return void 반환값 없음
+     */
     public function test_dismiss_alert_persists_for_user(): void
     {
-        $service = app(\App\Services\ExtensionCompatibilityAlertService::class);
+        $service = app(ExtensionCompatibilityAlertService::class);
         $service->dismissAlert('compat_plugin_test', $this->admin->id);
 
         // 두 번 호출해도 중복 추가 안됨 (idempotent)

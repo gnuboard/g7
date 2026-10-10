@@ -10,6 +10,8 @@ const G7Core = () => (window as any).G7Core;
 export interface IconButtonProps {
   iconName: IconName;
   label?: string;
+  /** 글자 없는 버튼의 접근 가능한 이름(+툴팁). 비우면 아이콘별 기본 이름(새로고침·추가·닫기 등) */
+  ariaLabel?: string;
   onClick?: () => void;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg';
@@ -23,6 +25,42 @@ export interface IconButtonProps {
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
 }
+
+/** 아이콘만 있는 버튼의 기본 이름 키 — 아이콘은 꾸밈으로 숨겨지므로 버튼에 이름을 단다(7.1.0 J D-J4) */
+const ICON_DEFAULT_LABEL_KEYS: Record<string, string> = {
+  refresh: 'common.refresh',
+  'arrows-rotate': 'common.refresh',
+  'rotate-right': 'common.refresh',
+  plus: 'common.add',
+  xmark: 'common.close',
+  times: 'common.close',
+  trash: 'common.delete',
+  'trash-can': 'common.delete',
+  pen: 'common.edit',
+  pencil: 'common.edit',
+  'pen-to-square': 'common.edit',
+  search: 'common.search',
+  download: 'common.download',
+  ellipsis: 'common.more_actions',
+  'ellipsis-vertical': 'common.more_actions',
+  'ellipsis-h': 'common.more_actions',
+  'ellipsis-v': 'common.more_actions',
+};
+
+/**
+ * 글자 없는 아이콘 버튼의 이름을 정합니다.
+ *
+ * @param iconName 아이콘 이름
+ * @param ariaLabel 직접 준 이름
+ * @returns 이름(없으면 undefined)
+ */
+const resolveIconButtonLabel = (iconName: string | undefined, ariaLabel?: string): string | undefined => {
+  if (ariaLabel) return ariaLabel;
+  const key = ICON_DEFAULT_LABEL_KEYS[String(iconName ?? '').replace(/^fa-(solid|regular) /, '').replace(/^fa-/, '')];
+  if (!key) return undefined;
+  const translated = (window as any).G7Core?.t?.(key);
+  return typeof translated === 'string' && translated !== key ? translated : undefined;
+};
 
 /**
  * IconButton 집합 컴포넌트
@@ -47,6 +85,7 @@ export interface IconButtonProps {
 export const IconButton: React.FC<IconButtonProps> = ({
   iconName,
   label,
+  ariaLabel,
   onClick,
   variant = 'primary',
   size = 'md',
@@ -93,6 +132,8 @@ export const IconButton: React.FC<IconButtonProps> = ({
       disabled={disabled}
       className={mergedClassName}
       style={style}
+      aria-label={label ? undefined : resolveIconButtonLabel(iconName, ariaLabel)}
+      title={label ? undefined : resolveIconButtonLabel(iconName, ariaLabel)}
       id={id} {...editorAttrs}
     >
       <Icon name={iconName} className={iconSizeClasses[size]} />

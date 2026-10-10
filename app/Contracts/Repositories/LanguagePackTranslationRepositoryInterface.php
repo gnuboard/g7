@@ -7,8 +7,8 @@ use App\Models\LanguagePack;
 /**
  * 언어팩 활성/비활성 시 DB JSON 다국어 컬럼을 일괄 동기화하는 집계 Repository 의 계약.
  *
- * Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/NotificationTemplate/
- * IdentityMessageDefinition/IdentityMessageTemplate 10 모델의 JSON 컬럼에 대한 locale 키
+ * Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/NotificationTemplate
+ * 8 모델의 JSON 컬럼에 대한 locale 키 (본인인증 알림은 7.1.0 부터 NotificationDefinition/Template 에 포함)
  * 병합/제거를 단일 진입점으로 캡슐화합니다 (Service-Repository 패턴: Listener/Service 가 직접
  * 모델 정적 호출을 하지 못하도록 영속 책임을 일원화).
  *

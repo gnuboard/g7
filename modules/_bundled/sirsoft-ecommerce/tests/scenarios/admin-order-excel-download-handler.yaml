@@ -1,0 +1,37 @@
+feature: 관리자 주문 목록 — 엑셀 내려받기 창의 파일 저장 핸들러를 모듈이 소유
+
+description: |
+  주문 목록의 엑셀 내려받기 창은 `apiCall`(responseType: blob) 성공 사슬에서 접두어 없는 `downloadFile` 을
+  불렀다. 그런 핸들러는 코어에도 관리자 템플릿에도 등록돼 있지 않아(레이아웃 검사 「미등록 핸들러」 경고) 파일이
+  저장되지 않았고, 코어 apiCall 은 응답을 JSON 으로만 읽어 파일 바이트를 넘겨주지도 못한다.
+
+  계약: 모듈이 `sirsoft-ecommerce.downloadFile` 을 등록하고(window.__SirsoftEcommerce.initModule 재등록 진입점),
+  창은 요청 주소·POST 본문·파일명을 그 한 액션에 넘긴다. 핸들러는 코어 ApiClient(G7Core.api.post, blob)로 받아
+  지정 파일명으로 저장하고, 실패하면 예외를 던진다. 레이아웃은 성공 시 진행 표시 해제·성공 안내·창 닫기,
+  실패 시 진행 표시 해제·「엑셀 파일을 내려받지 못했습니다」 안내를 띄운다.
+
+  범위 밖(별도 결정 필요): 창이 부르는 `POST /api/modules/sirsoft-ecommerce/admin/orders/export-excel` 라우트는
+  아직 모듈에 없다 — 지금은 요청이 실패해 실패 안내가 뜬다. 라우트가 생기면 레이아웃 수정 없이 저장된다.
+
+# axis 의미:
+#   내려받기 결과 — 성공(파일 저장) / 실패(요청 거부·ApiClient 없음 → 오류 안내) / 주소 없음(요청하지 않음).
+axes:
+  outcome: [success, failure, missing_url]
+
+effects:
+  - excel_modal_calls_module_owned_download_handler         # 창이 sirsoft-ecommerce.downloadFile 을 부르고 그 핸들러가 모듈 맵에 있다
+  - handler_posts_body_with_token_and_saves_blob_as_filename
+  - handler_skips_request_without_url
+  - handler_throws_on_failure
+  - success_clears_progress_and_closes_modal
+  - failure_clears_progress_and_shows_error_toast
+  - excel_modal_count_hint_passes_translation_params       # 범위 안내 문구가 건수를 |count= 로 넘긴다 (#703 실측: `:` 구분자로 원문 노출)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/downloadFile.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-order-excel-download-handler.test.ts
+
+validation:
+  browser_check: Chrome MCP
+  note: |
+    실브라우저에서는 라우트 부재로 실패 안내가 뜨는 것까지 확인한다(요청 헤더에 Authorization 이 실리는지 포함).

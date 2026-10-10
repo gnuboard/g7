@@ -33,6 +33,7 @@ effects:
   - update_comment_blocks_matching_keyword
   # 백엔드 24-(2)/Q4: 배열 직렬화 (form-data)
   - form_data_create_mode_returns_fields_as_array
+  - form_data_create_mode_blocked_keywords_from_basic_defaults # 금지어는 basic_defaults 에서(B-19)
   - form_data_edit_mode_returns_fields_as_array
   # 프론트 24-(2)/Q4: 레이아웃 배치/컴포넌트
   - blocked_keywords_renders_as_taginput_on_post_tab
@@ -40,6 +41,28 @@ effects:
   - blocked_keywords_absent_from_basic_tab
   - allowed_extensions_absent_from_basic_tab
   - taginput_values_persist_as_array_chips_on_reentry
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - member_can_create_comment
+  - guest_can_create_comment
+  - user_without_permission_cannot_create_comment
+  - cannot_create_comment_on_blinded_post
+  - cannot_create_comment_on_deleted_post
+  - can_create_reply_to_comment
+  - cannot_create_comment_beyond_max_depth
+  - cannot_create_reply_with_invalid_parent_id
+  - comment_author_can_update_own_comment
+  - cannot_update_other_users_comment
+  - guest_can_update_comment_with_correct_password
+  - guest_cannot_update_comment_with_wrong_password
+  - comment_author_can_delete_own_comment
+  - cannot_delete_other_users_comment
+  - manager_can_update_other_users_comment
+  - manager_can_delete_other_users_comment
+  - guest_can_delete_comment_with_correct_password
+  - deleting_comment_decrements_post_comments_count
+  - blinding_comment_does_not_change_comments_count
+  - can_list_comments_for_post
+  - deleted_comments_are_not_shown_in_list
 
 test_files:
   # 백엔드 — 댓글 차단 회귀 (24-1)

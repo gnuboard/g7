@@ -14,7 +14,9 @@
     "earn_trigger_confirmed": "Purchase Confirmed",
     "earn_trigger_delivered": "Delivered",
     "earn_delay_prefix": "after",
-    "earn_delay_suffix": "day(s)",
+    "earn_delay_suffix": "days",
+    "earn_delay_suffix_one": "day",
+    "earn_delay_days": "Earn delay (days)",
     "earn_trigger_hint": "Default = Purchase Confirmed / Delivered selectable"
   },
   "currency": {
@@ -37,6 +39,10 @@
     "duplicate_currency_error": "This currency is already registered.",
     "max_use_fixed_suffix": "",
     "earn_rounding": "Earning Rounding",
+    "earn_rounding_unit_label": "Earning rounding unit",
+    "earn_rounding_method_label": "Earning rounding method",
+    "earn_rounding_unit_of": "{{currency}} earning rounding unit",
+    "earn_rounding_method_of": "{{currency}} earning rounding method",
     "earn_rounding_hint": "Applied when earned points are calculated and prorated",
     "earn_rounding_units": {
       "1": "1 pt",
@@ -54,7 +60,8 @@
     "enabled": "Enable Expiry",
     "enabled_hint": "Unused mileage expires automatically after the configured period.",
     "days": "Expiry Period",
-    "days_suffix": "day(s) until expiry"
+    "days_suffix": "days until expiry",
+    "days_suffix_one": "day until expiry"
   },
   "notification": {
     "title": "Expiry Notification",
@@ -62,7 +69,8 @@
     "enabled_hint": "Notify members in advance when their mileage is about to expire.",
     "days_before": "Send Timing",
     "days_before_prefix": "Expiry minus",
-    "days_before_suffix": "day(s)",
+    "days_before_suffix": "days",
+    "days_before_suffix_one": "day",
     "active_channels": "Active Channels",
     "no_channels": "No active channels — enable in Notification Settings",
     "manage_hint": "Channels, templates and recipients are managed in Notification Settings.",

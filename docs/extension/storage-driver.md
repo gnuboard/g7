@@ -11,6 +11,9 @@
 4. 경로: modules/{identifier}/{category}/{path} (기본 disk: 'modules')
 5. Service 생성자에서 StorageInterface 타입힌트하면 자동 주입
 6. response() 메서드로 StreamedResponse 생성 (파일 다운로드/표시)
+7. 경로에 `..`·`.`·절대경로·역슬래시·`%2e`/`%2f`/`%5c`·빈 조각(`a//b`, 끝 `/`)이 섞이면 드라이버가 거부한다 — 요청값(임시 키 등)을 경로에 넣기 전에 형식을 검증한다
+8. deleteDirectory() 는 카테고리와 그 하위 폴더를 지운다(빈 디렉토리 인자 = 카테고리 전체, deleteAll() 과 같음) — 확장 최상위·디스크 루트는 어떤 API 로도 지우지 않는다
+9. 업로드 파일을 브라우저로 내보내는 응답은 반드시 `InlineMediaPolicy::harden($response, $mime, $filename)` 을 거친다 — 래스터 이미지만 인라인, 그 밖(SVG 포함)은 다운로드 + nosniff. "이미지인가" 판정은 `str_starts_with($mime, 'image/')` 가 아니라 `InlineMediaPolicy::isInlineImage()`
 ```
 
 ---
@@ -122,6 +125,23 @@ storage/app/modules/sirsoft-board/attachments/notice/2024/01/19/uuid.pdf
 storage/app/modules/sirsoft-ecommerce/images/category/2024/01/19/uuid.jpg
 storage/app/modules/sirsoft-ecommerce/settings/setting.json
 ```
+
+#### 경로 안전 규칙
+
+드라이버는 카테고리와 경로를 문자열로 이어 붙여 디스크에 넘기므로, 요청에서 온 값(임시 업로드 키·슬러그·코드 등)이 경로에 섞이면 `../..` 같은 값으로 다른 확장의 저장소까지 가리킬 수 있습니다. 드라이버가 다음을 막습니다.
+
+| 검사 | 거부되는 예 | 결과 |
+| --- | --- | --- |
+| 결합 전 조각 검사 | `../x`, `a/../..`, `.`, `/etc`, `C:/x`, `a\\b`, `..%2f..`, `a//b`, `dir/`, NUL | `App\Exceptions\UnsafeStoragePathException` (`getReason()` 으로 사유 코드) |
+| 결합 후 재확인 | 결과가 `{identifier}/{category}` 밖 | 같은 예외 |
+| 파괴 작업 보호 루트 | 확장 최상위(빈 카테고리)·디스크 루트 | 같은 예외 + 보안 로그 |
+| `url()` | 위 규칙에 걸린 경로 | 예외 대신 `null` (목록 직렬화 보호) |
+
+- 빈 경로 `''` 는 "카테고리 자신" 으로 허용됩니다(`files()`·`getBasePath()`·`deleteDirectory()` — 빈 디렉토리 인자는 그 카테고리 전체 삭제). 카테고리 자체는 비울 수 없고, 그보다 위(확장 최상위·디스크 루트)는 어떤 API 로도 지우지 않습니다.
+- 요청값을 경로에 넣는 확장은 **FormRequest 에서 형식을 먼저 좁힙니다**(예: 임시 업로드 키는 `uuid` 규칙). 드라이버 거부는 최후 방어선이라 사용자에게는 500 으로 보입니다.
+- 임시 디렉토리 정리는 **실제로 옮긴 파일이 있을 때만** 합니다. 조회 결과가 비었는데 요청값으로 정리 경로를 만들면 사용자 입력이 삭제 대상을 고르게 됩니다.
+- 코어 `modules`·`plugins`·`attachments`·`public` 디스크는 `local-safe` 드라이버로 `..` 상대경로 이동 자체를 거부합니다(`config/filesystems.php`).
+  `local-safe` 는 표준 `local` 드라이버의 설정(`root`·`url`·`visibility`·`permissions`·`read-only`·`prefix` 등)을 그대로 받습니다. `read-only`·`prefix` 는 Laravel 과 같이 `league/flysystem-read-only`·`league/flysystem-path-prefixing` 패키지가 있어야 하며, 없으면 무시하지 않고 설정 오류로 알립니다. 서명 URL 서빙(`serve`)은 지원하지 않습니다.
 
 ### 4. ModuleStorageDriver
 
@@ -456,6 +476,7 @@ class TempFileService
      */
     public function cleanupSession(string $sessionId): bool
     {
+        // $sessionId 가 요청에서 왔다면 FormRequest 에서 uuid 등으로 형식을 먼저 검증한다
         return $this->storage->deleteDirectory('temp', $sessionId);
     }
 
@@ -532,6 +553,7 @@ class AttachmentController extends BaseApiController
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Helpers\InlineMediaPolicy;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
@@ -593,6 +615,9 @@ class ProductImageService
 
             return null;
         }
+
+        // 래스터 이미지만 인라인, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff
+        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
 
         return $response;
     }
@@ -922,7 +947,7 @@ $files = $this->storage->files('temp', 'session-123');
 
 ### deleteDirectory()
 
-디렉토리와 그 하위의 모든 파일을 삭제합니다.
+카테고리 하위 디렉토리와 그 안의 모든 파일을 삭제합니다.
 
 **시그니처**:
 ```php
@@ -931,7 +956,10 @@ public function deleteDirectory(string $category, string $directory = ''): bool
 
 **파라미터**:
 - `$category` (string): 카테고리
-- `$directory` (string): 디렉토리 경로 (빈 문자열이면 카테고리 루트)
+- `$directory` (string): 카테고리 하위 디렉토리 경로. 빈 문자열이면 카테고리 루트(카테고리 전체 삭제 — `deleteAll()` 과 같은 결과)
+
+**예외**:
+- `UnsafeStoragePathException`: 경로 안전 규칙 위반, 또는 확장 최상위(빈 카테고리)·디스크 루트를 가리킬 때
 
 **반환값**:
 - `bool`: 삭제 성공 여부
@@ -941,7 +969,7 @@ public function deleteDirectory(string $category, string $directory = ''): bool
 // 특정 디렉토리 삭제
 $this->storage->deleteDirectory('temp', 'session-123');
 
-// 카테고리 전체 삭제
+// 카테고리 전체 삭제 (deleteAll('temp') 와 같다)
 $this->storage->deleteDirectory('temp', '');
 ```
 
@@ -1022,7 +1050,7 @@ $disk = $this->storage->getDisk();
 
 ### deleteAll()
 
-카테고리의 모든 파일을 삭제합니다.
+카테고리의 모든 파일을 삭제합니다(확장 최상위·디스크 루트는 지우지 않습니다).
 
 **시그니처**:
 ```php
@@ -1061,6 +1089,13 @@ public function response(string $category, string $path, string $filename, array
 **반환값**:
 
 - `StreamedResponse|null`: 파일 스트림 (파일이 없으면 null)
+
+> **업로드 파일을 브라우저로 내보낼 때 (필수)**: `response()` 는 `Content-Type` 을 행에 저장된 MIME 그대로 쓰고
+> 기본이 `inline` 이다. SVG·HTML 처럼 스크립트를 품을 수 있는 파일이 사이트 주소에서 인라인으로 열리면
+> 그 스크립트가 로그인 토큰에 닿는다. 그래서 받은 응답을 `App\Helpers\InlineMediaPolicy::harden($response, $mime, $filename)`
+> 에 통과시킨다 — 래스터 이미지(JPEG·PNG·GIF·WebP·AVIF·BMP)만 인라인을 유지하고, 그 밖은
+> `Content-Disposition: attachment` + CSP sandbox 로 바꾸며, 모든 응답에 `X-Content-Type-Options: nosniff` 를 붙인다.
+> 미리보기·썸네일 대상인지 가르는 판정도 `InlineMediaPolicy::isInlineImage($mime)` 을 쓴다(`image/` 접두사 판정 금지).
 
 **예시**:
 ```php

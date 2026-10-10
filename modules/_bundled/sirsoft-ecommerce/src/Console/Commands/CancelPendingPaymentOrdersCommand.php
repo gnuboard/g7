@@ -20,6 +20,15 @@ use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 class CancelPendingPaymentOrdersCommand extends Command
 {
     /**
+     * 만료 자동취소의 사유 코드. (`ecommerce_claim_reasons` type=refund)
+     *
+     * 문장이 아니라 코드다 — `cancel_reason_type` 은 varchar(50) 이고 표기는 사유 카탈로그가
+     * 코드로 해석한다. 이 코드는 `ClaimReasonSeeder` 가 `is_user_selectable=false` 로 심는다
+     * (고객 신청 화면에 "입금 기한 만료" 를 고를 자리는 없다).
+     */
+    private const AUTO_CANCEL_REASON_CODE = 'auto_cancel_expired';
+
+    /**
      * 커맨드 이름 및 시그니처
      *
      * @var string
@@ -91,11 +100,14 @@ class CancelPendingPaymentOrdersCommand extends Command
             $failCount = 0;
 
             foreach ($expiredOrders as $order) {
-                $paymentMethodEnum = $order->payment?->payment_method;
-                $paymentMethodValue = $paymentMethodEnum?->value ?? 'unknown';
-                $dueAt = match (true) {
-                    $paymentMethodEnum === PaymentMethodEnum::DBANK => $order->payment?->deposit_due_at,
-                    $paymentMethodEnum === PaymentMethodEnum::VBANK => $order->payment?->vbank_due_at,
+                // `payment_method` 는 순수 string 이다(#475 — 확장 결제수단 ID 허용). enum 으로
+                // 보고 `?->value` 로 읽으면 "Attempt to read property on string" 경고와 함께
+                // 언제나 null 이 되어, 수단 표기가 전건 `unknown` 이고 아래 match 가 한 번도
+                // 맞지 않아 입금 기한 대신 주문 시각이 찍힌다(P17).
+                $paymentMethodValue = (string) ($order->payment?->payment_method ?? 'unknown');
+                $dueAt = match ($paymentMethodValue) {
+                    PaymentMethodEnum::DBANK->value => $order->payment?->deposit_due_at,
+                    PaymentMethodEnum::VBANK->value => $order->payment?->vbank_due_at,
                     // 결제창까지 갔으나 성립하지 않은 주문은 입금 기한이 없다 — 주문 시각을 보여
                     // 운영자가 어느 기준으로 정리되었는지 알 수 있게 한다.
                     default => $order->ordered_at,
@@ -110,10 +122,16 @@ class CancelPendingPaymentOrdersCommand extends Command
                 }
 
                 try {
-                    // 주문 취소 처리
+                    // 주문 취소 처리 — 사유는 **코드**를 넘긴다(P17).
+                    //
+                    // 번역 문장을 넘기면 `order_cancels.cancel_reason_type`(varchar(50))에
+                    // 그대로 들어간다. 영문 로케일의 문장은 59자라 그 칸을 넘겨 DB 오류가 나고,
+                    // **만료 주문 자동취소가 전량 실패**한다 — 스케줄러 로그에만 남으므로
+                    // 운영자는 미결제 주문이 쌓이는 것만 본다. 화면 표기는 사유 카탈로그가
+                    // 코드로 해석하므로 문장을 저장할 이유도 없다.
                     $this->orderProcessingService->cancelOrder(
                         $order,
-                        __('sirsoft-ecommerce::messages.order.auto_cancel_expired_reason')
+                        self::AUTO_CANCEL_REASON_CODE
                     );
                     $successCount++;
 

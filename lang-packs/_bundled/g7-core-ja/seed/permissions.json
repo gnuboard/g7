@@ -175,6 +175,18 @@
     "name": "通知削除",
     "description": "本人の通知を削除できます。"
   },
+  "core.profile": {
+    "name": "マイ情報 (ユーザー)",
+    "description": "ユーザー画面で本人情報を閲覧・編集する権限"
+  },
+  "core.profile.read": {
+    "name": "マイ情報閲覧",
+    "description": "本人情報とアクティビティ履歴を閲覧できます。アカウントが無効・ブロックなど正常な状態でなくても、本人情報の閲覧はこの権限で許可されます。"
+  },
+  "core.profile.update": {
+    "name": "マイ情報編集",
+    "description": "本人情報を編集できます。"
+  },
   "core.identity": {
     "name": "本人認証 (ユーザー)",
     "description": "ログインユーザーの本人認証チャレンジ要求/検証/キャンセル権限"
@@ -218,14 +230,6 @@
   "core.admin.identity.logs.purge": {
     "name": "ログ削除",
     "description": "本人認証履歴を削除(保管周期外)できます。"
-  },
-  "core.admin.identity.messages.read": {
-    "name": "メッセージテンプレート閲覧",
-    "description": "本人認証メッセージ定義/テンプレートを閲覧できます。"
-  },
-  "core.admin.identity.messages.update": {
-    "name": "メッセージテンプレート編集",
-    "description": "本人認証メッセージ定義/テンプレートを編集できます。"
   },
   "core.settings": {
     "name": "環境設定",
@@ -334,5 +338,49 @@
   "core.language_packs.update": {
     "name": "言語パックアップデート",
     "description": "インストールされた言語パックのアップデートを確認して実行できます。"
+  },
+  "core.system": {
+    "name": "システム管理",
+    "description": "コア自体の保守権限"
+  },
+  "core.system.update": {
+    "name": "コアアップデート",
+    "description": "GNU Board 7 のコアを新しいバージョンに更新できます。"
+  },
+  "core.extensions": {
+    "name": "拡張 共通",
+    "description": "モジュール·プラグイン·テンプレートに共通に適用される権限"
+  },
+  "core.extensions.custom_assets.manage": {
+    "name": "カスタム資産管理",
+    "description": "モジュール·プラグイン·テンプレートに運営者CSS·JS·フォント·画像を追加または編集できます。追加したスクリプトはサイト全体で実行されるため、レイアウト編集と別途付与します。"
+  },
+  "core.member-notifications": {
+    "name": "会員通知箱",
+    "description": "全会員アプリ内通知箱閲覧・削除権限"
+  },
+  "core.member-notifications.read": {
+    "name": "会員通知箱閲覧",
+    "description": "全会員が受け取った通知を閲覧することができます。"
+  },
+  "core.member-notifications.delete": {
+    "name": "会員通知箱削除",
+    "description": "会員が受け取った通知を削除することができます。"
+  },
+  "core.analytics": {
+    "name": "訪問者統計",
+    "description": "訪問者統計権限"
+  },
+  "core.analytics.read": {
+    "name": "訪問者統計閲覧",
+    "description": "概要·レポート·パターン·リアルタイム·ボット·診断統計とCSVエクスポートを閲覧できます。個別訪問者のIPは表示されません。"
+  },
+  "core.analytics.update": {
+    "name": "訪問者統計設定",
+    "description": "収集設定保存、手動集計·再集計、統計データ削除、遡及匿名化ができます。"
+  },
+  "core.analytics.privacy": {
+    "name": "訪問者個人情報閲覧",
+    "description": "訪問者プロフィールとアクションタイムライン、リアルタイムIP原値、情報主体検索·エクスポート·削除ができます。"
   }
 }

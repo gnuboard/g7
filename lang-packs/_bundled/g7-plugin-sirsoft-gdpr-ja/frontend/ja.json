@@ -9,7 +9,11 @@
       "gdprPolicyVersionHistory": "ポリシーバージョン履歴",
       "gdprPolicyVersionSnapshot": "ポリシーバージョンスナップショット",
       "gdprPublicSettings": "GDPR公開設定",
-      "gdprSettings": "GDPR設定"
+      "gdprSettings": "GDPR設定",
+      "gdprNoticeLog": "個人情報通知履歴",
+      "gdprAnnualNoticePreview": "年間通知対象件数",
+      "privacyTargets": "年間通知対象会員一覧",
+      "privacyManualRuns": "個人情報対策の職権実行ステータス"
     }
   },
   "consent": {
@@ -46,7 +50,7 @@
     "description": "クッキー同意バナーとマイページ同意管理カードの動作を運営者が制御します。",
     "section": {
       "operator": "運営主体/プライバシーポリシー",
-      "operator_desc": "クッキーバナー・ポリシーページに表示される運営主体、データ保管位置、ポリシーページスラッグを登録します。",
+      "operator_desc": "クッキーバナー・ポリシーページに表示される運営主体、データ保管位置、プライバシーポリシーのURLを登録します。",
       "cookie_banner": "クッキー同意バナー",
       "cookie_banner_desc": "訪問者に表示されるクッキー同意バナーの表示/位置/カテゴリ/ポリシーバージョンを一箇所で設定します。",
       "cookie_banner_settings": "バナー表示設定",
@@ -73,11 +77,6 @@
       "cookie_policy_version": {
         "label": "ポリシーバージョン",
         "hint": "ポリシー本文、カテゴリの意味、受託者・データ保管情報が変わったら「+ 新しいバージョンを公開」を押してください。公開直後にすべての会員が次回訪問時に再同意を進めます。"
-      },
-      "privacy_policy_slug": {
-        "label": "プライバシーポリシーページスラッグ",
-        "hint": "ページプラグインに登録された処理方針ページのスラッグ。空の場合、クッキーバナーのポリシーリンクは表示されません。",
-        "placeholder": "例: privacy-policy"
       },
       "legal_entity_name": {
         "label": "法人名/運営主体",
@@ -148,7 +147,7 @@
         "warnings_title": "案内",
         "warning_purpose": "ここに登録した項目のみ機能クッキー未同意状態で保存が維持されます。リストにない項目は訪問するたびに削除され、エラーや警告なく「設定が保存されない」という症状のみが現れます。",
         "warning_wildcard": "末尾に * を付けると前部分が同じ項目をすべて含みます。例: g7_filters_* は g7_filters_orders_1 を含みます。* は末尾にのみ使用できます。",
-        "warning_discovery": "新しくインストールした拡張が保存する項目名はその拡張のドキュメントまたはブラウザ開発者ツール（Application → Storage）で確認できます。",
+        "warning_discovery": "拡張機能が使用する項目の多くはその拡張機能が自ら提供し、下の「拡張機能が提供する項目」に自動で表示されます。表示されない項目の名前は、その拡張機能のドキュメントまたはブラウザの開発者ツール(Application → Storage)で確認できます。",
         "warning_necessary_only": "サイト運営に必ず必要な項目のみ登録してください。追跡・分析目的の項目を入れると同意前ブロック原則が崩れます。",
         "locked_label": "ロック項目（削除不可）",
         "locked_hint": "なければサイトが動作しない項目です。リストから外すことはできません。",
@@ -163,7 +162,14 @@
           "local_storage": "ブラウザを閉じても残る保存領域。言語·テーマのようなユーザー選択と管理者画面表示設定がここに保存されます。",
           "session_storage": "タブを閉じると消える保存領域。決済画面·本人認証画面から戻るときに元の画面を復元するのに使われます。",
           "cookie": "ブラウザがサーバーに一緒に送る値。サーバーが仕込むクッキーと画面が使うクッキーの両方がこのリストで判定されます。"
-        }
+        },
+        "provided_label": "拡張機能が提供する項目(自動)",
+        "provided_hint": "有効化された拡張機能が自ら提供する項目です。その拡張機能を無効にするとリストからも外れます。ここでは編集できません。"
+      },
+      "privacy_policy_url": {
+        "label": "プライバシーポリシーのURL",
+        "hint": "プライバシーポリシーを掲載したURLを入力してください。サイト内のページは / で始まるパス(例: /page/privacy)、他のサイトは https:// で始まる完全なURLを記入します。空欄の場合、Cookieバナーのポリシーリンクは表示されません。",
+        "placeholder": "例: /page/privacy または https://example.com/privacy"
       }
     },
     "save_success": "設定が保存されました。",
@@ -213,9 +219,9 @@
       "snapshot_modal": {
         "editor_label": "ポリシーバージョン本文を表示",
         "title": "ポリシーバージョンv{version}本文",
-        "description": "公開時点での settings のカテゴリリスト·ポリシー本文スラッグ·ブロック対象ドメインなど全体の本文です。DPO が同意紛争時に立証資料として活用します。",
+        "description": "公開時に保存されていた設定のクッキーカテゴリ一覧·プライバシーポリシーのURL·ブロック対象ドメインなどの全内容です。同意をめぐる紛争が生じた場合、個人情報保護責任者(DPO)が立証資料として使用します。",
         "section_categories": "クッキーカテゴリ",
-        "section_privacy_policy": "ポリシー本文スラッグ",
+        "section_privacy_policy": "プライバシーポリシーのURL",
         "section_blocked_domains": "ブロック対象ドメインカタログ",
         "category_required_badge": "必須",
         "no_categories": "登録されたカテゴリがありません。",
@@ -223,7 +229,8 @@
         "view_button": "v{version}本文を表示",
         "close": "閉じる",
         "open_policy_page": "本文ページを開く",
-        "no_policy_slug": "登録されたポリシー本文ページがありません。"
+        "no_policy_url": "登録されたプライバシーポリシーのURLがありません。",
+        "legacy_slug_note": "以前の形式(ページスラッグ「{slug}」)で記録されたバージョンです。当時リンクが指していたURLを表示します。"
       },
       "not_found": "そのポリシーバージョンが見つかりません。",
       "history_page_summary": "全体 {total}件 · {current} / {last} ページ",
@@ -358,5 +365,112 @@
     "too_long_cookie": "クッキー — 項目は128文字を超えることはできません。",
     "must_be_array": "ストレージごとの項目リストは配列である必要があります。",
     "invalid_scope": "不明なストレージ区分です: :scope （ブラウザストレージ·セッションストレージ·クッキーのみ使用できます）"
-  }
+  },
+  "annual_notice": {
+    "title": "個人情報年間通知",
+    "description": "加入後1年が経過した有効な会員に対して、年1回個人情報の処理内容をご案内します。",
+    "policy_hint": "機能をオンにする前に、プライバシーポリシーで通知内容と運営方法を確認し、収集項目・目的・保有期間をご確認ください。",
+    "enabled": "自動通知を使用",
+    "channels": "配信チャネル",
+    "mail": "メール",
+    "database": "サイト通知",
+    "batch_size": "1回の実行当たりの配信上限(1～1,000人)",
+    "introduction": "通知文の前文",
+    "test_send": "テスト配信を自分に送信",
+    "test_queued": "テスト配信を受け付けました。履歴からチャネル別の結果をご確認ください。",
+    "save_before_test": "設定を先に保存してください。テスト配信は定期通知周期に影響を与えません。",
+    "log_title": "個人情報通知履歴",
+    "log_description": "受付とチャネル別の成功・失敗をそれぞれ記録します。受付状態は配信完了を意味しません。",
+    "total": "全 {count} 件",
+    "empty": "通知履歴がありません。",
+    "created_at": "記録時刻",
+    "user_id": "会員番号",
+    "status": "ステータス",
+    "kind": "区分",
+    "test": "テスト",
+    "scheduled": "定期",
+    "targets": {
+      "count": "今回のサイクル対象{{count}}名",
+      "view": "対象を表示",
+      "title": "年間通知対象会員",
+      "hint": "有効になっていなくても、有効にすると通知する会員数を事前に表示します。1回の実行で送信する数は送信上限でカットされます。",
+      "total": "合計{{count}}件",
+      "empty": "対象がありません。",
+      "loading": "読み込み中...",
+      "close": "閉じる",
+      "row_label": "個人情報利用内訳 年間通知",
+      "editor_label": "年間通知の対象会員リスト"
+    },
+    "manual_run": {
+      "run": "今すぐ実行",
+      "save_first_hint": "保存していない変更があります。職権実行は保存された設定で処理されるため、まず保存してください。",
+      "status_active": "{{status}} — {{at}}に受け付け · {{by}}",
+      "last_completed": "前回の職権発送: {{at}} · {{by}} · {{count}}名受け付け · 残り対象{{remaining}}名",
+      "last_failed": "前回の職権発送失敗: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "不明",
+      "modal_title": "{{target}} — 職権実行",
+      "confirm_desc": "スケジューラーを待たずに今すぐ1回通知を受け付けます。1回に送信上限までのみ受け付けられ、残りの会員は再実行で継続して受け付けられます。今週期にすでに受け取った会員には再度送信されません。",
+      "count_label": "今週期の対象",
+      "count_value": "{{count}}名",
+      "loading": "件数をカウント中...",
+      "mode_label": "処理方式",
+      "modes": {
+        "anonymize": "匿名化",
+        "delete": "削除",
+        "erase_ip": "作成IP削除"
+      },
+      "disabled_notice": "年間通知の自動発送はオフになっています。職権実行はトグルに関係なく保存されたチャネル·文言で今回1回のみ受け付けます。",
+      "irreversible": "受け付けた通知はキャンセルできません。通知文言とチャネルを保存したか確認してから実行してください。",
+      "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け付けたジョブが終了する前には再実行できません。",
+      "cancel": "キャンセル",
+      "execute": "実行",
+      "executing": "受け付け中...",
+      "queued_toast": "通知送信をキューに受け付けました。処理が完了すると結果が表示されます。",
+      "queue_failed": "実行を受け付けることができませんでした。",
+      "preview_failed": "対象件数を取得できませんでした。",
+      "editor_label": "年間通知の職権送信"
+    }
+  },
+  "edit_template": "テンプレート編集",
+  "reset": "デフォルト値を復元",
+  "notification_definitions": {
+    "reset_success": "通知設定がデフォルト値に復元されました。",
+    "reset_failed": "通知設定の復元に失敗しました。",
+    "reset_modal": {
+      "title": "デフォルト値に復元",
+      "confirm_message": "この通知のすべてのチャネル テンプレートをデフォルト値に復元します。",
+      "warning_message": "保存されたタイトル/本文/受信者設定がすべて削除され、復旧できません。",
+      "target_label": "復元対象:",
+      "btn_confirm": "復元",
+      "btn_confirming": "復元中..."
+    },
+    "save_success": "通知設定が保存されました。",
+    "save_error": "通知設定の保存に失敗しました。",
+    "edit_modal": {
+      "title": "通知テンプレート編集",
+      "type_label": "タイプ:",
+      "channel_label": "チャネル:",
+      "subject": "タイトル",
+      "body": "本文",
+      "variables_title": "使用可能な変数",
+      "btn_preview": "プレビュー",
+      "validation_error": "入力情報を確認してください。"
+    },
+    "preview_modal": {
+      "title": "通知プレビュー",
+      "rendered_subject": "レンダリング済みタイトル",
+      "rendered_body": "レンダリング済み本文",
+      "btn_close": "閉じる"
+    },
+    "card_description": "各通知の配信チャネルを選択し、チャネル別にタイトル・本文・受信者を編集します。この拡張機能の定義はコア「通知定義」画面には表示されません。",
+    "empty_message": "登録された通知定義がありません。",
+    "forbidden_message": "通知テンプレートを表示する権限がありません。通知設定を変更する必要がある場合は、通知管理権限を持つ管理者に依頼してください。",
+    "load_failed_message": "通知定義を読み込めませんでした。しばらくしてからページを再読み込みしてもう一度お試しください。"
+  },
+  "notification_channels": "配信手段",
+  "save_channels": "配信手段を保存",
+  "cancel": "キャンセル",
+  "channel_template_missing": "この手段のテンプレートがないため配信されません",
+  "notifications": "通知テンプレート",
+  "plugin_read_only": "個人情報設定を変更する権限がないため、読み取り専用で表示されます。"
 }

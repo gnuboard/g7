@@ -6,6 +6,7 @@ import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
 import { Modal } from './Modal';
+import { getSiteLocale } from '../../support/siteLocale';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -14,11 +15,6 @@ const t = (key: string, params?: Record<string, string | number>) =>
 // G7Core에서 지원 언어 목록 가져오기
 const getSupportedLocales = (): string[] => {
   return (window as any).G7Core?.locale?.supported?.() ?? ['ko', 'en'];
-};
-
-// G7Core에서 현재 언어 가져오기
-const getCurrentLocale = (): string => {
-  return (window as any).G7Core?.locale?.current?.() ?? 'ko';
 };
 
 // 언어 코드로 언어명 가져오기 (다국어 키 사용)
@@ -35,6 +31,15 @@ const getLocaleNameByCode = (code: string): string => {
   }
   return translatedName;
 };
+
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+// 태그 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0 O-C3b-3)
+const removeTagLabel = (tag: string): string => tOr('common.remove_tag', `Remove ${tag}`, { tag });
 
 /** 다국어 값 객체 */
 export interface MultilingualValue {
@@ -131,7 +136,10 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
   editorAttrs,
 }) => {
   const supportedLocales = useMemo(() => getSupportedLocales(), []);
-  const defaultLocale = useMemo(() => getCurrentLocale(), []);
+  // 새 태그 값을 담는 기본(필수) 언어 — 보는 언어가 아니라 사이트 기본 언어(서버 필수 규칙과 같은 값)
+  const defaultLocale = useMemo(() => getSiteLocale(), []);
+  // 읽기 이름(태그 제거 버튼 등)은 보는 사람의 언어로 — 필수 언어와 따로 둔다
+  const viewLocale = useMemo(() => (window as any).G7Core?.locale?.current?.() ?? defaultLocale, [defaultLocale]);
 
   // 내부 상태
   const [tags, setTags] = useState<MultilingualValue[]>(() => valueProp || []);
@@ -293,6 +301,20 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
     setEditingIndex(null);
   }, []);
 
+  // 구분자로 나눈 값 목록 — 쉼표 목록을 붙여 넣는 경우가 흔하다
+  const splitByDelimiters = useCallback((text: string): string[] => {
+    const escapedDelimiters = delimiters.map(d => d.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const pattern = new RegExp(`[${escapedDelimiters.join('')}]`);
+    return text.split(pattern).map(s => s.trim()).filter(Boolean);
+  }, [delimiters]);
+
+  // 첫 값은 다국어 창으로 넘기고, 나머지는 입력칸에 남긴다.
+  // 창은 한 번에 한 값만 받으므로 나머지를 버리면 「Red,Blue」 를 붙여 넣었을 때 Blue 가 조용히 사라진다.
+  const openAddModalKeepingRest = useCallback((parts: string[]) => {
+    openAddModal(parts[0]);
+    setInputValue(parts.slice(1).join(', '));
+  }, [openAddModal]);
+
   // 입력값 변경
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -300,19 +322,16 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
     // 구분자 감지
     const hasDelimiter = delimiters.some(d => newValue.includes(d));
     if (hasDelimiter && creatable) {
-      const escapedDelimiters = delimiters.map(d => d.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      const pattern = new RegExp(`[${escapedDelimiters.join('')}]`);
-      const parts = newValue.split(pattern).map(s => s.trim()).filter(Boolean);
+      const parts = splitByDelimiters(newValue);
 
       if (parts.length > 0) {
-        // 첫 번째 값으로 모달 열기
-        openAddModal(parts[0]);
+        openAddModalKeepingRest(parts);
         return;
       }
     }
 
     setInputValue(newValue);
-  }, [delimiters, creatable, openAddModal]);
+  }, [delimiters, creatable, splitByDelimiters, openAddModalKeepingRest]);
 
   // 키 입력 처리
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -322,9 +341,10 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
       // 최대 개수 확인
       if (maxItems && tags.length >= maxItems) return;
 
-      openAddModal(inputValue.trim());
+      const parts = splitByDelimiters(inputValue);
+      openAddModalKeepingRest(parts.length > 0 ? parts : [inputValue.trim()]);
     }
-  }, [inputValue, creatable, maxItems, tags.length, openAddModal]);
+  }, [inputValue, creatable, maxItems, tags.length, splitByDelimiters, openAddModalKeepingRest]);
 
   // 편집 모달 내 값 변경
   const handleEditingValueChange = useCallback((locale: string, value: string) => {
@@ -358,6 +378,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
               <Button
                 type="button"
                 className="p-0 h-4 w-4 min-w-0 border-0 bg-transparent text-blue-600 dark:text-blue-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-transparent"
+                aria-label={removeTagLabel(tag[viewLocale]?.trim() || getTagLabel(tag))}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRemoveTag(index);
@@ -378,6 +399,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={tags.length === 0 ? placeholder : ''}
+            aria-label={placeholder || undefined}
             disabled={disabled}
             className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
           />

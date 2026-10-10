@@ -1,0 +1,59 @@
+<partial description="마이페이지 스크랩 해제 확인 모달" editor_label="$t:user.modal_label.mypage_scrap.scrapDeleteModal">
+  <!-- 스크랩 단건 해제 확인 — 대상은 전역 scrapDeleteModal 로 받는다 -->
+  <modal data-type="composite" data-ref="scrap_delete_modal" title="$t:mypage.scrap.delete_title" width="420px">
+    <!-- 확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가
+         ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인). -->
+    <div data-testid="scrap-delete-modal" class="space-y-4">
+      <div class="flex items-start gap-4">
+        <!-- 원형 아이콘 배지 (파란 배경, solid 색상 — 다크모드 희석 방지) -->
+        <div class="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950">
+          <icon name="bookmark" iconStyle="solid" class="text-xl text-blue-600 dark:text-blue-400"/>
+        </div>
+        <div class="flex-1 pt-0.5">
+          <!-- 삭제된 원글이면 제목 없이 일반 안내, 살아있으면 제목 포함 안내 -->
+          <p data-if="{{!_global.scrapDeleteModal?.isDeleted}}" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">$t:mypage.scrap.delete_confirm|title={{_global.scrapDeleteModal?.title ?? ''}}</p>
+          <p data-if="{{_global.scrapDeleteModal?.isDeleted}}" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">$t:mypage.scrap.delete_confirm_deleted</p>
+          <!-- 안내 문구(원글 보존 안내) — 검수 지시로 별도 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 흡수(1안) -->
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">$t:mypage.scrap.delete_notice</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700"/>
+        <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+          <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"/>
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button data-testid="scrap-delete-confirm" type="button" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local.isRemovingScrap ?? false}}">
+          <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local.isRemovingScrap ?? false}}"/>
+          <on type="click">
+            <!-- 단건 해제 — 먼저 잠그고 성공하면 목록의 선택에서 그 ID 를 뺀다 -->
+            <sequence>
+              <set-state target="local" :isRemovingScrap="true"/>
+              <api-call :auth_required="true" auth_mode="required" target="/api/modules/sirsoft-board/me/scraps/{{_global.scrapDeleteModal?.id}}" method="DELETE">
+                <success>
+                  <refetch-data-source dataSourceId="scrap"/>
+                  <set-state target="local" :isRemovingScrap="false"/>
+                  <!-- 선택 배열은 목록(부모 화면)의 지역 상태다 — 창의 지역 상태에 쓰면 목록의 「N개 선택」이 비워지지 않고, 지운 ID 가 다음 일괄 해제에 실린다 -->
+                  <set-state target="$parent._local" scrapSelectedIds="{{($parent._local.scrapSelectedIds ?? []).filter(v => v !== _global.scrapDeleteModal?.id)}}"/>
+                  <close-modal/>
+                  <toast type="success" message="$t:mypage.scrap.removed"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isRemovingScrap="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <!-- 스피너 -->
+          <div data-if="{{_local.isRemovingScrap}}" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+          <span data-if="{{!_local.isRemovingScrap}}">$t:mypage.scrap.delete_confirm_button</span>
+          <span data-if="{{_local.isRemovingScrap}}">$t:common.processing</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

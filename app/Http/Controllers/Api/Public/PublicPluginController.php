@@ -22,6 +22,12 @@ class PublicPluginController extends PublicBaseController
     use ServesExtensionBundles;
     use ServesRewritableCssAssets;
 
+    /**
+     * 공개 플러그인 컨트롤러를 만든다.
+     *
+     * @param  PluginService  $pluginService  플러그인 조회·자산 경로 서비스
+     * @param  ExtensionBundleService  $bundleService  확장 번들(IIFE/CSS) 서빙 서비스
+     */
     public function __construct(
         private readonly PluginService $pluginService,
         private readonly ExtensionBundleService $bundleService
@@ -104,7 +110,7 @@ class PublicPluginController extends PublicBaseController
     /**
      * 플러그인 편집기 스펙 조회 — editor-spec.json 반환
      *
-     * 활성 플러그인만 대상으로 하며, 활성 디렉토리 → _bundled 폴백 순으로 읽어
+     * 활성 플러그인만 대상으로 하며, 설치본만 읽어(배포 원본 폴백 없음)
      * 템플릿 serveEditorSpec 과 동일한 응답 형태(`data.spec`)로 반환한다.
      * 비활성/미존재 플러그인은 404. 파일 미작성은 spec=null 정상 응답.
      *
@@ -134,9 +140,14 @@ class PublicPluginController extends PublicBaseController
     /**
      * 플러그인 컴포넌트 정의 파일 서빙 — components.json 반환
      *
-     * 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스
-     * 병합하기 위해 fetch 한다. 미생성(구버전 플러그인) 시 빈 components 로
-     * 폴백한다(무손실 보존 디그레이드).
+     * 설치본만 읽으며, 설치본에 없으면(구버전 플러그인 등) 배포 원본을 대신 읽지 않고 빈 components 로
+     * 응답한다(무손실 보존 디그레이드).
+     *
+     * 코어 프론트엔드에는 이 엔드포인트의 호출자가 없다. 런타임 ComponentRegistry 와
+     * 편집기는 `/api/templates/{id}/components.json` 만 fetch 하고(ComponentRegistry.ts:250,
+     * LayoutEditorChrome.tsx:226), 확장 UI 는 매니페스트가 아니라 `extension_point` 로
+     * 주입된다. 네임스페이스 병합 로직도 존재하지 않는다. 확장이 자체 소비하거나 제3자가
+     * 읽는 공개 표면으로만 남아 있으므로, 여기에 소비자가 생기면 그때 서술을 갱신한다.
      *
      * @param  string  $identifier  플러그인 식별자
      * @return JsonResponse|Response 컴포넌트 정의 응답 (If-None-Match 일치 시 304)

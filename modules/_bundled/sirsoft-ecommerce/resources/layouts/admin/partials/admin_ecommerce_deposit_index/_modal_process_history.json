@@ -1,421 +1,421 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "입금 처리이력 모달"
-  },
-  "id": "modal_process_history",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.title",
-    "description": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.description",
-    "size": "lg"
-  },
-  "children": [
-    {
-      "id": "deposit_info_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label text-xs"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "text-primary font-medium mt-1"
-                  },
-                  "text": "김철수"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label text-xs"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "text-blue-600 dark:text-blue-400 font-semibold mt-1"
-                  },
-                  "text": "\\89,000"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-label text-xs"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.order_number"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-primary font-medium mt-1"
-              },
-              "text": "ORD20240127-001"
-            }
-          ]
-        }
-      ]
+    "comment": "입금 한 건이 어떤 경로로 처리됐는지 시간순으로 보여 주는 창 — 자동 매칭·실패·수동 개입이\n  한 줄씩 쌓인다.\n  **아직 시안이다** — 데이터소스도 API 호출도 없고 타임라인 항목은 마크업에 박아 둔 예시다.\n  성공과 실패를 아이콘·배지 색으로 가르는 규칙이 여기서 정해지므로, 배선할 때 이 형태에\n  실제 이력을 반복 렌더로 채우면 된다.",
+    "meta": {
+        "is_partial": true,
+        "description": "입금 처리이력 모달"
     },
-    {
-      "id": "timeline_section",
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "id": "modal_process_history",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.title",
+        "size": "lg"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "text-label text-sm font-medium mb-4"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.timeline_title"
+            "id": "deposit_info_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label text-xs"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-primary font-medium mt-1"
+                                    },
+                                    "text": "김철수"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label text-xs"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-blue-600 dark:text-blue-400 font-semibold mt-1"
+                                    },
+                                    "text": "\\89,000"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label text-xs"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.order_number"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-primary font-medium mt-1"
+                            },
+                            "text": "ORD20240127-001"
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "id": "timeline_list",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "id": "timeline_item_success",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-              },
-              "children": [
+            "id": "timeline_section",
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-start gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "zap",
-                            "className": "w-4 h-4 icon-muted"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-label text-sm font-medium mb-4"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-1"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2 mb-1"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-primary font-medium"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.system_pg_webhook"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "badge-status badge-status-success"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.match_complete"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-secondary text-sm"
-                          },
-                          "text": "2024-01-27 15:20:00"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-secondary text-sm mt-1"
-                          },
-                          "text": "주문번호 20240127-001과 자동 매칭 완료"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "timeline_item_failed",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-              },
-              "children": [
+                    "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.timeline_title"
+                },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-start gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "code",
-                            "className": "w-4 h-4 icon-muted"
-                          }
-                        }
-                      ]
+                    "id": "timeline_list",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "stack-tight"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-1"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2 mb-1"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-primary font-medium"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.webhook_receive"
+                            "id": "timeline_item_success",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "badge-status badge-status-error"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.failed"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "zap",
+                                                        "className": "text-base icon-muted"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2 mb-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-primary font-medium"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.system_pg_webhook"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "badge-status badge-status-success"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.match_complete"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-secondary text-sm"
+                                                    },
+                                                    "text": "2024-01-27 15:20:00"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-secondary text-sm mt-1"
+                                                    },
+                                                    "text": "주문번호 20240127-001과 자동 매칭 완료"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "timeline_item_failed",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-secondary text-sm"
-                              },
-                              "text": "404"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-secondary text-sm"
-                          },
-                          "text": "2024-01-27 10:40:30"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-secondary text-sm mt-1"
-                          },
-                          "text": "https://api.pg.com/v1/webhook/notification"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm"
-                          },
-                          "text": "주문번호가 존재하지 않습니다"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "mt-3"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Button",
-                              "props": {
-                                "type": "button",
-                                "className": "flex-center gap-1 text-sm text-secondary hover:text-primary"
-                              },
-                              "children": [
+                            "children": [
                                 {
-                                  "type": "basic",
-                                  "name": "Icon",
-                                  "props": {
-                                    "name": "chevron-up",
-                                    "className": "w-4 h-4"
-                                  }
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.toggle_detail_close"
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "code",
+                                                        "className": "text-base icon-muted"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2 mb-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-primary font-medium"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.webhook_receive"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "badge-status badge-status-error"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.failed"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary text-sm"
+                                                            },
+                                                            "text": "404"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-secondary text-sm"
+                                                    },
+                                                    "text": "2024-01-27 10:40:30"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-secondary text-sm mt-1"
+                                                    },
+                                                    "text": "https://api.pg.com/v1/webhook/notification"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm"
+                                                    },
+                                                    "text": "주문번호가 존재하지 않습니다"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "mt-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "flex-center gap-1 text-sm text-secondary hover:text-gray-900 dark:hover:text-white"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "chevron-up",
+                                                                        "className": "text-base"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.toggle_detail_close"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "detail_section",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "mt-3 space-y-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "text-label text-xs mb-1"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.request_data"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Pre",
+                                                                            "props": {
+                                                                                "className": "text-primary whitespace-pre-wrap"
+                                                                            },
+                                                                            "text": "{\n  \"transactionId\": \"PG2024012700004\"\n}"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "text-label text-xs mb-1"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.response_data"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Pre",
+                                                                            "props": {
+                                                                                "className": "text-primary whitespace-pre-wrap"
+                                                                            },
+                                                                            "text": "{\n  \"success\": false,\n  \"error\": \"주문을 찾을 수 없습니다\"\n}"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "id": "detail_section",
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "mt-3 space-y-3"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "text-label text-xs mb-1"
-                                  },
-                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.request_data"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Pre",
-                                      "props": {
-                                        "className": "text-primary whitespace-pre-wrap"
-                                      },
-                                      "text": "{\n  \"transactionId\": \"PG2024012700004\"\n}"
-                                    }
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "text-label text-xs mb-1"
-                                  },
-                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.response_data"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Pre",
-                                      "props": {
-                                        "className": "text-primary whitespace-pre-wrap"
-                                      },
-                                      "text": "{\n  \"success\": false,\n  \"error\": \"주문을 찾을 수 없습니다\"\n}"
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ],
-          "props": {
-          }
+            ]
         }
-      ]
-    }
-  ],
-  "footer": []
+    ]
 }

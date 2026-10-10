@@ -1,300 +1,304 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Notice Template View Panel - Read-only Details with Language Tabs"
-  },
-  "id": "view_panel",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{_global.selectedTemplateId && _global.panelMode === 'view'}}",
-  "children": [
-    {
-      "id": "view_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "text-heading"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.product_notice_template.info.title"
-        }
-      ]
+    "comment": "공지 템플릿 보기 패널. 목록이 전역에 실어 둔 항목만 읽고 상세를 따로 부르지 않는다.\n  항목 이름·내용이 언어별 값이라 언어 탭이 있고, 고른 언어는 이 패널의 지역 상태에만 남는다\n  (편집으로 넘어가면 폼이 자기 탭을 따로 갖는다).\n  아래 두 버튼: 편집은 값을 폼으로 옮겨 담고, 삭제는 확인 창이 쓸 이름·id 를 `_global.modal_data`\n  에 채워 넘긴다. 둘 다 서버 권한으로 잠긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Notice Template View Panel - Read-only Details with Language Tabs"
     },
-    {
-      "id": "view_content",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "p-4"
-      },
-      "children": [
+    "id": "view_panel",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global.selectedTemplateId && _global.panelMode === 'view'}}",
+    "children": [
         {
-          "id": "template_name_display",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-3 mb-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H2",
-              "props": {
-                "className": "section-heading"
-              },
-              "text": "{{$localized(_global.selectedTemplate?.name)}}"
+            "id": "view_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
-              },
-              "text": "{{_global.selectedTemplate?.fields_count ?? 0}}"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_global.selectedTemplate?.is_active}}",
-              "props": {
-                "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded"
-              },
-              "text": "$t:sirsoft-ecommerce.common.active"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{!_global.selectedTemplate?.is_active}}",
-              "props": {
-                "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded"
-              },
-              "text": "$t:sirsoft-ecommerce.common.inactive"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-heading"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product_notice_template.info.title"
+                }
+            ]
         },
         {
-          "id": "language_tabs",
-          "type": "composite",
-          "name": "TabNavigation",
-          "props": {
-            "tabs": "{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
-            "activeTabId": "{{_local.viewLocale ?? $locale}}",
-            "variant": "underline",
-            "className": "mb-4"
-          },
-          "actions": [
-            {
-              "event": "onTabChange",
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "viewLocale": "{{$args[0]}}"
-              }
-            }
-          ]
+            "id": "view_content",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4"
+            },
+            "children": [
+                {
+                    "id": "template_name_display",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "section-heading"
+                            },
+                            "text": "{{$localized(_global.selectedTemplate?.name)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
+                            },
+                            "text": "{{_global.selectedTemplate?.fields_count ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.selectedTemplate?.is_active}}",
+                            "props": {
+                                "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.active"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_global.selectedTemplate?.is_active}}",
+                            "props": {
+                                "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.inactive"
+                        }
+                    ]
+                },
+                {
+                    "id": "language_tabs",
+                    "type": "composite",
+                    "name": "TabNavigation",
+                    "actions": [
+                        {
+                            "comment": "보기 언어 탭 — 이 패널 안에서만 쓰는 값이다.",
+                            "type": "change",
+                            "event": "onTabChange",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "viewLocale": "{{$args[0]}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "tabs": "{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
+                        "activeTabId": "{{_local.viewLocale ?? $locale}}",
+                        "variant": "underline",
+                        "className": "mb-4"
+                    }
+                },
+                {
+                    "id": "tab_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "toggle-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": {
+                                        "className": "w-full"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": {
+                                                "className": "bg-gray-50 dark:bg-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase w-16"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.order"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.name"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.content"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "iteration": {
+                                                "source": "{{_global.selectedTemplate?.fields ?? []}}",
+                                                "item_var": "field",
+                                                "index_var": "fieldIndex"
+                                            },
+                                            "props": {
+                                                "className": "divider-list"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "props": {
+                                                        "className": "bg-white dark:bg-gray-800"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-4 py-3 text-label-subtle"
+                                                            },
+                                                            "text": "{{fieldIndex + 1}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "text-primary px-4 py-3 text-sm"
+                                                            },
+                                                            "text": "{{field.name?.[_local.viewLocale ?? $locale] ?? '-'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-4 py-3 text-body"
+                                                            },
+                                                            "text": "{{field.content?.[_local.viewLocale ?? $locale] ?? '-'}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "id": "tab_content",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "toggle-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Table",
-                  "props": {
-                    "className": "w-full"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Thead",
-                      "props": {
-                        "className": "bg-gray-50 dark:bg-gray-700"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Tr",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase w-16"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.order"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.name"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.content"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Tbody",
-                      "props": {
-                        "className": "divider-list"
-                      },
-                      "iteration": {
-                        "source": "{{_global.selectedTemplate?.fields ?? []}}",
-                        "item_var": "field",
-                        "index_var": "fieldIndex"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Tr",
-                          "props": {
-                            "className": "bg-white dark:bg-gray-800"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-4 py-3 text-label-subtle"
-                              },
-                              "text": "{{fieldIndex + 1}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "text-primary px-4 py-3 text-sm"
-                              },
-                              "text": "{{field.name?.[_local.viewLocale ?? $locale] ?? '-'}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-4 py-3 text-body"
-                              },
-                              "text": "{{field.content?.[_local.viewLocale ?? $locale] ?? '-'}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "view_footer",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 py-4 border-t border-gray-200 dark:border-gray-700"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "disabled": "{{_global.selectedTemplate?.abilities?.can_update !== true}}",
-                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "panelMode": "edit"
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form": "{{_global.selectedTemplate}}",
-                        "isSaving": false,
-                        "errors": null
-                      }
-                    }
-                  ]
-                }
-              ],
-              "text": "$t:sirsoft-ecommerce.common.edit"
+            "id": "view_footer",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 py-4 border-t border-gray-200 dark:border-gray-700"
             },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_global.selectedTemplate?.abilities?.can_delete !== true}}"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "modal_data": {
-                          "templateId": "{{_global.selectedTemplateId}}",
-                          "templateName": "{{$localized(_global.selectedTemplate?.name)}}"
-                        }
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
                     },
-                    {
-                      "handler": "openModal",
-                      "target": "delete_confirm_modal"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "편집 진입 — 보던 템플릿을 폼의 `_local.form` 에 부어 준다. 폼은 상세를 다시 부르지 않으므로 이 자리가 편집 초깃값의 유일한 출처다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "edit"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form": "{{_global.selectedTemplate}}",
+                                                "isSaving": false,
+                                                "errors": null
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "disabled": "{{_global.selectedTemplate?.abilities?.can_update !== true}}",
+                                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.edit"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "삭제 확인 창 열기 — 그 창은 조회를 하지 않으므로 보여 줄 이름과 지울 id 를 여기서 채워 넘긴다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "modal_data": {
+                                                    "templateId": "{{_global.selectedTemplateId}}",
+                                                    "templateName": "{{$localized(_global.selectedTemplate?.name)}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "delete_confirm_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.selectedTemplate?.abilities?.can_delete !== true}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.delete"
+                        }
+                    ]
                 }
-              ],
-              "text": "$t:sirsoft-ecommerce.common.delete"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -1,65 +1,64 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Main Banner Edit Cancel Confirm Modal"
-  },
-  "id": "modal_edit_cancel",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.title",
-    "size": "sm",
-    "titleIcon": "alert-circle",
-    "titleIconColor": "warning"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-body"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.message"
+    "comment": "배너 편집 중 이탈을 막는 확인 창 — 저장하지 않은 입력이 사라진다고 알린다.\n  **아직 시안이다** — 두 버튼 모두 창을 닫기만 하고, \"나가기\" 쪽이 편집 모드를 되돌리지 않는다.\n  즉 지금은 어느 쪽을 눌러도 편집 화면에 그대로 남는다.\n  다른 화면의 같은 성격 창(브랜드 편집 이탈)은 나가기 쪽이 모드와 선택을 비우므로, 배선할 때\n  그 형태를 참고하면 된다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Main Banner Edit Cancel Confirm Modal"
     },
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-body mt-1"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.sub_message"
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
+    "id": "modal_edit_cancel",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.confirm"
+            }
+        ]
     },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.confirm",
-      "actions": [
+    "children": [
         {
-          "type": "click",
-          "handler": "closeModal"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-body"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.message"
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-body mt-1"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.sub_message"
         }
-      ]
-    }
-  ]
+    ]
 }

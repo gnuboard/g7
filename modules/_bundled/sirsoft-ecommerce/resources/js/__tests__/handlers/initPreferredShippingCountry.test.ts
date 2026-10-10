@@ -123,3 +123,47 @@ describe('initPreferredShippingCountry 핸들러', () => {
         }
     });
 });
+
+describe('활성 배송가능 국가 게이트 (S17 B12)', () => {
+    const withCountries = (countries: Array<{ code: string; is_active: boolean }>) => {
+        mockG7Core.state.get.mockReturnValue({
+            modules: { 'sirsoft-ecommerce': { shipping: { available_countries: countries } } },
+        });
+    };
+
+    it('비활성 국가로 저장된 계정 값(JP)은 채택하지 않고 기본 국가로 떨어진다', () => {
+        withCountries([{ code: 'KR', is_active: true }, { code: 'JP', is_active: false }]);
+        mockG7Config.user = { id: 7, ecommerce_preferred_shipping_country: 'JP' };
+
+        initPreferredShippingCountryHandler({ params: { defaultCountry: 'KR' } });
+
+        expect(mockG7Core.state.set).toHaveBeenCalledWith({ preferredShippingCountry: 'KR' });
+    });
+
+    it('비활성 국가가 localStorage 에 남아 있어도 채택하지 않는다', () => {
+        withCountries([{ code: 'KR', is_active: true }, { code: 'US', is_active: false }]);
+        mockLocalStorage.setItem('g7_preferred_shipping_country', 'US');
+
+        initPreferredShippingCountryHandler({ params: { defaultCountry: 'KR' } });
+
+        expect(mockG7Core.state.set).toHaveBeenCalledWith({ preferredShippingCountry: 'KR' });
+    });
+
+    it('활성 국가면 종전대로 채택한다', () => {
+        withCountries([{ code: 'KR', is_active: true }, { code: 'JP', is_active: true }]);
+        mockG7Config.user = { id: 7, ecommerce_preferred_shipping_country: 'JP' };
+
+        initPreferredShippingCountryHandler({ params: { defaultCountry: 'KR' } });
+
+        expect(mockG7Core.state.set).toHaveBeenCalledWith({ preferredShippingCountry: 'JP' });
+    });
+
+    it('활성 목록을 아직 읽지 못했으면 형식 검사까지만 하고 채택한다', () => {
+        mockG7Core.state.get.mockReturnValue({});
+        mockG7Config.user = { id: 7, ecommerce_preferred_shipping_country: 'JP' };
+
+        initPreferredShippingCountryHandler({ params: { defaultCountry: 'KR' } });
+
+        expect(mockG7Core.state.set).toHaveBeenCalledWith({ preferredShippingCountry: 'JP' });
+    });
+});

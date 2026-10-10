@@ -1,0 +1,62 @@
+<!-- 내가 쓴 상품 문의를 지우기 전 확인. 답변이 달린 뒤에도 지울 수 있어 «답변까지 함께 사라진다» 는
+     것이 이 창이 알려야 하는 사실이다. -->
+<partial description="상품 1:1 문의 삭제 확인 모달" editor_label="$t:user.modal_label.shop_detail.inquiry_delete_modal">
+  <modal data-type="composite" data-ref="inquiry_delete_modal" title="{{(_global.qnaDeleteIsReply ?? false) ? $t('shop.qna.reply_delete_modal_title') : ((_global.qnaDeleteIsAdmin ?? false) ? $t('shop.qna.admin_delete_modal_title') : $t('shop.qna.delete_modal_title'))}}" size="sm" :closeOnBackdropClick="false">
+    <!-- 삭제 안내 아이콘 + 문구 -->
+    <div class="flex flex-col items-center gap-4 py-2">
+      <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+        <icon name="triangle-exclamation" class="text-red-500 dark:text-red-400 text-xl"/>
+      </div>
+      <!-- 답변 삭제 안내 문구 -->
+      <p data-if="{{!!(_global.qnaDeleteIsReply ?? false)}}" class="text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed">$t:shop.qna.reply_delete_modal_message</p>
+      <!-- 관리자 미답변 문의 삭제 안내 문구 -->
+      <p data-if="{{!(_global.qnaDeleteIsReply ?? false) &amp;&amp; !!(_global.qnaDeleteIsAdmin ?? false) &amp;&amp; !_global.qnaDeleteIsAnswered}}" class="text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed">$t:shop.qna.admin_delete_modal_message_pending</p>
+      <!-- 관리자 답변완료 문의 삭제 안내 문구 -->
+      <p data-if="{{!(_global.qnaDeleteIsReply ?? false) &amp;&amp; !!(_global.qnaDeleteIsAdmin ?? false) &amp;&amp; !!_global.qnaDeleteIsAnswered}}" class="text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed">$t:shop.qna.admin_delete_modal_message_answered</p>
+      <!-- 사용자 미답변 문의 안내 문구 -->
+      <p data-if="{{!(_global.qnaDeleteIsReply ?? false) &amp;&amp; !(_global.qnaDeleteIsAdmin ?? false) &amp;&amp; !_global.qnaDeleteIsAnswered}}" class="text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed">$t:shop.qna.delete_modal_message_pending</p>
+      <!-- 사용자 답변완료 문의 안내 문구 -->
+      <p data-if="{{!(_global.qnaDeleteIsReply ?? false) &amp;&amp; !(_global.qnaDeleteIsAdmin ?? false) &amp;&amp; !!_global.qnaDeleteIsAnswered}}" class="text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed">$t:shop.qna.delete_modal_message_answered</p>
+    </div>
+    <!-- 버튼 영역 -->
+    <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <!-- 취소 버튼 -->
+      <button type="button" class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <on type="click">
+          <set-state target="global" :qnaDeleteId="null" :qnaDeleteIsAnswered="false" :qnaDeleteSource="null" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false"/>
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <!-- 삭제 확인 버튼 -->
+      <button type="button" class="flex-1 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.qnaDeleting ?? false}}">
+        <on type="click">
+          <set-state target="global" :qnaDeleting="true"/>
+          <api-call :auth_required="true" target="{{(_global.qnaDeleteIsAdmin ?? false) ? ((_global.qnaDeleteIsReply ?? false) ? '/api/modules/sirsoft-ecommerce/admin/inquiries/' + _global.qnaDeleteId + '/reply' : '/api/modules/sirsoft-ecommerce/admin/inquiries/' + _global.qnaDeleteId) : ((_global.qnaDeleteIsReply ?? false) ? '/api/modules/sirsoft-ecommerce/user/inquiries/' + _global.qnaDeleteId + '/reply' : '/api/modules/sirsoft-ecommerce/user/inquiries/' + _global.qnaDeleteId)}}" method="DELETE">
+            <success>
+              <set-state target="global" :qnaDeleting="false" :qnaDeleteId="null" :qnaDeleteIsAnswered="false" :qnaDeleteSource="null" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false"/>
+              <close-modal/>
+              <toast message="$t:shop.qna.delete_success" type="success"/>
+              <!-- 마이페이지에서 삭제한 경우 -->
+              <sequence if="{{_global.qnaDeleteSource === 'mypage'}}">
+                <set-state target="local" :openedInquiryId="null"/>
+                <refetch-data-source dataSourceId="myInquiries"/>
+              </sequence>
+              <!-- 상품 상세에서 삭제한 경우 -->
+              <sequence if="{{_global.qnaDeleteSource === 'product'}}">
+                <set-state target="local" :qnaOpenId="null"/>
+                <refetch-data-source dataSourceId="qna"/>
+              </sequence>
+            </success>
+            <fail>
+              <set-state target="global" :qnaDeleting="false"/>
+              <toast message="{{error.message ?? '$t:shop.qna.delete_failed'}}" type="error"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.qnaDeleting ?? false}}" name="spinner" class="text-sm animate-spin mr-1"/>
+        <span>$t:shop.qna.delete_modal_confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

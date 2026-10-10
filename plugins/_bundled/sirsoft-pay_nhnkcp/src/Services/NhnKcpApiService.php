@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\PayNhnkcp\Services;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 
 class NhnKcpApiService
@@ -67,13 +67,17 @@ class NhnKcpApiService
 
     private string $binDir;
 
+    /**
+     * 플러그인 설정을 읽어 현재 모드의 KCP 인증 정보와 CLI 바이너리 경로를 준비한다.
+     *
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
-    )
-    {
+    ) {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $this->applyCredentials($settings, (bool) ($settings['is_test_mode'] ?? true));
-        $this->binDir = dirname(__DIR__, 2) . '/bin';
+        $this->binDir = dirname(__DIR__, 2).'/bin';
     }
 
     /**
@@ -127,8 +131,8 @@ class NhnKcpApiService
      * 결제 승인/취소 hot path 는 KCP CLI 를 사용하지만, 거래 상태 조회처럼
      * 부수효과가 없는 요청은 HTTP API 로 제공한다.
      *
-     * @param string $tno      KCP 거래번호
-     * @param string $ordrIdxx 주문번호
+     * @param  string  $tno  KCP 거래번호
+     * @param  string  $ordrIdxx  주문번호
      * @return array KCP 거래 조회 응답
      */
     public function getTransaction(string $tno, string $ordrIdxx): array
@@ -143,7 +147,7 @@ class NhnKcpApiService
             $this->siteKey
         );
 
-        $url = $this->apiBaseUrl() . '/v1/payment/trade/' . rawurlencode($tno);
+        $url = $this->apiBaseUrl().'/v1/payment/trade/'.rawurlencode($tno);
 
         $response = Http::withBasicAuth($this->siteCd, $this->siteKey)
             ->withHeaders([
@@ -158,7 +162,7 @@ class NhnKcpApiService
             ]);
 
         if ($response->failed()) {
-            throw new NhnKcpApiException('KCP transaction query HTTP ' . $response->status());
+            throw new NhnKcpApiException('KCP transaction query HTTP '.$response->status());
         }
 
         $json = $response->json();
@@ -172,32 +176,47 @@ class NhnKcpApiService
      * Standard Pay 결제창 완료 후 받은 enc_data / enc_info 로 KCP CLI 를 통해
      * 서버 승인 요청. 응답 res_cd = '0000' 이면 성공.
      *
+     * 승인 요청에는 서버가 산정한 청구액을 주문 데이터 `ordr_mony` 로 싣는다. KCP 는 결제창에서
+     * 인증된 금액과 이 값이 다르면 승인을 거절한다(KCP 공식 연동 예제의 결제금액 유효성 검증).
+     * 결제창 금액은 브라우저에서 바뀔 수 있으므로 이 값은 반드시 주문·청구 저장값에서 가져온다.
+     *
      * @param  string  $encData  KCP 암호화 결제 데이터
      * @param  string  $encInfo  KCP 암호화 결제 정보
      * @param  string  $ordrIdxx  주문번호
      * @param  string  $custIp  고객 IP
-     * @return array 파싱된 KCP 응답 (res_cd, res_msg, tno, app_no, card_no, quota 등)
+     * @param  int  $ordrMony  서버가 산정한 청구액 (KRW 원 단위, 1 이상)
+     * @return array 파싱된 KCP 응답 (res_cd, res_msg, tno, amount, app_no, card_no, quota 등)
+     *
+     * @throws NhnKcpApiException 청구액이 1 미만이거나 CLI 인수가 안전하지 않을 때 (CLI 미호출)
      */
-    public function approvePayment(string $encData, string $encInfo, string $ordrIdxx, string $custIp): array
+    public function approvePayment(string $encData, string $encInfo, string $ordrIdxx, string $custIp, int $ordrMony): array
     {
+        // 청구액을 모르는 승인은 KCP 서버 측 금액 대조가 빠진 승인이므로 CLI 를 부르기 전에 거절한다.
+        if ($ordrMony <= 0) {
+            throw new NhnKcpApiException('KCP approval requires a positive order amount (ordr_mony).');
+        }
+
         return $this->executeCli(
             txCd: self::TX_APPROVE,
             ordrIdxx: $ordrIdxx,
             encData: $encData,
             encInfo: $encInfo,
             custIp: $custIp,
+            ordrData: $this->buildKcpFieldData(['ordr_mony' => (string) $ordrMony]),
         );
     }
 
     /**
      * KCP 결제 취소 (CLI 방식)
      *
-     * @param string $tno       KCP 원거래 거래번호
-     * @param string $ordrIdxx  주문번호
-     * @param int    $cancelAmt 취소 금액
-     * @param string $cancelMsg 취소 사유
-     * @param bool   $isPartial 부분 취소 여부
-     * @param int    $totalAmt  현재 부분취소 가능 금액 (KCP rem_mny)
+     * @param  string  $tno  KCP 원거래 거래번호
+     * @param  string  $ordrIdxx  주문번호
+     * @param  int  $cancelAmt  취소 금액
+     * @param  string  $cancelMsg  취소 사유
+     * @param  bool  $isPartial  부분 취소 여부
+     * @param  int  $totalAmt  현재 부분취소 가능 금액 (KCP rem_mny)
+     * @param  array|null  $refundAccount  가상계좌 환불계좌 {bank_code, account_number, holder}
+     * @param  array<string, string>  $taxFields  복합과세(TG03) 부분취소 금액 {tax_flag, mod_tax_mny, mod_vat_mny, mod_free_mny} — 부분취소에만 싣는다
      * @return array 파싱된 KCP 응답
      */
     public function cancelPayment(
@@ -207,6 +226,8 @@ class NhnKcpApiService
         string $cancelMsg,
         bool $isPartial = false,
         int $totalAmt = 0,
+        ?array $refundAccount = null,
+        array $taxFields = [],
     ): array {
         $modType = $isPartial ? 'RN07' : 'STSC';
 
@@ -216,14 +237,32 @@ class NhnKcpApiService
             'mod_desc' => $cancelMsg,
         ];
 
+        // 입금완료된 가상계좌는 **환불받을 계좌**가 없으면 KCP 가 취소를 거절한다(P5).
+        // 전달하지 않던 시절에는 입금완료 vbank 주문의 취소가 통째로 막혀 있었고, 운영자는
+        // PG 콘솔에서 손으로 처리해야 했다 — 그 환불은 우리 장부에 남지 않았다.
+        if ($refundAccount !== null
+            && filled($refundAccount['account_number'] ?? null)
+            && filled($refundAccount['bank_code'] ?? null)) {
+            $fields['bank_code'] = (string) $refundAccount['bank_code'];
+            $fields['account'] = (string) $refundAccount['account_number'];
+            $fields['depositor'] = (string) ($refundAccount['holder'] ?? '');
+        }
+
         if ($isPartial && $totalAmt > 0) {
             // KCP rem_mny는 취소 후 잔액이 아니라 현재 부분취소 가능한 금액이다.
             // 첫 부분취소는 원거래금액, 이후에는 이전 부분취소 후 남은 잔액을 전달한다.
             $fields['rem_mny'] = (string) $totalAmt;
             $fields['mod_mny'] = (string) $cancelAmt;
+
+            // 복합과세(TG03)로 승인한 결제는 부분취소에도 과세·부가세·비과세 취소 금액을 나눠 보낸다(P-D8, 합 = mod_mny).
+            foreach (['tax_flag', 'mod_tax_mny', 'mod_vat_mny', 'mod_free_mny'] as $key) {
+                if (isset($taxFields[$key])) {
+                    $fields[$key] = (string) $taxFields[$key];
+                }
+            }
         }
 
-        $modxData = $this->buildModData($fields);
+        $modxData = $this->buildKcpFieldData($fields);
 
         // 훅: 결제 취소 전 (본인인증 등 확장 지점)
         HookManager::doAction('sirsoft-pay_nhnkcp.payment.before_cancel', $tno, $ordrIdxx, $cancelAmt, $cancelMsg);
@@ -258,7 +297,7 @@ class NhnKcpApiService
      * 에스크로 결제 후 상품을 발송할 때 KCP에 운송장번호를 등록합니다.
      * 에스크로 테스트 결제는 별도 설정값이 있으면 그 site_cd를, 없으면 일반 테스트 site_cd를 사용합니다.
      *
-     * @param  string  $tno       KCP 에스크로 거래번호
+     * @param  string  $tno  KCP 에스크로 거래번호
      * @param  string  $ordrIdxx  주문번호
      * @param  string  $deliNumb  운송장번호
      * @param  string  $deliCorp  택배사코드 (KCP 코드: '04'=CJ대한통운, '05'=한진택배 등)
@@ -270,7 +309,7 @@ class NhnKcpApiService
         string $deliNumb,
         string $deliCorp,
     ): array {
-        $modxData = $this->buildModData([
+        $modxData = $this->buildKcpFieldData([
             'tno' => $tno,
             'mod_type' => 'STE1',
             'deli_numb' => $deliNumb,
@@ -299,6 +338,23 @@ class NhnKcpApiService
         return $result;
     }
 
+    /**
+     * 운영체제에 맞는 KCP CLI 를 실행하고 응답 문자열을 키-값 배열로 파싱한다.
+     *
+     * 응답이 비면 연동 모듈 호출 오류(9502)로 채우고, CP949 출력은 UTF-8 로 변환한다.
+     *
+     * @param  string  $txCd  거래 구분 코드 (승인·취소)
+     * @param  string  $ordrIdxx  주문번호
+     * @param  string  $encData  결제창 암호화 데이터
+     * @param  string  $encInfo  결제창 암호화 정보
+     * @param  string  $custIp  구매자 IP
+     * @param  string  $modxData  변경 요청 필드 묶음 (취소·배송 등록용, 없으면 빈 문자열)
+     * @param  string  $siteCdOverride  현재 설정 대신 쓸 site_cd (빈 문자열이면 현재 설정)
+     * @param  string  $ordrData  주문 필드 묶음 (승인 요청의 청구액, 없으면 빈 문자열)
+     * @return array<string, mixed> 파싱된 KCP 응답
+     *
+     * @throws NhnKcpApiException 인수에 위험 문자가 있거나 CLI 바이너리를 실행할 수 없을 때
+     */
     private function executeCli(
         string $txCd,
         string $ordrIdxx,
@@ -307,18 +363,19 @@ class NhnKcpApiService
         string $custIp,
         string $modxData = '',
         string $siteCdOverride = '',
+        string $ordrData = '',
     ): array {
         $paUrl = $this->isTest ? self::PA_URL_TEST : self::PA_URL_LIVE;
         $siteCd = $siteCdOverride !== '' ? $siteCdOverride : $this->siteCd;
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $resData = $this->executeCliWindows($txCd, $ordrIdxx, $encData, $encInfo, $custIp, $paUrl, $modxData, $siteCd);
+            $resData = $this->executeCliWindows($txCd, $ordrIdxx, $encData, $encInfo, $custIp, $paUrl, $modxData, $siteCd, $ordrData);
         } else {
-            $resData = $this->executeCliLinux($txCd, $ordrIdxx, $encData, $encInfo, $custIp, $paUrl, $modxData, $siteCd);
+            $resData = $this->executeCliLinux($txCd, $ordrIdxx, $encData, $encInfo, $custIp, $paUrl, $modxData, $siteCd, $ordrData);
         }
 
         if ($resData === '') {
-            $resData = 'res_cd=9502' . chr(31) . 'res_msg=연동 모듈 호출 오류';
+            $resData = 'res_cd=9502'.chr(31).'res_msg=연동 모듈 호출 오류';
         }
 
         // KCP Windows CLI는 CP949(EUC-KR)로 한글을 출력 — MySQL UTF-8 저장을 위해 변환
@@ -340,6 +397,25 @@ class NhnKcpApiService
         return $result;
     }
 
+    /**
+     * Windows 용 KCP CLI 를 실행하고 응답 라인 하나를 돌려준다.
+     *
+     * 각 인수를 위험 문자 검사로 거른 뒤 escapeshellarg 로 감싸 실행하며,
+     * 코드페이지 안내처럼 res_cd 가 없는 출력 라인은 버린다.
+     *
+     * @param  string  $txCd  거래 구분 코드 (승인·취소)
+     * @param  string  $ordrIdxx  주문번호
+     * @param  string  $encData  결제창 암호화 데이터
+     * @param  string  $encInfo  결제창 암호화 정보
+     * @param  string  $custIp  구매자 IP
+     * @param  string  $paUrl  결제 승인 게이트웨이 주소 (모드별 상수)
+     * @param  string  $modxData  변경 요청 필드 묶음 (없으면 빈 문자열)
+     * @param  string  $siteCd  사용할 site_cd (빈 문자열이면 현재 설정)
+     * @param  string  $ordrData  주문 필드 묶음 (없으면 빈 문자열)
+     * @return string KCP 응답 라인 (응답이 없으면 빈 문자열)
+     *
+     * @throws NhnKcpApiException 인수에 위험 문자가 있거나 CLI 바이너리를 실행할 수 없을 때
+     */
     private function executeCliWindows(
         string $txCd,
         string $ordrIdxx,
@@ -349,16 +425,21 @@ class NhnKcpApiService
         string $paUrl,
         string $modxData,
         string $siteCd = '',
+        string $ordrData = '',
     ): string {
         $siteCd = $siteCd !== '' ? $siteCd : $this->siteCd;
-        $keyPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir . '/pub.key');
-        $binPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir . '/pp_cli_exe.exe');
+        $keyPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir.'/pub.key');
+        $binPath = str_replace('/', DIRECTORY_SEPARATOR, $this->binDir.'/pp_cli_exe.exe');
 
         // 실행 권한 자가 복구: plugin:update 후 _bundled 의 0664 권한이 활성 디렉토리에 그대로
         // 회귀해 9502 ("연동 모듈 호출 오류") 가 발생하던 회귀를 결제 hot path 에서 차단.
         // Windows 에서는 chmod 자체는 no-op 에 가깝지만, is_file 가드는 의미 있음.
         $this->ensureCliExecutable($binPath);
-        $planData = 'payx_data=' . ($modxData !== '' ? 'mod_data=' . $modxData : '');
+        // plan_data 는 KCP 연동 라이브러리와 같은 순서(payx → ordr → mod)로 이어 붙인다.
+        // 승인 요청이면 ordr_data 에 청구액(ordr_mony)이 실린다.
+        $planData = 'payx_data='
+            .($ordrData !== '' ? 'ordr_data='.$ordrData : '')
+            .($modxData !== '' ? 'mod_data='.$modxData : '');
 
         // Shell injection 방어: CLI args 의 각 값을 사전 검증 후 안전한 값만 사용.
         // 위험 문자(`"`, 제어문자, 개행) 가 포함되면 KCP CLI 인터페이스가 깨지고 cmd.exe
@@ -374,23 +455,23 @@ class NhnKcpApiService
         $this->assertSafeCliValue($keyPath, 'key_path');
         $this->assertSafeCliValue($planData, 'plan_data', allowKcpFieldSeparator: true);
 
-        $args = 'site_cd=' . $siteCd . ','
-            . 'site_key=' . $this->siteKey . ','
-            . 'tx_cd=' . $txCd . ','
-            . 'pa_url=' . $paUrl . ','
-            . 'pa_port=' . self::PA_PORT . ','
-            . 'ordr_idxx=' . $ordrIdxx . ','
-            . 'enc_data=' . $encData . ','
-            . 'enc_info=' . $encInfo . ','
-            . 'trace_no=,'
-            . 'cust_ip=' . $custIp . ','
-            . 'key_path=' . $keyPath . ','
-            . 'log_path=' . self::LOG_DISABLED_PATH . ','
-            . 'log_level=' . self::LOG_LEVEL . ','
-            . 'plan_data=' . $planData;
+        $args = 'site_cd='.$siteCd.','
+            .'site_key='.$this->siteKey.','
+            .'tx_cd='.$txCd.','
+            .'pa_url='.$paUrl.','
+            .'pa_port='.self::PA_PORT.','
+            .'ordr_idxx='.$ordrIdxx.','
+            .'enc_data='.$encData.','
+            .'enc_info='.$encInfo.','
+            .'trace_no=,'
+            .'cust_ip='.$custIp.','
+            .'key_path='.$keyPath.','
+            .'log_path='.self::LOG_DISABLED_PATH.','
+            .'log_level='.self::LOG_LEVEL.','
+            .'plan_data='.$planData;
 
         // escapeshellarg 로 binPath / args 각각을 안전하게 quoting (Windows 는 `"` 제거 + 큰따옴표 래핑).
-        $command = escapeshellarg($binPath) . ' ' . escapeshellarg($args);
+        $command = escapeshellarg($binPath).' '.escapeshellarg($args);
 
         Log::debug('KCP CLI command prepared (Windows)', [
             'bin' => basename($binPath),
@@ -416,6 +497,25 @@ class NhnKcpApiService
         return (string) array_values($kcpLines)[0];
     }
 
+    /**
+     * Linux 용 KCP CLI 를 실행하고 응답 문자열을 돌려준다.
+     *
+     * PHP 정수 크기로 32비트·64비트 바이너리를 고르고, 각 인수를 위험 문자 검사로 거른 뒤
+     * escapeshellarg 로 감싸 실행한다.
+     *
+     * @param  string  $txCd  거래 구분 코드 (승인·취소)
+     * @param  string  $ordrIdxx  주문번호
+     * @param  string  $encData  결제창 암호화 데이터
+     * @param  string  $encInfo  결제창 암호화 정보
+     * @param  string  $custIp  구매자 IP
+     * @param  string  $paUrl  결제 승인 게이트웨이 주소 (모드별 상수)
+     * @param  string  $modxData  변경 요청 필드 묶음 (없으면 빈 문자열)
+     * @param  string  $siteCd  사용할 site_cd (빈 문자열이면 현재 설정)
+     * @param  string  $ordrData  주문 필드 묶음 (없으면 빈 문자열)
+     * @return string KCP 응답 문자열 (응답이 없으면 빈 문자열)
+     *
+     * @throws NhnKcpApiException 인수에 위험 문자가 있거나 CLI 바이너리를 실행할 수 없을 때
+     */
     private function executeCliLinux(
         string $txCd,
         string $ordrIdxx,
@@ -425,11 +525,12 @@ class NhnKcpApiService
         string $paUrl,
         string $modxData,
         string $siteCd = '',
+        string $ordrData = '',
     ): string {
         $siteCd = $siteCd !== '' ? $siteCd : $this->siteCd;
         $binExe = PHP_INT_MAX === 2147483647
-            ? $this->binDir . '/pp_cli'
-            : $this->binDir . '/pp_cli_x64';
+            ? $this->binDir.'/pp_cli'
+            : $this->binDir.'/pp_cli_x64';
 
         // 실행 권한 자가 복구: plugin:update 후 _bundled 의 0664 권한이 활성 디렉토리에 그대로
         // 회귀해 exec() 가 빈 결과를 반환 → 9502 ("연동 모듈 호출 오류") 가 발생하던 회귀를
@@ -437,7 +538,9 @@ class NhnKcpApiService
         // 사용자 결제 시점 안전망 역할.
         $this->ensureCliExecutable($binExe);
 
-        $modxArg = $modxData !== '' ? 'mod_data=' . $modxData : '';
+        $modxArg = $modxData !== '' ? 'mod_data='.$modxData : '';
+        // 승인 요청의 청구액(ordr_mony). KCP 연동 라이브러리의 Linux 인수 형식(ordr_data=ordr_data=...)을 따른다.
+        $ordrArg = $ordrData !== '' ? 'ordr_data='.$ordrData : '';
 
         // CLI args 사전 검증 — Linux 도 별도 sanitization 적용해 OS 간 동일한 가드.
         $this->assertSafeCliValue($siteCd, 'site_cd');
@@ -449,24 +552,26 @@ class NhnKcpApiService
         $this->assertSafeCliValue($encInfo, 'enc_info');
         $this->assertSafeCliValue($custIp, 'cust_ip');
         $this->assertSafeCliValue($modxArg, 'modx_data', allowKcpFieldSeparator: true);
+        $this->assertSafeCliValue($ordrArg, 'ordr_data', allowKcpFieldSeparator: true);
 
-        $args = 'home=' . $this->binDir . ','
-            . 'site_cd=' . $siteCd . ','
-            . 'site_key=' . $this->siteKey . ','
-            . 'tx_cd=' . $txCd . ','
-            . 'pa_url=' . $paUrl . ','
-            . 'pa_port=' . self::PA_PORT . ','
-            . 'ordr_idxx=' . $ordrIdxx . ','
-            . 'enc_data=' . $encData . ','
-            . 'enc_info=' . $encInfo . ','
-            . 'trace_no=,'
-            . 'cust_ip=' . $custIp . ','
-            . 'modx_data=' . $modxArg . ','
-            . 'log_path=' . self::LOG_DISABLED_PATH . ','
-            . 'log_level=' . self::LOG_LEVEL . ','
-            . 'opt=';
+        $args = 'home='.$this->binDir.','
+            .'site_cd='.$siteCd.','
+            .'site_key='.$this->siteKey.','
+            .'tx_cd='.$txCd.','
+            .'pa_url='.$paUrl.','
+            .'pa_port='.self::PA_PORT.','
+            .'ordr_idxx='.$ordrIdxx.','
+            .'enc_data='.$encData.','
+            .'enc_info='.$encInfo.','
+            .'trace_no=,'
+            .'cust_ip='.$custIp.','
+            .'ordr_data='.$ordrArg.','
+            .'modx_data='.$modxArg.','
+            .'log_path='.self::LOG_DISABLED_PATH.','
+            .'log_level='.self::LOG_LEVEL.','
+            .'opt=';
 
-        $command = $binExe . ' ' . escapeshellarg('-h') . ' ' . escapeshellarg($args);
+        $command = $binExe.' '.escapeshellarg('-h').' '.escapeshellarg($args);
 
         return (string) exec($command);
     }
@@ -540,6 +645,8 @@ class NhnKcpApiService
      *
      * @param  string  $value  검증할 값
      * @param  string  $key  필드 이름 (예외 메시지용)
+     * @param  bool  $allowKcpFieldSeparator  조립된 필드 묶음이라 KCP 필드 구분자(chr(31))를 허용할지 여부
+     * @return void 반환값 없음
      *
      * @throws NhnKcpApiException 위험 문자 발견 시
      */
@@ -554,7 +661,7 @@ class NhnKcpApiService
 
         // 제어문자 (NUL / LF / CR / TAB 등 0x00-0x1F + 0x7F).
         // KCP CLI mod_data 자체에는 필드 구분자 chr(31)가 필요하므로 내부에서
-        // buildModData()로 개별 값 검증을 마친 조립 문자열에 한해 chr(31)만 허용한다.
+        // buildKcpFieldData()로 개별 값 검증을 마친 조립 문자열에 한해 chr(31)만 허용한다.
         $controlPattern = $allowKcpFieldSeparator ? '/[\x00-\x1E\x7F]/' : '/[\x00-\x1F\x7F]/';
         if (preg_match($controlPattern, $value) === 1) {
             throw new NhnKcpApiException(
@@ -564,14 +671,17 @@ class NhnKcpApiService
     }
 
     /**
-     * KCP CLI mod_data 문자열을 안전하게 조립한다.
+     * KCP CLI 필드 묶음(mod_data · ordr_data) 문자열을 안전하게 조립한다.
      *
      * 개별 value 에 KCP 필드 구분자(chr(31))나 쉘 인자 위험 문자가 들어가면 먼저
-     * 거부한 뒤, 내부 구분자만 포함한 mod_data 를 만든다.
+     * 거부한 뒤, 내부 구분자만 포함한 `key=value<US>` 묶음을 만든다.
      *
-     * @param array<string, string|int> $fields
+     * @param  array<string, string|int>  $fields  필드 이름과 값
+     * @return string 구분자로 이어 붙인 필드 묶음 (끝에 구분자 포함)
+     *
+     * @throws NhnKcpApiException 필드 이름이나 값에 위험 문자가 있을 때
      */
-    private function buildModData(array $fields): string
+    private function buildKcpFieldData(array $fields): string
     {
         $parts = [];
 
@@ -579,12 +689,17 @@ class NhnKcpApiService
             $value = (string) $value;
             $this->assertSafeCliValue($key, 'mod_data_key');
             $this->assertSafeCliValue($value, $key);
-            $parts[] = $key . '=' . $value;
+            $parts[] = $key.'='.$value;
         }
 
-        return implode(chr(31), $parts) . chr(31);
+        return implode(chr(31), $parts).chr(31);
     }
 
+    /**
+     * 현재 모드(테스트·운영)에 맞는 KCP REST API 기본 주소를 돌려준다.
+     *
+     * @return string API 기본 주소
+     */
     private function apiBaseUrl(): string
     {
         return $this->isTest ? self::API_URL_TEST : self::API_URL_LIVE;
@@ -592,6 +707,11 @@ class NhnKcpApiService
 
     /**
      * 플러그인 설정과 선택 모드 기준으로 KCP 인증 정보를 적용한다.
+     *
+     * @param  array<string, mixed>  $settings  플러그인 설정값
+     * @param  bool  $isTestMode  테스트 모드 여부
+     * @param  string  $siteCdOverride  설정 대신 쓸 site_cd (결제 당시 값 복원용, 빈 문자열이면 설정값)
+     * @return void 반환값 없음
      */
     private function applyCredentials(array $settings, bool $isTestMode, string $siteCdOverride = ''): void
     {
@@ -612,8 +732,14 @@ class NhnKcpApiService
         $this->siteKey = $settings['live_site_key'] ?? '';
     }
 
+    /**
+     * 운영 site_cd 에 운영 접두사가 없으면 붙여 돌려준다.
+     *
+     * @param  string  $suffix  설정에 저장된 운영 site_cd (접두사 포함 여부 무관)
+     * @return string 접두사가 붙은 운영 site_cd
+     */
     private function buildLiveSiteCd(string $suffix): string
     {
-        return str_starts_with($suffix, self::LIVE_SITE_CD_PREFIX) ? $suffix : self::LIVE_SITE_CD_PREFIX . $suffix;
+        return str_starts_with($suffix, self::LIVE_SITE_CD_PREFIX) ? $suffix : self::LIVE_SITE_CD_PREFIX.$suffix;
     }
 }

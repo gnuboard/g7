@@ -7,6 +7,7 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
 
@@ -15,6 +16,8 @@ use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
  */
 class UpdateCategoryRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -31,6 +34,8 @@ class UpdateCategoryRequest extends FormRequest
      * 검증 전 데이터 전처리
      *
      * 프론트엔드에서 문자열 "true"/"false"로 전송되는 boolean 값을 변환합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -70,7 +75,7 @@ class UpdateCategoryRequest extends FormRequest
             'is_active' => 'boolean',
             'meta_title' => 'nullable|string|max:200',
             'meta_description' => 'nullable|string',
-            'temp_key' => 'nullable|string|max:64',
+            'temp_key' => $this->tempKeyRules(),
         ];
 
         // 훅을 통한 동적 규칙 확장
@@ -90,6 +95,20 @@ class UpdateCategoryRequest extends FormRequest
             'slug.unique' => __('sirsoft-ecommerce::validation.category.slug_unique'),
             'slug.regex' => __('sirsoft-ecommerce::validation.category.slug_format'),
             'parent_id.exists' => __('sirsoft-ecommerce::validation.category.parent_not_found'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시 이름
+     *
+     * 다국어 칸의 현재 언어 값을 비우면 「카테고리명의 한국어(ko) 값은 필수입니다.」처럼 칸 이름을 싣는다.
+     *
+     * @return array<string, string> 필드 키 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('sirsoft-ecommerce::validation.attributes.category_name'),
         ];
     }
 }

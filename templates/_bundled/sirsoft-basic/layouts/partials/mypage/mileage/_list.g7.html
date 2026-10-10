@@ -1,0 +1,219 @@
+<!-- 적립금 내역 탭 본체. 분류 필터가 상태와 URL 을 **둘 다** 건드린다 — 목록은 URL 쿼리를 읽는
+     `mileage_history` 가 채우고(그래서 navigate 가 필요하고), 지금 눌린 칩 강조는 `_local` 을 읽는다.
+     `replace` 로 이동하므로 필터를 여러 번 눌러도 뒤로가기 이력이 쌓이지 않는다. -->
+<partial _e2e_allow="e2e:allow S4-D12 — 내역 금액 글자 표현식 하나만 바꿨다(통화 서식 → 숫자 서식 + P). 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측. 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다" description="마이페이지 마일리지 내역 탭">
+  <div class="mt-6">
+    <blur-until-loaded sources="mileage_history"/>
+    <responsive on="portable" class="mt-4"/>
+    <!-- 비활성화 안내 (mileage.enabled=false) -->
+    <div data-if="{{!mileage_balance?.data?.mileage?.enabled}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <responsive on="portable" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+      <icon name="coins" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <p class="text-gray-500 dark:text-gray-400">$t:mypage.mileage.disabled_notice</p>
+    </div>
+    <!-- 요약 카드 4종 (사용가능/소멸예정/누적적립/누적사용) -->
+    <div data-if="{{mileage_balance?.data?.mileage?.enabled}}" class="grid grid-cols-4 gap-4 mb-6">
+      <responsive on="portable" class="grid grid-cols-2 gap-3 mb-4"/>
+      <!-- 사용 가능 -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
+        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.available</span>
+        <span class="block text-xl font-bold text-gray-900 dark:text-white">
+          <responsive on="portable" class="block text-lg font-bold text-gray-900 dark:text-white"/>
+          {{(mileage_balance?.data?.mileage?.available ?? 0).toLocaleString()}} P
+        </span>
+      </div>
+      <!-- 소멸 예정 -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
+        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.expiring_soon</span>
+        <span class="block text-xl font-bold text-amber-600 dark:text-amber-400">
+          <responsive on="portable" class="block text-lg font-bold text-amber-600 dark:text-amber-400"/>
+          {{(mileage_balance?.data?.mileage?.expiring_soon ?? 0).toLocaleString()}} P
+        </span>
+        <span data-if="{{mileage_balance?.data?.mileage?.expiring_date}}" class="block text-xs text-gray-400 dark:text-gray-500 mt-1">$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date}}</span>
+      </div>
+      <!-- 누적 적립 -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
+        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.total_earned</span>
+        <span class="block text-xl font-bold text-gray-900 dark:text-white">
+          <responsive on="portable" class="block text-lg font-bold text-gray-900 dark:text-white"/>
+          {{(mileage_balance?.data?.mileage?.total_earned ?? 0).toLocaleString()}} P
+        </span>
+      </div>
+      <!-- 누적 사용 -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"/>
+        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:mypage.mileage.summary.total_used</span>
+        <span class="block text-xl font-bold text-gray-900 dark:text-white">
+          <responsive on="portable" class="block text-lg font-bold text-gray-900 dark:text-white"/>
+          {{(mileage_balance?.data?.mileage?.total_used ?? 0).toLocaleString()}} P
+        </span>
+      </div>
+    </div>
+    <!-- 4분류 필터 (전체/적립/사용/소멸/조정) -->
+    <div data-if="{{mileage_balance?.data?.mileage?.enabled}}" class="flex flex-wrap gap-2 mb-4">
+      <!-- 전체. 아래 분류 버튼들은 목록을 다시 부르기 전에 페이지를 1로 되돌린다 — 분류를 좁히면 보던 페이지가 결과 범위를 벗어난다 -->
+      <button type="button">
+        <class-map base="px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer" key="{{_local.mileageCategory ? _local.mileageCategory : 'all'}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <variant when="all">border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900</variant>
+        </class-map>
+        <on type="click">
+          <set-state target="local" mileageCategory="" :mileagePage="1"/>
+          <navigate path="/mypage/mileage" :mergeQuery="true" :replace="true">
+            <query category="" page="1"/>
+          </navigate>
+        </on>
+        $t:mypage.mileage.filter.all
+      </button>
+      <!-- 적립 -->
+      <button type="button">
+        <class-map base="px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer" key="{{_local.mileageCategory ?? ''}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <variant when="earn">border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900</variant>
+        </class-map>
+        <on type="click">
+          <set-state target="local" mileageCategory="earn" :mileagePage="1"/>
+          <navigate path="/mypage/mileage" :mergeQuery="true" :replace="true">
+            <query category="earn" page="1"/>
+          </navigate>
+        </on>
+        $t:mypage.mileage.filter.earn
+      </button>
+      <!-- 사용 -->
+      <button type="button">
+        <class-map base="px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer" key="{{_local.mileageCategory ?? ''}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <variant when="use">border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900</variant>
+        </class-map>
+        <on type="click">
+          <set-state target="local" mileageCategory="use" :mileagePage="1"/>
+          <navigate path="/mypage/mileage" :mergeQuery="true" :replace="true">
+            <query category="use" page="1"/>
+          </navigate>
+        </on>
+        $t:mypage.mileage.filter.use
+      </button>
+      <!-- 소멸 -->
+      <button type="button">
+        <class-map base="px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer" key="{{_local.mileageCategory ?? ''}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <variant when="expire">border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900</variant>
+        </class-map>
+        <on type="click">
+          <set-state target="local" mileageCategory="expire" :mileagePage="1"/>
+          <navigate path="/mypage/mileage" :mergeQuery="true" :replace="true">
+            <query category="expire" page="1"/>
+          </navigate>
+        </on>
+        $t:mypage.mileage.filter.expire
+      </button>
+      <!-- 조정 — 운영자가 손으로 더하거나 뺀 내역이다 -->
+      <button type="button">
+        <class-map base="px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer" key="{{_local.mileageCategory ?? ''}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <variant when="adjust">border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900</variant>
+        </class-map>
+        <on type="click">
+          <set-state target="local" mileageCategory="adjust" :mileagePage="1"/>
+          <navigate path="/mypage/mileage" :mergeQuery="true" :replace="true">
+            <query category="adjust" page="1"/>
+          </navigate>
+        </on>
+        $t:mypage.mileage.filter.adjust
+      </button>
+    </div>
+    <!-- 내역 테이블 (PC) — 모바일 숨김 -->
+    <div data-if="{{mileage_history.data.transactions.data &amp;&amp; mileage_history.data.transactions.data.length > 0}}" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <responsive on="portable" class="hidden"/>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.date</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.category</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.description</th>
+            <th class="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.amount</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">$t:mypage.mileage.table.expires_at</th>
+          </tr>
+        </thead>
+        <tbody data-each="tx in {{mileage_history.data.transactions.data ?? []}}">
+          <tr class="border-b border-gray-100 dark:border-gray-700/50">
+            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{tx.created_at_formatted ?? ''}}</td>
+            <td class="px-4 py-3">
+              <span>
+                <class-map base="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{tx.user_display_category}}" default="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                  <variant when="earn">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+                  <variant when="use">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                  <variant when="expire">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+                  <variant when="adjust">bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400</variant>
+                </class-map>
+                $t:mypage.mileage.category.{{tx.user_display_category}}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{tx.description ?? ''}}</td>
+            <!-- 금액은 숫자에 P 만 붙인다(위 요약 칸과 같은 방식) — amount_formatted 는 통화 서식(「240원」)이라 쓰면 「240원 P」 가 된다 -->
+            <td class="px-4 py-3 text-right whitespace-nowrap">
+              <span>
+                <class-map base="font-semibold" key="{{tx.amount >= 0 ? 'plus' : 'minus'}}" default="text-gray-700 dark:text-gray-300">
+                  <variant when="plus">text-green-600 dark:text-green-400</variant>
+                  <variant when="minus">text-blue-600 dark:text-blue-400</variant>
+                </class-map>
+                {{tx.amount >= 0 ? '+' : ''}}{{Number(tx.amount ?? 0).toLocaleString()}} P
+              </span>
+            </td>
+            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{tx.expires_at_formatted ?? '-'}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- 내역 카드 목록 (모바일) — PC 숨김 -->
+    <div data-if="{{mileage_history.data.transactions.data &amp;&amp; mileage_history.data.transactions.data.length > 0}}" class="hidden">
+      <responsive on="portable" class="space-y-3"/>
+      <div data-each="tx in {{mileage_history.data.transactions.data ?? []}}">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+          <div class="flex items-center justify-between mb-1">
+            <span>
+              <class-map base="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" key="{{tx.user_display_category}}" default="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                <variant when="earn">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+                <variant when="use">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                <variant when="expire">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+                <variant when="adjust">bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400</variant>
+              </class-map>
+              $t:mypage.mileage.category.{{tx.user_display_category}}
+            </span>
+            <span>
+              <class-map base="font-semibold text-sm" key="{{tx.amount >= 0 ? 'plus' : 'minus'}}" default="text-gray-700 dark:text-gray-300">
+                <variant when="plus">text-green-600 dark:text-green-400</variant>
+                <variant when="minus">text-blue-600 dark:text-blue-400</variant>
+              </class-map>
+              {{tx.amount >= 0 ? '+' : ''}}{{Number(tx.amount ?? 0).toLocaleString()}} P
+            </span>
+          </div>
+          <p class="text-sm text-gray-700 dark:text-gray-300">{{tx.description ?? ''}}</p>
+          <div class="flex items-center justify-between mt-1">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{tx.created_at_formatted ?? ''}}</span>
+            <span data-if="{{tx.expires_at_formatted}}" class="text-xs text-gray-400 dark:text-gray-500">$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 내역 없음 -->
+    <div data-if="{{mileage_balance?.data?.mileage?.enabled &amp;&amp; (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+      <icon name="coins" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3">
+        <responsive on="portable" name="coins" size="2x" class="mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
+      </icon>
+      <p class="text-gray-500 dark:text-gray-400">
+        <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>
+        $t:mypage.mileage.empty
+      </p>
+    </div>
+    <!-- 페이지네이션 -->
+    <pagination data-type="composite" data-if="{{((mileage_history.data.transactions.pagination.last_page ?? 0) > 1) || (mileage_history.data.transactions.pagination.has_more_pages === true) || ((mileage_history.data.transactions.pagination.current_page ?? 1) > 1)}}" currentPage="{{mileage_history.data.transactions.pagination.current_page}}" totalPages="{{mileage_history.data.transactions.pagination.last_page ?? null}}" hasMorePages="{{mileage_history.data.transactions.pagination.has_more_pages ?? false}}" class="mt-4">
+      <responsive on="portable" currentPage="{{mileage_history.data.transactions.pagination.current_page}}" totalPages="{{mileage_history.data.transactions.pagination.last_page ?? null}}" hasMorePages="{{mileage_history.data.transactions.pagination.has_more_pages ?? false}}" class="mt-3"/>
+      <on event="onPageChange">
+        <set-state target="local" mileagePage="{{$args[0]}}"/>
+        <navigate path="/mypage/mileage" :mergeQuery="true" :replace="true">
+          <query page="{{$args[0]}}"/>
+        </navigate>
+      </on>
+    </pagination>
+  </div>
+</partial>

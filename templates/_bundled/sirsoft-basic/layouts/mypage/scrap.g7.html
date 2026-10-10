@@ -1,0 +1,36 @@
+<!-- 마이페이지 스크랩 탭 — 내 스크랩을 검색하고 선택 해제한다. 조회 조건은 URL 이 아니라 로컬 상태(scrapPage·scrapSearch·scrapSearchField)에 있어 데이터소스 URL 에 직접 보간한다 -->
+<layout name="mypage/scrap" version="1.0.0" extends="_user_base">
+  <!-- 내 스크랩 목록 — 페이지·검색어·검색 대상을 로컬 상태에서 읽어 URL 에 보간한다. 검색·쪽 이동은 refetch 로 다시 받는다 -->
+  <data-source id="scrap" label_key="$t:editor.data_source.scrap" type="api" endpoint="/api/modules/sirsoft-board/me/scraps?page={{_local.scrapPage ?? 1}}&amp;search={{_local.scrapSearchApplied ?? ''}}&amp;search_field={{_local.scrapSearchField ?? 'title_content'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <computed name="currentTab">scrap</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <init>
+    <set-state target="local" :scrapPage="1" scrapSearch="" scrapSearchApplied="" scrapSearchField="title_content" :scrapSelectedIds="[]"/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 스크랩 목록 -->
+          <include src="partials/mypage/scrap/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+  <!-- 스크랩 단건 해제 확인 -->
+  <modal src="partials/mypage/scrap/_modal_scrap_delete.g7.html"/>
+  <!-- 선택 스크랩 일괄 해제 확인 -->
+  <modal src="partials/mypage/scrap/_modal_scrap_bulk_delete.g7.html"/>
+</layout>

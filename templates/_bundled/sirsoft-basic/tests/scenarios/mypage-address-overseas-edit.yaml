@@ -1,0 +1,27 @@
+feature: 마이페이지 배송지 수정 — 해외 주소 도시/주/우편번호 표시와 보존
+
+description: |
+  배송지 조회 응답은 해외 주소를 city/state/postal_code 로 내려주지만 주소 폼의 입력칸 이름은
+  intl_city/intl_state/intl_postal_code 다. 수정 진입에서 조회 응답 객체를 그대로 editingAddress 에 넣던 탓에
+  해외 도시/주/우편번호 입력칸이 빈 값으로 보였고, 그대로 저장하면 서버가 그 세 값을 null 로 덮어써 조용히
+  유실됐다(백엔드는 MapsAddressBookFields 가 보내지 않은 intl_* 를 덮어쓰지 않도록 함께 고쳤다).
+  목록 카드도 해외 주소를 국내 전용 형식으로 찍어 우편번호 자리 「[]」만 남았다.
+
+  회원이 마이페이지 배송지 목록에서 해외 배송지를 수정 → 저장 → 목록에서 다시 보는 흐름을 실브라우저로 확인한다.
+  라벨 매칭은 로케일에 기대지 않는다(사이트 기본 언어가 ko/en 어느 쪽이든 동작).
+
+# axis 의미:
+#   step — 해외 배송지 수정 흐름의 단계. 단계마다 테스트 하나(T1~T3)가 대응한다.
+axes:
+  step: [edit_entry, save_untouched, list_card]
+
+effects:
+  # 수정 진입 시 해외 도시/주/우편번호 입력칸에 저장값이 채워진다 (T1).
+  - overseas_edit_form_prefills_intl_fields
+  # 도시/주/우편번호를 건드리지 않고 저장해도 서버에 저장된 값이 그대로 남는다 (T2).
+  - overseas_edit_save_preserves_city_state_postal_code
+  # 목록 카드가 해외 주소를 국내 전용 형식(「[]」)이 아니라 전체 주소로 표시한다 (T3).
+  - overseas_address_card_shows_full_address
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mypage-address-overseas-edit.spec.ts

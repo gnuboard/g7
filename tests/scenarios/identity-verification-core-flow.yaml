@@ -1,0 +1,74 @@
+feature: 본인인증(IDV) 코어 흐름 — challenge 발급·검증·취소, 메일 프로바이더, 비밀번호 찾기 경유, 도메인 Enum 카탈로그
+
+description: |
+  코어 본인인증 인프라가 권한 가드(idv-permission-guard.yaml) 바깥에서 지키는 흐름 계약.
+  가드 판정은 그 매니페스트가, 상태 폴링 응답의 노출 필드는 identity-challenge-status-field-exposure.yaml 이
+  맡는다. 이 매니페스트는 가드를 통과한 *뒤* 무엇이 일어나는가를 잠근다.
+
+  핵심 동작:
+    - 공개 API(POST /api/identity/challenges · /verify)는 대상 누락을 422 로 거절하고, 맞는 코드는
+      verified + verification_token, 틀린 코드는 422(INVALID_CODE)로 답한다.
+    - 발급 라우트의 throttle 은 재전송·NAT 환경의 정상 가입을 막지 않을 만큼 여유가 있다(분당 6회 초과 허용).
+    - 공개 목록 API 는 코어 메일 프로바이더(g7:core.mail)와 코어 목적(signup·password_reset·self_update·
+      sensitive_action)을 돌려준다.
+    - MailIdentityProvider 는 목적별 render_hint(text_code / password_reset 은 link)와 해시(code_hash /
+      link_token_hash)만 저장하고, 오답은 attempts 를 올리며 소진 시 MAX_ATTEMPTS 로 안내·failed 처리한다.
+    - 비밀번호 찾기(/api/auth/forgot-password)는 종전 계약(password_reset_tokens 저장, 미가입 이메일 422)을
+      유지하고, IDV 인프라는 password_reset 목적 challenge 를 발급할 수 있다.
+    - IDV 도메인 Enum 의 케이스 목록·tryFrom 안전성·다국어 라벨이 고정돼 있다.
+
+# axis 의미: 흐름이 갈라지는 진입면(surface) 하나. 각 면은 서로 다른 계층(공개 API · 프로바이더 단위 ·
+# 비밀번호 찾기 API · Enum 카탈로그)이라 곱해지지 않는다.
+axes:
+  surface:
+    - challenge_api
+    - mail_provider
+    - forgot_password
+    - domain_catalog
+
+effects:
+  # 공개 challenge API
+  - request_without_target_rejected_422
+  - verify_correct_code_marks_verified_and_issues_token
+  - verify_wrong_code_returns_422_invalid_code
+  - providers_endpoint_lists_core_mail_provider
+  - purposes_endpoint_lists_core_purposes
+  - request_route_throttle_allows_more_than_six_per_minute
+
+  # 메일 프로바이더
+  - mail_provider_declares_id_channel_and_purposes
+  - mail_provider_request_creates_sent_log_with_code_hash
+  - password_reset_uses_link_render_hint_with_link_token_hash
+  - each_core_purpose_issues_sent_challenge_with_expected_render_hint
+  - mail_provider_verify_correct_code_marks_verified
+  - mail_provider_wrong_code_increments_attempts
+  - final_wrong_attempt_returns_max_attempts_and_fails_challenge
+  - exhausted_challenge_blocked_before_code_check
+  - mail_provider_cancel_marks_cancelled
+  - mail_provider_request_without_email_throws
+
+  # 비밀번호 찾기 경유
+  - forgot_password_stores_password_reset_token
+  - forgot_password_request_accepted_for_pending_user
+  - forgot_password_unregistered_email_rejected_422
+  - password_reset_purpose_challenge_issued_via_idv_api
+
+  # 도메인 Enum 카탈로그
+  - verification_purpose_lists_five_core_cases
+  - verification_purpose_is_core_rejects_extension_purpose
+  - enum_try_from_returns_null_for_unknown_value
+  - verification_channel_includes_email
+  - verification_channel_is_core_rejects_non_core_channel
+  - origin_type_lists_seven_cases
+  - policy_scope_lists_three_cases
+  - policy_fail_mode_lists_two_cases
+  - policy_applies_to_lists_three_cases_with_self_value
+  - policy_source_type_lists_four_cases
+  - enum_labels_resolve_translated_text
+
+test_files:
+  - tests/Feature/Api/Identity/IdentityChallengeFlowTest.php
+  - tests/Unit/Extension/IdentityVerification/Providers/MailIdentityProviderTest.php
+  - tests/Feature/Identity/IdentityPolicyMailFakeSmokeTest.php
+  - tests/Feature/Api/Auth/ForgotPasswordViaIdentityTest.php
+  - tests/Unit/Enums/IdentityDomainEnumsTest.php

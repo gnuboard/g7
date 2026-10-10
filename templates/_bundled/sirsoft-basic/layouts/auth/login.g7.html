@@ -1,0 +1,58 @@
+<!-- 로그인 화면 — 이미 로그인한 사람은 조각(_redirect_if_logged_in)이 즉시 되돌려 보내므로 폼이 보이지 않는다. 결제로 가던 길에 들어온 경우(redirect 에 checkout 포함)에만 비회원 결제 계속 버튼을 함께 보여 준다. -->
+<layout name="auth/login" version="1.0.0" extends="_user_base">
+  <meta title="$t:auth.login" :guest_only="true"/>
+  <init>
+    <!-- 2단계 인증·비밀번호 변경(#736) 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다. -->
+    <set-state target="global" :twoFactor="null" :passwordChange="null"/>
+    <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
+  </init>
+  <slot name="content">
+    <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" align="start" class="min-h-[60vh] py-12">
+      <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
+      <!-- 로그인 폼 -->
+      <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.login</h2>
+        <include src="partials/auth/_login_form.g7.html"/>
+        <!-- 하단 링크 영역 -->
+        <div class="mt-4 flex items-center justify-between text-sm">
+          <button type="button" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+            <on type="click">
+              <navigate path="/forgot-password"/>
+            </on>
+            $t:auth.forgot_password_link
+          </button>
+          <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+            <on type="click">
+              <navigate path="/register"/>
+            </on>
+            $t:auth.register_link
+          </button>
+        </div>
+        <!-- 비회원 주문 진입 영역 — redirect 가 checkout 일 때만 노출. Form 바깥에 두어야 type=button 명시에도 불구하고 폼 submit 으로 가로채지지 않음. 임시주문은 cartKey(localStorage)로 이미 생성됨 → redirect 경로로 그대로 이동 -->
+        <div data-if="{{query.redirect &amp;&amp; query.redirect.includes('checkout')}}" class="mt-6">
+          <!-- 구분선 -->
+          <div class="relative my-4">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-200 dark:border-gray-700"/>
+            </div>
+            <div class="relative flex justify-center">
+              <span class="px-3 bg-white dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400">$t:auth.guest_checkout.divider</span>
+            </div>
+          </div>
+          <button type="button" class="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isLoggingIn}}">
+            <on type="click">
+              <navigate path="{{query.redirect}}"/>
+            </on>
+            $t:auth.guest_checkout.continue
+          </button>
+          <p class="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">$t:auth.guest_checkout.hint</p>
+        </div>
+        <!-- 비회원 주문 조회 진입 — redirect=checkout 일 때는 비노출 (결제 진입 흐름이라 조회 안내가 무관). 일반 로그인 화면에서만 노출해 재방문 조회 사용자 동선 제공. 안내문구와 링크를 한 줄(inline)로 표시. -->
+        <div data-if="{{!query.redirect || !query.redirect.includes('checkout')}}" class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs">
+          <span class="text-gray-500 dark:text-gray-400 mr-1">$t:shop.guest_order_form.login_screen_hint</span>
+          <a href="{{_global.shopBase}}/guest/orders" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">$t:shop.guest_order_form.login_screen_link</a>
+        </div>
+      </div>
+    </flex>
+  </slot>
+</layout>

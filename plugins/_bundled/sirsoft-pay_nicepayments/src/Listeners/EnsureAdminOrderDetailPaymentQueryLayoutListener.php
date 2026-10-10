@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\Helpers\LayoutFragmentSourceHelper;
 
 class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerInterface
 {
@@ -39,13 +40,13 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param mixed ...$args
+     * @param  mixed  ...$args
      */
     public function handle(...$args): void {}
 
     /**
-     * @param array<string, mixed> $layout
-     * @param int $templateId
+     * @param  array<string, mixed>  $layout
+     * @param  int  $templateId  대상 템플릿 ID
      * @return array<string, mixed>
      */
     public function ensurePaymentQueryLayout(array $layout, int $templateId): array
@@ -63,8 +64,8 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string, mixed> $layout
-     * @param array<int, mixed> $extensionDataSources
+     * @param  array<string, mixed>  $layout
+     * @param  array<int, mixed>  $extensionDataSources
      * @return array<string, mixed>
      */
     private function ensureDataSources(array $layout, array $extensionDataSources): array
@@ -99,8 +100,8 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string, mixed> $layout
-     * @param array<int, mixed> $injections
+     * @param  array<string, mixed>  $layout
+     * @param  array<int, mixed>  $injections
      */
     private function ensureInjections(array &$layout, array $injections): void
     {
@@ -126,7 +127,7 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string, mixed> $injection
+     * @param  array<string, mixed>  $injection
      */
     private function isHeaderInjection(array $injection): bool
     {
@@ -134,9 +135,9 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string, mixed> $node
-     * @param array<int, string> $targetIds
-     * @param array<int, mixed> $components
+     * @param  array<string, mixed>  $node
+     * @param  array<int, string>  $targetIds
+     * @param  array<int, mixed>  $components
      */
     private function appendComponentsToFirstAvailableTarget(
         array &$node,
@@ -154,8 +155,8 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string, mixed> $node
-     * @param array<int, mixed> $components
+     * @param  array<string, mixed>  $node
+     * @param  array<int, mixed>  $components
      */
     private function appendComponentsToTargetId(
         array &$node,
@@ -184,8 +185,8 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<int, mixed> $target
-     * @param array<int, mixed> $components
+     * @param  array<int, mixed>  $target
+     * @param  array<int, mixed>  $components
      */
     private function mergeMissingComponents(array &$target, array $components, string $position): void
     {
@@ -213,7 +214,7 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<int, mixed> $components
+     * @param  array<int, mixed>  $components
      * @return array<int, mixed>
      */
     private function normalizeComponents(array $components): array
@@ -232,8 +233,8 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string|int, mixed> $node
-     * @param array<string, mixed> $component
+     * @param  array<string|int, mixed>  $node
+     * @param  array<string, mixed>  $component
      */
     private function containsComponent(array $node, array $component): bool
     {
@@ -257,7 +258,7 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string, mixed> $component
+     * @param  array<string, mixed>  $component
      * @return array<int, string>
      */
     private function componentSignatures(array $component): array
@@ -286,7 +287,7 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string|int, mixed> $node
+     * @param  array<string|int, mixed>  $node
      */
     private function containsNodeId(array $node, string $id): bool
     {
@@ -304,7 +305,7 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
-     * @param array<string|int, mixed> $node
+     * @param  array<string|int, mixed>  $node
      */
     private function containsString(array $node, string $needle): bool
     {
@@ -322,19 +323,16 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListener implements HookListenerIn
     }
 
     /**
+     * 확장점 정의를 코어 규약(소스 SSoT `.g7.html` 우선)으로 읽습니다.
+     *
+     * 종전에는 `.json` 을 직접 파싱해 소스만 고치면 조용히 반영되지 않았다.
+     *
      * @return array<string, mixed>
      */
     private function orderPaymentQueryExtension(): array
     {
-        $path = dirname(__DIR__, 2).'/resources/extensions/admin_order_payment_query.json';
-        $contents = is_file($path) ? file_get_contents($path) : false;
-
-        if (! is_string($contents)) {
-            return [];
-        }
-
-        $decoded = json_decode($contents, true);
-
-        return is_array($decoded) ? $decoded : [];
+        return LayoutFragmentSourceHelper::read(
+            dirname(__DIR__, 2).'/resources/extensions/admin_order_payment_query.json'
+        );
     }
 }

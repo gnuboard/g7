@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — 토스페이먼츠 플러그인. admin/plugin_settings.g7.html 의 settings 데이터소스 응답 shape(입력칸 name= 전수)와 화면 변종(검수/운영 모드·검증 실패)과 webhook_info(입금통보 웹훅 전체 URL) 응답 shape 를 담는다. 자격증명(client/secret key)은 릴리즈 페이로드에 실리므로 빈 값으로 둔다 — 화면에서도 비밀 입력칸이라 점으로만 보인다.",
+  "pluginId": "sirsoft-tosspayments",
+  "version": "1.0.0",
+  "description": "토스페이먼츠 플러그인 레이아웃 편집기 샘플 데이터·화면 상태.",
+  "sampleData": {
+    "byDataSourceId": {
+      "settings": {
+        "data": {
+          "is_test_mode": true,
+          "live_client_key": "",
+          "live_secret_key": "",
+          "order_sheet_mode": "widget",
+          "method_card": true,
+          "method_virtual_account": true,
+          "method_transfer": true,
+          "method_mobile_phone": false,
+          "method_tosspay": true,
+          "method_kakaopay": true,
+          "method_naverpay": false,
+          "method_payco": false,
+          "method_samsungpay": false,
+          "abilities": {
+            "can_update": true
+          }
+        }
+      },
+      "webhook_info": {
+        "data": {
+          "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "결제 플러그인 설정 변종. 입력칸은 settings 의 initLocal 로 채워지는데 편집기는 그 흐름을 실행하지 않아 _local.form 을 직접 시드해야 값이 보인다.",
+    "groups": [
+      {
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-tosspayments/settings"
+        },
+        "items": [
+          {
+            "id": "test_mode_on",
+            "label": "$t:editor.state.test_mode_on",
+            "default": true,
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "hasChanges": false,
+                "errors": null,
+                "form": {
+                  "is_test_mode": true,
+                  "live_client_key": "",
+                  "live_secret_key": "",
+                  "order_sheet_mode": "widget",
+                  "method_card": true,
+                  "method_virtual_account": true,
+                  "method_transfer": true,
+                  "method_mobile_phone": false,
+                  "method_tosspay": true,
+                  "method_kakaopay": true,
+                  "method_naverpay": false,
+                  "method_payco": false,
+                  "method_samsungpay": false
+                },
+                "webhookInfo": {
+                  "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
+                }
+              }
+            }
+          },
+          {
+            "id": "test_mode_off",
+            "label": "$t:editor.state.test_mode_off",
+            "comment": "운영 모드 — 운영 자격증명 입력 구역과 경고가 열린다.",
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "hasChanges": false,
+                "errors": null,
+                "form": {
+                  "is_test_mode": false,
+                  "live_client_key": "",
+                  "live_secret_key": "",
+                  "order_sheet_mode": "widget",
+                  "method_card": true,
+                  "method_virtual_account": true,
+                  "method_transfer": true,
+                  "method_mobile_phone": false,
+                  "method_tosspay": true,
+                  "method_kakaopay": true,
+                  "method_naverpay": false,
+                  "method_payco": false,
+                  "method_samsungpay": false
+                },
+                "webhookInfo": {
+                  "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
+                }
+              }
+            }
+          },
+          {
+            "id": "validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "hasChanges": true,
+                "form": {
+                  "is_test_mode": false,
+                  "live_client_key": "",
+                  "live_secret_key": "",
+                  "order_sheet_mode": "widget",
+                  "method_card": true,
+                  "method_virtual_account": true,
+                  "method_transfer": true,
+                  "method_mobile_phone": false,
+                  "method_tosspay": true,
+                  "method_kakaopay": true,
+                  "method_naverpay": false,
+                  "method_payco": false,
+                  "method_samsungpay": false
+                },
+                "webhookInfo": {
+                  "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
+                }
+              }
+            },
+            "formErrors": {
+              "_local.errors.live_client_key": [
+                "운영 클라이언트 키를 입력해 주세요."
+              ],
+              "_local.errors.live_secret_key": [
+                "운영 시크릿 키를 입력해 주세요."
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

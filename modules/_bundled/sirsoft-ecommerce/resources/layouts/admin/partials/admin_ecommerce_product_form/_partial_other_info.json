@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 기타정보 구획. 라벨(신상품·베스트 등)·구매 수량 한도·구매 대상 제한을 모았다.\n  라벨은 상품에 붙이는 일과 라벨 자체를 만들고 고치는 일이 한자리에서 일어나는데, 그 창들이\n  별도 컨텍스트라 넘길 값은 모두 _global 을 거친다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Other Info Section"
@@ -13,6 +14,17 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.otherInfoExpanded": "{{!_local.ui.otherInfoExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -39,16 +51,6 @@
                     "props": {
                         "name": "chevron-down",
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.otherInfoExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.otherInfoExpanded": "{{!_local.ui.otherInfoExpanded}}"
                     }
                 }
             ]
@@ -87,15 +89,11 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.title"
                                 },
                                 {
+                                    "comment": "라벨 새로 만들기 — 편집 대상 id 를 비우고 빈 입력값을 깔아 창을 등록 모드로 연다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다)",
                                     "id": "label_add_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn btn-outline btn-sm"
-                                    },
-                                    "text": "+ $t:sirsoft-ecommerce.admin.product.labels.add",
+                                    "if": "{{!_computed.isReadOnly && product_labels?.data?.abilities?.can_create === true}}",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -124,7 +122,12 @@
                                                 }
                                             ]
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline btn-sm"
+                                    },
+                                    "text": "+ $t:sirsoft-ecommerce.admin.product.labels.add"
                                 }
                             ]
                         },
@@ -139,34 +142,35 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "contents"
-                                    },
                                     "iteration": {
                                         "source": "{{product_labels?.data?.data ?? []}}",
                                         "item_var": "label",
                                         "index_var": "labelIdx"
                                     },
+                                    "props": {
+                                        "className": "contents"
+                                    },
                                     "children": [
                                         {
                                             "type": "composite",
                                             "name": "ChipCheckbox",
-                                            "props": {
-                                                "value": "{{String(label.id)}}",
-                                                "checked": "{{(_local.form.label_assignments ?? []).some(a => a.label_id === label.id)}}",
-                                                "label": "{{$localized(label.name) + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.started_at ? ' (' + (_local.form.label_assignments ?? []).find(a => a.label_id === label.id).started_at.substring(5) + '~' + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.ended_at?.substring(5) ?? '') + ')' : '')}}",
-                                                "customColor": "{{label.color ?? '#3B82F6'}}",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "라벨 붙이기/떼기. 기간이 걸린 라벨을 뗄 때는 핸들러가 확인 창을 거치므로 여기서 바로 지우지 않는다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.toggleLabelAssignment",
                                                     "params": {
                                                         "labelId": "{{label.id}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "value": "{{String(label.id)}}",
+                                                "checked": "{{(_local.form.label_assignments ?? []).some(a => a.label_id === label.id)}}",
+                                                "label": "{{$localized(label.name) + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.started_at ? ' (' + (_local.form.label_assignments ?? []).find(a => a.label_id === label.id).started_at.substring(5) + '~' + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.ended_at?.substring(5) ?? '') + ')' : '')}}",
+                                                "customColor": "{{label.color ?? '#3B82F6'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
                                         }
                                     ]
                                 },
@@ -174,11 +178,36 @@
                                     "id": "no_labels_available",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{!(product_labels?.data?.data ?? []).length}}",
+                                    "if": "{{product_labels?.data?.unavailable !== true && !(product_labels?.data?.data ?? []).length}}",
                                     "props": {
                                         "className": "w-full text-center text-label-subtle py-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.no_available"
+                                },
+                                {
+                                    "comment": "라벨 조회 권한이 없어 선택지가 비었을 때는 「라벨 없음」 이 아니라 권한이 없다고 말한다",
+                                    "id": "label_forbidden_notice",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{product_labels?.data?.unavailable === true}}",
+                                    "props": {
+                                        "className": "w-full flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-exclamation",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.product_labels"
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -195,15 +224,15 @@
                                     "id": "label_info_row",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "flex-between"
-                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
                                                 "className": "row-stack"
                                             }
                                         }
+                                    },
+                                    "props": {
+                                        "className": "flex-between"
                                     },
                                     "children": [
                                         {
@@ -250,14 +279,11 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "라벨 고치기 — 지금 값을 창 입력값으로 옮겨 담아 편집 모드로 연다",
+                                                    "id": "label_edit_button",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.edit",
+                                                    "if": "{{!_computed.isReadOnly && product_labels?.data?.abilities?.can_update === true}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -283,18 +309,19 @@
                                                                 }
                                                             ]
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.edit"
                                                 },
                                                 {
+                                                    "comment": "이 상품에서만 떼기 — 라벨 자체는 남는다",
                                                     "id": "label_unassign_button",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{(!route.itemCode || product?.data?.abilities?.can_update === true) && (_local.form.label_assignments ?? []).some(a => a.label_id === _local.ui.lastClickedLabelId)}}",
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "text-amber-600 hover:text-amber-700 dark:text-amber-400 font-medium"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.unassign",
+                                                    "if": "{{!_computed.isReadOnly && (_local.form.label_assignments ?? []).some(a => a.label_id === _local.ui.lastClickedLabelId)}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -313,17 +340,19 @@
                                                                 }
                                                             ]
                                                         }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Button",
-                                                    "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                    ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-red-600 hover:text-red-700 dark:text-red-400 font-medium"
+                                                        "className": "text-amber-600 hover:text-amber-700 dark:text-amber-400 font-medium"
                                                     },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.delete",
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.unassign"
+                                                },
+                                                {
+                                                    "comment": "라벨 자체 지우기 — 이 라벨을 쓰는 다른 상품에서도 함께 떨어진다",
+                                                    "id": "label_delete_button",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{!_computed.isReadOnly && product_labels?.data?.abilities?.can_delete === true}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -342,7 +371,12 @@
                                                                 }
                                                             ]
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "text-red-600 hover:text-red-700 dark:text-red-400 font-medium"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.delete"
                                                 }
                                             ]
                                         }
@@ -365,14 +399,9 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "노출 기간 빠른 지정 — 오늘부터 7일",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_7d",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -381,17 +410,18 @@
                                                                 "preset": "7d"
                                                             }
                                                         }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Button",
+                                                    ],
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_14d",
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_7d"
+                                                },
+                                                {
+                                                    "comment": "14일",
+                                                    "type": "basic",
+                                                    "name": "Button",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -400,17 +430,18 @@
                                                                 "preset": "14d"
                                                             }
                                                         }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Button",
+                                                    ],
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_30d",
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_14d"
+                                                },
+                                                {
+                                                    "comment": "30일",
+                                                    "type": "basic",
+                                                    "name": "Button",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -419,17 +450,18 @@
                                                                 "preset": "30d"
                                                             }
                                                         }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Button",
+                                                    ],
                                                     "props": {
                                                         "type": "button",
                                                         "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                        "disabled": "{{_computed.isReadOnly}}"
                                                     },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_permanent",
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_30d"
+                                                },
+                                                {
+                                                    "comment": "기간 없음 — 뗄 때까지 계속 붙어 있다",
+                                                    "type": "basic",
+                                                    "name": "Button",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -438,7 +470,13 @@
                                                                 "preset": "permanent"
                                                             }
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_permanent"
                                                 }
                                             ]
                                         },
@@ -446,9 +484,6 @@
                                             "id": "period_date_inputs",
                                             "type": "basic",
                                             "name": "Div",
-                                            "props": {
-                                                "className": "flex-center gap-2"
-                                            },
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
@@ -456,19 +491,16 @@
                                                     }
                                                 }
                                             },
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
-                                                    "props": {
-                                                        "type": "date",
-                                                        "className": "input input-sm",
-                                                        "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}",
-                                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.started_at",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "노출 시작일 직접 지정 — 지금 고른 라벨의 배정에만 적용된다",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.updateLabelPeriodInline",
                                                             "params": {
@@ -477,7 +509,14 @@
                                                                 "value": "{{$event.target.value}}"
                                                             }
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "type": "date",
+                                                        "className": "input",
+                                                        "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}",
+                                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.started_at",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -490,15 +529,9 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
-                                                    "props": {
-                                                        "type": "date",
-                                                        "className": "input input-sm",
-                                                        "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}",
-                                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.ended_at",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "노출 종료일 직접 지정",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.updateLabelPeriodInline",
                                                             "params": {
@@ -507,7 +540,14 @@
                                                                 "value": "{{$event.target.value}}"
                                                             }
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "type": "date",
+                                                        "className": "input",
+                                                        "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}",
+                                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.ended_at",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
                                                 }
                                             ]
                                         }
@@ -541,15 +581,9 @@
                             },
                             "children": [
                                 {
-                                    "type": "composite",
+                                    "comment": "최소 구매 수량 — 값은 폼 자동 바인딩이 담고 여기서는 변경 표시만 세운다",
+                                    "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "name": "min_purchase_qty",
-                                        "type": "number",
-                                        "min": 1,
-                                        "className": "{{_local.errors?.min_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
@@ -559,7 +593,14 @@
                                                 "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "min_purchase_qty",
+                                        "type": "number",
+                                        "min": 1,
+                                        "className": "{{_local.errors?.min_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
@@ -606,15 +647,9 @@
                             },
                             "children": [
                                 {
-                                    "type": "composite",
+                                    "comment": "최대 구매 수량 — 0 은 제한 없음이다",
+                                    "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "name": "max_purchase_qty",
-                                        "type": "number",
-                                        "min": 0,
-                                        "className": "{{_local.errors?.max_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
@@ -624,7 +659,14 @@
                                                 "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "max_purchase_qty",
+                                        "type": "number",
+                                        "min": 0,
+                                        "className": "{{_local.errors?.max_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
@@ -667,15 +709,15 @@
                             "id": "restriction_radio_group",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "flex-center gap-6"
-                            },
                             "responsive": {
                                 "portable": {
                                     "props": {
                                         "className": "row-stack"
                                     }
                                 }
+                            },
+                            "props": {
+                                "className": "flex-center gap-6"
                             },
                             "children": [
                                 {
@@ -688,17 +730,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "radio",
-                                                "name": "purchase_restriction",
-                                                "value": "none",
-                                                "checked": "{{(_local.form.purchase_restriction ?? 'none') === 'none'}}",
-                                                "autoBinding": false,
-                                                "className": "radio",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "제한 없음 — 골라 둔 등급을 함께 비운다(제한을 껐는데 등급이 남아 있으면 다시 켤 때 지난 선택이 살아난다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -708,7 +742,16 @@
                                                         "hasChanges": "{{!!route?.itemCode}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "purchase_restriction",
+                                                "value": "none",
+                                                "checked": "{{(_local.form.purchase_restriction ?? 'none') === 'none'}}",
+                                                "autoBinding": false,
+                                                "className": "radio",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
                                         },
                                         {
                                             "type": "basic",
@@ -730,17 +773,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "radio",
-                                                "name": "purchase_restriction",
-                                                "value": "restricted",
-                                                "checked": "{{_local.form.purchase_restriction === 'restricted'}}",
-                                                "autoBinding": false,
-                                                "className": "radio",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "등급 제한 — 아래 등급 고르개가 열린다. 여기서도 등급을 비워 새로 고르게 한다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -750,7 +785,16 @@
                                                         "hasChanges": "{{!!route?.itemCode}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "purchase_restriction",
+                                                "value": "restricted",
+                                                "checked": "{{_local.form.purchase_restriction === 'restricted'}}",
+                                                "autoBinding": false,
+                                                "className": "radio",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
                                         },
                                         {
                                             "type": "basic",
@@ -784,17 +828,9 @@
                                 {
                                     "type": "composite",
                                     "name": "TagInput",
-                                    "props": {
-                                        "name": "allowed_roles",
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.search_roles",
-                                        "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: r.display_name ?? r.name, group: r.is_system ? $t('sirsoft-ecommerce.admin.product.roles.system') : $t('sirsoft-ecommerce.admin.product.roles.custom'), description: r.description ?? '' }))}}",
-                                        "value": "{{_local.form.allowed_roles ?? []}}",
-                                        "isMulti": true,
-                                        "isSearchable": true,
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "살 수 있는 회원 등급 — 비워 두면 저장 때 걸린다(제한을 걸어 놓고 아무도 못 사는 상태를 막는다)",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -803,12 +839,47 @@
                                             }
                                         },
                                         {
+                                            "comment": "같은 이벤트를 두 블록으로 나눈 것은 값 담기와 변경 표시가 서로 다른 자리를 건드리기 때문이다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
                                                 "hasChanges": "{{!!route?.itemCode}}"
                                             }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "allowed_roles",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.search_roles",
+                                        "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: r.display_name ?? r.name, group: r.is_system ? $t('sirsoft-ecommerce.admin.product.roles.system') : $t('sirsoft-ecommerce.admin.product.roles.custom'), description: r.description ?? '' }))}}",
+                                        "value": "{{_local.form.allowed_roles ?? []}}",
+                                        "isMulti": true,
+                                        "isSearchable": true,
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "comment": "등급 목록을 받지 못했을 때(403)의 안내 — 다른 선택지 소스와 같은 처리다",
+                                    "id": "allowed_roles_forbidden_notice",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{roles?.data?.unavailable === true}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-exclamation",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.roles"
                                         }
                                     ]
                                 },

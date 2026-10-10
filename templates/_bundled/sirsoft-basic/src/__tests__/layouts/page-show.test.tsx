@@ -60,7 +60,7 @@ const TestFragment: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
 // ========== 레이아웃 Fixture ==========
 
 /**
- * page/show.json의 핵심 구조 (data_sources 포함)
+ * page/show.g7.html의 핵심 구조 (data_sources 포함)
  */
 const pageShowFixture = {
   version: '1.0.0',
@@ -205,7 +205,7 @@ function makePageApiResponse(overrides: Record<string, unknown> = {}) {
 
 // ========== 테스트 케이스 ==========
 
-describe('page/show.json 레이아웃 렌더링 (Issue #99)', () => {
+describe('page/show.g7.html 레이아웃 렌더링 (Issue #99)', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

@@ -46,7 +46,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| changelog | array | `[{"version":"7.0.6","date":"2026-07-19","categories":[{"n…` | 변경 이력 텍스트 (원격/파일 CHANGELOG 본문) |
+| changelog | array | `[{"version":"7.1.0","date":"2026-10-10","categories":[{"n…` | 변경 이력 텍스트 (원격/파일 CHANGELOG 본문) |
 
 **응답 예시**
 
@@ -78,7 +78,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.admin.core-update.check -->
 - **라우트명**: `api.admin.core-update.check`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\CoreUpdateController@checkForUpdates`
-- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
 
 **요청 파라미터**
 
@@ -126,11 +126,12 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
 **설명** GitHub 릴리스를 기준으로 코어 업데이트 가능 여부를 확인합니다. 현재 버전과 최신 버전을 비교한 결과를 반환하며, 조회에 실패하면 실패 사유·현재 버전·github_url과 함께 422를 반환합니다. `core.settings.update` 권한이 필요하고, 관리자가 업데이트 확인 버튼을 눌러 새 버전 유무를 점검하는 시나리오에 사용합니다.
 
+**권한(7.1.0)** 업데이트 확인은 버전 정보를 읽기만 하고 설정을 바꾸지 않으므로 환경설정 조회 권한(`core.settings.read`)으로 연다. 정보 탭의 [업데이트 확인] 버튼은 읽기 전용 관리자에게도 열려 있다.
 

@@ -1,0 +1,62 @@
+feature: 게시판 temp_key 경로 순회 방어와 임시 첨부 연결 안전성 (KVE-2026-2349)
+
+description: |
+  게시판 첨부의 임시 키(temp_key)가 저장소 경로를 조작하지 못하게 한다.
+
+  배경:
+    - 첨부 없이 글 작성 요청의 temp_key 에 `../../../..` 를 넣으면 임시 디렉토리 정리
+      (`{slug}/temp/{temp_key}` deleteDirectory)가 modules 디스크 루트로 축약되어 전 모듈
+      저장소가 삭제됐다. 응답은 201 이라 즉시 드러나지 않았다.
+    - 원인 4계층: temp_key 형식 검증 부재 · 업로드 가드가 files[] 있을 때만 동작 ·
+      임시 첨부 0개여도 정리 실행 · 드라이버 경로 재검증 부재
+
+  계층 결정:
+    - 요청: ValidatesTempKey 트레잇 — temp_key 는 UUID 만 (화면은 $uuid() 로 발급)
+    - 서비스: 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리, 없으면 아무것도 지우지 않음
+    - 업로드: 글도 키도 없는 업로드는 서버가 UUID 키를 만든다 (빈 세그먼트 경로 방지)
+    - 드라이버 가드(코어 storage-path-guard 시나리오)가 최후 방어선
+
+  이 매니페스트는 같은 서비스·엔드포인트의 기존 단위·관리자 테스트
+  (AttachmentServiceTest · AdminAttachmentManagementTest)도 함께 소유한다 — 임시 첨부 정리
+  계약이 바뀌어 기존 테스트를 고치면서 테스트별 매핑을 붙였다.
+
+axes:
+  entry_point: [post_store, upload]
+  temp_key_shape: [uuid, path_traversal]
+
+effects:
+  - traversal_temp_key_rejected_with_422
+  - sibling_module_storage_survives
+  - uuid_temp_key_accepted
+  - empty_temp_link_deletes_nothing
+  - owned_temp_attachments_moved_and_temp_dir_cleaned
+  # 임시 디렉토리 정리는 부수 작업 — 실패해도 옮긴 첨부의 연결과 글 저장은 끝까지 간다(#703 실측).
+  - temp_dir_cleanup_failure_does_not_abort_link
+  - foreign_temp_attachments_not_linked_or_deleted
+  # attachment_ids 로 잇는 경로(회원 수정·관리자 작성/수정)도 자기가 올린 임시 첨부만 잇는다(2026-10-07 실측 K4-D1).
+  - owned_attachment_ids_still_linked
+  - keyless_upload_gets_server_generated_temp_key
+  - upload_stores_file_and_creates_row
+  - temp_upload_stored_under_temp_key_path
+  - temp_link_without_move_links_rows
+  - attachment_lifecycle_hooks_fire
+  - soft_delete_keeps_physical_file
+  - reorder_updates_order
+  - download_streams_stored_file
+  - download_url_falls_back_to_api_path_when_direct_unavailable
+  - url_null_when_attachment_missing
+  - admin_upload_succeeds
+  - admin_upload_requires_auth_and_permission
+  - admin_delete_soft_deletes_and_syncs_count
+  - admin_delete_rejects_missing_or_forbidden
+  - admin_reorder_requires_permission
+  - admin_download_by_hash_requires_permission
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/AttachmentTempKeyTraversalTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/AttachmentServiceTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminAttachmentManagementTest.php
+
+rules_layer_coverage:
+  - rule: service-direct-data-access
+    coverage: AttachmentService 는 AttachmentRepositoryInterface / BoardRepositoryInterface 만 사용 (소유 판정은 조회 결과 컬렉션 필터)

@@ -56,7 +56,10 @@ const CLUSTER_FILES = [
     'partials/admin_ecommerce_order_detail/_partial_order_info.json',
     'partials/admin_ecommerce_order_list/_partial_filter_section.json',
     'partials/admin_ecommerce_order_list/_partial_order_datagrid.json',
-    'partials/admin_ecommerce_order_list/_partial_preset_section.json',
+    // `_partial_preset_section.json` 은 목록에서 뺐다 — 어디서도 참조하지 않는 고아라 S16 이
+    // 지웠고, 그 프리셋 이동은 정본인 `_partial_filter_section` 이 갖고 있다(같은 규약의
+    // `audit:allow` 주석까지 함께). 없는 파일을 목록에 두면 이 검사가 ENOENT 로 죽어
+    // **나머지 파일의 판정까지 사라진다**.
     'partials/admin_ecommerce_product_form/_modal_delete_confirm.json',
     'partials/admin_ecommerce_product_list/_partial_filter_section.json',
     'partials/admin_ecommerce_product_list/_partial_product_datagrid.json',

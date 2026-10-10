@@ -8,6 +8,13 @@ import { A } from '../basic/A';
 import { P } from '../basic/P';
 import { Svg } from '../basic/Svg';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /**
  * LoginForm props 인터페이스
  */
@@ -69,17 +76,17 @@ interface FormErrors {
  * - Laravel Sanctum API 통신
  */
 export const LoginForm: React.FC<LoginFormProps> = ({
-  emailLabel = 'Email',
-  passwordLabel = 'Password',
-  submitButtonText = 'Sign In',
-  processingText = 'Processing...',
-  emailPlaceholder = 'Email',
-  passwordPlaceholder = 'Password',
-  forgotPasswordText = 'Forgot your password?',
+  emailLabel: emailLabelProp,
+  passwordLabel: passwordLabelProp,
+  submitButtonText: submitButtonTextProp,
+  processingText: processingTextProp,
+  emailPlaceholder: emailPlaceholderProp,
+  passwordPlaceholder: passwordPlaceholderProp,
+  forgotPasswordText: forgotPasswordTextProp,
   forgotPasswordUrl = '/admin/password/reset',
-  emailRequiredError = 'Please enter your email.',
-  emailInvalidError = 'Please enter a valid email address.',
-  passwordRequiredError = 'Please enter your password.',
+  emailRequiredError: emailRequiredErrorProp,
+  emailInvalidError: emailInvalidErrorProp,
+  passwordRequiredError: passwordRequiredErrorProp,
   onSubmit,
   loadingActions = {},
   isLoading: isLoadingProp = false,
@@ -88,6 +95,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   className = '',
   style,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const emailLabel = emailLabelProp ?? tOr('auth.login.email', 'Email');
+  const passwordLabel = passwordLabelProp ?? tOr('auth.login.password', 'Password');
+  const submitButtonText = submitButtonTextProp ?? tOr('auth.login.submit', 'Sign In');
+  const processingText = processingTextProp ?? tOr('auth.login.processing', 'Processing...');
+  const emailPlaceholder = emailPlaceholderProp ?? tOr('auth.login.email', 'Email');
+  const passwordPlaceholder = passwordPlaceholderProp ?? tOr('auth.login.password', 'Password');
+  const forgotPasswordText = forgotPasswordTextProp ?? tOr('auth.login.forgot', 'Forgot your password?');
+  const emailRequiredError = emailRequiredErrorProp ?? tOr('auth.login.error.email_required', 'Please enter your email.');
+  const emailInvalidError = emailInvalidErrorProp ?? tOr('auth.login.error.email_invalid', 'Please enter a valid email address.');
+  const passwordRequiredError = passwordRequiredErrorProp ?? tOr('auth.login.error.password_required', 'Please enter your password.');
   // 폼 상태 관리
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

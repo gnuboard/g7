@@ -1,0 +1,105 @@
+<!-- 쇼핑몰 설정 — 결제수단 목록, 넓은 화면용 표. 좁은 화면용 카드(`_payment_methods_cards`)와
+  같은 배열을 같은 방식으로 편집한다. 순서가 쇼핑몰 결제창의 노출 순서다.
+  항목 루트의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다 — 브랜드 배지·안내를 붙일 항목을 이름 글자가 아니라 이 표식으로만 찾는다. -->
+<partial description="결제수단 설정 - Desktop Sortable 리스트">
+  <div data-ref="payment_methods_sortable">
+    <sortable source="{{_local.form?.order_settings?.payment_methods ?? []}}" item-var="$method" item-key="id" index-var="$methodIndex" strategy="verticalList" handle="[data-drag-handle]"/>
+    <item-template>
+      <div data-payment-method="{{$method.id}}" class="flex-center border rounded-lg p-3 gap-4">
+        <class-map key="{{$method._orphaned ? 'orphaned' : 'normal'}}">
+          <variant when="normal">bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700</variant>
+          <variant when="orphaned">bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700</variant>
+        </class-map>
+        <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
+        <div data-ref="payment_method_drag_handle_list" data-if="{{!$method._orphaned &amp;&amp; !_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 dark:text-gray-500">
+          <icon name="grip-vertical" class="text-lg"/>
+        </div>
+        <!-- 브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다(#639) -->
+        <brand-mark data-type="composite" data-if="{{$method._cached_brand_mark}}" brandMark="{{$method._cached_brand_mark}}" :size="28"/>
+        <icon data-if="{{!$method._cached_brand_mark}}" name="{{$method._cached_icon ?? 'circle-question'}}" class="text-secondary text-2xl"/>
+        <div class="flex-1 min-w-0">
+          <!-- 이름 + 상태 배지 줄. 배지는 shrink-0 이라 좁아지면 이름이 줄어야 하는데, min-w-0 이 없으면 flex 항목의 기본 min-width:auto 때문에 줄지 못하고 글자 단위로 접힌다. -->
+          <div class="flex-center gap-2 min-w-0">
+            <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}</span>
+            <span data-if="{{$method._orphaned}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge</span>
+            <!-- 지정 PG 가 레지스트리에서 사라진 상태. _orphaned 와 달리 행 편집 컨트롤은 그대로 둔다 — 살아있는 PG 로 바꿔 복구하는 경로를 막지 않기 위함. -->
+            <span data-if="{{$method._orphaned_pg}}" data-testid="orphaned-pg-badge-{{$method.id}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge</span>
+            <!-- 고객이 고를 수 없는 수단 — 코어에 결제 실행 경로가 없다(마일리지·예치금·무료). 토글이 잠긴 이유를 그 자리에서 말해 주지 않으면 운영자는 왜 켤 수 없는지 알 수 없다. -->
+            <span data-if="{{$method.customer_selectable === false}}" data-testid="internal-only-badge-{{$method.id}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.internal_only_badge</span>
+          </div>
+          <span data-if="{{$localized($method._cached_description)}}" class="text-label-subtle">{{$localized($method._cached_description)}}</span>
+        </div>
+        <!-- PG 열 고정폭 — Select 는 커스텀 드롭다운이라 className 이 내부 Button 에 붙는데, 컴포넌트 기본 클래스의 w-full 이 CSS 출력 순서상 w-N 보다 뒤라 셀렉트에 직접 준 폭은 무효가 된다. 폭은 열 컨테이너가 책임진다 (미선택 '---' 상태에서 74px 로 붕괴하던 회귀 차단 + 선택값 길이에 따라 행마다 열 위치가 어긋나던 문제 해소). -->
+        <div data-if="{{!$method._orphaned}}" class="row-stack w-36">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider</span>
+          <!-- PG 고정 수단(간편결제 등) — 플러그인이 자기 PG 로 고정 선언했으므로 관리자가 바꿀 수 없다. PG 이름을 읽기전용으로 표시. -->
+          <span data-if="{{$method.pg_locked}}" data-testid="{{'pg-locked-badge-' + $method.id}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 truncate">{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}</span>
+          <select data-if="{{!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; (_local.form?.available_pg_providers ?? []).length > 0}}" data-testid="{{'pg-select-' + $method.id}}" value="{{$method.pg_provider ?? ''}}" options="{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 연동 플러그인(PG). 설치·활성화된 플러그인만 선택지에 뜬다. -->
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, pg_provider: $event.target.value || null} : m)}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <span data-if="{{!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; (_local.form?.available_pg_providers ?? []).length === 0}}" data-testid="{{'pg-not-installed-' + $method.id}}" class="text-hint italic">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed</span>
+          <span data-if="{{!$method.pg_locked &amp;&amp; !$method.needs_pg}}" data-testid="{{'pg-not-required-' + $method.id}}" class="text-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required</span>
+        </div>
+        <div data-if="{{!$method._orphaned}}" class="row-stack w-36">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing</span>
+          <select value="{{$method.stock_deduction_timing ?? 'payment_complete'}}" disabled="{{_computed.isReadOnly}}">
+            <options>
+              <option value="order_placed">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed</option>
+              <option value="payment_complete">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete</option>
+              <option value="none">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_none</option>
+            </options>
+            <on type="change">
+              <!-- 결제 방식. 같은 PG 라도 카드·계좌이체처럼 방식이 갈린다. -->
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, stock_deduction_timing: $event.target.value} : m)}}" :hasChanges="true"/>
+            </on>
+          </select>
+        </div>
+        <div data-if="{{!$method._orphaned}}" class="row-stack w-36">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing</span>
+          <select value="{{$method.mileage_deduction_timing ?? 'payment_complete'}}" disabled="{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}">
+            <options>
+              <option value="order_placed">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed</option>
+              <option value="payment_complete">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete</option>
+            </options>
+            <on type="change">
+              <!-- 노출 대상. 회원·비회원 중 누구에게 보일지다. -->
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, mileage_deduction_timing: $event.target.value} : m)}}" :hasChanges="true"/>
+            </on>
+          </select>
+        </div>
+        <div data-if="{{!$method._orphaned}}" class="row-stack">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount</span>
+          <input type="number" value="{{$method.min_order_amount ?? 0}}" :min="0" class="input w-28" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 표시 이름. 비워 두면 기본 이름이 쓰인다. -->
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, min_order_amount: Number($event.target.value) || 0} : m)}}" :hasChanges="true"/>
+            </on>
+          </input>
+        </div>
+        <div data-if="{{!$method._orphaned}}">
+          <!-- 고객이 고를 수 없는 수단(customer_selectable === false)은 토글을 잠근다 — 마일리지·예치금·무료는 코어에 결제 실행 경로가 없어 켜면 주문서에는 뜨는데 주문 생성이 422 로 거절된다(P8·P10). 잠그지 않으면 운영자는 '켰는데 왜 안 되지' 를 겪고 원인을 찾을 자리가 없다. -->
+          <toggle data-type="composite" value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
+            <on type="change">
+              <!-- 사용 여부. 끄면 결제창에서 사라지고 설정은 남는다. -->
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+        </div>
+        <button data-if="{{$method._orphaned}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.remove_orphaned">
+          <on type="click">
+            <!-- 결제수단 삭제. -->
+            <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).filter((_, i) => i !== $methodIndex)}}" :hasChanges="true"/>
+          </on>
+          <icon name="trash" class="text-sm"/>
+        </button>
+      </div>
+    </item-template>
+    <on event="onSortEnd">
+      <!-- 순서 바꾸기. 끌어 놓은 결과가 곧 결제창 노출 순서다. -->
+      <set-state target="local" form.order_settings.payment_methods="{{$sortedItems.map((m, i) => ({...m, sort_order: i + 1}))}}" :hasChanges="true"/>
+    </on>
+  </div>
+</partial>

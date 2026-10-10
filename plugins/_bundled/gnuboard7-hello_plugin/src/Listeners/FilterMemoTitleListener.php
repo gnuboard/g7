@@ -7,8 +7,8 @@ use App\Contracts\Extension\HookListenerInterface;
 /**
  * 메모 제목 Filter 훅 리스너 (Filter 훅 시연)
  *
- * Hello 모듈이 `gnuboard7-hello_module.memo.title.filter` 필터 훅을 발행한다고
- * 가정하고, 그 제목 앞에 `[Hello] ` 접두사를 붙이는 간단한 데모입니다.
+ * Hello 모듈이 메모를 저장하기 전에 발행하는 `gnuboard7-hello_module.memo.title.filter` 필터 훅을
+ * 받아, 그 제목 앞에 `[Hello] ` 접두사를 붙이는 간단한 데모입니다.
  *
  * 학습 포인트:
  * - Filter 훅 리스너는 반드시 `'type' => 'filter'` 를 명시해야 반환값이 체인에 반영됩니다.

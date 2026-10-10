@@ -1,0 +1,89 @@
+feature: 마이페이지 주문 API 계약 (생성·목록·상세·결제취소 기록·장바구니 정리·배송지 저장)
+
+description: |
+  `UserOrderControllerTest` 가 재고 있던 계약을 뒤늦게 문서로 세운다(2026-09-21 요구사항).
+  이 파일은 테스트 46건을 담고 있었는데 그중 40건에 설명도 시나리오 이름도 없었다 — 무엇을
+  지키려는 테스트인지 읽을 수 없었고, 깨졌을 때 「원래 이런 값이었나」 를 판단할 근거가 없었다.
+
+  한 엔드포인트 묶음을 여섯 갈래로 나눈다. 갈래끼리는 교차하지 않는다 — 예컨대 「목록 통계」와
+  「장바구니 차감」은 같은 요청에서 함께 일어나지 않고, 재는 대상(응답 필드 ↔ DB 행)도 다르다.
+
+  - `create` — 주문 생성의 전제(임시주문 유효·금액 일치)와 «인증이 아니라 검증으로» 막는 규약.
+    회원/비회원이 같은 주소(POST `/user/orders`)로 들어오므로 비로그인 요청은 401 이 아니라
+    422 로 끝나야 한다. 401 로 막으면 비회원 주문 경로가 통째로 사라진다.
+  - `list` — 본인 것만·상태별 통계·표준 페이지네이션 메타·행 모양. 기본 응답은 대표 아이템
+    1건과 전체 개수만 싣는다(전량은 `?with_items=1`).
+  - `show` — 본인 주문만 열리고, 남의 주문·없는 주문은 둘 다 404 다(존재 여부를 흘리지 않는다).
+  - `cancel_record` — PG 결제창에서 이탈했을 때 «결제 취소를 기록만» 하는 경로. 회원은 로그인,
+    비회원은 조회 토큰이 있어야 하고, 이미 결제된 주문에는 열리지 않는다.
+  - `cart_cleanup` — 주문에 실린 만큼 장바구니를 줄인다. 다 쓴 줄은 지우고, 일부만 쓴 줄은
+    잔여로 남긴다. 두 규칙이 한 주문에 섞여도 각각 갈린다.
+  - `address_save` — 주문서의 「배송지 저장」 체크가 주소록에 남기는 규약. 비PG 는 즉시,
+    PG 는 결제완료 시점(그 사이에는 `order_meta` 의 표식만). 2026-09-21 부터 저장된 배송지를
+    주문서에서 고친 경우 그 행을 «갱신» 하는 갈래가 더해졌다(`save_shipping_address_id`).
+
+# axis 의미: 갈라지는 축은 엔드포인트 묶음 하나다. 각 갈래는 다른 요청·다른 검증 대상을 가지며
+# 서로 곱해지지 않는다(한 요청이 목록이면서 동시에 상세일 수 없다).
+axes:
+  area: [create, list, show, cancel_record, cart_cleanup, address_save]
+
+effects:
+  # 주문 생성
+  - mypage_order_create_succeeds_for_member
+  - mypage_order_create_requires_temp_order
+  - mypage_order_create_rejects_expired_temp_order
+  - mypage_order_create_rejects_amount_mismatch
+  - mypage_order_create_is_gated_by_validation_not_auth
+  # 목록
+  - mypage_order_list_returns_own_orders_with_statistics
+  - mypage_order_list_serializes_localized_option_name
+  - mypage_order_list_excludes_other_members_orders
+  - mypage_order_list_filters_by_status
+  - mypage_order_list_paginates
+  - mypage_order_list_pagination_meta_is_standard
+  - mypage_order_list_statistics_count_each_status
+  - mypage_order_list_requires_login
+  - mypage_order_list_row_shape_is_fixed
+  - mypage_order_list_status_summary_matches_statistics
+  # 상세
+  - mypage_order_show_returns_own_order
+  - mypage_order_show_hides_other_members_order
+  - mypage_order_show_unknown_id_is_not_found
+  - mypage_order_show_requires_login
+  - mypage_order_show_carries_progress_steps
+  # 결제 취소 기록
+  - order_cancel_payment_records_history
+  - order_cancel_payment_hides_other_members_order
+  - order_cancel_payment_rejects_non_pending_status
+  - order_cancel_payment_allows_guest_with_token
+  - order_cancel_payment_guest_cannot_touch_member_order
+  - order_cancel_payment_unknown_number_is_not_found
+  # 장바구니 정리
+  - order_create_removes_fully_ordered_cart_row
+  - order_create_decrements_partially_ordered_cart_row
+  - order_create_handles_mixed_cart_rows
+  # 배송지 저장·갱신
+  - order_create_saves_address_when_checked
+  - order_create_skips_address_when_unchecked
+  - order_create_skips_address_when_flag_absent
+  - order_create_defers_address_save_for_pg
+  - order_create_does_not_save_address_before_pg_completes
+  - order_create_leaves_no_address_flag_when_unchecked
+  - order_create_marks_first_saved_address_as_default
+  - order_create_numbers_auto_saved_address_names
+  - order_create_updates_edited_saved_address
+  - order_create_ignores_foreign_address_id
+  - order_create_defers_address_update_id_for_pg
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserOrderControllerTest.php
+
+notes: |
+  이 파일은 다른 두 매니페스트와도 겹친다 — `admin-order-list-representative-option.yaml`(대표
+  아이템 축약)과 `mypage-order-claim-badge.yaml`(클레임 요약 직렬화). 그 둘이 이미 소유한
+  effect 6건은 여기서 다시 선언하지 않는다. 한 테스트 파일이 여러 기능에 걸치는 것이 자연스럽고,
+  같은 이름을 두 곳에 두면 어느 쪽이 주인인지 알 수 없어진다.
+
+  E2E 미해당: 여기 선언한 계약은 전부 HTTP 응답·DB 행이며, 브라우저에서만 드러나는 분기가 없다.
+  화면 쪽 회귀는 주문서·마이페이지 레이아웃 계약 테스트가 따로 막는다
+  (`templates/_bundled/sirsoft-basic/tests/scenarios/checkout-default-address-prefill.yaml`).

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\ExtensionOwnerType;
+use App\Enums\ScopeType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\Config;
 /**
  * Playwright E2E 용 Sanctum 토큰 발급 커맨드.
  *
- * 임의 권한 식별자(코어/모듈/플러그인) 를 받아 권한 보유 관리자 유저를 즉시 생성하고
+ * DB 에 있는 권한 식별자(코어/모듈/플러그인·게시판별) 를 받아 권한 보유 관리자 유저를 즉시 생성하고
+ * (없는 식별자가 하나라도 있으면 아무것도 만들지 않고 실패 코드로 끝난다 — 권한 행을 지어내지 않는다)
  * Sanctum 개인 액세스 토큰을 발급한다. 발급된 토큰은 stdout 마지막 줄에 출력되어
  * Playwright fixture 가 stdin 캡처로 사용한다.
  *
@@ -37,7 +39,7 @@ use Illuminate\Support\Facades\Config;
 class PlaywrightIssueToken extends Command
 {
     protected $signature = 'playwright:issue-token
-        {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능}
+        {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능. 뒤에 :self·:role 을 붙이면 그 범위로 부여 (예: core.users.read:self)}
         {--no-admin-role : admin 역할을 부여하지 않고 지정한 권한만 가진 계정을 만든다 (권한 분기 검증용)}
         {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 테스트 유저/역할을 발급 전 정리. 0 이면 정리 안 함}';
 
@@ -46,6 +48,11 @@ class PlaywrightIssueToken extends Command
     /** 테스트 전용 역할 식별자 접두사 */
     private const TEST_ROLE_PREFIX = 'playwright_test_';
 
+    /**
+     * 3중 가드를 통과하면 요청한 권한(과 범위)을 가진 테스트 계정을 만들고 토큰을 출력합니다.
+     *
+     * @return int 종료 코드
+     */
     public function handle(): int
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
@@ -69,6 +76,22 @@ class PlaywrightIssueToken extends Command
         // SettingsServiceProvider::applyDebugConfig 는 bypass flag 가 있으면 settings JSON 덮어쓰기를 이미 건너뛴 상태.
         Config::set('app.debug', true);
 
+        // 권한 식별자 검사 — 아무것도 만들거나 지우기 전에 한다. 잘못된 범위는 예외, DB 에 없는 식별자는 실패 코드.
+        // 예전에는 없는 식별자를 받으면 이름·설명이 식별자 그대로인 가짜 권한 행을 만들어, 관리자 권한 트리에
+        // 식별자가 그대로 보이는 행이 쌓였고 spec 은 실제 라우트가 검사하지 않는 권한을 「받았다」고 믿었다
+        // (7.1.0 O-D2 · 결정 「발급 때 거절」). 권한은 그 권한을 정의한 확장의 설치·게시판 생성으로만 생긴다.
+        $specs = array_map(
+            fn (string $spec): array => $this->parsePermissionSpec($spec),
+            $this->option('permissions') ?: []
+        );
+        $unknown = $this->findUnknownPermissions(array_column($specs, 0));
+        if ($unknown !== []) {
+            $this->error('DB 에 없는 권한 식별자라 토큰을 발급하지 않습니다: '.implode(', ', $unknown));
+            $this->line('그 권한을 정의하는 확장이 설치돼 있는지, 게시판별 권한이면 게시판을 먼저 만들었는지, 식별자 철자가 맞는지 확인하세요.');
+
+            return self::FAILURE;
+        }
+
         // 발급 전 오래된 테스트 아티팩트 정리 — 이 커맨드는 호출마다 유저 1명 + 역할 1개를
         // 새로 만들지만 회수 주체가 없어 그대로 누적된다. 정리하지 않으면 회원/역할 관리 화면이
         // 테스트 잔재로 뒤덮인다(실측: 발급 2974회 → 유저 2974명·역할 2974개 잔존).
@@ -78,11 +101,9 @@ class PlaywrightIssueToken extends Command
             $this->pruneStaleTestArtifacts($gcHours);
         }
 
-        $permissions = $this->option('permissions') ?: [];
-
         // --no-admin-role: 지정한 권한만 가진 계정을 만든다.
         // 기본값(플래그 없음)은 종전대로 admin 역할을 함께 부여한다 — 기존 spec 무영향.
-        $user = $this->makeAdminUser($permissions, ! $this->option('no-admin-role'));
+        $user = $this->makeAdminUser($specs, ! $this->option('no-admin-role'));
         $token = $user->createToken('playwright-'.uniqid())->plainTextToken;
 
         $this->line($token);
@@ -139,11 +160,52 @@ class PlaywrightIssueToken extends Command
     }
 
     /**
+     * DB 에 없는 권한 식별자를 돌려줍니다(요청 순서 유지, 중복 제거).
+     *
+     * @param  array<int, string>  $identifiers  권한 식별자 목록
+     * @return array<int, string> 없는 식별자 목록 (모두 있으면 빈 배열)
+     */
+    private function findUnknownPermissions(array $identifiers): array
+    {
+        $identifiers = array_values(array_unique($identifiers));
+        if ($identifiers === []) {
+            return [];
+        }
+
+        $existing = Permission::whereIn('identifier', $identifiers)->pluck('identifier')->all();
+
+        return array_values(array_diff($identifiers, $existing));
+    }
+
+    /**
+     * `--permissions` 값 하나를 식별자와 범위로 나눕니다.
+     *
+     * @param  string  $spec  `식별자` 또는 `식별자:self` · `식별자:role`
+     * @return array{0: string, 1: string|null} [권한 식별자, 범위(null = 전체)]
+     *
+     * @throws \InvalidArgumentException 범위가 self·role 이 아닐 때
+     */
+    private function parsePermissionSpec(string $spec): array
+    {
+        if (! str_contains($spec, ':')) {
+            return [$spec, null];
+        }
+
+        [$identifier, $scope] = explode(':', $spec, 2);
+
+        if (ScopeType::tryFrom($scope) === null) {
+            throw new \InvalidArgumentException("알 수 없는 권한 범위 '{$scope}' — self 또는 role 만 쓸 수 있습니다: {$spec}");
+        }
+
+        return [$identifier, $scope];
+    }
+
+    /**
      * 권한 식별자 배열로 관리자 유저를 생성하고 권한을 부여한다.
      *
      * 절차:
      * 1. User factory 로 신규 유저 생성
-     * 2. 권한 식별자별로 Permission 행 보장 (firstOrCreate)
+     * 2. 권한 식별자별로 있는 Permission 행을 찾는다 — 없는 식별자는 handle 이 미리 거절했다(행을 만들지 않는다)
      * 3. uniqid 접미사로 격리된 test role 생성 + 권한 sync
      * 4. (withAdminRole 일 때만) admin role 보장 (firstOrCreate) + 유저-역할 부여
      *
@@ -152,31 +214,23 @@ class PlaywrightIssueToken extends Command
      * admin 역할이 사이트의 전체 권한을 보유하기 때문에 `--permissions` 로 좁혀도
      * 화면은 항상 최대 권한으로 렌더된다(실측: admin 역할 권한 263건).
      *
-     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
+     * @param  array<int, array{0: string, 1: string|null}>  $specs  부여할 [권한 식별자, 범위] 목록 (parsePermissionSpec 결과, 모두 DB 에 있는 식별자)
      * @param  bool  $withAdminRole  admin 역할 동반 부여 여부
      * @return User 생성된 유저
      */
-    private function makeAdminUser(array $permissions, bool $withAdminRole = true): User
+    private function makeAdminUser(array $specs, bool $withAdminRole = true): User
     {
+        // 「식별자:범위」 — 범위 스코프(self·role)로 부여된 위임 관리자 세션을 만든다.
+        // 범위 없이 부여하면 전체 접근이라 스코프 우회(보조 경로가 범위를 무시하는 결함)를
+        // E2E 로 재현·잠글 수 없다. 범위·식별자 검사는 handle 이 아무것도 만들기 전에 끝냈다 — 유저를 먼저
+        // 만들면 테스트 역할이 붙지 않은 계정이 남아 GC 가 회수하지 못한다.
         $user = User::factory()->create();
 
+        $idsByIdentifier = Permission::whereIn('identifier', array_column($specs, 0))->pluck('id', 'identifier');
+
         $permissionIds = [];
-        foreach ($permissions as $identifier) {
-            // Role/Permission 의 name·description 은 모델에서 array 로 캐스팅된다.
-            // 여기서 json_encode 한 문자열을 넣으면 Eloquent 가 한 번 더 인코딩해
-            // 이중 인코딩된 값이 저장되고, 관리자 화면(역할 선택 등)에 JSON 원문이
-            // `{"ko":"\uXXXX…"}` 형태로 그대로 노출된다. 배열을 그대로 넘긴다.
-            $permission = Permission::firstOrCreate(
-                ['identifier' => $identifier],
-                [
-                    'name' => ['ko' => $identifier, 'en' => $identifier],
-                    'description' => ['ko' => $identifier, 'en' => $identifier],
-                    'extension_type' => ExtensionOwnerType::Core,
-                    'extension_identifier' => 'core',
-                    'type' => 'admin',
-                ]
-            );
-            $permissionIds[] = $permission->id;
+        foreach ($specs as [$identifier, $scope]) {
+            $permissionIds[$idsByIdentifier[$identifier]] = ['scope_type' => $scope];
         }
 
         $testRole = Role::create([

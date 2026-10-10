@@ -901,6 +901,9 @@ MD;
             'docs',
             // 한국어 README — 영문 README.md 와 짝을 이루는 공개 문서이므로 함께 배포되어야 한다.
             'README.ko.md',
+            // 빌드 보조 스크립트 폴더와 개발 대시보드 빌드 설정 — 배포본에 실리는데 대상에서 빠지면 업데이트 뒤에도 옛 것이 남는다.
+            'scripts',
+            'vite.config.devdashboard.js',
         ];
 
         foreach ($coreAdditional as $item) {

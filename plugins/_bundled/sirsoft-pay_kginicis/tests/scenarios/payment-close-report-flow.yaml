@@ -1,0 +1,28 @@
+feature: 결제창 닫힘·실패 복귀 보고 — 공개 상태 계약과 G7Core.api 만 쓴다 (#639)
+
+description: |
+  표준결제 창 닫힘(closeUrl 메시지)과 결제 실패 화면 복귀를 서버(close-report)에 보고하고, 체크아웃 제출 상태를 푼다.
+  예전에는 체크아웃 화면을 `/shop/checkout` 글자로 판정해 쇼핑몰 경로를 바꾼 설치본에서 버튼이 잠긴 채 남았고,
+  비회원 조회 토큰을 저장소에서 직접 읽었으며 G7Core.api 가 없으면 직접 fetch 로 보냈다.
+
+  이제 체크아웃 판정은 템플릿 상태 계약 `_global.shopBase`, 비회원 토큰은 쇼핑몰 상태 계약 `_global.guestOrderToken` 에서만
+  읽고(G7Core.state.get()), 보고는 G7Core.api 로만 보낸다 — 회원 Bearer 와 401 처리는 코어 몫이다.
+  상태 계약이 아직 채워지지 않았으면 체크아웃으로 단정하지 않고 다시 본다.
+
+axes:
+  case: [close_message, iframe_only, foreign_origin, non_checkout, mobile_return, shop_base_custom, shop_base_root, shop_base_unknown, failure_return, guest_token_state, guest_token_storage_only, member, no_token]
+
+effects:
+  - checkout_submit_state_reset_on_close
+  - close_reported_to_server
+  - no_report_without_close_message
+  - foreign_messages_ignored
+  - checkout_detected_by_shop_base_contract
+  - mobile_return_resets_submit_state
+  - failure_return_reported_once
+  - guest_token_read_from_state_contract_only
+  - member_bearer_left_to_core_api
+  - no_token_sends_without_header
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/paymentCloseMessageListener.test.ts

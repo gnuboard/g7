@@ -100,6 +100,8 @@ declare module '*/template-engine' {
   export function renderTemplate(options: RenderOptions): Promise<void>;
   export function updateTemplateData(data: Record<string, any>): void;
   export function destroyTemplate(): void;
+  /** React 루트만 내려놓는다 — 오류 화면이 루트 컨테이너를 덮기 직전에 부른다 (engine-v1.79.0) */
+  export function releaseTemplateRoot(): void;
   export function getState(): Readonly<TemplateEngineState>;
 }
 

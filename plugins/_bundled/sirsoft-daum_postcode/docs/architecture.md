@@ -29,9 +29,10 @@ UI 는 다른 화면에 끼워 넣는 조각 하나와 관리자 설정 화면 �
 
 <!-- @intent START -->
 ```
-[주입]  resources/extensions/ecommerce-address-search.json
+[주입]  resources/extensions/ecommerce-address-search.g7.html
             │  extension_point: address_search_slot
             │  scripts: Daum 우편번호 SDK (외부 호스트, 사유 선언됨)
+            │  label="$t:sirsoft-daum_postcode.search_address" — 로드 실패 안내 이름(없으면 코어 일반 이름)
             ▼
         onMount → setFieldReadOnly 핸들러
             │   SDK 확보 확인 → 확보 시에만 필드 잠금
@@ -40,9 +41,9 @@ UI 는 다른 화면에 끼워 넣는 조각 하나와 관리자 설정 화면 �
             │   설정(display_mode / popup_* / theme_color) 적용
             │   실패 → notifyPostcodeSdkFailure (통지 + 재시도)
             ▼
-        주소 선택 → filter_address_data (가공) → 필드 기록 → address.selected (통지)
+        주소 선택 → callbackAction 있으면 그 액션 실행, 없으면 targetFields 로 필드 기록
 
-[백엔드]  plugin.php 만 존재 — 설정 스키마 · 훅 선언 · 기본값
+[백엔드]  plugin.php 만 존재 — 설정 스키마 · 기본값 (서버 훅 없음)
 ```
 
 `postcodeSdk.ts` 가 이 플러그인의 **위험 관리 전부**를 담습니다 — 로드·재로드·준비 판정·실패
@@ -61,13 +62,19 @@ UI 는 다른 화면에 끼워 넣는 조각 하나와 관리자 설정 화면 �
 |---|---|---|
 | `plugin.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json·composer.json 동기화 |
 | `plugin.php` | 진입 클래스 (선언형 표면 SSoT) | 표면 변경 시 `ext:docgen` 재실행 + 코어 최소 버전 검토 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
+| `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
+| `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
+| `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
+| `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

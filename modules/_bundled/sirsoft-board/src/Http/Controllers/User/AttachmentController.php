@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
+use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,23 +59,23 @@ class AttachmentController extends PublicBaseController
             $attachment = $this->attachmentService->getByHash($slug, $hash);
 
             if (! $attachment) {
-                return $this->notFound(__('sirsoft-board::messages.attachment.not_found'));
+                return $this->notFound('sirsoft-board::messages.attachment.not_found');
             }
 
             // 모든 파일(이미지 포함) 다운로드 방식으로 제공
             $response = $this->attachmentService->download($slug, $attachment->id, context: 'user');
 
             if (! $response) {
-                return $this->notFound(__('sirsoft-board::messages.attachment.not_found'));
+                return $this->notFound('sirsoft-board::messages.attachment.not_found');
             }
 
             return $response;
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
+            return $this->notFound('sirsoft-board::messages.boards.not_found');
         } catch (\Exception $e) {
-            return $this->error(__('sirsoft-board::messages.attachment.download_failed'), 500, $e->getMessage());
+            return $this->error('sirsoft-board::messages.attachment.download_failed', 500, $e->getMessage());
         }
     }
 
@@ -104,12 +105,13 @@ class AttachmentController extends PublicBaseController
             $attachment = $this->attachmentService->getByHash($slug, $hash);
 
             if (! $attachment) {
-                return $this->notFound(__('sirsoft-board::messages.attachment.not_found'));
+                return $this->notFound('sirsoft-board::messages.attachment.not_found');
             }
 
             // 이미지가 아닌 경우
             if (! $attachment->is_image) {
-                return $this->badRequest(__('sirsoft-board::messages.attachment.not_image'));
+                // 존재하지 않는 badRequest() 를 부르던 자리 — Error 로 500 이 나던 것을 400 으로 바로잡는다
+                return $this->error('sirsoft-board::messages.attachment.not_image', 400);
             }
 
             // 파일 정보 조회 (유효 서명은 콘텐츠 상태 게이트 통과 자격의 위임)
@@ -120,22 +122,25 @@ class AttachmentController extends PublicBaseController
             );
 
             if (! $fileInfo) {
-                return $this->notFound(__('sirsoft-board::messages.attachment.not_found'));
+                return $this->notFound('sirsoft-board::messages.attachment.not_found');
             }
 
             // 캐싱 헤더와 함께 응답 (환경설정 레이아웃 캐시 TTL 사용, 기본 24시간)
-            return $this->fileResponse(
+            $response = $this->fileResponse(
                 $fileInfo['path'],
                 $fileInfo['mime_type'],
                 (int) g7_core_settings('cache.layout_ttl', 86400)
             );
+
+            // 인라인 표시는 래스터 이미지만 — SVG 는 is_image 에서 이미 걸러지고, 응답에는 nosniff (KVE-2026-2366)
+            return InlineMediaPolicy::harden($response, $fileInfo['mime_type']);
         } catch (AccessDeniedHttpException $e) {
             // 삭제글 첨부 등 권한 차단은 403 으로 응답
             return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
+            return $this->notFound('sirsoft-board::messages.boards.not_found');
         } catch (\Exception $e) {
-            return $this->error(__('sirsoft-board::messages.attachment.preview_failed'), 500, $e->getMessage());
+            return $this->error('sirsoft-board::messages.attachment.preview_failed', 500, $e->getMessage());
         }
     }
 
@@ -154,7 +159,7 @@ class AttachmentController extends PublicBaseController
 
             // 첨부파일 사용 설정 확인
             if (! $board->use_file_upload) {
-                return $this->forbidden(__('sirsoft-board::messages.attachment.upload_disabled'));
+                return $this->forbidden('sirsoft-board::messages.attachment.upload_disabled');
             }
 
             $validated = $request->validated();
@@ -171,7 +176,7 @@ class AttachmentController extends PublicBaseController
             // FileUploader 컴포넌트가 response.data?.data 형식을 기대하므로
             // data 키 안에 한 번 더 감싸서 반환
             return $this->success(
-                __('sirsoft-board::messages.attachment.upload_success'),
+                'sirsoft-board::messages.attachment.upload_success',
                 [
                     'data' => [
                         'id' => $attachment->id,
@@ -196,9 +201,9 @@ class AttachmentController extends PublicBaseController
                 $e->getMessageParams()
             );
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
+            return $this->notFound('sirsoft-board::messages.boards.not_found');
         } catch (\Exception $e) {
-            return $this->error(__('sirsoft-board::messages.attachment.upload_failed'), 500, $e->getMessage());
+            return $this->error('sirsoft-board::messages.attachment.upload_failed', 500, $e->getMessage());
         }
     }
 
@@ -222,14 +227,17 @@ class AttachmentController extends PublicBaseController
             $result = $this->attachmentService->reorder($slug, $orders);
 
             if (! $result) {
-                return $this->error(__('sirsoft-board::messages.attachment.reorder_failed'), 500);
+                return $this->error('sirsoft-board::messages.attachment.reorder_failed', 500);
             }
 
-            return $this->success(__('sirsoft-board::messages.attachment.reorder_success'));
+            return $this->success('sirsoft-board::messages.attachment.reorder_success');
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
+            return $this->notFound('sirsoft-board::messages.boards.not_found');
+        } catch (AccessDeniedHttpException $e) {
+            // 남이 올린 임시 첨부 등 스코프 밖 대상 — 서버 오류(500)가 아니라 403 으로 알린다
+            return $this->forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            return $this->error(__('sirsoft-board::messages.attachment.reorder_failed'), 500, $e->getMessage());
+            return $this->error('sirsoft-board::messages.attachment.reorder_failed', 500, $e->getMessage());
         }
     }
 
@@ -250,26 +258,29 @@ class AttachmentController extends PublicBaseController
             $attachment = $this->attachmentService->getById($slug, $id);
 
             if (! $attachment) {
-                return $this->notFound(__('sirsoft-board::messages.attachment.not_found'));
+                return $this->notFound('sirsoft-board::messages.attachment.not_found');
             }
 
             // 권한 확인 (Service에서 처리)
             if (! $this->attachmentService->canDelete($attachment, Auth::id())) {
-                return $this->forbidden(__('sirsoft-board::messages.attachment.delete_forbidden'));
+                return $this->forbidden('sirsoft-board::messages.attachment.delete_forbidden');
             }
 
             // 삭제 (Service에서 처리)
             $result = $this->attachmentService->delete($slug, $id);
 
             if (! $result) {
-                return $this->error(__('sirsoft-board::messages.attachment.delete_failed'), 500);
+                return $this->error('sirsoft-board::messages.attachment.delete_failed', 500);
             }
 
-            return $this->success(__('sirsoft-board::messages.attachment.delete_success'));
+            return $this->success('sirsoft-board::messages.attachment.delete_success');
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
+            return $this->notFound('sirsoft-board::messages.boards.not_found');
+        } catch (AccessDeniedHttpException $e) {
+            // 남이 올린 임시 첨부 등 스코프 밖 대상 — 서버 오류(500)가 아니라 403 으로 알린다
+            return $this->forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            return $this->error(__('sirsoft-board::messages.attachment.delete_failed'), 500, $e->getMessage());
+            return $this->error('sirsoft-board::messages.attachment.delete_failed', 500, $e->getMessage());
         }
     }
 }

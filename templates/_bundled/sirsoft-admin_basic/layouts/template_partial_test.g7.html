@@ -1,0 +1,39 @@
+<!-- 템플릿 Partial 시스템이 살아 있는지 눈으로 보는 **개발용 확인 화면**. 업무 기능이 아니다.
+  중첩 2단(이 화면 → `_content_section` → 그 안의 `_header_section`·`_info_card`)이 모두 그려지면
+  치환이 재귀로 도는 것이고, 한 단이라도 빈 자리로 남으면 그 단에서 해석이 끊긴 것이다.
+  본문의 체크 목록은 사람이 읽는 안내 문구라 파일명을 `.json` 으로 적고 있다 — 실제 참조는
+  아래 `<include src>` 한 줄뿐이고 작성 규약대로 `.g7.html` 을 가리킨다. -->
+<layout name="template_partial_test" version="1.0.0" extends="_admin_base">
+  <meta title="템플릿 Partial 시스템 테스트" description="sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인"/>
+  <slot name="content">
+    <div data-ref="test_container" class="admin-page-content-responsive">
+      <div data-ref="page_header" class="mb-6">
+        <div class="flex-center gap-3 mb-2">
+          <span class="text-4xl">🧪</span>
+          <h1 class="text-page-heading sm:text-3xl">템플릿 Partial 시스템 테스트</h1>
+        </div>
+        <p class="text-label">sirsoft-admin_basic 템플릿의 레이아웃 Partial 기능을 테스트합니다</p>
+      </div>
+      <div data-ref="main_content_card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 rounded-lg p-6 border-2 border-blue-200 dark:border-blue-700 shadow-md mb-6">
+          <div class="flex-center gap-2 mb-4">
+            <span class="text-2xl">📋</span>
+            <h2 class="text-lg font-bold text-blue-900 dark:text-blue-100">테스트 항목</h2>
+          </div>
+          <ul class="list-disc list-inside text-sm space-y-1 ml-4 text-black dark:text-white">
+            <li>✅ Level 1 Partial: partials/_content_section.json</li>
+            <li>✅ Level 2 Partial: partials/_header_section.json</li>
+            <li>✅ Level 2 Partial: partials/_info_card.json (Composite 컴포넌트)</li>
+            <li>✅ Basic 컴포넌트 렌더링</li>
+            <li>✅ 다크 모드 지원</li>
+          </ul>
+        </div>
+        <include src="partials/template_partial_test/_content_section.g7.html"/>
+        <div class="mt-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          <h3 class="text-md font-semibold text-gray-900 dark:text-gray-100 mb-2">🎉 Partial 시스템 정상 동작</h3>
+          <p class="text-label">위의 모든 섹션이 정상적으로 표시되면 템플릿 Partial 시스템이 정상 작동하는 것입니다.</p>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -13,6 +13,10 @@
  * 회귀 배경: 과거 백엔드가 비밀글 본문 요약을 권한 무관하게 응답 →
  *   비로그인·제3자도 검색 결과에서 비밀글 본문 일부 열람 가능 (보안 결함, #413-37).
  *   백엔드 차단 + 본 게이트로 방어.
+ *
+ * @effects published_preview_visible_in_list,
+ *   secret_preview_empty_for_guest,
+ *   blinded_preview_empty_in_list
  */
 
 import { describe, it, expect } from 'vitest';

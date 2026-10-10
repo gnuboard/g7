@@ -1,6 +1,6 @@
 # 모듈 다국어 시스템
 
-> **관련 문서**: [index.md](index.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
+> **관련 문서**: [README.md](README.md) | [module-basics.md](module-basics.md) | [module-routing.md](module-routing.md)
 
 ---
 
@@ -129,6 +129,47 @@ __('sirsoft-sample.messages.product_created');  // 작동하지 않음!
 // ✅ 올바른 사용 (더블 콜론 :: 사용)
 __('sirsoft-sample::messages.product_created');  // 정상 작동
 ```
+
+### 수에 따른 단수·복수 (백엔드)
+
+개수를 넣는 서버 메시지는 `(s)` 를 붙이지 않고, 영어 값을 `단수|복수` 두 문장으로 적어 수로 고른다
+(Laravel 복수형). 1 이면 단수, 0·2 이상·소수이면 복수다 — 프런트 `키_one` 규칙과 같은 결과다. ko·ja 값은
+`|` 없이 한 문장 그대로 둔다(그 값이 그대로 나온다).
+
+```php
+// src/lang/en/messages.php
+'bulk_deleted' => ':count item deleted.|:count items deleted.',
+// src/lang/ko/messages.php
+'bulk_deleted' => ':count개를 삭제했습니다.',
+```
+
+| 메시지를 내는 곳 | 쓰는 법 |
+| --- | --- |
+| 직접 번역 | `trans_choice('sirsoft-sample::messages.bulk_deleted', $count)` — 다른 자리표시자는 3번째 인자로 |
+| API 응답(`ResponseHelper`·`$this->success()` 등) | 메시지 치환값에 `count` 를 넣는다 — 응답 번역이 그 수로 고른다 |
+| 활동 로그(`description_key`) | `description_params` 에 `count` 를 넣는다 — 화면 번역이 그 수로 고른다 |
+| 키와 치환값을 함께 들고 다니는 예외 | 생성자에서 `trans_count($key, $params)` 로 번역하고, 치환값에 `count` 를 넣는다 |
+
+- 수 자리표시자가 `:count` 가 아니면(예: `:limit`, `:max`) 그 값과 같은 수를 `count` 로 함께 넘긴다.
+- 한 문장에 독립된 수가 둘이면 `단수|복수` 로 한 번에 고를 수 없다 — 「수+명사」를 수마다
+  `trans_choice` 로 만들어 자리표시자로 넘긴다.
+- 영어 값에 `|` 가 있는 키를 `__()` 로 부르면 두 문장이 그대로 이어져 나온다. 그런 키는 항상 위 표의 방법으로 부른다.
+- 규칙이 1 로 고정된 문구(예: `min:1` 안내)는 단수 한 문장으로 적는다.
+- 괄호 없이 늘 복수로 적은 문구(「(:count items)」·「:count layouts deleted」·「:days days」)도 같은 결함이다 — 수가
+  1 일 수 있으면 `단수|복수` 로 적는다. 늘 2 이상인 수(고정 상한 `max:100`, 2 이상에서만 나오는 분기)만 복수 한 문장으로 둔다.
+- 검증 문구: Laravel 검증기는 문구를 수로 고르지 않지만, 코어가 수 규칙(`min`·`max`·`size`·`gt`·`gte`·`lt`·`lte`·
+  `digits`·`min_digits`·`max_digits`·`decimal`)의 문구에 `|` 가 있으면 규칙값으로 고른다(영어 표준 문구
+  `validation.min.array` 등이 `단수|복수` — `min:1` → 「at least 1 item」). 범위(`between`·`digits_between`)는 고르지 않는다.
+  확장이 같은 규칙에 `Validator::replacer()` 를 등록하면 코어의 고르기를 대신하게 되므로 그 치환기에서 직접 고른다.
+- FormRequest `messages()` 에서 확장 키(`sirsoft-sample::validation.files_max`)나 표준 키를 미리 번역해 넘기면, 상한이 설정값
+  (`:max` 등)이라 1 일 수 있을 때 `trans_choice($key, $max, ['max' => $max])` 로 고른 한 문장을 넘긴다(`__()` 로 부르면 두 문장이 이어져 나온다).
+- `count` 는 숫자(정수·소수·숫자 문자열)여야 고른다. `number_format()` 결과(`1,000`)처럼 숫자가 아니면 고르지 못해
+  두 문장이 이어져 나온다 — `count` 에는 서식 없는 수를 넘긴다. 천 단위 구분을 보여야 하면 `trans_choice($key, $n,
+  ['count' => number_format($n)])` 처럼 수는 2번째 인자로 고르고 표시값만 치환값으로 넘긴다.
+- 활동 로그는 저장된 `description_params` 로 나중에 번역한다. 수를 `count` 없이 다른 이름(`attempts`·`days` 등)으로만
+  저장한 옛 행은 처음 나오는 수 치환값으로 고른다 — 새 기록은 `count` 를 함께 저장한다.
+- 프런트 규칙([data-binding-i18n.md 「수에 따른 단수·복수」](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787))과
+  0·1·2·소수에서 같은 결과다. 음수 `-1` 만 다르다(서버는 복수) — 개수 메시지에는 음수를 넣지 않는다.
 
 ---
 
@@ -299,14 +340,18 @@ modules/_bundled/vendor-module/
 
 레이아웃 JSON에서 `$t:` 접두사를 사용하여 다국어 키를 참조합니다:
 
+```html
+<h1 data-ref="page-title">$t:sirsoft-sample.admin.index.title</h1>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "page-title",
   "type": "basic",
   "name": "H1",
-  "props": {
-    "text": "$t:sirsoft-sample.admin.index.title"
-  }
+  "text": "$t:sirsoft-sample.admin.index.title"
 }
 ```
 
@@ -320,7 +365,21 @@ $t:sirsoft-sample.admin.index.title
 $t:sirsoft-sample.messages.save_success
 ```
 
+### 수에 따른 단수·복수
+
+개수를 넣는 문구는 인자 이름을 `count` 로 넘기고, 영어처럼 단수·복수가 갈리는 언어 파일에 `키_one` 변형을 더한다(기본 키는 복수 꼴). ko·ja 는 변형이 필요 없다. 규칙 전문: [data-binding-i18n.md 「수에 따른 단수·복수」](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787).
+
+```json
+{ "post_count": "{{count}} posts", "post_count_one": "{{count}} post" }
+```
+
 ### 다양한 사용 예시
+
+```html
+<page-header data-ref="page-header" title="$t:sirsoft-sample.admin.index.title" description="$t:sirsoft-sample.admin.index.description"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -334,15 +393,21 @@ $t:sirsoft-sample.messages.save_success
 }
 ```
 
+```html
+<button data-ref="submit-button" variant="primary">$t:sirsoft-sample.admin.create.submit</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "submit-button",
   "type": "basic",
   "name": "Button",
   "props": {
-    "text": "$t:sirsoft-sample.admin.create.submit",
     "variant": "primary"
-  }
+  },
+  "text": "$t:sirsoft-sample.admin.create.submit"
 }
 ```
 

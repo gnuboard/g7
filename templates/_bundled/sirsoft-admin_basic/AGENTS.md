@@ -40,7 +40,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-admin_basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `src/handlers/` | 템플릿 전용 액션 핸들러 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
@@ -48,7 +48,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `editor-spec/` | 분할 편집기 스펙 | `php artisan template:update sirsoft-admin_basic --force` |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update sirsoft-admin_basic --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -65,7 +66,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 
 **사이드바 접힘 상태 복원**: 페이지 로드 → `src/index.ts` 부트스트랩이 `initSidebar()` 직접
 호출(레이아웃 `init_actions` 아님) → localStorage 값을 `_global.sidebarCollapsed` 에 반영 →
-`_admin_base.json` 의 사이드바 영역 className 표현식이 그 값을 읽어 접힘 스타일 적용.
+`_admin_base.g7.html` 의 사이드바 영역 className 표현식이 그 값을 읽어 접힘 스타일 적용.
 
 **로케일 전환**: 코어가 로케일을 바꾸면 이 템플릿의 `initTemplate()` 재등록 진입점이 호출되어
 핸들러 맵을 다시 등록합니다(§docs/handlers.md "부트스트랩"). 사이드바 접힘 등 1회성 부팅
@@ -77,9 +78,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 125개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 146개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
-| 전용 핸들러 | 17개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
+| 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 레이아웃 | 184개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 전용 핸들러 | 23개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
 
@@ -94,17 +95,22 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 
 ## 5. 수정 시 동반 의무
 
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 develop-7.1.0 2차 병합 전수 보존 검사에서 이 확장의 미등재 레이아웃이 red; 재발 — 2026-09-26 1차 병합 판독에서 방문자 통계 화면 26개·개인정보 조치 창이 다시 미등재·미주석으로 들어왔다).
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update sirsoft-admin_basic --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
 - [ ] `template.json` 의 `assets` 경로는 실제 산출물을 가리켜야 한다 — 없는 경로를 선언하면 검색엔진용(봇) 화면이 404 를 가리키는 `<link>` 를 싣고, 일반 화면에는 흔적이 남지 않는다
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 아이콘 컨테이너(`w-N h-N` 상자) 안의 `<icon>` 은 컨테이너와 **다른 줄**에 둔다 — `AuthoringDebtLedgerTest` 가 줄 단위로 `<icon` 과 박스 크기 표기를 함께 재므로 한 줄에 있으면 글리프가 박스 크기를 쓴 것으로 읽힌다(3차 병합 후속, 확장 관리 모달 9파일 선례). 새 `<on>`(자식 있는 액션)·`<data-source>`·`<modal>` 은 S21 주석 자리를 비워 두지 않는다 — `CommentAnchorStageLedgerTest` 가 완료 단락(S21.4·S21.5)의 잔여 앵커 0 을 잠근다
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 컴포넌트가 `localStorage` 에 적는 키는 `g7le.` 접두를 쓴다 — GDPR 동의 플러그인의 strictly-necessary 허용 목록(`plugins/_bundled/sirsoft-gdpr/plugin.php`)이 이 접두만 통과시키고, 밖의 키는 동의 전 쓰기가 조용히 버려지며 부팅 때 정리된다. 쓴 직후 되읽어 성공을 확인한다
 - [ ] 필수 컴포넌트(35개) 의 Props 시그니처를 깨는 변경은 전체 번들 확장 관리자 화면에 영향 — 변경 전 `src/components/{basic,composite}/` 의 실사용처를 넓게 확인
-- [ ] `_admin_base.json` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
+- [ ] `_admin_base.g7.html` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
 - [ ] AdminSidebar 의 `MenuItem`/`AdminSidebarProps` 인터페이스 확장 시 이 문서의 §docs/components.md "AdminSidebar 상세" 동기화
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-admin_basic --force` (편집기는 활성 디렉토리만 읽는다)
-- [ ] 로그인 화면의 2단계 인증 단계를 고쳤다면 1단계·2단계 `if` 의 상보성과 `login`/`loginTwoFactor` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호 단계에서 Enter 가 새 challenge 를 발급한다
+- [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
+- [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
+- [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
 
@@ -116,7 +122,58 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 사이드바 접힘 상태를 레이아웃 `init_actions` 로 매번 복원 | 템플릿 부트스트랩(`src/index.ts`)에서 1회 복원 | `init_actions` 는 화면 진입마다 재실행되어 불필요한 반복 처리가 된다 |
 | `_admin_base` 를 상속하는데 로그인 화면처럼 `initTheme`/메뉴 초기화를 다시 호출 | `_admin_base` 상속 화면은 이미 초기화된 전역 상태를 그대로 사용 | 중복 호출은 낭비이며, 두 초기화 지점의 결과가 어긋나면 화면 간 상태 불일치가 생긴다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
+| 원·칸을 그리는 스타일 자산(`danger-confirm-icon` 등, 글자 크기 없음)을 `<icon>` 요소에 직접 부여 | 자산은 감싸는 요소에, 아이콘은 그 안에(`<div class="danger-confirm-icon"><icon …/></div>`) | Font Awesome 의 `display` 가 자산의 가운데 정렬을 이기고 글리프는 상속 글자 크기에 머문다 — 원 위쪽에 작게 붙는다. 가드: `tests/Unit/Extension/FontIconSizingTest.php` |
+| `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
+| `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
+| 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
 <!-- @intent END -->
+
+### Monaco 편집기 확보 계약 (S3-D12)
+
+동봉한 Monaco 는 **0.56.0** 이고, `@monaco-editor/loader@1.6.x` 와 **호환되지 않는다.**
+로더는 인스턴스를 `editor.main` 의 `m` 속성에서 꺼내는데 0.56.0 은 `m` 을 내보내지 않는다
+(`e.m=` 출현 0회). 그러면 로더가 `undefined` 로 resolve 하고, React 래퍼가
+
+```js
+m.then(h => (a.current = h) && I(!1))   // h 가 falsy 면 && 단락 → 로딩 해제 안 됨
+```
+
+**할당한 뒤 그 값의 참을 검사**하므로 「편집기를 불러오는 중...」에서 영영 멈춘다.
+
+**이 실패는 조용하다** — AMD 요청은 전부 200 이고 `window.monaco.editor.create` 도 정상
+함수로 존재하며 콘솔 오류도 0건이다. 자산·권한·경로를 아무리 재도 드러나지 않는다.
+관측 가능한 유일한 값은 **`monaco.editor.getModels().length === 0`** 이다.
+
+그래서 `CodeEditor.tsx` 는 **로더보다 먼저** 동봉본을 받아 `window.monaco` 에 심는다 —
+로더의 `init()` 에는 「`window.monaco.editor` 가 이미 있으면 그것을 쓴다」는 경로가 있어,
+그 경로를 타면 `m` 을 읽지 않는다. `m` 을 뒤늦게 채우는 것으로는 고쳐지지 **않는다**
+(`wrapperPromise` 는 1회만 resolve 된다).
+
+Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts`
+세 축(자산 200 · 마운트 · **로더 1회 실행**)을 함께 확인한다. 마운트만 재면 로더가 두 번
+돌아도 green 이다 — 먼저 뜬 편집기가 살아 있기 때문이다.
+
+심기의 제한 시간은 두 단계다. 로더 스크립트를 받기 전까지는 3초(`PRIME_SCRIPT_TIMEOUT_MS` — 자산이 영영
+오지 않을 때 화면이 굳지 않게), 로더가 `vs/editor/editor.main` 을 요청한 뒤에는 60초 안전 제한
+(`PRIME_LOADING_TIMEOUT_MS`)과 AMD errback 이 끝을 정한다. 확장자를 가로채는 서버에서는 자산이 PHP 를 거쳐
+청크 하나에 1초 가까이 걸려 3초 안에 끝나지 않는다(#712 실측). 제한 시간이 지났는데 심기가 넣은 로더
+(`script[data-g7-monaco-loader]`)가 아직 `window.monaco` 를 채우지 못했으면 `loader.init()` 을 **부르지 않고**
+평문 폴백으로 넘긴다 — 라이브러리 `init()` 은 `window.monaco.editor` 가 없으면 자기 `loader.js` 를 또 넣기
+때문이다. [다시 시도]는 그 사이 심기가 끝났으면 정상 경로를 탄다. errback 으로 끝난 심기(청크를 하나라도 받지
+못함)는 그 페이지에서 실패로 굳어 [다시 시도]도 폴백으로 간다 — 다시 받으려면 새로고침해야 한다.
+
+서버가 주는 오류 표시(`markers`)가 모델 줄 수를 넘으면, 새 내용이 모델에 들어올 때까지 보류했다가 다시 찍는다
+(이전 내용 위에 새 좌표를 찍으면 `Illegal value for lineNumber` 로 코드 작업 영역 전체가 내려간다). 새 내용이
+들어온 뒤에도 넘는 마커(파일 끝 다음 줄을 가리키는 오류 등)는 마지막 줄로 접어 찍는다.
+
+### 알림 템플릿 편집 창 사본 (코어·게시판·이커머스·환율 플러그인)
+
+`_modal_notification_template_form` 은 게시판(`sirsoft-board`)·이커머스(`sirsoft-ecommerce`)·환율 플러그인
+(`sirsoft-koreaexim`)이 같은 코어 저장 API 로 쓰는 사본을 갖는다. 수신자 규칙 종류를 바꾸면 **새 종류의 빈
+규칙**으로 갈아 끼우고(앞 종류의 `value`·`display_names`·`relation` 은 버린다 — 남기면 회원 UUID 가 역할로
+저장돼 수신자 0명), 관련 사용자면 정의가 선언한 첫 `relation` 을 채운다(서버가 선언 안의 값만 받는다).
+「행위자 제외」는 역할↔특정 회원 사이에서만 이어 간다. 이 규칙을 바꾸면 네 벌을 함께 바꾼다.
 
 ## 7. 테스트 실행
 
@@ -124,9 +181,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 210개 | `vitest.config.ts` |
-| Playwright | 9개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 3개 | `tests/scenarios` |
+| Vitest | 394개 | `vitest.config.ts` |
+| Playwright | 21개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 83개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

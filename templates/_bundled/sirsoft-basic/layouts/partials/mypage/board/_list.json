@@ -1,19 +1,20 @@
 {
+    "comment": "게시판 활동 탭의 겉틀 — 요약 숫자와 하위 탭 줄만 그리고, 실제 목록은 「내 글」·「내 댓글」·\n     「내 반응」·「내 신고」 네 조각이 맡는다. 첫 탭인 「내 글」만 바로 받고 나머지 셋은\n     그 탭을 눌렀을 때 처음 받는다(`auto_fetch=false`).",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 게시판 활동 탭"
     },
     "type": "basic",
     "name": "Div",
-    "props": {
-        "className": "mt-6"
-    },
     "responsive": {
         "portable": {
             "props": {
                 "className": "mt-4"
             }
         }
+    },
+    "props": {
+        "className": "mt-6"
     },
     "children": [
         {
@@ -43,22 +44,24 @@
             ]
         },
         {
-            "comment": "통계 카드 3개",
+            "comment": "통계 카드 5개",
             "type": "basic",
             "name": "Div",
             "blur_until_loaded": {
                 "enabled": true,
-                "data_sources": ["myActivityStats"]
-            },
-            "props": {
-                "className": "grid grid-cols-3 gap-4 mb-6"
+                "data_sources": [
+                    "myActivityStats"
+                ]
             },
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "grid grid-cols-1 gap-3 mb-4"
+                        "className": "grid grid-cols-2 gap-3 mb-4"
                     }
                 }
+            },
+            "props": {
+                "className": "grid grid-cols-5 gap-4 mb-6"
             },
             "children": [
                 {
@@ -165,21 +168,113 @@
                             "text": "$t:mypage.board_activities.stats.total_views"
                         }
                     ]
+                },
+                {
+                    "comment": "남긴 반응 카드",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "heart",
+                                "size": "lg",
+                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_reactions ?? 0) | number}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.board_activities.stats.total_reactions"
+                        }
+                    ]
+                },
+                {
+                    "comment": "신고한 건 카드",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "flag",
+                                "size": "lg",
+                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_reports ?? 0) | number}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.board_activities.stats.total_reports"
+                        }
+                    ]
                 }
             ]
         },
         {
-            "comment": "탭 네비게이션 (2탭: 내가 쓴 글, 내가 쓴 댓글)",
+            "comment": "탭 네비게이션 (4탭: 내가 쓴 글, 내가 쓴 댓글, 내 반응, 내 신고) — 네 탭이 좁은 화면(390px) 폭을 넘으므로 막대 안에서 가로로 흐르게 한다(페이지 전체가 밀리지 않게)",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700"
+                "className": "flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto whitespace-nowrap"
             },
             "children": [
                 {
                     "comment": "내가 쓴 글 탭",
                     "type": "basic",
                     "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "boardActivitySubTab": "my-posts",
+                                        "myPostsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myPosts"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
                     "props": {
                         "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
                     },
@@ -205,7 +300,12 @@
                             },
                             "text": "{{(myActivityStats?.data?.total_posts ?? 0) | number}}"
                         }
-                    ],
+                    ]
+                },
+                {
+                    "comment": "내가 쓴 댓글 탭",
+                    "type": "basic",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -215,24 +315,19 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "boardActivitySubTab": "my-posts",
-                                        "myPostsPage": 1
+                                        "boardActivitySubTab": "my-comments",
+                                        "myCommentsPage": 1
                                     }
                                 },
                                 {
                                     "handler": "refetchDataSource",
                                     "params": {
-                                        "dataSourceId": "myPosts"
+                                        "dataSourceId": "myComments"
                                     }
                                 }
                             ]
                         }
-                    ]
-                },
-                {
-                    "comment": "내가 쓴 댓글 탭",
-                    "type": "basic",
-                    "name": "Button",
+                    ],
                     "props": {
                         "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
                     },
@@ -258,7 +353,12 @@
                             },
                             "text": "{{(myActivityStats?.data?.total_comments ?? 0) | number}}"
                         }
-                    ],
+                    ]
+                },
+                {
+                    "comment": "내 반응 탭 — 이 소스는 `auto_fetch=false` 라 탭을 눌러야 처음 받는다",
+                    "type": "basic",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -268,17 +368,98 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "boardActivitySubTab": "my-comments",
-                                        "myCommentsPage": 1
+                                        "boardActivitySubTab": "my-reactions",
+                                        "myReactionsPage": 1
                                     }
                                 },
                                 {
                                     "handler": "refetchDataSource",
                                     "params": {
-                                        "dataSourceId": "myComments"
+                                        "dataSourceId": "myReactions"
                                     }
                                 }
                             ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "mypage-subtab-my-reactions",
+                        "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reactions' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "heart",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.board_activities.tabs.my_reactions"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_reactions ?? 0) | number}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "내 신고 탭",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "boardActivitySubTab": "my-reports",
+                                        "myReportsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReports"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "mypage-subtab-my-reports",
+                        "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reports' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "flag",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.board_activities.tabs.my_reports"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_reports ?? 0) | number}}"
                         }
                     ]
                 }
@@ -291,7 +472,9 @@
             "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts'}}",
             "blur_until_loaded": {
                 "enabled": true,
-                "data_sources": ["myPosts"]
+                "data_sources": [
+                    "myPosts"
+                ]
             },
             "children": [
                 {
@@ -306,11 +489,47 @@
             "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments'}}",
             "blur_until_loaded": {
                 "enabled": true,
-                "data_sources": ["myComments"]
+                "data_sources": [
+                    "myComments"
+                ]
             },
             "children": [
                 {
                     "partial": "partials/mypage/board/_my_comments.json"
+                }
+            ]
+        },
+        {
+            "comment": "내 반응 콘텐츠",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reactions'}}",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": [
+                    "myReactions"
+                ]
+            },
+            "children": [
+                {
+                    "partial": "partials/mypage/board/_my_reactions.json"
+                }
+            ]
+        },
+        {
+            "comment": "내 신고 콘텐츠",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reports'}}",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": [
+                    "myReports"
+                ]
+            },
+            "children": [
+                {
+                    "partial": "partials/mypage/board/_my_reports.json"
                 }
             ]
         }

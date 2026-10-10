@@ -1,0 +1,105 @@
+<!-- 회원 알림함의 검색 조건 영역. 다른 목록 화면과 같은 흐름이다 — 고른 값은 지역 `filter` 에
+  쌓였다가 검색 버튼이나 Enter 가 주소 질의로 옮길 때 조회된다.
+  검색 대상은 넷이고 **넷 다 서버 규칙에 들어 있다**: 수신자(이름·이메일)·제목·본문·전체.
+  발송 이력 화면의 셀렉트는 규칙에 없어 무시되는 장식이었는데(부록 B D7), 여기서는 같은 실수를
+  반복하지 않는다. 제목·본문은 표준 notifications 테이블의 `data` JSON 안에 있어 서버가
+  JSON 추출로 찾는다 — 화면에서는 그 차이가 보이지 않아야 한다. -->
+<partial description="Member Notification List Filter Section">
+  <div data-ref="filter_section" class="admin-card">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchType" class="select-composite w-36" value="{{_local.filter.searchType || 'all'}}">
+          <options>
+            <option value="all">$t:admin.member_notification.filter.search_type_all</option>
+            <option value="recipient">$t:admin.member_notification.filter.search_type_recipient</option>
+            <option value="subject">$t:admin.member_notification.filter.search_type_subject</option>
+            <option value="body">$t:admin.member_notification.filter.search_type_body</option>
+          </options>
+          <on type="change">
+            <!-- 어디서 찾을지 고른다. 「전체」는 셋을 OR 로 묶는 것이라 가장 넓고 가장 느리다. -->
+            <set-state target="local" filter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <input name="search" type="text" placeholder="$t:admin.member_notification.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <!-- 수신자로 찾을 때는 이름과 이메일 둘 다 걸린다 — 운영자가 둘 중 무엇을 들고 있는지 모르기 때문이다. -->
+              <set-state target="local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <action-ref name="searchMemberNotifications"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="read_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.member_notification.filter.read_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <select name="readState" class="select-composite w-36" value="{{_local.filter.read || 'all'}}">
+            <options>
+              <option value="all">$t:admin.member_notification.filter.read_all</option>
+              <option value="unread">$t:admin.member_notification.filter.read_unread</option>
+              <option value="read">$t:admin.member_notification.filter.read_read</option>
+            </options>
+            <on type="change">
+              <!-- 「전체」는 조건을 거는 것이 아니라 빼는 것이다 — 질의에서 read 가 아예 사라진다.
+                   「안 읽음」은 "알림이 안 왔다" 는 문의를 볼 때 먼저 좁히는 갈래다(왔지만 안 읽었을 수 있다). -->
+              <set-state target="local" filter.read="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="created_range_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.member_notification.filter.created_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <input name="createdFrom" type="date" aria-label="$t:common.range_start|label={{$t('admin.member_notification.filter.created_label')}}" class="input w-40" value="{{_local.filter.createdFrom || ''}}">
+            <on type="change">
+              <!-- 수신일 기준 시작일. 서버가 Y-m-d 만 받으므로 날짜 입력 그대로 넘긴다. -->
+              <set-state target="local" filter.createdFrom="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-label-subtle">~</span>
+          <input name="createdTo" type="date" aria-label="$t:common.range_end|label={{$t('admin.member_notification.filter.created_label')}}" class="input w-40" value="{{_local.filter.createdTo || ''}}">
+            <on type="change">
+              <!-- 끝일. 시작일보다 앞서면 서버가 422 로 돌려보낸다 — 화면에서 막지 않고 메시지로 알린다. -->
+              <set-state target="local" filter.createdTo="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchMemberNotifications"/>
+        </on>
+        $t:admin.member_notification.filter.search_button
+      </button>
+      <!-- 검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다 -->
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <sequence>
+            <set-state target="local">
+              <field name="filter">
+                <field name="searchType" value="all"/>
+                <field name="search" value=""/>
+                <field name="read" value="all"/>
+                <field name="createdFrom" value=""/>
+                <field name="createdTo" value=""/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 회원 한정까지 포함해 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/member-notifications" :mergeQuery="false"/>
+          </sequence>
+        </on>
+        $t:admin.member_notification.filter.reset_button
+      </button>
+    </div>
+  </div>
+</partial>

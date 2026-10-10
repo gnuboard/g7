@@ -1,0 +1,186 @@
+<!-- 플러그인을 새 판본으로 올리기 전 묻는 창. 두 가지를 정하고 넘어간다.
+
+  ⑴ **코어 버전이 맞지 않으면** 위에 경고 띠가 뜨고 「알면서 진행」에 체크하기 전까지 버튼이 잠긴다.
+     맞을 때는 그 띠 자체가 안 보인다.
+  ⑵ **화면 정의를 어떻게 할지** — 새 것으로 덮을지, 지금 것을 그대로 둘지. 손댄 화면이 있으면
+     몇 개인지 먼저 알려 주고, 「그대로 두기」를 고르면 어느 화면이 남는지 목록으로 편다.
+  실패해도 창은 열린 채이고 사유가 창 안에 남는다. -->
+<partial description="플러그인 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_update_modal">
+  <modal data-type="composite" data-ref="plugin_update_modal" title="$t:admin.plugins.modals.update_title" size="medium">
+    <div data-if="{{_global.selectedPlugin?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
+      <div class="flex-start gap-2">
+        <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-warning-soft">$t:extensions.update_modal.compat_warning_title</p>
+          <p class="text-warning-soft mt-1">$t:extensions.update_modal.compat_warning_message|type=$t:extensions.types.plugin|required={{_global.selectedPlugin?.required_core_version ?? _global.selectedPlugin?.incompatible_required_version ?? ''}}|installed={{_global.selectedPlugin?.current_core_version ?? ''}}</p>
+          <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer mt-2">
+            <on type="click">
+              <open-modal target="core_update_guide_modal"/>
+            </on>
+            <icon name="external-link" size="xs"/>
+            <span>$t:extensions.update_modal.compat_guide_link</span>
+          </button>
+          <label class="flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none">
+            <input type="checkbox" checked="{{_global.pluginForceUpdate === true}}" class="w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400">
+              <on type="change">
+                <!-- 이 체크가 아래 갱신 버튼의 잠금을 푸는 유일한 열쇠다(코어 버전이 안 맞는 경우에 한해). 값은 그대로 요청 본문에도 실린다. -->
+                <set-state target="global" pluginForceUpdate="{{!_global.pluginForceUpdate}}"/>
+              </on>
+            </input>
+            <span>$t:extensions.update_modal.force_label</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-if="{{_global.pluginUpdateError}}" class="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+      <div class="flex-start gap-2">
+        <icon name="exclamation-circle" class="text-red-500 dark:text-red-400 mt-0.5 shrink-0"/>
+        <div class="text-error-soft break-all">{{_global.pluginUpdateError}}</div>
+      </div>
+    </div>
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_update_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.plugins.modals.update_confirm|name={{_global.selectedPlugin.name ?? ''}}</span></p>
+      <div class="kv-list gap-y-2 text-sm mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="kv-row">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.plugins.modals.field_version</span>
+          <span class="text-primary font-medium">$t:admin.plugins.modals.update_version_info|from={{_global.selectedPlugin.version ?? ''}}|to={{_global.selectedPlugin.latest_version ?? ''}}</span>
+        </div>
+        <div class="kv-row">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.plugins.modals.field_vendor</span>
+          <span class="text-gray-700 dark:text-gray-300">{{_global.selectedPlugin.vendor ?? ''}}</span>
+        </div>
+        <div class="kv-row">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.plugins.modals.field_update_source</span>
+          <span class="text-gray-700 dark:text-gray-300">{{_global.selectedPlugin.update_source === 'github' ? '$t:admin.plugins.modals.update_source_github' : (_global.selectedPlugin.update_source === 'pending' ? '$t:admin.plugins.modals.update_source_pending' : '$t:admin.plugins.modals.update_source_bundled')}}</span>
+        </div>
+      </div>
+      <div data-if="{{_global.updateChangelog &amp;&amp; _global.updateChangelog.length > 0}}" class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+        <div class="text-sm font-medium text-info-soft mb-2">$t:admin.plugins.modals.update_changelog_title</div>
+        <div class="max-h-48 overflow-y-auto">
+          <div data-each="entry, entryIdx in _global.updateChangelog" class="pb-3 mb-3 border-b border-blue-200 dark:border-blue-700 last:border-b-0 last:mb-0 last:pb-0">
+            <div class="flex-center gap-2 mb-1.5">
+              <span class="text-info-soft inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-blue-100 dark:bg-blue-800">v{{entry.version}}</span>
+              <span data-if="{{entry.date}}" class="text-hint">{{entry.date}}</span>
+            </div>
+            <div data-each="category, catIdx in entry.categories" class="row-stack">
+              <div>
+                <span class="text-secondary text-xs font-medium">{{category.name}}</span>
+                <div data-each="changeItem, itemIdx in category.items" class="ml-3 space-y-0.5">
+                  <div class="text-secondary text-xs">• {{changeItem}}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.selectedPlugin.github_changelog_url}}" class="mt-3">
+        <a href="{{_global.selectedPlugin.github_changelog_url}}" target="_blank" class="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <icon name="external-link" size="sm"/>
+          <span>$t:admin.plugins.modals.view_changelog</span>
+        </a>
+      </div>
+      <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.plugins.modals.layout_strategy_title</div>
+        <div data-if="{{_global.hasModifiedPluginLayouts}}" class="mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400">$t:admin.plugins.modals.modified_layouts_warning|count={{_global.modifiedPluginLayoutsCount ?? 0}}</div>
+        <div data-if="{{_global.modifiedPluginLayoutsCheckFailed}}" class="mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400" role="alert">$t:admin.plugins.modals.modified_layouts_check_failed</div>
+        <div data-if="{{!_global.hasModifiedPluginLayouts &amp;&amp; !_global.modifiedPluginLayoutsCheckFailed}}" class="mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400">$t:admin.plugins.modals.no_modified_layouts</div>
+        <div class="row-stack">
+          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <input type="radio" name="plugin_layout_strategy" value="overwrite" checked="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'overwrite'}}" class="radio mt-0.5">
+              <on type="change">
+                <!-- 기본값이 「덮어쓰기」다 — 값이 아직 없을 때도 이쪽이 골라진 것으로 보이고, 요청 본문에서도 같은 기본값을 쓴다. -->
+                <set-state target="global" pluginLayoutStrategy="overwrite"/>
+              </on>
+            </input>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.layout_strategy_overwrite</span>
+              <p class="text-tertiary">$t:admin.plugins.modals.layout_strategy_overwrite_desc</p>
+            </div>
+          </label>
+          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <input type="radio" name="plugin_layout_strategy" value="keep" checked="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep'}}" class="radio mt-0.5">
+              <on type="change">
+                <!-- 남기기 — 손댄 화면 목록이 아래에 펼쳐진다. 고친 부분은 두고 손대지 않은 조각·설정만 새 판본으로 바꾼다(겹치면 고친 쪽 유지). -->
+                <set-state target="global" pluginLayoutStrategy="keep"/>
+              </on>
+            </input>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.layout_strategy_keep</span>
+              <p class="text-tertiary">$t:admin.plugins.modals.layout_strategy_keep_desc</p>
+            </div>
+          </label>
+          <div data-if="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep' &amp;&amp; _global.modifiedPluginLayouts &amp;&amp; _global.modifiedPluginLayouts.length > 0}}" class="ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+            <div class="text-xs font-medium text-warning-soft mb-2">$t:admin.plugins.modals.modified_layouts_list_title|count={{_global.modifiedPluginLayouts?.length ?? 0}}</div>
+            <div class="space-y-1 max-h-40 overflow-y-auto">
+              <div data-each="modLayout in _global.modifiedPluginLayouts" class="flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded">
+                <icon name="file-alt" class="text-amber-500 dark:text-amber-400 shrink-0"/>
+                <span class="font-mono flex-1 text-gray-700 dark:text-gray-300">{{modLayout.name}}</span>
+                <span class="text-gray-400 dark:text-gray-500 shrink-0">{{modLayout.updated_at}}</span>
+              </div>
+            </div>
+            <div class="flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1">
+              <icon name="info-circle" size="xs"/>
+              <span>$t:admin.plugins.modals.modified_layouts_keep_notice</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다. -->
+      <div data-ref="plugin_rebuild_search_index" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:extensions.update_modal.rebuild_search_index_title</div>
+        <label class="flex items-start gap-2 cursor-pointer select-none">
+          <input type="checkbox" checked="{{_global.pluginRebuildSearchIndex === true}}" class="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400">
+            <on type="change">
+              <!-- 검색 인덱스 재생성 여부. 창을 다시 열 때 이월되지 않도록 시드와 제출 뒤 양쪽에서 해제하며, 모듈 창과 다른 전역 키를 쓰는 것은 한쪽 체크가 다른 쪽으로 옮지 않게 하기 위해서다 -->
+              <set-state target="global" pluginRebuildSearchIndex="{{!_global.pluginRebuildSearchIndex}}"/>
+            </on>
+          </input>
+          <div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">$t:extensions.update_modal.rebuild_search_index_label</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:extensions.update_modal.rebuild_search_index_desc</div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isPluginUpdating}}" type="button">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginUpdating || (_global.selectedPlugin?.is_compatible === false &amp;&amp; _global.pluginForceUpdate !== true)}}" type="button">
+        <on type="click">
+          <!-- 화면 정의 처리 방식과 강행 여부 둘을 실어 보낸다. 성공하면 고른 플러그인과 화면 정의 관련 값들을 처음으로 되돌린다 — 전역이라 다음에 다른 플러그인을 열 때 지난 선택이 따라붙는다. -->
+          <sequence>
+            <set-state target="global" :isPluginUpdating="true" :pluginUpdateError="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update" method="POST">
+              <success>
+                <set-state target="global" :isPluginUpdating="false"/>
+                <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
+                <toast type="success" message="{{response?.message ?? '$t:admin.plugins.update_success'}}"/>
+                <refetch-data-source dataSourceId="plugins"/>
+                <close-modal/>
+                <set-state target="global" :selectedPlugin="null" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
+              </success>
+              <fail>
+                <!-- 409 = 같은 플러그인의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고
+                     안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다. -->
+                <set-state if="{{error.status === 409}}" target="global" :isPluginUpdating="false"/>
+                <toast if="{{error.status === 409}}" type="info" message="{{error.message}}"/>
+                <set-state if="{{error.status !== 409}}" target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}"/>
+                <toast if="{{error.status !== 409}}" type="error" message="{{error.message}}"/>
+              </fail>
+              <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isPluginUpdating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : '$t:admin.plugins.actions.update'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

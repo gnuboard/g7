@@ -28,7 +28,7 @@ export interface ConfirmModalProps {
   /** 모달 열림 상태 */
   isOpen: boolean;
   /** 모달 닫기 핸들러 */
-  onClose: () => void;
+  onClose: (event?: Event | React.SyntheticEvent) => void;
   /** 모달 제목 (기본값: common.confirm) */
   title?: string;
   /** 확인 메시지 */
@@ -103,7 +103,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen && !isLoading) {
-        onClose();
+        // 닫기 처리기가 엔진 액션 처리기일 수 있어 원본 이벤트를 넘긴다(Modal 의 Esc 처리와 같은 이유).
+        onClose(event);
       }
     };
 

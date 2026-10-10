@@ -1,0 +1,111 @@
+<partial description="클레임 신청서 작성 - 신청 상품 선택/수량 + 교환 대상 (D29)" editor_label="$t:user.modal_label.mypage_claims.apply_items">
+  <!-- 교환 방식은 신청서 전체에 걸린 라디오가 아니라 상품마다 정하는 속성이다(D29). 그래서 이 표에는 '교환 방식' 카드가 없고, 행마다 [교환상품 변경] 버튼이 붙어 그 행의 index 를 모달에 넘긴다. index 를 넘기지 않으면 언제나 첫 상품만 바뀌고 오류 없이 조용히 잘못된 신청서가 저장된다. -->
+  <div data-ref="claim_apply_items" class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+    <!-- 섹션 헤더 — 제목 + 전체 선택 -->
+    <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-2">
+        <icon name="shopping-bag" class="text-base text-gray-700 dark:text-gray-300"/>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+          $t:claim.apply.items_title
+        </h3>
+      </div>
+      <!-- 전체선택은 수정 화면에 세우지 않는다 — 품목·수량은 승인 전에도 바꿀 수 없고(D13), 켜지는 컨트롤을 남기면 눌러도 아무 일이 없는 자리가 된다. -->
+      <label data-if="{{(_local.claimItems ?? []).length > 0 &amp;&amp; _local.claimEditMode !== true}}" class="flex items-center gap-1.5 cursor-pointer select-none">
+        <!-- 체크 표시는 사용자의 선택 상태에서 읽는다 — 서버가 정하는 것은 요약과 금액이지 체크가 아니다. -->
+        <input type="checkbox" checked="{{_local.claimSelectAll === true}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer">
+          <on type="change">
+            <action handler="sirsoft-ecommerce.toggleClaimSelectAll" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+          </on>
+        </input>
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.select_all</span>
+      </label>
+    </div>
+    <!-- 취소·환불 분기 혼재 안내 — 결제완료 상품은 즉시 취소되고 배송준비 이후 상품은 환불 신청으로 심사를 받는다. 두 분기를 한 신청서에 섞으면 서버가 신청 전체를 거절하므로(claim_refund_branch_mixed) 화면이 그 조합을 만들 수 없게 잠근다. 잠근 이유를 밝히지 않으면 구매자는 체크가 왜 먹지 않는지 알 수 없다. -->
+    <div data-if="{{_local.claimType === 'refund' &amp;&amp; ((_local.claimableSnapshot ?? claimable?.data)?.resolved_type === 'mixed')}}" class="flex items-start gap-2 mb-4 p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800">
+      <icon name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+      <p class="text-xs text-amber-700 dark:text-yellow-300 min-w-0">$t:claim.apply.refund_branch_mixed_notice</p>
+    </div>
+    <!-- 신청 가능한 상품이 없을 때 — 유형별로 열린 상품이 하나도 없으면 버튼을 눌러 들어와도 빈 화면이 되므로 사유를 밝힌다. -->
+    <div data-if="{{(_local.claimItems ?? []).length === 0}}" class="py-10 text-center">
+      <icon name="circle-info" class="text-2xl text-gray-300 dark:text-gray-600"/>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.no_claimable_items</p>
+    </div>
+    <!-- 상품 목록 — 구분선은 반복 노드의 **부모**가 긋는다. 반복 노드는 자기 자신이 복제되므로 그 노드의 divide-y 는 상품 사이에 걸리지 않는다. -->
+    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+    <div data-each="claimItem, claimIdx in {{_local.claimItems ?? []}}">
+      <div class="py-4">
+        <div class="flex gap-4">
+          <responsive on="portable" class="flex gap-3"/>
+          <div class="flex items-start pt-5 flex-shrink-0">
+            <!-- 다른 분기의 상품은 지금 고를 수 없다 — 고르면 서버가 신청 전체를 거절하므로, 사유까지 다 채운 뒤 거절받지 않게 여기서 잠근다. 이미 고른 상품은 언제나 해제할 수 있어야 하므로(잠그면 잘못 고른 조합에서 빠져나올 수 없다) 선택 상태는 잠금 판정에서 제외한다. 핸들러도 같은 규칙을 갖는다 — 잠금은 표시이고 판정은 핸들러가 한다. -->
+            <input type="checkbox" id="claim_item_check_{{claimItem.order_option_id}}" checked="{{claimItem.selected === true}}" disabled="{{_local.claimEditMode === true || (_local.claimType === 'refund' &amp;&amp; claimItem.selected !== true &amp;&amp; !!_local.claimResolvedBranch &amp;&amp; _local.claimResolvedBranch !== claimItem.refund_branch)}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.toggleClaimItem" index="{{claimIdx}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+              </on>
+            </input>
+          </div>
+          <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+            <responsive on="portable" class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"/>
+            <img data-if="{{claimItem.thumbnail_url}}" src="{{claimItem.thumbnail_url ?? ''}}" alt="{{claimItem.product_name ?? ''}}" class="w-full h-full object-cover"/>
+            <div data-if="{{!claimItem.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+              <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <!-- 상품명이 그 줄 체크박스의 라벨이다(id/for) — 이름을 눌러도 고르고 풀 수 있고, 보조기기는 체크박스를 상품명으로 읽는다. -->
+            <label for="claim_item_check_{{claimItem.order_option_id}}" class="block font-medium text-gray-900 dark:text-white truncate cursor-pointer">{{claimItem.product_name ?? ''}}</label>
+            <p data-if="{{(claimItem.product_option_name ?? '') !== ''}}" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{claimItem.product_option_name ?? ''}}</p>
+            <!-- 이 상품이 어느 분기인지 — 배송 전이면 즉시 취소, 배송준비 이후면 환불 신청이다. 두 분기가 섞인 주문에서 무엇을 나눠 신청해야 하는지 이 배지가 알려 준다. 분기는 서버가 상품 상태로 판정해 내려준 값(refund_branch)이며 화면이 상태 코드로 재현하지 않는다 — 운영자가 신청 가능 상태 설정을 바꾸면 판정이 갈린다. -->
+            <span data-if="{{_local.claimType === 'refund' &amp;&amp; !!claimItem.refund_branch}}" class="{{(claimItem.refund_branch === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}}">{{(claimItem.refund_branch === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.refund_branch_cancel_badge') : $t('claim.apply.refund_branch_refund_badge')}}</span>
+            <!-- 단가 표기는 서버가 준 문자열을 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다. 보조통화는 형제 금액 줄과 같은 규약으로 병기한다(§5-4). -->
+            <p class="text-sm text-gray-900 dark:text-white mt-1">{{claimItem.unit_price_formatted ?? ''}}</p>
+            <div data-each="unitPriceCurrency in {{claimItem.mc_unit_price ?? []}}" class="flex flex-wrap gap-x-2 mt-0.5">
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{unitPriceCurrency.formatted ?? ''}}</span>
+            </div>
+            <!-- 진행 중인 클레임이 잡아 둔 수량 — 왜 잔여가 줄었는지 밝힌다. -->
+            <p data-if="{{(claimItem.locked_quantity ?? 0) > 0}}" class="text-xs text-amber-600 dark:text-amber-400 mt-1">$t:claim.apply.locked_quantity|count={{claimItem.locked_quantity ?? 0}}</p>
+          </div>
+          <!-- 신청 수량 — 상한은 잔여 수량(available_quantity)이다. -->
+          <div class="flex flex-col items-end gap-1 flex-shrink-0">
+            <span class="text-xs text-gray-500 dark:text-gray-400">$t:claim.apply.quantity</span>
+            <!-- 수량을 바꾸면 잔여 수량 안으로 잘라 넣고, 잘린 값을 칸에도 되돌려 써서 화면이 말하는 수량과 전송 수량이 같게 한다. 요약 금액은 입력을 잠시 모았다가 서버 미리보기로 다시 계산한다. -->
+            <input type="number" data-testid="claim-qty-{{claimIdx}}" :min="1" max="{{claimItem.available_quantity ?? 1}}" value="{{claimItem.quantity ?? 1}}" disabled="{{_local.claimEditMode === true || claimItem.selected !== true}}" class="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.updateClaimQuantity" index="{{claimIdx}}" value="{{$event.target.value}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+              </on>
+            </input>
+            <span class="text-xs text-gray-400 dark:text-gray-500">$t:claim.apply.available_quantity|count={{claimItem.available_quantity ?? 0}}</span>
+            <!-- 제출 거절(422)의 항목별 필드 오류를 그 행 옆에 남긴다(§6-3 P13 — '필드 오류는 그 필드 옆에'). 서버 키(`items.{순번}.{필드}`)의 순번은 제출 페이로드 순번(선택된 행만 실린다)이라 화면의 행 번호와 다르므로, 그 대응은 핸들러가 풀어 이 줄에 붙여 준다. 자리가 없으면 오류 본문이 어디에도 그려지지 않고 요약 카드에는 message 만 남는다(2026-08-31 3차 검증). -->
+            <p data-if="{{(claimItem.validation_error ?? '') !== ''}}" class="text-xs text-red-600 dark:text-red-400 mt-1 text-right">{{claimItem.validation_error ?? ''}}</p>
+          </div>
+        </div>
+        <!-- 교환 대상 — 교환에서만, 그리고 선택된 행에서만 노출한다. 이 블록이 D29 의 '교환 방식은 상품 속성' 을 화면에 드러내는 자리다. -->
+        <div data-if="{{_local.claimType === 'exchange' &amp;&amp; claimItem.selected === true}}" class="mt-3 ml-8 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <responsive on="portable" class="mt-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"/>
+          <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:claim.apply.exchange_target_title</span>
+              <span class="block text-sm font-medium text-gray-900 dark:text-white truncate">{{claimItem.exchange_mode === 'change' ? (claimItem.new_option_label ?? '') : $t('claim.apply.exchange_same_option')}}</span>
+              <!-- 이 교환에 얹은 추가옵션 — 고른 직후 여기 서지 않으면 구매자는 자기가 무엇을 골랐는지 확인할 수 없다. 추가금은 요약의 옵션 차액에 이미 합산돼 있으므로 여기서는 이름만 나열한다(두 자리에 같은 금액을 두면 합계로 오독된다). -->
+              <span data-if="{{(claimItem.new_additional_labels ?? []).length > 0}}" class="block text-xs mt-0.5 text-gray-500 dark:text-gray-400 truncate">+ {{(claimItem.new_additional_labels ?? []).join(', ')}}</span>
+              <!-- 옵션 차액은 서버 미리보기가 준 값을 그 줄에 되붙인 것이다 — 화면이 스스로 곱셈하면 요약과 근거가 갈린다. -->
+              <span data-if="{{(claimItem.price_difference ?? 0) !== 0}}" class="{{(claimItem.price_difference ?? 0) > 0 ? 'block text-xs mt-0.5 text-blue-600 dark:text-blue-400' : 'block text-xs mt-0.5 text-red-600 dark:text-red-400'}}">{{((claimItem.price_difference ?? 0) > 0 ? '+' : '-') + (claimItem.price_difference_formatted ?? '')}}</span>
+              <span data-if="{{claimItem.exchange_mode !== 'change' &amp;&amp; (claimItem.price_difference ?? 0) === 0}}" class="block text-xs mt-0.5 text-gray-500 dark:text-gray-400">$t:claim.apply.no_price_difference</span>
+            </div>
+            <!-- 교환상품 변경은 수정 화면에 세우지 않는다 — 승인 전에 바꿀 수 있는 것은 사유·상세 사유·첨부와 재발송지뿐이고(D13), 교환 대상을 바꾸는 것은 신청서를 다시 내는 일이다. -->
+            <button data-if="{{_local.claimEditMode !== true}}" type="button" class="flex-shrink-0 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.changeProductLoading === true}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.openClaimChangeProduct" index="{{claimIdx}}"/>
+              </on>
+              <icon data-if="{{_local.changeProductLoading === true &amp;&amp; _local.changeProductTarget?.index === claimIdx}}" name="spinner" class="text-sm animate-spin mr-1"/>
+              <span>$t:claim.apply.change_product</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</partial>

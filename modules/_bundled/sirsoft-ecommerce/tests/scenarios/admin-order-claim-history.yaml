@@ -1,0 +1,130 @@
+feature: 관리자 주문상세 클레임 내역 섹션 (#599 S9c — D20)
+
+description: |
+  주문상세에 '클레임 내역' 탭과 카드 섹션을 세우고, 결제 정보에 클레임 추가결제 합계 행을
+  더한다. 정적 목업 3탭(`_tab_claim_{refund,return,exchange}`)은 이 형태가 흡수하므로 파일과
+  그 어휘를 함께 지운다. 이 화면에서 조용히 깨지는 지점은 여섯이다.
+
+  ① **조회 전용이 무너지면** (D20) 같은 값을 바꾸는 지점이 두 곳이 된다. 상태 전이·송장·금액
+     수정·환불 실행은 전부 클레임 상세(S9a·S9b)가 소유하고, 여기에 사본을 두면 상세가 규칙을
+     바꿔도 이 섹션은 따라오지 않는다. 오류는 나지 않는다 — 두 화면의 결과만 갈린다.
+
+  ② **1열 병합이 상품 수와 어긋나면** 표가 오류 없이 어긋난 채 그려진다. 서버가 신청서→상품
+     배열 그룹 구조로 내려주므로 바깥 반복은 신청서, 안쪽은 상품이며 병합 셀은 첫 행에만
+     렌더하고 `rowSpan` 은 그 신청서의 상품 수다. `rowSpan` 이 문자열 표현식인 채로 도달하면
+     브라우저가 값을 버리고 병합만 조용히 사라진다.
+
+  ③ **신청서 단위 금액을 상품 행에 안분하면** 상품 수만큼 배송비가 중복 표기된다 (S6c 판정
+     ②). 배송비·총 청구액은 신청서 축이라 병합 셀(모바일은 카드 헤더)이 그 자리다. 반대로
+     금액의 **방향**은 `amount_type` 이 단독으로 나르므로(S6c 2차 A4) 화면이 유형으로 분기해
+     부호를 다시 붙이면 저가 교환에서 이중 부호(`-2,000원 환불`)가 된다.
+
+  ④ **상세 경로를 화면이 조립하면** 경로 규칙의 두 번째 출처가 되고, 규칙이 바뀌어도 오류
+     없이 404 만 나는 URL 이 만들어진다. 신청번호 자체가 새 창 링크이고 네 유형 모두 상세가
+     있다(취소도 조회 전용 상세) — 서버가 경로를 못 만든 행만 글자로 남는다. 상품 썸네일은
+     이미지가 없어도 같은 크기의 자리표시로 남는다.
+
+  ⑤ **이 데이터소스의 게이트(`claims.read`)는 화면 라우트 권한(`orders.read`)보다 좁다.**
+     클레임 권한이 없는 주문 담당자에게는 403 이 오는데, 전파를 끊지 않으면 주문 화면 전체가
+     오류 페이지가 되고, 뭉뚱그리면 클레임이 실재하는데 '접수된 건 없음' 으로 읽힌다. 두
+     사실("못 불러왔다" / "접수된 건이 없다")은 구분해 말한다.
+
+  ⑥ **서브탭이 재조회하면** 주문 스코프에 불필요한 왕복이 생기고 뱃지와 목록이 갈릴 창이
+     열린다 (D20 — "별도 데이터소스를 만들지 않는다"). 서버가 전 유형을 한 응답에 신청 역순
+     평면 배열로 싣고 뱃지는 그 응답의 `counts` 를 그대로 읽는다 — 화면이 `claims` 배열을
+     다시 세면 상한이 걸린 응답에서 뱃지와 목록 건수가 달라진다.
+
+# axis 의미:
+#   claim_type    — 유형 서브탭 4종. 취소는 조회 전용 상세가 새로 열리는 유형이라(종전에는
+#                   링크가 빠졌다) 다른 셋과 같은 축에 둔다.
+#   claims_present — 그 유형에 접수된 건이 있는지. 빈 유형은 안내를 그리고 표를 그리지 않는다.
+#
+# 상품 수(1건/다건)·화면 너비(PC/모바일)·권한 조합은 유형과 직교하지 않는 파생 상태라 axis 로
+# 세우지 않고 이름 붙은 effect 가 덮는다 — `order_claim_history_merged_cell_spans_item_count`
+# (2상품 신청서의 rowSpan=2) · `order_claim_history_mobile_switches_to_cards` (390px) ·
+# `order_claim_history_datasource_failure_does_not_break_screen` (403). 유형마다 상품 수를
+# 다시 곱하면 조합만 늘고 검증되는 사실은 같다.
+axes:
+  claim_type: [exchange, return, cancel, refund]
+  claims_present: [yes, no]
+
+effects:
+  # 탭·섹션 배선 (D17-①)
+  - order_claim_history_tab_and_section_are_paired
+  - order_claim_history_partial_wired_between_payment_and_activity_log
+  - order_claim_history_tab_badge_counts_requests
+  # 조회 전용 (①)
+  - order_claim_history_is_read_only
+  - order_claim_history_has_no_write_actions
+  - order_claim_history_does_not_copy_detail_controls
+  # 신청서 단위 병합 (②·③)
+  - order_claim_history_groups_by_request
+  - order_claim_history_merged_cell_spans_item_count
+  - order_claim_history_request_level_amounts_stay_in_merged_cell
+  - order_claim_history_amount_direction_from_amount_type
+  # 신청번호 링크 · 썸네일 (④)
+  - order_claim_history_number_is_the_link
+  - order_claim_history_detail_link_opens_new_window
+  - order_claim_history_detail_link_uses_server_url
+  - order_claim_history_number_links_for_every_type
+  - order_claim_history_thumbnail_placeholder_when_missing
+  # 데이터소스 (⑤·⑥)
+  - order_claim_history_single_datasource
+  - order_claim_history_datasource_failure_does_not_break_screen
+  - order_claim_history_subtab_switch_does_not_refetch
+  - order_claim_history_badges_read_server_counts
+  - order_claim_history_rows_filtered_by_claim_type
+  # 기본 서브탭 — 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불), 넷 다 비었으면 교환.
+  # 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 빈 안내가 먼저 보였다(설계 결정 2026-09-09).
+  - order_claim_history_default_subtab_is_first_type_with_claims
+  - order_claim_history_empty_type_shows_notice
+  - order_claim_history_unavailable_distinguished_from_empty
+  # 표기
+  - order_claim_history_amounts_come_from_server
+  - order_claim_history_i18n_keys_exist
+  # 모바일 (D20)
+  - order_claim_history_mobile_switches_to_cards
+  - order_claim_history_mobile_card_header_matches_merged_cell
+  # 흡수된 정적 목업
+  - order_claim_history_orphan_mock_tabs_removed
+  - order_claim_history_orphan_mock_vocabulary_removed
+  # 결제 정보의 클레임 추가결제 합계 행
+  - order_payment_info_claim_additional_paid_row_present
+  - order_payment_info_claim_additional_paid_row_hidden_when_zero
+  # 서버 계약 (D20 그룹 응답 — S6c 산출, 이 화면이 그것을 그대로 그린다)
+  - order_claims_response_groups_items_under_each_request
+  - order_claims_response_detail_url_for_every_type
+  - order_claims_response_amount_carries_magnitude_only
+  # 브라우저 실측 (E2E)
+  - order_detail_claim_history_tab_reveals_section
+  - order_detail_claim_history_subtabs_switch_without_refetch
+  - order_detail_claim_history_detail_link_targets_blank
+  - order_detail_claim_history_cancel_number_opens_cancel_detail
+  - order_detail_claim_history_thumbnail_placeholder_visible
+  - order_detail_claim_history_default_subtab_has_claims
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderClaimHistory.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderClaimHistoryRender.test.tsx
+  # D20 그룹 응답의 서버 계약은 이 파일이 고정한다 — 화면이 그리는 형태의 유일한 근거인데
+  # 목록에 없으면 삭제·약화돼도 커버리지가 줄지 않는다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderClaimHistoryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-order-claim-history.spec.ts
+
+notes: |
+  **마커와 이 목록은 양방향으로 맞춘다.** 정적 검사는 선언된 effect 에 테스트가 붙었는지만
+  본다 — 테스트가 건 핀이 여기에 없으면 커버리지가 실제보다 작게 보이는데도 초록이다.
+
+  **`claims_present: no` 는 유형별로 따로 성립한다.** 응답은 전 유형을 한 배열에 싣고 화면이
+  거르므로, 다른 유형에 건이 있어도 지금 서브탭이 비어 있을 수 있다. 그 상태의 안내는 "접수된
+  건이 없습니다" 이고, 응답 자체를 못 받은 상태의 안내와 문구가 달라야 한다.
+
+  **모바일 분기는 레이아웃에 있다.** S9a 의 탭→Select 전환은 컴포넌트가 자체적으로 하므로
+  실측이 유일한 확인 수단이었지만, 이 섹션의 표→카드는 `responsive.mobile.children` 이라
+  렌더 테스트가 붙들 수 있다. 단 `createLayoutTest` 는 `ResponsiveProvider` 없이 렌더해
+  뷰포트가 1024px 에 고정되므로, 렌더 테스트는 `useResponsive` 훅만 갈아 끼우고 breakpoint
+  병합 경로 자체는 그대로 태운다.
+
+  **브라우저 실측의 선행 조건**은 S9a·S9b 와 같다 — `playwright:seed-ecommerce` 의 클레임
+  축이 아직 stub 이라(계획서 이월) spec 은 클레임이 달린 주문을 API 로 발견해 진행하고, 한
+  건도 없으면 그 사실을 드러내며 건너뛴다.

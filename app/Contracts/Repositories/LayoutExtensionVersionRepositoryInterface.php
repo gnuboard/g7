@@ -15,14 +15,16 @@ interface LayoutExtensionVersionRepositoryInterface
      * @param  array  $oldContent  이전 콘텐츠
      * @param  array|null  $newContent  새 콘텐츠 (null이면 현재 확장 content 사용)
      * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
+     * @param  array<string, mixed>  $summaryExtra  계산된 변경 요약에 덧붙일 키
      * @return TemplateLayoutExtensionVersion 생성된 버전 모델
      */
-    public function saveVersion(int $extensionId, array $oldContent, ?array $newContent = null, ?int $createdBy = null): TemplateLayoutExtensionVersion;
+    public function saveVersion(int $extensionId, array $oldContent, ?array $newContent = null, ?int $createdBy = null, array $summaryExtra = []): TemplateLayoutExtensionVersion;
 
     /**
      * 특정 확장의 모든 버전 조회 (최신순)
      *
      * @param  int  $extensionId  레이아웃 확장 ID
+     * @param  int  $limit  조회할 최대 버전 수
      * @return Collection 버전 컬렉션
      */
     public function getVersions(int $extensionId, int $limit = 100): Collection;

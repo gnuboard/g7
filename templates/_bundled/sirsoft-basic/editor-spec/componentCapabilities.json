@@ -2,7 +2,10 @@
   "comment": "sirsoft-basic 45개 draggable 전수 capability. propControls(속성 탭, controls.json propValue 참조) + styleControls(스타일 탭) + events(동작) + nodeEditor(구조 에디터 슬롯, 단계 2/3 핸들러). no-editable 0. 부록2 1:1.",
   "Div": {
     "label": "$t:editor.component.div",
-    "coreProps": ["id", "dataKey"],
+    "coreProps": [
+      "id",
+      "dataKey"
+    ],
     "styleControls": [
       "paddingAll",
       "marginAll",
@@ -248,7 +251,10 @@
   },
   "Container": {
     "label": "$t:editor.component.container",
-    "coreProps": ["id", "dataKey"],
+    "coreProps": [
+      "id",
+      "dataKey"
+    ],
     "styleControls": [
       "paddingAll",
       "marginAll",
@@ -604,7 +610,8 @@
     ],
     "events": [
       "onChange"
-    ]
+    ],
+    "rawValueEvents": ["onChange"]
   },
   "ExpandableContent": {
     "label": "$t:editor.component.expandable_content",
@@ -691,6 +698,7 @@
     "events": [
       "onChange"
     ],
+    "rawValueEvents": ["onChange"],
     "dataProps": [
       {
         "propKey": "value",
@@ -746,6 +754,42 @@
     ],
     "events": [
       "onFilesChange"
+    ]
+  },
+  "VisitorCounter": {
+    "label": "$t:editor.component.visitor_counter",
+    "propControls": [
+      "vcToday",
+      "vcYesterday",
+      "vcMax",
+      "vcTotal",
+      "vcLayout"
+    ],
+    "dataProps": [
+      {
+        "propKey": "today",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.visitor_today"
+      },
+      {
+        "propKey": "yesterday",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.visitor_yesterday"
+      },
+      {
+        "propKey": "max",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.visitor_max"
+      },
+      {
+        "propKey": "total",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.visitor_total"
+      }
+    ],
+    "styleControls": [
+      "marginAll",
+      "width"
     ]
   },
   "AvatarUploader": {
@@ -804,43 +848,31 @@
             "label": "$t:editor.array_field.provider",
             "primary": true,
             "options": [
-              { "value": "google", "label": "Google" },
-              { "value": "naver", "label": "$t:editor.provider.naver" },
-              { "value": "kakao", "label": "$t:editor.provider.kakao" },
-              { "value": "facebook", "label": "Facebook" },
-              { "value": "apple", "label": "Apple" }
+              {
+                "value": "google",
+                "label": "Google"
+              },
+              {
+                "value": "naver",
+                "label": "$t:editor.provider.naver"
+              },
+              {
+                "value": "kakao",
+                "label": "$t:editor.provider.kakao"
+              },
+              {
+                "value": "facebook",
+                "label": "Facebook"
+              },
+              {
+                "value": "apple",
+                "label": "Apple"
+              }
             ]
           }
         ]
       }
     }
-  },
-  "PostReactions": {
-    "label": "$t:editor.component.post_reactions",
-    "propControls": [
-      "prUserReaction",
-      "prPostId",
-      "prSize"
-    ],
-    "styleControls": [
-      "marginAll",
-      "width"
-    ],
-    "events": [
-      "onReact"
-    ],
-    "dataProps": [
-      {
-        "propKey": "reactions",
-        "shape": "array",
-        "label": "$t:editor.data_prop.reactions",
-        "itemFields": [
-          "type",
-          "count"
-        ],
-        "required": true
-      }
-    ]
   },
   "Input": {
     "label": "$t:editor.component.input",
@@ -975,7 +1007,10 @@
   },
   "Form": {
     "label": "$t:editor.component.form",
-    "coreProps": ["id", "dataKey"],
+    "coreProps": [
+      "id",
+      "dataKey"
+    ],
     "styleControls": [
       "paddingAll",
       "marginAll",
@@ -1404,7 +1439,9 @@
   },
   "Header": {
     "label": "$t:editor.component.header",
-    "coreProps": ["id"],
+    "coreProps": [
+      "id"
+    ],
     "propControls": [
       "hdrSiteName",
       "hdrLogo",
@@ -1432,19 +1469,34 @@
         "propKey": "user",
         "shape": "object",
         "label": "$t:editor.data_prop.header_user",
-        "itemFields": ["uuid", "name", "nickname", "avatar_url"]
+        "itemFields": [
+          "uuid",
+          "name",
+          "nickname",
+          "avatar_url"
+        ]
       },
       {
         "propKey": "boards",
         "shape": "array",
         "label": "$t:editor.data_prop.header_boards",
-        "itemFields": ["id", "table_id", "subject", "name"]
+        "itemFields": [
+          "id",
+          "table_id",
+          "subject",
+          "name"
+        ]
       },
       {
         "propKey": "notifications",
         "shape": "array",
         "label": "$t:editor.data_prop.header_notifications",
-        "itemFields": ["id", "title", "message", "read_at"]
+        "itemFields": [
+          "id",
+          "title",
+          "message",
+          "read_at"
+        ]
       },
       {
         "propKey": "availableLocales",
@@ -1465,7 +1517,9 @@
   },
   "Footer": {
     "label": "$t:editor.component.footer",
-    "coreProps": ["id"],
+    "coreProps": [
+      "id"
+    ],
     "propControls": [
       "ftSiteName",
       "ftSiteDescription",
@@ -1487,13 +1541,18 @@
         "propKey": "linkGroups",
         "shape": "array",
         "label": "$t:editor.data_prop.footer_link_groups",
-        "itemFields": ["title", "links"]
+        "itemFields": [
+          "title",
+          "links"
+        ]
       }
     ]
   },
   "ThemeToggle": {
     "label": "$t:editor.component.theme_toggle",
-    "coreProps": ["id"],
+    "coreProps": [
+      "id"
+    ],
     "propControls": [
       "ttAutoText",
       "ttLightText",
@@ -1505,7 +1564,9 @@
   },
   "NotificationCenter": {
     "label": "$t:editor.component.notification_center",
-    "coreProps": ["id"],
+    "coreProps": [
+      "id"
+    ],
     "propControls": [
       "ncTitleText",
       "ncEmptyText",
@@ -1523,7 +1584,13 @@
         "propKey": "notifications",
         "shape": "array",
         "label": "$t:editor.data_prop.notification_items",
-        "itemFields": ["id", "title", "message", "read", "created_at"]
+        "itemFields": [
+          "id",
+          "title",
+          "message",
+          "read",
+          "created_at"
+        ]
       },
       {
         "propKey": "unreadCount",

@@ -51,6 +51,17 @@ class OrderController extends PublicBaseController
 {
     use HandlesOrderCreation;
 
+    /**
+     * 주문 생성 경로가 함께 쓰는 협력자를 주입받습니다.
+     *
+     * @param  OrderProcessingService  $orderProcessingService  주문 생성·결제완료 처리 서비스
+     * @param  TempOrderService  $tempOrderService  임시 주문(주문서) 서비스
+     * @param  StockService  $stockService  재고 서비스
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 주문 조회 인증 서비스
+     * @param  OrderService  $orderService  주문 조회·수정 서비스
+     * @param  OrderCancellationService  $cancellationService  주문 취소 서비스
+     * @param  UserAddressService  $userAddressService  회원 주소록 서비스 (배송지 자동 저장·갱신)
+     */
     public function __construct(
         protected OrderProcessingService $orderProcessingService,
         protected TempOrderService $tempOrderService,
@@ -89,12 +100,14 @@ class OrderController extends PublicBaseController
                 }
 
                 // 비회원: 민감 필드 노출을 피하기 위해 GuestOrderResource 로 응답
-                return $this->buildOrderResponseData(
+                $responseData = $this->buildOrderResponseData(
                     $order,
                     $requiresPg,
                     $pgProvider,
                     new GuestOrderResource($order)
                 );
+
+                return array_merge($responseData, $this->issueGuestOrderToken($order));
             },
             afterCreate: function (Order $order, bool $requiresPg) use ($request, $userId): void {
                 // 회원만 배송지 자동 저장 후처리 수행 (비회원은 user_addresses 매칭 대상 아님)
@@ -107,19 +120,58 @@ class OrderController extends PublicBaseController
     }
 
     /**
+     * 방금 생성한 비회원 주문의 조회 토큰을 응답 필드로 발급합니다.
+     *
+     * 결제창 닫힘 보고(PG 플러그인 close-report)는 이 토큰으로 주문 소유자를 확인한다.
+     * 주문자 연락처는 제3자도 알 수 있어 소유 증명이 되지 못하므로, 주문을 실제로 만든
+     * 브라우저만 받는 이 응답에서 발급한다. 발급 실패가 주문 생성 실패로 번지지 않도록
+     * 예외는 기록만 하고 빈 배열을 돌려준다 — 그 경우 닫힘 보고는 거부되고 만료 정리 잡이 주문을 정리한다.
+     *
+     * @param  Order  $order  방금 생성된 비회원 주문
+     * @return array{guest_order_token?: string, guest_order_token_expires_at?: string} 응답에 병합할 토큰 필드
+     */
+    protected function issueGuestOrderToken(Order $order): array
+    {
+        try {
+            $issued = $this->guestOrderAuthService->issueForOrder($order);
+
+            return [
+                'guest_order_token' => $issued['token'],
+                'guest_order_token_expires_at' => $issued['expires_at'],
+            ];
+        } catch (Exception $e) {
+            Log::warning('Guest order token issue failed on order creation', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
      * 회원 주문 생성 시 배송지 자동 저장 (회원 전용)
      *
      * non-PG 결제는 즉시 저장하고, PG 결제는 order_meta 에 플래그를 남겨
      * completePayment() 시점에 저장하도록 위임합니다.
      *
+     * 갈래가 둘이다 — 주문서에서 저장된 배송지를 고쳐 보냈으면(`save_shipping_address_id`)
+     * 그 행을 «갱신» 하고, 직접 입력한 주소면 새로 «추가» 한다. 갱신을 두지 않으면 주문서에서
+     * 고친 주소가 주소록에 남지 않아 다음 주문서도 옛 주소로 열리고, 같은 손질을 매번 반복하게
+     * 된다(2026-09-21 요구사항). 소유자가 아닌 행 ID 가 오면 서비스가 null 을 돌려 아무 일도
+     * 일어나지 않는다 — 남의 주소록은 이 경로로 닿지 않는다.
+     *
      * @param  int  $userId  회원 ID (비회원은 호출 측에서 가드)
      * @param  CreateOrderRequest  $request  검증된 요청 데이터
      * @param  Order  $order  생성된 주문
      * @param  bool  $requiresPg  PG 결제 필요 여부
+     * @return void 반환값 없음
      */
     protected function maybeSaveShippingAddress(int $userId, CreateOrderRequest $request, Order $order, bool $requiresPg): void
     {
-        if (! $request->boolean('save_shipping_address')) {
+        $updateAddressId = (int) ($request->input('save_shipping_address_id') ?? 0);
+
+        if (! $request->boolean('save_shipping_address') && $updateAddressId <= 0) {
             return;
         }
 
@@ -128,6 +180,7 @@ class OrderController extends PublicBaseController
             $order->update([
                 'order_meta' => array_merge($order->order_meta ?? [], [
                     'save_shipping_address' => true,
+                    'save_shipping_address_id' => $updateAddressId > 0 ? $updateAddressId : null,
                     'shipping_info_for_save' => $request->getShippingInfo(),
                 ]),
             ]);
@@ -137,13 +190,10 @@ class OrderController extends PublicBaseController
 
         // 비PG 결제: 즉시 배송지 저장
         try {
-            $name = $this->userAddressService->generateUniqueName(
+            $this->userAddressService->storeShippingInfoForUser(
                 $userId,
-                __('sirsoft-ecommerce::messages.address.auto_saved_label')
-            );
-            $shippingInfo = $request->getShippingInfo();
-            $this->userAddressService->createAddress(
-                $this->userAddressService->mapShippingInfoToAddressData($userId, $name, $shippingInfo)
+                $request->getShippingInfo(),
+                $updateAddressId > 0 ? $updateAddressId : null
             );
         } catch (Exception $e) {
             Log::warning('Auto save shipping address failed on order creation', [
@@ -296,6 +346,10 @@ class OrderController extends PublicBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: null,
                     refundPriority: $request->getRefundPriority(),
+                    // 구매자(비회원) 본인 요청 — 고객 축으로 접수한다. 운영자 축으로 접수되면
+                    // 화면에 노출되지 않는 판매자 귀책 사유가 이 공개 창구로 통과해 배송비
+                    // 부담이 달라진다.
+                    buyerRequest: true,
                 );
             } else {
                 $this->cancellationService->cancelOrder(
@@ -304,6 +358,7 @@ class OrderController extends PublicBaseController
                     reasonDetail: $request->getReasonDetail(),
                     cancelledBy: null,
                     refundPriority: $request->getRefundPriority(),
+                    buyerRequest: true,
                 );
             }
 
@@ -314,11 +369,16 @@ class OrderController extends PublicBaseController
                 new GuestOrderResource($updatedOrder)
             );
         } catch (OrderCancellationException $e) {
-            // 취소 도메인 규칙 위반 — 사용자에게 안내 가능한 상황이므로 422
-            return ResponseHelper::error(
-                'sirsoft-ecommerce::exceptions.order_cancel_failed',
-                422
-            );
+            // 취소 도메인 규칙 위반 — 사용자에게 안내 가능한 상황이므로 422.
+            // 사유 키가 실려 오면(클레임 수량 잠금·상태 자격 등) 그 사유를 안내한다 — 환불 예상
+            // (`estimateRefund`)과 같은 규칙이다. 키가 없으면(PG 거절 등) 원문을 싣지 않고 일반 실패
+            // 문구만 낸다 — 이 면은 비회원 화면이라 PG 원문(가맹점 설정·내부 코드)을 내보내지 않는다.
+            // PG 원문을 품는 키(`pg_refund_failed`)는 공개 면에 내보내지 않는다(`publicMessageKey()`).
+            $messageKey = $e->publicMessageKey();
+
+            return $messageKey === null
+                ? ResponseHelper::error('sirsoft-ecommerce::exceptions.order_cancel_failed', 422)
+                : ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             Log::error('비회원 주문 취소 실패', [
                 'order_number' => $request->getOrder()->order_number,
@@ -351,6 +411,15 @@ class OrderController extends PublicBaseController
                 'sirsoft-ecommerce::messages.order.estimate_refund_success',
                 $result->toPreviewArray()
             );
+        } catch (OrderCancellationException $e) {
+            // 클레임 수량 잠금 등 도메인 거절 — 취소 실행과 같은 422 로 미리보기/실행 비대칭을 없앤다.
+            // 사유 키가 실려 오면 그대로 안내한다(관리자 면과 같은 근거) — 없으면 일반 실패 키다.
+            // PG 원문을 품는 키(`pg_refund_failed`)는 공개 면에 내보내지 않는다(`publicMessageKey()`).
+            $messageKey = $e->publicMessageKey();
+
+            return $messageKey === null
+                ? ResponseHelper::error('sirsoft-ecommerce::exceptions.order_cancel_failed', 422)
+                : ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             Log::error('비회원 환불 예상금액 계산 실패', [
                 'order_number' => $request->getOrder()->order_number,

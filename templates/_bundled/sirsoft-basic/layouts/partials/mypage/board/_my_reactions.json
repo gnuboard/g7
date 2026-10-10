@@ -1,0 +1,1717 @@
+{
+    "comment": "게시판 활동의 「내 반응」 하위 탭 — 내가 글·댓글에 남긴 반응을 모아 보고 해제한다.\n     「내 댓글」탭과 같은 짜임이되 조건 이름이 `myReactions*` 로 갈리고, 여기서는 여러 건을\n     골라 한 번에 해제할 수 있어 선택 배열(`_global.myReactionsSelectedIds`)이 하나 더 있다.\n\n     선택은 지금 화면에 있는 행을 가리키므로, 검색·초기화·쪽 이동처럼 목록이 바뀌는 조작은\n     **먼저 선택을 비우고** 다시 받는다 — 그러지 않으면 화면에 없는 건이 일괄 해제에 실린다.\n\n     행은 세 갈래로 갈린다. `data-if` 는 노드마다 붙는 것이라 한 `tr` 안에서 갈래를 나눌 수\n     없어 `tr` 자체를 셋 둔다 — ① 살아 있는 대상(제목을 눌러 이동) ② 게시판이 반응을 껐거나\n     사라진 경우(이동 없음, 해제만) ③ 대상이 지워진 경우(제목 이탤릭 + 배지, 해제만).\n     어느 갈래든 **해제는 항상 된다** — 게시판 사정 때문에 내가 남긴 것을 못 거두면 안 된다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 내 게시판 활동 - 내 반응 탭"
+    },
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "comment": "필터 영역",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col sm:flex-row gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "comment": "게시판 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsBoard": "{{$event.target.value}}",
+                                        "myReactionsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSelectedIds": []
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReactions"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "value": "{{_global.myReactionsBoard ?? ''}}",
+                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "$t:mypage.board_activities.filter.all_boards"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "iteration": {
+                                "source": "{{boards?.data ?? []}}",
+                                "item_var": "board"
+                            },
+                            "props": {
+                                "value": "{{board.slug}}"
+                            },
+                            "text": "{{board.name}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "반응 유형 필터 — 선택지는 목록 응답이 실어 준 메타에서 온다(별도 API 없음)",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsTypeId": "{{$event.target.value}}",
+                                        "myReactionsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSelectedIds": []
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReactions"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "my-reactions-type-filter",
+                        "value": "{{_global.myReactionsTypeId ?? ''}}",
+                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "$t:mypage.board_activities.reactions.filter.all_types"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "iteration": {
+                                "source": "{{myReactions?.data?.reaction_types ?? []}}",
+                                "item_var": "rt"
+                            },
+                            "props": {
+                                "value": "{{rt.id}}"
+                            },
+                            "text": "{{rt.name}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "대상 필터 — 글에 남긴 것과 댓글에 남긴 것을 갈라 본다",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsTargetType": "{{$event.target.value}}",
+                                        "myReactionsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSelectedIds": []
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReactions"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "my-reactions-target-filter",
+                        "value": "{{_global.myReactionsTargetType ?? ''}}",
+                        "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:mypage.board_activities.reactions.filter.all_targets"
+                            },
+                            {
+                                "value": "post",
+                                "label": "$t:mypage.board_activities.target.post"
+                            },
+                            {
+                                "value": "comment",
+                                "label": "$t:mypage.board_activities.target.comment"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "comment": "정렬 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSort": "{{$event.target.value}}",
+                                        "myReactionsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSelectedIds": []
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReactions"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "value": "{{_global.myReactionsSort ?? 'latest'}}",
+                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "latest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.latest"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "oldest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.oldest"
+                        }
+                    ]
+                },
+                {
+                    "comment": "검색 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 flex gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "my_reactions_search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "검색 대상 — 담아만 둔다. 조회는 검색 버튼이 한다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSearchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_global.myReactionsSearchField ?? 'title_content'}}",
+                                "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "options": [
+                                    {
+                                        "value": "title_content",
+                                        "label": "$t:mypage.board_activities.search_fields.title_content"
+                                    },
+                                    {
+                                        "value": "title",
+                                        "label": "$t:mypage.board_activities.search_fields.title"
+                                    },
+                                    {
+                                        "value": "content",
+                                        "label": "$t:mypage.board_activities.search_fields.content"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "검색어 — 담아만 둔다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSearch": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "Enter 검색 — 검색 버튼과 같은 순서를 탄다. 적용 검색어는 입력칸 값에서 바로 읽는다(상태가 아직 따라오지 않은 마지막 글자도 빠지지 않게). 한글 조합 중 Enter 는 엔진 키 필터가 건너뛴다",
+                                    "type": "keypress",
+                                    "key": "Enter",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsPage": 1,
+                                                "myReactionsSearch": "{{$event.target.value}}",
+                                                "myReactionsSearchApplied": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsSelectedIds": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myReactions"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "placeholder": "$t:mypage.board_activities.search_placeholder",
+                                "value": "{{_global.myReactionsSearch ?? ''}}",
+                                "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsPage": 1,
+                                                "myReactionsSearchApplied": "{{_global.myReactionsSearch ?? ''}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsSelectedIds": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myReactions"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                            },
+                            "text": "$t:common.search"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "초기화 — 게시판·유형·대상·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsBoard": "",
+                                                "myReactionsTypeId": "",
+                                                "myReactionsTargetType": "",
+                                                "myReactionsSearch": "",
+                                                "myReactionsSearchApplied": "",
+                                                "myReactionsSearchField": "title_content",
+                                                "myReactionsSort": "latest",
+                                                "myReactionsPage": 1
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsSelectedIds": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myReactions"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:common.reset"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "선택 바 — 고른 것이 있을 때만 선다. 좁은 화면에는 표가 없어 전체선택을 여기에 둔다",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.myReactionsSelectedIds ?? []).length > 0}}",
+            "props": {
+                "className": "mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-between gap-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-2 cursor-pointer sm:hidden"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "지금 쪽의 전부를 고르거나 전부 푼다 — 다른 쪽의 선택까지 건드리지는 않는다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsSelectedIds": "{{(myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id)) ? [] : (myReactions?.data?.data ?? []).map(r => r.id)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "my-reactions-select-all-m",
+                                        "type": "checkbox",
+                                        "className": "rounded border-gray-300 dark:border-gray-600",
+                                        "checked": "{{(myReactions?.data?.data ?? []).length > 0 && (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-300"
+                                    },
+                                    "text": "$t:common.select_all"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "data-testid": "my-reactions-selected-count",
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "$t:mypage.board_activities.reactions.selected_count|count={{(_global.myReactionsSelectedIds ?? []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "openModal",
+                            "target": "reaction_bulk_delete_modal"
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "my-reactions-bulk-remove-btn",
+                        "className": "px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition-colors"
+                    },
+                    "text": "$t:mypage.board_activities.reactions.bulk_remove"
+                }
+            ]
+        },
+        {
+            "comment": "검색 조건 표시 영역 (API 응답의 query 값 기반)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{myReactions?.data?.query?.search || myReactions?.data?.query?.board_slug}}",
+            "props": {
+                "className": "mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "search",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.board_activities.search_result"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{myReactions?.data?.query?.search}}",
+                            "props": {
+                                "className": "font-medium"
+                            },
+                            "text": "\"{{myReactions?.data?.query?.search}}\""
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "({{myReactions?.data?.pagination?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myReactions?.data?.pagination?.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": ")"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "조건 초기화 — 게시판·유형·대상·검색어·정렬·쪽을 기본값으로 되돌리고 선택을 비운 뒤 다시 받는다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsBoard": "",
+                                        "myReactionsTypeId": "",
+                                        "myReactionsTargetType": "",
+                                        "myReactionsSearch": "",
+                                        "myReactionsSearchApplied": "",
+                                        "myReactionsSearchField": "title_content",
+                                        "myReactionsSort": "latest",
+                                        "myReactionsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReactionsSelectedIds": []
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReactions"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm"
+                    },
+                    "text": "$t:common.reset"
+                }
+            ]
+        },
+        {
+            "comment": "넓은 화면 — 표",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(myReactions?.data?.data ?? []).length > 0}}",
+            "props": {
+                "className": "hidden sm:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Table",
+                    "props": {
+                        "className": "w-full"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Thead",
+                            "props": {
+                                "className": "border-b border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "w-10 px-4 py-3 text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "전체 선택 — 이 쪽의 행이 모두 선택돼 있으면 비우고, 아니면 이 쪽 전부를 선택한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "myReactionsSelectedIds": "{{(myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id)) ? [] : (myReactions?.data?.data ?? []).map(r => r.id)}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reactions-select-all",
+                                                        "type": "checkbox",
+                                                        "className": "rounded border-gray-300 dark:border-gray-600",
+                                                        "checked": "{{(myReactions?.data?.data ?? []).length > 0 && (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-28"
+                                            },
+                                            "text": "$t:mypage.board_activities.reactions.table.type"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-20"
+                                            },
+                                            "text": "$t:mypage.board_activities.reactions.table.target"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "$t:mypage.board_activities.reactions.table.title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-32"
+                                            },
+                                            "text": "$t:mypage.board_activities.reactions.table.board"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-32"
+                                            },
+                                            "text": "$t:mypage.board_activities.reactions.table.reacted_at"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-20"
+                                            },
+                                            "text": "$t:mypage.board_activities.reactions.table.manage"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Tbody",
+                            "iteration": {
+                                "source": "{{myReactions?.data?.data ?? []}}",
+                                "item_var": "reaction"
+                            },
+                            "children": [
+                                {
+                                    "comment": "① 살아 있는 대상 — 제목을 눌러 원글로 간다",
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "if": "{{reaction.reaction_enabled && !reaction.target_deleted && !reaction.board_deleted}}",
+                                    "props": {
+                                        "data-testid": "my-reaction-row-{{reaction.id}}",
+                                        "className": "border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "myReactionsSelectedIds": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reaction-check-{{reaction.id}}",
+                                                        "type": "checkbox",
+                                                        "className": "rounded border-gray-300 dark:border-gray-600",
+                                                        "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Img",
+                                                            "if": "{{!!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "alt": "",
+                                                                "className": "w-4 h-4 object-contain"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "name": "{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-200"
+                                                            },
+                                                            "text": "{{reaction.reaction_type?.name ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}"
+                                                    },
+                                                    "text": "{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/board/{{reaction.board_slug}}/{{reaction.post_id}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
+                                                            },
+                                                            "text": "{{reaction.excerpt ?? reaction.title}}"
+                                                        },
+                                                        {
+                                                            "comment": "댓글이면 본문 발췌가 제목 자리에 오므로, 어느 글의 댓글인지를 작은 글씨로 덧붙인다",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{reaction.target_type === 'comment' && !!reaction.title}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500 truncate"
+                                                            },
+                                                            "text": "{{reaction.title}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{reaction.board_name ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{reaction.reacted_at ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "reactionDeleteModal": {
+                                                                            "id": "{{reaction.id}}",
+                                                                            "title": "{{reaction.excerpt ?? reaction.title ?? ''}}",
+                                                                            "isDeleted": false
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "reaction_delete_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reaction-remove-{{reaction.id}}",
+                                                        "className": "px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reactions.remove"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "② 게시판이 반응을 껐거나 사라진 경우 — 갈 곳이 없으니 이동은 빼고 해제만 남긴다",
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "if": "{{(!reaction.reaction_enabled || reaction.board_deleted) && !reaction.target_deleted}}",
+                                    "props": {
+                                        "data-testid": "my-reaction-row-{{reaction.id}}",
+                                        "className": "border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 opacity-50"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "myReactionsSelectedIds": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reaction-check-{{reaction.id}}",
+                                                        "type": "checkbox",
+                                                        "className": "rounded border-gray-300 dark:border-gray-600",
+                                                        "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Img",
+                                                            "if": "{{!!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "alt": "",
+                                                                "className": "w-4 h-4 object-contain"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "name": "{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-200"
+                                                            },
+                                                            "text": "{{reaction.reaction_type?.name ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}"
+                                                    },
+                                                    "text": "{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-500 dark:text-gray-400 truncate"
+                                                            },
+                                                            "text": "{{reaction.excerpt ?? reaction.title}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{reaction.board_deleted}}",
+                                                            "props": {
+                                                                "className": "inline-flex w-fit items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded"
+                                                            },
+                                                            "text": "$t:mypage.board_activities.reactions.board_deleted"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!reaction.board_deleted}}",
+                                                            "props": {
+                                                                "className": "inline-flex w-fit items-center px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 rounded"
+                                                            },
+                                                            "text": "$t:mypage.board_activities.reactions.disabled_flag"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{reaction.board_name ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{reaction.reacted_at ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "reactionDeleteModal": {
+                                                                            "id": "{{reaction.id}}",
+                                                                            "title": "{{reaction.excerpt ?? reaction.title ?? ''}}",
+                                                                            "isDeleted": false
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "reaction_delete_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reaction-remove-{{reaction.id}}",
+                                                        "className": "px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reactions.remove"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "③ 대상이 지워진 경우 — 제목을 이탤릭으로 낮추고 무엇이 사라졌는지 배지로 말한다",
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "if": "{{reaction.target_deleted}}",
+                                    "props": {
+                                        "data-testid": "my-reaction-row-{{reaction.id}}",
+                                        "className": "border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 opacity-50"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "myReactionsSelectedIds": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reaction-check-{{reaction.id}}",
+                                                        "type": "checkbox",
+                                                        "className": "rounded border-gray-300 dark:border-gray-600",
+                                                        "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Img",
+                                                            "if": "{{!!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "alt": "",
+                                                                "className": "w-4 h-4 object-contain"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "name": "{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-200"
+                                                            },
+                                                            "text": "{{reaction.reaction_type?.name ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}"
+                                                    },
+                                                    "text": "{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm italic text-gray-400 dark:text-gray-500 truncate"
+                                                            },
+                                                            "text": "{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "inline-flex w-fit items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded"
+                                                            },
+                                                            "text": "$t:mypage.board_activities.reactions.deleted_flag"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{reaction.board_name ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{reaction.reacted_at ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "px-4 py-3 text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "reactionDeleteModal": {
+                                                                            "id": "{{reaction.id}}",
+                                                                            "title": "{{reaction.title ?? ''}}",
+                                                                            "isDeleted": true
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "reaction_delete_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reaction-remove-{{reaction.id}}",
+                                                        "className": "px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reactions.remove"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "좁은 화면 — 카드. 표와 같은 배열을 보고 같은 선택 상태를 공유한다",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(myReactions?.data?.data ?? []).length > 0}}",
+            "props": {
+                "className": "sm:hidden space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{myReactions?.data?.data ?? []}}",
+                        "item_var": "reaction"
+                    },
+                    "props": {
+                        "data-testid": "my-reaction-row-m-{{reaction.id}}",
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{reaction.target_deleted || !reaction.reaction_enabled || reaction.board_deleted ? 'opacity-50' : ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReactionsSelectedIds": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "my-reaction-check-m-{{reaction.id}}",
+                                        "type": "checkbox",
+                                        "className": "mt-1 rounded border-gray-300 dark:border-gray-600",
+                                        "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1 min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2 flex-wrap mb-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}"
+                                                    },
+                                                    "text": "{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Img",
+                                                            "if": "{{!!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "alt": "",
+                                                                "className": "w-4 h-4 object-contain"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!reaction.reaction_type?.icon_url}}",
+                                                            "props": {
+                                                                "name": "{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{reaction.reaction_type?.name ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{reaction.board_deleted}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reactions.board_deleted"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!reaction.board_deleted && !reaction.reaction_enabled && !reaction.target_deleted}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 rounded"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reactions.disabled_flag"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{reaction.target_deleted}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reactions.deleted_flag"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "살아 있으면 눌러서 이동, 아니면 글자만",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{reaction.reaction_enabled && !reaction.target_deleted && !reaction.board_deleted}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/board/{{reaction.board_slug}}/{{reaction.post_id}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
+                                            },
+                                            "text": "{{reaction.excerpt ?? reaction.title}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{reaction.target_deleted}}",
+                                            "props": {
+                                                "className": "block text-sm italic text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!reaction.target_deleted && (!reaction.reaction_enabled || reaction.board_deleted)}}",
+                                            "props": {
+                                                "className": "block text-sm text-gray-500 dark:text-gray-400 line-clamp-2"
+                                            },
+                                            "text": "{{reaction.excerpt ?? reaction.title}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "mt-2 flex items-center justify-between gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다)",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "reactionDeleteModal": {
+                                                                            "id": "{{reaction.id}}",
+                                                                            "title": "{{reaction.excerpt ?? reaction.title ?? ''}}",
+                                                                            "isDeleted": "{{reaction.target_deleted}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "reaction_delete_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "my-reaction-remove-m-{{reaction.id}}",
+                                                        "className": "px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reactions.remove"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "반응 없음",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(myReactions?.data?.data ?? []).length === 0}}",
+            "props": {
+                "data-testid": "my-reactions-empty",
+                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "heart",
+                        "size": "3x",
+                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                    }
+                },
+                {
+                    "comment": "검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!(!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType)}}",
+                    "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.board_activities.reactions.empty"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType}}",
+                    "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:board.no_search_results"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/boards"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                    },
+                    "text": "$t:mypage.board_activities.go_boards"
+                }
+            ]
+        },
+        {
+            "comment": "페이지네이션 — 쪽을 옮기면 화면에 없는 건이 선택에 남지 않도록 먼저 비운다",
+            "type": "composite",
+            "name": "Pagination",
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "myReactionsPage": "{{$args[0]}}"
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "myReactionsSelectedIds": []
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "myReactions"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "currentPage": "{{myReactions?.data?.pagination?.current_page ?? 1}}",
+                "totalPages": "{{myReactions?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{myReactions?.data?.pagination?.has_more_pages ?? false}}",
+                "className": "mt-4 flex justify-center"
+            }
+        }
+    ]
+}

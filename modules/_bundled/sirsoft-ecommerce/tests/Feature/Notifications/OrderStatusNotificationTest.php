@@ -2,12 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Notifications;
 
+use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Listeners\OrderStatusNotificationListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -24,11 +26,25 @@ class OrderStatusNotificationTest extends ModuleTestCase
     /** @var array<string> */
     private array $fired = [];
 
+    /**
+     * 관리자와 상태전이 알림 리스너를 준비하고 알림 훅 발화를 기록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
         $this->fired = [];
+
+        // 이 모듈의 훅 리스너를 명시 등록한다 — 모듈 리스너는 부트 시점에 붙는데, 프로세스의
+        // **첫 테스트**에서는 아직 붙기 전이라 `order.after_status_change` 가 발화해도 아무도
+        // `order.after_confirm` 으로 매핑하지 않는다. 그래서 클래스의 첫 케이스만 실패하고
+        // 뒤 케이스는 (정적 등록이 남아) 통과하는 순서 의존이 있었다.
+        // 출처는 모듈 부팅과 같은 식별자로 준다 — 등록기의 중복 방지 키가 「출처::클래스」라,
+        // 출처 없이 등록하면 부팅이 이미 붙인 리스너 옆에 하나가 더 붙어 알림이 두 번씩 잡힌다
+        // (실측 2026-10-03: 일괄 2건 전이에 결제완료 알림 4회).
+        HookListenerRegistrar::register(OrderStatusNotificationListener::class, 'sirsoft-ecommerce');
 
         foreach ([
             'sirsoft-ecommerce.order.after_confirm',
@@ -42,6 +58,12 @@ class OrderStatusNotificationTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 결제 레코드와 옵션 하나를 갖춘 주문을 주어진 상태로 만듭니다.
+     *
+     * @param  OrderStatusEnum  $status  주문과 옵션에 줄 상태
+     * @return Order 생성된 주문
+     */
     private function orderWithOption(OrderStatusEnum $status): Order
     {
         $order = OrderFactory::new()->create(['order_status' => $status]);
@@ -59,6 +81,8 @@ class OrderStatusNotificationTest extends ModuleTestCase
      * @scenario transition_path=update, target_status=payment_complete, previous_status=different, order_count=single
      *
      * @effects admin_status_update_to_payment_complete_sends_order_confirmed
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_update_to_payment_complete_fires_order_confirmed(): void
     {
@@ -84,6 +108,8 @@ class OrderStatusNotificationTest extends ModuleTestCase
      * @scenario transition_path=bulk_update, target_status=payment_complete, previous_status=different, order_count=multi
      *
      * @effects admin_bulk_to_payment_complete_sends_order_confirmed
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_bulk_to_payment_complete_fires_order_confirmed_per_order(): void
     {
@@ -107,6 +133,8 @@ class OrderStatusNotificationTest extends ModuleTestCase
      * @scenario transition_path=bulk_update, target_status=confirmed, previous_status=different, order_count=multi
      *
      * @effects bulk_update_fires_after_status_change_per_order
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_bulk_delivered_to_confirmed_fires_order_completed(): void
     {
@@ -130,6 +158,8 @@ class OrderStatusNotificationTest extends ModuleTestCase
      * @scenario transition_path=update, target_status=shipping, previous_status=same_as_target, order_count=single
      *
      * @effects listener_no_fire_when_status_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_update_to_same_status_does_not_fire(): void
     {
@@ -155,6 +185,8 @@ class OrderStatusNotificationTest extends ModuleTestCase
      * @scenario transition_path=bulk_update, target_status=confirmed, previous_status=different, order_count=single
      *
      * @effects confirmed_transition_does_not_change_stock
+     *
+     * @return void 반환값 없음
      */
     public function test_confirmed_transition_does_not_change_stock(): void
     {

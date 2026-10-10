@@ -1,4 +1,4 @@
-feature: 레이아웃 표현식 평가 샌드박스 (KVE-2026-1915)
+feature: 레이아웃 표현식 평가 샌드박스 (KVE-2026-1915 · KVE-2026-2350)
 
 description: |
   레이아웃 표현식은 AST 화이트리스트 인터프리터(SafeExpressionEvaluator)로 평가된다.
@@ -9,18 +9,75 @@ description: |
   번들의 공개 API(`G7Core.evaluateCondition`)를 직접 호출해 (a) 정상 회귀 없음 + (b) 익스플로잇
   미실행(전역 canary `window.__g7jsi` 미설정) 양면을 잠근다.
 
+  KVE-2026-2350 — 금지 프로퍼티 이름만 막던 평가기는 DOM 노드에서 출발한
+  `.ownerDocument.defaultView.localStorage`·`.fetch(…)` 를 정상 읽기·호출로 허용했다. 이제 값의
+  종류로 막는다(호스트 capability 객체는 쥐는 순간 거부, 함수는 허용목록만 호출). 액션 컨텍스트의
+  `$event`·`error`·`$args` 는 plain 사본(DTO)으로만 실린다 — 두 층이 이중 방어다.
+
 axes:
-  case: [safe_expression, arrow_template_literal, destructuring_param, constructor_escape, nonstring_key_escape, object_facade_safe]
+  case: [safe_expression, arrow_template_literal, destructuring_param, constructor_escape, nonstring_key_escape, object_facade_safe, whitelisted_global_call, host_graph_escape]
 
 effects:
   - same_expression_same_value_across_paths
   - sandbox_escape_blocked
   - dangerous_payload_does_not_set_global
+  - whitelisted_globals_stay_callable
 
 # 저장측 외부 URL 차단은 표현식 실행 축(case)과 곱해지지 않는 별개 관심사다 — case 는 "그 식이
 # 실행되는가" 를, URL 축은 "그 값이 외부 origin 을 가리키는가" 를 본다. 축으로 올리면 조합을
 # 관측하는 지점이 없어 어떤 칸도 커버되지 않으므로 sub_flow 로 분리한다.
 sub_flows:
+  - id: host_capability_boundary
+    description: |
+      표현식이 호스트 capability(DOM 노드·Window·Storage·Location·Promise)를 손에 쥐거나 허용목록 밖
+      네이티브 함수(call/apply/bind·리플렉션·bound)를 호출하지 못한다. 식별자 해석·프로퍼티 읽기·
+      호출 결과·최종 결과·단순 경로 바인딩(resolvePath) 모두 같은 판정을 거친다.
+
+      액션 컨텍스트 DTO: `$event` 는 이벤트 스칼라 + target 스냅샷(value·checked·name·type·dataset·
+      files·selectedOptions, form 이면 이름 있는 컨트롤), `error` 는 own 필드 + message·name(stack 제외),
+      `$args` 는 재귀 사본(호스트 객체 null). 필드는 번들 레이아웃 전수 집계(2836 파일) 기준이다.
+
+      엔진 `$get` 헬퍼는 경로 한 단계마다 같은 판정을 한다 — 평가기는 헬퍼의 최종 반환값만 검사하므로,
+      중간의 호스트 객체를 건너 문자열(토큰)을 꺼내는 경로가 남아 있었다.
+
+      apiCall 은 인증 정보(Bearer·XSRF)를 동일 출처 대상에만 싣는다. 대상 주소는 표현식으로 조립할 수 있어
+      저장측 정적 규칙이 외부 주소를 다 잡지 못하므로, 보내는 자리에서 판정한다(`fetch` 와 같은 URL 파서).
+      레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내던 권한전이 경로다.
+
+      교차 출처 응답은 우리 인증 흐름을 조종하지 못한다 — 428(본인인증 요구)은 launcher 로 넘기지 않고,
+      401 은 토큰을 갱신해 외부로 재시도하지 않는다. 요청에서 뺀 토큰이 후속 요청(응답이 지정한
+      `challenge_start_url`·갱신 후 재시도)으로 나가던 경로다. 확장이 직접 fetch 할 때 쓰는
+      `G7Core.api.isSameOriginUrl` 은 같은 판정을 노출한다(템플릿 컴포넌트·launcher 는 각 템플릿 매니페스트).
+    effects:
+      - host_object_access_blocked
+      - native_host_function_call_blocked
+      - event_dto_preserves_bound_fields
+      - error_dto_excludes_stack_and_hosts
+      - args_dto_strips_host_objects
+      - get_helper_host_path_blocked
+      - api_call_credentials_same_origin_only
+      - cross_origin_identity_response_not_trusted
+      - extension_token_same_origin_only
+  - id: host_capability_storage_gate
+    description: |
+      저장측 게이트(KVE-2026-2350). 신고 payload 는 top-level `slots` 의 액션 표현식에 담겨 두 규칙을
+      모두 통과해 저장됐다(PUT 200). SafeLayoutExpressions 는 호스트 그래프 토큰(ownerDocument·
+      defaultView·XMLHttpRequest·`fetch(`·저장소 호출 형태 — 번들 전수 0건 확인분만)을, NoExternalUrls 는
+      실행 스킴을 트리 전체(`{{ }}` 리터럴 포함)에서 거부한다. http(s) 외부 URL 은 sink 위치에서만 막는다 —
+      데이터 계층·안내 문구의 정상 외부 링크(번들 실측 24건)를 깨지 않기 위해서다. 단 액션의 이동·요청
+      대상(`target`·`params.path`·`params.url`)은 액션이 트리 어디에 있든(top-level `slots`·확장
+      `injections`·`itemTemplate`) 실행되는 sink 이므로 위치와 무관하게 외부 URL 까지 거부한다.
+
+      미리보기 생성 2종·마크업 변환도 같은 게이트(LayoutContentGate)를 거친다 — 미리보기는 읽기 권한만으로
+      content 를 저장해 렌더하던 게이트 없는 경로였다.
+    effects:
+      - storage_gate_rejects_host_graph_payload
+      - executable_scheme_rejected_anywhere_in_tree
+      - action_target_external_url_rejected_anywhere_in_tree
+      - data_layer_external_link_still_allowed
+      - bundled_layouts_pass_strengthened_rules
+      - preview_and_compile_are_gated
+      - stored_layouts_are_reaudited_report_only
   - id: external_url_storage_gate
     description: |
       레이아웃 저장 시 외부 origin URL 을 거부하는 축. 세 갈래를 함께 잠근다.
@@ -32,12 +89,48 @@ sub_flows:
         조기 반환하면 그 부착이 조용한 no-op 이 된다.
       - 부착 패리티: Store·Update·UpdateContent·UpdateExtensionContent 4 경로가 동일 강도여야
         한다. 편집기 저장 경로만 빠지면 그 경로가 우회로다.
+      - 안내 문구·링크 예외(#727): 입력 안내 문구(`placeholder`)·링크(`href`) prop 과 액션 요청 본문
+        (`params.body`)은 http(s) 웹 주소를 허용한다(2026-09-30 결정). 실행 스킴·프로토콜 상대 주소·`ftp:` 는
+        그 자리에서도 막고, 자원 prop(`src`)·액션 대상은 종전대로 막는다. 번들 화면 전수는 조각을 펼친 저장 형태로
+        검사한다 — 파일 한 장씩 보면 조각 안 값이 sink 검사를 받지 않아 관리자 화면 5개의 편집기 저장 422 를 놓쳤다.
     effects:
       - init_actions_external_url_rejected
       - same_origin_path_in_init_actions_allowed
       - plain_string_value_is_inspected_not_skipped
       - same_origin_plain_string_allowed
       - rule_attached_to_every_layout_content_form_request
+      - text_hint_and_link_props_accept_external_url
+      - request_body_example_url_accepted
+      - link_props_still_reject_executable_and_protocol_relative
+      - resource_and_action_target_external_url_still_rejected
+      - bundled_screens_with_partials_resolved_pass_storage_gate
+      - protocol_relative_url_rejected
+      - other_scheme_url_rejected
+      - external_url_rejected_in_every_sink_key
+      - same_origin_values_allowed_in_sink_keys
+      - violation_reports_modal_and_slot_paths
+      - web_url_allowance_is_limited_to_prop_and_action_body
+      - injection_components_follow_screen_rules
+  - id: malicious_layout_json_gate
+    description: |
+      저장 규칙 넷(구조·엔드포인트 허용·외부 URL·컴포넌트 존재)을 한 번에 건 공격형 레이아웃 묶음.
+      실행 스킴·외부 URL·data URI·등록되지 않은 API 네임스페이스·없는 컴포넌트·최대 깊이 초과는
+      거부하고, 텍스트로만 그려지는 HTML 문자열·ORM 이 바인딩하는 파라미터 문자열·상대 경로는
+      저장 단계에서 막지 않는다. 엔드포인트 허용은 라우트 표에 등록된 네임스페이스와 확장
+      프리픽스로 판정한다 — 등록 라우트가 없는 `/api/public/*` 는 거부 쪽이다.
+    effects:
+      - executable_scheme_prop_rejected
+      - html_text_prop_allowed
+      - sql_like_param_left_to_orm_binding
+      - relative_path_prop_allowed
+      - external_url_prop_rejected
+      - data_uri_prop_rejected
+      - unregistered_endpoint_rejected
+      - registered_endpoint_allowed
+      - unknown_component_rejected
+      - nesting_depth_over_limit_rejected
+      - combined_attack_rejected
+      - valid_layout_passes_all_rules
 
 test_files:
   # 배포 번들 종단 (축·효과 마커 보유)
@@ -45,8 +138,19 @@ test_files:
   # 소스 잠금 — 평가기 본체와 소비 싱크(바인딩·computed·scripts[].if·렌더 조건), 그리고
   # 저장 단계 거부. 축(case)은 배포 번들 E2E 가 커버하고 이 파일들은 효과를 떠받친다.
   - resources/js/core/template-engine/__tests__/SafeExpressionEvaluator.test.ts
+  # KVE-2026-2350 — 호스트 capability 타입 경계·DTO 주입
+  - resources/js/core/template-engine/__tests__/SafeExpressionEvaluator.hostBoundary.test.ts
+  - resources/js/core/template-engine/__tests__/expressionData.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.expressionDto.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.apiCallCredentials.test.ts
+  - resources/js/core/api/__tests__/ApiClient.crossOriginResponse.test.ts
+  - tests/Feature/Rules/LayoutHostCapabilityGateTest.php
+  - tests/Feature/Api/Admin/LayoutPreviewSecurityGateTest.php
+  - tests/Feature/Console/AuditStoredLayoutsCommandTest.php
   - resources/js/core/template-engine/__tests__/ConditionEvaluator.sandbox.test.ts
   - resources/js/core/__tests__/TemplateApp.safeComputed.test.ts
   - tests/Feature/Rules/SafeLayoutExpressionsTest.php
   # sub_flow external_url_storage_gate 를 떠받친다.
   - tests/Feature/Rules/NoExternalUrlsTest.php
+  # sub_flow malicious_layout_json_gate 를 떠받친다.
+  - tests/Feature/Security/MaliciousJsonTest.php

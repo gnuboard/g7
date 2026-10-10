@@ -76,7 +76,6 @@
   "modal": {
     "manual_match": {
       "title": "手動マッチング",
-      "description": "入金内訳と注文を手動で連結します",
       "deposit_info": "入金情報",
       "depositor_name": "入金者名",
       "deposit_amount": "入金金額",
@@ -88,7 +87,6 @@
     },
     "process_history": {
       "title": "処理履歴",
-      "description": "入金処理履歴およびウェブフックログを確認します",
       "order_number": "注文番号",
       "timeline_title": "処理タイムライン",
       "system_pg_webhook": "システム(PGウェブフック)",
@@ -102,7 +100,6 @@
     },
     "bulk_match": {
       "title": "一括マッチング",
-      "description": "選択された{{count}}件の入金内訳を注文とマッチングします。",
       "instruction_1": "• 注文番号を直接入力するか、注文番号/顧客名を入力すると、自動的に検索結果が表示されます。",
       "instruction_2": "• 検索結果から希望する注文を選択すると、自動的に入力されます。 (例: ORD20251118-0001)",
       "columns": {

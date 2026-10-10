@@ -1,6 +1,6 @@
 # 데이터 바인딩 및 표현식
 
-> **관련 문서**: [index.md](index.md) | [layout-json.md](layout-json.md) | [data-sources.md](data-sources.md)
+> **관련 문서**: [README.md](README.md) | [layout-json.md](layout-json.md) | [data-sources.md](data-sources.md)
 
 ---
 
@@ -12,6 +12,7 @@
 3. Optional Chaining: {{user?.profile?.name ?? '기본값'}}
 4. 파이프 함수: {{created_at | date}}, {{name | truncate(50)}}
 5. $get 헬퍼: {{$get(obj, ['key1', 'key2'], fallback)}}
+6. 대입문·정규식 리터럴·괄호 안 파이프는 평가기가 조용히 거부 → "평가기가 거부하는 문법" 절
 ```
 
 ---
@@ -60,6 +61,12 @@
 
 ### 기본 예시
 
+```html
+<div title="{{user.name}}" email="{{user.email}}" userId="{{route.id}}" category="{{query.category_id}}" sidebarOpen="{{_global.sidebarOpen}}" formData="{{_local.form}}" selectedCount="{{_isolated.selectedItems?.length ?? 0}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -78,9 +85,23 @@
 
 `_isolated` 상태는 `isolatedState` 속성이 정의된 컴포넌트 내에서만 접근 가능합니다.
 
+```html
+<div>
+  <isolated-state>
+    <field name="selectedId" :value="null"/>
+    <field name="items" :value="[]"/>
+  </isolated-state>
+  <span>선택됨: {{_isolated.selectedId ?? '없음'}}</span>
+  <div data-each="item in {{_isolated.items}}" class="{{_isolated.selectedId === item.id ? 'bg-blue-100' : 'bg-white'}}"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": { "selectedId": null, "items": [] },
   "children": [
     {
@@ -91,7 +112,7 @@
     {
       "type": "basic",
       "name": "Div",
-      "iteration": { "source": "{{_isolated.items}}", "item": "item" },
+      "iteration": { "source": "{{_isolated.items}}", "item_var": "item" },
       "props": {
         "className": "{{_isolated.selectedId === item.id ? 'bg-blue-100' : 'bg-white'}}"
       }
@@ -108,6 +129,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 ### 1. 변수 참조
 
+```html
+<div count="{{products.total}}">{{user.name}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "{{user.name}}",
@@ -116,6 +143,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```
 
 ### 2. 삼항 연산자
+
+```html
+<div variant="{{user.isPremium ? 'premium' : 'standard'}}" class="{{isActive ? 'bg-blue-500' : 'bg-gray-500'}}">{{count > 0 ? count + ' items' : 'No items'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -128,6 +161,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```
 
 ### 3. 논리 연산자
+
+```html
+<div data-if="{{isAdmin &amp;&amp; hasPermission}}" class="{{isLoggedIn || isGuest ? 'visible' : 'hidden'}}">{{!isEmpty ? 'Has data' : 'Empty'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -143,6 +182,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```
 
 ### 4. 비교 연산자
+
+```html
+<div data-if="{{count >= 10}}" class="{{price > 100 ? 'expensive' : 'affordable'}}" disabled="{{stock <= 0}}">{{status == 'active' ? 'Active' : 'Inactive'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -166,6 +211,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 ### 5. 리터럴 값
 
+```html
+<div class="{{isOpen ? 'translate-x-0' : '-translate-x-full'}}" count="{{count || 0}}" enabled="{{status == 'ready' ? true : false}}" value="{{data || null}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   // 문자열 리터럴
@@ -184,6 +235,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 ### 6. 복합 표현식
 
+```html
+<div class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform lg:relative lg:translate-x-0" variant="{{score >= 90 ? 'excellent' : score >= 70 ? 'good' : 'poor'}}">{{user.isOnline &amp;&amp; user.status == 'active' ? 'Online' : 'Offline'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   // 동적 CSS 클래스 생성
@@ -197,6 +254,21 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 }
 ```
 
+### 평가기가 거부하는 문법 (조용한 실패)
+
+표현식 평가기는 JavaScript 의 **부분집합**이다. 아래 문법은 파싱 단계에서 거부되고, 예외가 화면에 드러나지 않은 채 그 식이 원본 `{{…}}` 문자열이나 빈 값으로 흘러간다(저장 본문이 문자열이 되어 서버가 아무것도 바꾸지 않는 식). 블록 몸체 화살표 함수·즉시 실행 함수 안이라도 마찬가지다.
+
+| ❌ 거부됨 | ✅ 대신 |
+| --- | --- |
+| 대입문 — `body[k] = v`, `acc[p] = (acc[p] \|\| 0) + 1`, `x += 1` | 새 값을 만드는 식 — `Object.fromEntries(keys.map(k => [k, s[k]]))`, `reduce((acc, v) => ({ ...acc, [v.p]: (acc[v.p] \|\| 0) + 1 }), {})` |
+| 정규식 리터럴 — `url.replace(/^https?:\/\/[^/]+/, '')` | 문자열 메서드 — `url.startsWith('http') ? '/' + url.split('/').slice(3).join('/') : url` |
+| 괄호·삼항·함수 인자 **안의** 파이프 — `x ? (x \| datetime) : '-'` | 파이프를 식 최상위로 — `{{x \| datetime \| default('-')}}`, 번역 인자면 `$t:key\|at={{x \| datetime}}` |
+| 증감(`++`/`--`)·비트 연산·쉼표 연산자 | 산술·논리 연산으로 다시 쓴다 |
+
+주소에 싣는 값은 `encodeURIComponent(query.q)` 로 인코딩한다(engine-v1.72.0 허용). 허용 목록 밖의 전역(`encodeURI`·`decodeURIComponent`·`URLSearchParams` 등)은 호출하면 `Attempted to call a non-function value` 로 식 전체가 실패한다.
+
+`const`/`let` 선언·`if`·`for (const x of …)`·`return`·`try` 는 블록 안에서 쓸 수 있다. 식이 평가되는지 의심스러우면 구운 `.json` 의 바인딩을 `evaluateSafeExpression` 에 넣어 보는 테스트로 잠근다(구문 오류는 `Unexpected token`·`… is not allowed` 로 던진다).
+
 ### 사용 가능 위치
 
 - `props.*`: 모든 props 속성
@@ -204,6 +276,10 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 - `text`: 텍스트 내용
 - `if`: 조건부 렌더링
 - `actions[].payload.*`: 액션 payload
+
+### 식 해석 결과 재사용 (engine-v1.74.0+)
+
+같은 식 문자열은 전처리·구문 해석 결과를 재사용합니다. **값은 캐시하지 않으므로** 식은 매번 현재 데이터로 다시 평가되고, 데이터가 바뀌면 결과도 바로 바뀝니다. 해석에 실패한 식은 매번 같은 오류 메시지로 실패합니다. 확인용으로 재사용을 끄는 방법은 [G7Core.engineFlags](g7core-api-advanced.md#엔진-안전-스위치-g7coreengineflags) 를 참고하세요.
 
 ### `if` 표현식의 `{{}}` 위치 (CRITICAL, engine-v1.47.1 명문화)
 
@@ -241,6 +317,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 데이터 로드 전/후 안전한 접근을 위해 Optional Chaining(`?.`)과 Nullish Coalescing(`??`)을 지원합니다.
 
+```html
+<div count="{{users?.data?.total ?? 0}}" info="{{products?.items?.length ?? 0}} items">{{users?.data?.pagination?.total}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   // Optional Chaining - null/undefined 안전 접근
@@ -257,6 +339,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```
 
 ### 사용 사례 - API 데이터 로드 전후 처리
+
+```html
+<div>$t:admin.users.pagination_info|total={{users?.data?.pagination?.total ?? 0}}|from={{users?.data?.pagination?.from ?? 0}}|to={{users?.data?.pagination?.to ?? 0}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -285,6 +373,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 ### 실제 사용 사례 - 반응형 레이아웃
 
+```html
+<div data-ref="mobile_sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 lg:relative lg:translate-x-0 bg-white"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "mobile_sidebar",
@@ -303,6 +397,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 파이프 함수를 사용하면 데이터를 체이닝 방식으로 변환할 수 있습니다.
 
 ### 기본 문법
+
+```html
+<div>{{description | stripHtml | truncate(100)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -336,6 +436,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 여러 파이프를 연결하여 순차적으로 변환할 수 있습니다:
 
+```html
+<div>{{content | stripHtml | truncate(100) | default('내용 없음')}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "{{content | stripHtml | truncate(100) | default('내용 없음')}}"
@@ -360,6 +466,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 ### 기본 문법
 
+```html
+<div>{{$get(object, path, fallback)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "{{$get(object, path, fallback)}}"
@@ -374,6 +486,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 **다중 통화 가격 접근**:
 
+```html
+<div>{{$get(product.multi_currency_price, [currency, 'formatted'], product.price_formatted)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "{{$get(product.multi_currency_price, [currency, 'formatted'], product.price_formatted)}}"
@@ -382,13 +500,30 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 **다국어 객체 접근**:
 
+```html
+<div>{{$get(product.name, $locale, product.name.ko)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "text": "{{$get(product.name, _global.locale, product.name.ko)}}"
+  "text": "{{$get(product.name, $locale, product.name.ko)}}"
 }
 ```
 
+현재 로케일은 컨텍스트 변수 `$locale` 이 든다. `_global.locale` 은 어디서도 세워지지 않으므로
+그 자리에 쓰면 언제나 `undefined` 로 평가되어 조용히 fallback(대개 한국어)으로 고정된다.
+다국어 객체 하나를 그대로 표시하는 것이 목적이라면 `$localized(product.name)` 이 정본이다
+([$localized() 헬퍼](data-binding-i18n.md#localized-헬퍼-함수-v140)).
+
 **중첩 설정 접근**:
+
+```html
+<div value="{{$get(_global.settings, ['drivers', 'mail', 'host'], 'localhost')}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -397,6 +532,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```
 
 **동적 키 접근**:
+
+```html
+<div price="{{$get(prices, [selectedPlan, 'monthly'], 0)}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -408,6 +549,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 **기존 (복잡)**:
 
+```html
+<div>{{item.multi_currency_unit_price[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.unit_price_formatted}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "{{item.multi_currency_unit_price[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.unit_price_formatted}}"
@@ -415,6 +562,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```
 
 **개선 (단순)**:
+
+```html
+<div>{{$get(item.multi_currency_unit_price, [_global.preferredCurrency ?? 'KRW', 'formatted'], item.unit_price_formatted)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -438,6 +591,19 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 다단계 중첩 삼항 연산자를 선언적 switch-case 패턴으로 대체합니다.
 
 ### 기본 문법
+
+```html
+<div>
+  <switch-value prop="icon" on="{{tab}}">
+    <case when="products">shopping-bag</case>
+    <case when="contents">book-open</case>
+    <case when="policies">file-check</case>
+    <default>file-text</default>
+  </switch-value>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -465,6 +631,12 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 **기존 (복잡)**:
 
+```html
+<div icon="{{tab === 'products' ? 'shopping-bag' : tab === 'contents' ? 'book-open' : tab === 'policies' ? 'file-check' : 'file-text'}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "icon": "{{tab === 'products' ? 'shopping-bag' : tab === 'contents' ? 'book-open' : tab === 'policies' ? 'file-check' : 'file-text'}}"
@@ -472,6 +644,19 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 ```
 
 **개선 (단순)**:
+
+```html
+<div>
+  <switch-value prop="icon" on="{{tab}}">
+    <case when="products">shopping-bag</case>
+    <case when="contents">book-open</case>
+    <case when="policies">file-check</case>
+    <default>file-text</default>
+  </switch-value>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -509,12 +694,24 @@ $cases 값에 추가 표현식 바인딩 불가 (정적 값만)
 
 DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스트**에서도 복잡한 표현식을 사용할 수 있습니다.
 
+```html
+<data-grid>
+  <column field="status" header="$t:user.status">
+    <cell>
+      <span class="{{row.status_variant === 'success' ? 'bg-green-100 text-green-800' : row.status_variant === 'danger' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}} px-2.5 py-0.5 rounded-full text-xs font-medium">{{row.status_label}}</span>
+    </cell>
+  </column>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "columns": [
     {
-      "key": "status",
-      "label": "$t:user.status",
+      "field": "status",
+      "header": "$t:user.status",
       "cellChildren": [
         {
           "type": "basic",
@@ -556,6 +753,12 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 
 `text` 속성에서 데이터 바인딩과 다국어(`$t:`)를 조합한 복합 표현식을 사용할 수 있습니다.
 
+```html
+<p data-ref="error_message">{{_global.errorMessage || $t:common.error_occurred}}</p>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "error_message",
@@ -571,6 +774,12 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 2. 설정되지 않으면 `$t:common.error_occurred` 번역 키의 값 표시
 
 ### 삼항 연산자와 $t: 조합
+
+```html
+<div>{{isError ? $t:common.error : $t:common.success}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -616,6 +825,16 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 | `$parent` | 부모 컴포넌트의 상태 접근 | 모달, expandChildren |
 | `$root` | 루트 컴포넌트의 상태 접근 | 중첩 레이아웃 |
 
+```html
+<!-- 모달에서 부모 _local 접근 -->
+<div>{{$parent._local.selectedUser?.name}}</div>
+
+<!-- expandChildren에서 부모 전역 상태 접근 -->
+<div value="{{$parent._global.currency}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 모달에서 부모 _local 접근
 { "text": "{{$parent._local.selectedUser?.name}}" }
@@ -649,13 +868,22 @@ $parent._local은 모달 마운트 시 스냅샷 — 모달 열린 후 부모 _l
 | `$prev` | 직전 액션의 결과값 (직접 참조) | sequence 내부 액션 |
 | `$results` | 모든 이전 액션 결과 배열 | sequence 내부 액션 |
 
+```html
+<on type="click">
+  <api-call target="/api/modules/sirsoft-ecommerce/products/{{row.id}}" method="GET"/>
+  <set-state target="local" productDetail="{{$prev.data}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "sequence",
   "actions": [
     {
       "handler": "apiCall",
-      "target": "/api/products/{{row.id}}",
+      "target": "/api/modules/sirsoft-ecommerce/products/{{row.id}}",
       "params": { "method": "GET" }
     },
     {
@@ -700,7 +928,7 @@ $parent._local은 모달 마운트 시 스냅샷 — 모달 열린 후 부모 _l
 
 - [다국어 처리](data-binding-i18n.md) - $localized(), $t:, 컴포넌트 다국어 처리
 - [g7core-api.md](g7core-api.md) - G7Core 전역 API 레퍼런스
-- [index.md](index.md) - 프론트엔드 가이드 인덱스
+- [README.md](README.md) - 프론트엔드 가이드 인덱스
 - [layout-json.md](layout-json.md) - 레이아웃 JSON 스키마
 - [data-sources.md](data-sources.md) - 데이터 소스 시스템
 - [state-management.md](state-management.md) - 전역 상태 관리

@@ -1,0 +1,34 @@
+feature: 관리자 레이아웃 badge 변종 ↔ 빌드 CSS 패리티
+
+description: |
+  개인정보 탭의 dry-run 뱃지가 `badge-warning` 으로 적혀 있었는데 이 템플릿의 CSS 에는 그
+  클래스가 없다. Tailwind 는 선언되지 않은 유틸을 만들어 주지 않고 브라우저는 모르는 클래스를
+  조용히 무시하므로, **오류도 경고도 남기지 않고 뱃지가 무색으로 렌더**됐다.
+
+  하필 그 뱃지가 붙은 자리가 「지금 파기 대상이 몇 명인가」다 — 되돌릴 수 없는 파기·자동
+  탈퇴를 켜기 전에 규모를 보여 주려고 색을 준 것이고, 색이 사라지면 그 경고가 평범한 회색
+  글씨가 된다. 화면은 깨지지 않으니 눈으로 훑어도 넘어간다.
+
+  그래서 모집단을 **양쪽에서 파생**한다 — 레이아웃이 *쓰는* 토큰은 소스 글롭에서, 템플릿이
+  *가진* 토큰은 빌드 CSS 에서 뽑아 차집합을 본다. 어느 쪽도 손으로 적지 않는다. 글롭이나
+  정규식이 좁아져 대상이 0 건이 되면 차집합도 비어 조용히 통과하므로 하한(4)을 함께 둔다.
+
+axes:
+  surface: [admin_basic_layouts]
+
+effects:
+  - privacy_dry_run_badges_use_classes_that_exist_in_the_built_css
+
+test_files:
+  - tests/Feature/Settings/PrivacyTabBadgeClassTest.php
+
+rules_layer_coverage:
+  - rule: tailwind-class-must-exist-in-build
+    coverage: |
+      레이아웃이 쓰는 `badge-*` 전량을 빌드 CSS 와 대조한다. 없는 변종을 쓰면 red 가 되고,
+      반대로 스캔 모집단이 비면 하한 단언이 red 가 된다.
+
+validation:
+  manual: |
+    `/admin/settings?tab=privacy` 에서 두 카드의 대상 건수 뱃지가 **색을 갖는지**(탈퇴 잔여·휴면
+    안내는 노랑, 자동 탈퇴는 빨강) 브라우저로 확인. 회색 글씨로만 보이면 변종이 또 어긋난 것이다.

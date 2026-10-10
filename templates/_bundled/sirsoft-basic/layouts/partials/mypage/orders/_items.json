@@ -1,804 +1,987 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "주문 상세 - 주문 상품 목록 (체크박스 + 상태뱃지 + 배송정보)"
-  },
-  "type": "basic",
-  "name": "Div",
-  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
-  "responsive": {
-    "portable": {
-      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
-    }
-  },
-  "children": [
-    {
-      "comment": "섹션 헤더: 제목 + 전체선택 + 취소버튼",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
-      "responsive": {
+    "comment": "주문 상세의 상품 줄 목록. 체크박스가 붙는 이유는 클레임(교환/반품/취소·환불)이 **항목 단위**로도 되기\n     때문이고, 고른 항목은 `_local.selectedItemIds` 에 모여 클레임 신청 버튼이 작성 화면으로 넘긴다(`query.options`).\n     회원·비회원 상세가 함께 쓰고, 두 셸 모두 `claimable` 데이터소스를 싣는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "주문 상세 - 주문 상품 목록 (체크박스 + 상태뱃지 + 배송정보)"
+    },
+    "type": "basic",
+    "name": "Div",
+    "responsive": {
         "portable": {
-          "props": { "className": "flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
-        }
-      },
-      "children": [
-        {
-          "comment": "좌측: 아이콘 + 제목 + 전체선택",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center gap-3" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "shopping-bag", "className": "text-gray-700 dark:text-gray-300", "size": "md" }
-            },
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
-              "text": "$t:mypage.order_detail.items_title",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
-                }
-              }
-            },
-            {
-              "comment": "전체 선택 체크박스 (취소 가능 시에만 표시)",
-              "type": "basic",
-              "name": "Label",
-              "if": "{{order.data.abilities?.can_cancel === true}}",
-              "props": { "className": "flex items-center gap-1.5 ml-2 cursor-pointer select-none" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "checkbox",
-                    "checked": "{{_local.selectAllItems}}",
-                    "className": "w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "sirsoft-ecommerce.toggleSelectAllItems"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                  "text": "$t:mypage.order_detail.cancel_modal.select_all"
-                }
-              ]
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg p-4"
             }
-          ]
+        }
+    },
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg p-6"
+    },
+    "children": [
+        {
+            "comment": "섹션 헤더: 제목 + 전체선택 + 취소버튼",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "comment": "좌측: 아이콘 + 제목 + 전체선택",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "shopping-bag",
+                                "className": "text-gray-700 dark:text-gray-300",
+                                "size": "md"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:mypage.order_detail.items_title"
+                        },
+                        {
+                            "comment": "전체 선택 체크박스 — 클레임(교환/반품/취소·환불)이 열린 상품이 하나라도 있을 때 표시한다. 회원·비회원 셸 모두 claimable 데이터소스를 싣는다. 무엇을 고를지는 핸들러가 행 체크박스 잠금과 **같은 술어**(취소되지 않음 + 열린 유형 있음)로 정하므로 그 판정 재료를 넘긴다 — 잠긴 칸까지 고르면 신청 버튼이 전부 꺼진다.",
+                            "type": "basic",
+                            "name": "Label",
+                            "if": "{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}",
+                            "props": {
+                                "className": "flex items-center gap-1.5 ml-2 cursor-pointer select-none"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "신청할 수 있는 상품 전체 선택을 켜고 끈다 — 신청할 수 없는 상품은 핸들러가 건너뛴다",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.toggleSelectAllItems",
+                                            "params": {
+                                                "claimableOptions": "{{claimable?.data?.options ?? null}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "checked": "{{_local.selectAllItems}}",
+                                        "className": "w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:claim.apply.select_all"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "comment": "우측: 주문 취소 버튼 (비활성화/활성화)",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{order.data.abilities?.can_cancel === true}}",
-          "props": {
-            "type": "button",
-            "className": "flex items-center gap-1.5 px-3 py-1.5 bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-            "disabled": "{{(_local.selectedItemIds ?? []).length === 0}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sirsoft-ecommerce.initUserCancelItems",
-              "params": {
-                "orderId": "{{order.data.id ?? ''}}"
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "x-circle", "size": "sm" }
+            "comment": "상품 목록 — 구분선은 반복 노드의 **부모**가 긋는다. 반복 노드는 자기 자신이 복제되므로 그 노드의 divide-y 는 상품 사이에 걸리지 않는다.",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "divide-y divide-gray-100 dark:divide-gray-700"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:mypage.order_detail.cancel_order"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "상품 목록",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "divide-y divide-gray-100 dark:divide-gray-700" },
-      "iteration": { "source": "{{order.data.options ?? []}}", "item_var": "item" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "py-4" },
-          "children": [
-            {
-              "comment": "상품 기본 정보 행",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex gap-4" },
-              "responsive": {
-                "portable": {
-                  "props": { "className": "flex gap-3" }
-                }
-              },
-              "children": [
+            "children": [
                 {
-                  "comment": "체크박스 (취소 가능 + 미취소 상태만)",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{order.data.abilities?.can_cancel === true && item.option_status !== 'cancelled'}}",
-                  "props": { "className": "flex items-start pt-5 flex-shrink-0" },
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "flex items-start pt-4 flex-shrink-0" }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "checked": "{{(_local.selectedItemIds ?? []).includes(item.id)}}",
-                        "className": "w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 cursor-pointer"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "sirsoft-ecommerce.toggleItemSelection",
-                          "params": {
-                            "optionId": "{{item.id}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "comment": "상품 이미지",
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "className": "w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "props": {
-                        "className": "w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
-                      }
-                    }
-                  },
-                  "actions": [
-                    {
-                      "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
-                      "type": "click",
-                      "handler": "navigate",
-                      "params": { "path": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}" }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Img",
-                      "props": {
-                        "src": "{{item.thumbnail_url ?? ''}}",
-                        "alt": "{{$localized(item.product_name)}}",
-                        "className": "w-full h-full object-cover"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "comment": "상품 정보",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex-1 min-w-0" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
-                      },
-                      "text": "{{$localized(item.product_name)}}",
-                      "responsive": {
-                        "portable": {
-                          "props": {
-                            "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
-                          }
-                        }
-                      },
-                      "actions": [
-                        {
-                          "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": { "path": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}" }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{order.data.options ?? []}}",
+                        "item_var": "item"
                     },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "if": "{{item.option_snapshot?.option_name}}",
-                      "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" },
-                      "text": "{{$localized(item.option_snapshot?.option_name)}}"
-                    },
-                    {
-                      "comment": "선택된 추가옵션 (스냅샷 — 옵션 라인 바로 아래)",
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{item.additional_options?.length > 0}}",
-                      "props": { "className": "mt-0.5 space-y-0.5" },
-                      "iteration": { "source": "{{item.additional_options ?? []}}", "item_var": "addOpt" },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "P",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                          "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5" },
-                      "text": "{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:common.count_suffix"
-                    },
-                    {
-                      "comment": "모바일: 상태 뱃지 + 배송정보 (인라인)",
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{true}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{false}}"
-                        }
-                      },
-                      "props": { "className": "flex flex-wrap items-center gap-2 mt-2" },
-                      "children": [
-                        {
-                          "comment": "상태 뱃지 (모바일)",
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"
-                          },
-                          "text": "{{item.option_status_label ?? ''}}"
-                        },
-                        {
-                          "comment": "배송사 + 운송장 (모바일)",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{!!item.carrier_name}}",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                          "text": "{{item.carrier_name}} {{item.tracking_number ?? ''}}"
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "모바일: 구매확정/리뷰 버튼",
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{true}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{false}}"
-                        }
-                      },
-                      "props": { "className": "flex gap-2 mt-2" },
-                      "children": [
-                        {
-                          "comment": "구매확정 버튼 (모바일)",
-                          "type": "basic",
-                          "name": "Button",
-                          "if": "{{item.can_confirm === true}}",
-                          "props": {
-                            "type": "button",
-                            "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                          },
-                          "text": "$t:mypage.order_detail.confirm_purchase",
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "sequence",
-                              "params": {
-                                "actions": [
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "confirmTarget": {
-                                        "id": "{{item.id}}",
-                                        "orderId": "{{order.data.id}}",
-                                        "product_name": "{{$localized(item.product_name)}}",
-                                        "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
-                                        "thumbnail_url": "{{item.thumbnail_url ?? ''}}",
-                                        "subtotal_earned_points_amount": "{{item.subtotal_earned_points_amount ?? 0}}",
-                                        "subtotal_earned_points_amount_formatted": "{{item.subtotal_earned_points_amount_formatted ?? ''}}"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "handler": "openModal",
-                                    "target": "modal_confirm_purchase"
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "리뷰작성 버튼 (모바일)",
-                          "type": "basic",
-                          "name": "Button",
-                          "if": "{{item.can_write_review === true}}",
-                          "props": {
-                            "type": "button",
-                            "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                          },
-                          "text": "$t:mypage.order_detail.write_review",
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "sequence",
-                              "params": {
-                                "actions": [
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "reviewTarget": {
-                                        "id": "{{item.id}}",
-                                        "orderId": "{{order.data.id}}",
-                                        "product_id": "{{item.product_id}}",
-                                        "product_name": "{{$localized(item.product_name)}}",
-                                        "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
-                                        "thumbnail_url": "{{item.thumbnail_url ?? ''}}"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "handler": "openModal",
-                                    "target": "modal_write_review"
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "리뷰 작성 완료 뱃지 (모바일)",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{item.has_review === true}}",
-                          "props": { "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "check", "size": "xs" }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "py-4"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:mypage.order_detail.review_written"
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "리뷰 작성 기간 만료 안내 (모바일) — 버튼이 사라진 이유 안내",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{item.review_deadline_passed === true}}",
-                          "props": { "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "clock", "size": "xs" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:mypage.order_detail.review_deadline_passed"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "적용 프로모션 목록 (쿠폰/할인코드)",
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{(item.subtotal_discount_amount_value ?? 0) > 0}}",
-                      "props": { "className": "mt-1.5 space-y-1" },
-                      "children": [
-                        {
-                          "comment": "적용 쿠폰 목록",
-                          "type": "basic",
-                          "name": "Div",
-                          "if": "{{(item.promotions_applied_snapshot?.coupons ?? []).length > 0}}",
-                          "iteration": { "source": "{{item.promotions_applied_snapshot?.coupons ?? []}}", "item_var": "coupon" },
-                          "props": { "className": "flex items-center gap-1.5" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "ticket", "className": "text-red-500 dark:text-red-400", "size": "xs" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-red-500 dark:text-red-400" },
-                              "text": "{{coupon.name ?? ''}} -{{coupon.total_discount_formatted ?? ''}}"
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "적용 할인코드 목록",
-                          "type": "basic",
-                          "name": "Div",
-                          "if": "{{(item.promotions_applied_snapshot?.discount_codes ?? []).length > 0}}",
-                          "iteration": { "source": "{{item.promotions_applied_snapshot?.discount_codes ?? []}}", "item_var": "discountCode" },
-                          "props": { "className": "flex items-center gap-1.5" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "tag", "className": "text-orange-500 dark:text-orange-400", "size": "xs" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-orange-500 dark:text-orange-400" },
-                              "text": "{{discountCode.name ?? discountCode.code ?? ''}} -{{discountCode.total_discount_formatted ?? ''}}"
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "적용 이벤트 목록",
-                          "type": "basic",
-                          "name": "Div",
-                          "if": "{{(item.promotions_applied_snapshot?.events ?? []).length > 0}}",
-                          "iteration": { "source": "{{item.promotions_applied_snapshot?.events ?? []}}", "item_var": "event" },
-                          "props": { "className": "flex items-center gap-1.5" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "gift", "className": "text-purple-500 dark:text-purple-400", "size": "xs" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-purple-500 dark:text-purple-400" },
-                              "text": "{{event.name ?? ''}} -{{event.total_discount_formatted ?? ''}}"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "적용 배송정책",
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}",
-                      "props": { "className": "mt-1.5 flex items-center gap-1.5" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": { "name": "truck", "className": "text-gray-400 dark:text-gray-500", "size": "xs" }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                          "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                          "text": "/"
-                        },
-                        {
-                          "comment": "배송비가 있을 때",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                          "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}"
-                        },
-                        {
-                          "comment": "무료배송일 때",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}",
-                          "props": { "className": "text-xs text-green-600 dark:text-green-400 font-medium" },
-                          "text": "$t:mypage.order_detail.free_shipping"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "comment": "우측: 금액 + 상태뱃지 + 배송정보 (PC)",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex flex-col items-end gap-1.5 flex-shrink-0" },
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "flex flex-col items-end gap-1 flex-shrink-0" }
-                    }
-                  },
-                  "children": [
-                    {
-                      "comment": "금액 (할인 있을 때)",
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{(item.subtotal_discount_amount_value ?? 0) > 0}}",
-                      "props": { "className": "text-right" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-sm text-gray-400 dark:text-gray-500 line-through" },
-                          "text": "{{item.subtotal_price_formatted ?? ''}}",
-                          "responsive": {
-                            "portable": {
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 line-through" }
-                            }
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-base font-bold text-gray-900 dark:text-white ml-1" },
-                          "text": "{{item.mc_final_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted ?? ''}}",
-                          "responsive": {
-                            "portable": {
-                              "props": { "className": "text-sm font-bold text-gray-900 dark:text-white ml-1" }
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "금액 (할인 없을 때)",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{(item.subtotal_discount_amount_value ?? 0) === 0}}",
-                      "props": { "className": "text-base font-bold text-gray-900 dark:text-white" },
-                      "text": "{{item.subtotal_price_formatted ?? ''}}",
-                      "responsive": {
-                        "portable": {
-                          "props": { "className": "text-sm font-bold text-gray-900 dark:text-white" }
-                        }
-                      }
-                    },
-                    {
-                      "comment": "보조 통화",
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
-                      "iteration": {
-                        "source": "{{Object.entries(item.mc_final_amount ?? item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
-                        "item_var": "currency"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                          "text": "{{currency[1]?.formatted ?? ''}}"
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "상태 뱃지 (PC만 표시)",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{false}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{true}}"
-                        }
-                      },
-                      "props": {
-                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"
-                      },
-                      "text": "{{item.option_status_label ?? ''}}"
-                    },
-                    {
-                      "comment": "배송사 + 운송장번호 (PC만 표시)",
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{false}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{!!item.carrier_name}}"
-                        }
-                      },
-                      "props": { "className": "flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": { "name": "truck", "size": "xs" }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "{{item.carrier_name}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{!!item.tracking_number}}",
-                          "props": { "className": "text-blue-600 dark:text-blue-400" },
-                          "text": "{{item.tracking_number}}"
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "구매확정 버튼 (PC)",
-                      "type": "basic",
-                      "name": "Button",
-                      "if": "{{false}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{item.can_confirm === true}}"
-                        }
-                      },
-                      "props": {
-                        "type": "button",
-                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                      },
-                      "text": "$t:mypage.order_detail.confirm_purchase",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "_local",
-                                  "confirmTarget": {
-                                    "id": "{{item.id}}",
-                                    "orderId": "{{order.data.id}}",
-                                    "product_name": "{{$localized(item.product_name)}}",
-                                    "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
-                                    "thumbnail_url": "{{item.thumbnail_url ?? ''}}",
-                                    "subtotal_earned_points_amount": "{{item.subtotal_earned_points_amount ?? 0}}",
-                                    "subtotal_earned_points_amount_formatted": "{{item.subtotal_earned_points_amount_formatted ?? ''}}"
-                                  }
+                            "children": [
+                                {
+                                    "comment": "상품 기본 정보 행",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "flex gap-3"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "flex gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "체크박스 — **칸은 언제나 선다.** 신청할 수 없는 상품(취소됨·열린 클레임 유형 없음)은 잠근 채로\n               둔다(요구사항 2026-09-21). 종전에는 그런 상품에서 칸을 통째로 감춰, 같은 목록 안에서 상품 이미지가\n               한 줄만 왼쪽으로 밀려 정렬이 어긋났다 — 「왜 이 줄만 다르게 생겼나」 가 먼저 눈에 들어온다.\n               잠긴 칸은 스스로 「이 상품은 고를 수 없다」 를 말하므로 신청 버튼이 왜 안 켜지는지도 함께 설명한다.\n               칸 전체가 그 체크박스의 라벨이다(id/for) — 칸 여백을 눌러도 같은 칸이 토글된다.",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "flex items-start pt-4 flex-shrink-0"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "htmlFor": "order_item_check_{{item.id}}",
+                                                "className": "flex items-start pt-5 flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "선택 목록을 손대는 일이라 배열을 표현식으로 밀지 않고 모듈 핸들러에 맡긴다",
+                                                            "type": "change",
+                                                            "handler": "sirsoft-ecommerce.toggleItemSelection",
+                                                            "params": {
+                                                                "optionId": "{{item.id}}",
+                                                                "claimableOptions": "{{claimable?.data?.options ?? null}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "id": "order_item_check_{{item.id}}",
+                                                        "checked": "{{(_local.selectedItemIds ?? []).includes(item.id)}}",
+                                                        "disabled": "{{!(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0)}}",
+                                                        "className": "{{(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0) ? 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 cursor-pointer' : 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 opacity-40 cursor-not-allowed'}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "상품 이미지",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Img",
+                                                    "if": "{{item.thumbnail_url}}",
+                                                    "props": {
+                                                        "src": "{{item.thumbnail_url ?? ''}}",
+                                                        "alt": "{{$localized(item.product_name)}}",
+                                                        "className": "w-full h-full object-cover"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{!item.thumbnail_url}}",
+                                                    "props": {
+                                                        "className": "w-full h-full flex items-center justify-center"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "image",
+                                                                "size": "lg",
+                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "상품 정보",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
+                                                            }
+                                                        }
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
+                                                            "type": "click",
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "className": "text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
+                                                    },
+                                                    "text": "{{$localized(item.product_name)}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{item.option_snapshot?.option_name}}",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                                    },
+                                                    "text": "{{$localized(item.option_snapshot?.option_name)}}"
+                                                },
+                                                {
+                                                    "comment": "선택된 추가옵션 (스냅샷 — 옵션 라인 바로 아래)",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{item.additional_options?.length > 0}}",
+                                                    "props": {
+                                                        "className": "mt-0.5 space-y-0.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "iteration": {
+                                                                "source": "{{item.additional_options ?? []}}",
+                                                                "item_var": "addOpt"
+                                                            },
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+                                                    },
+                                                    "text": "{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:common.count_suffix"
+                                                },
+                                                {
+                                                    "comment": "모바일: 상태 뱃지 + 배송정보 (인라인)",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{true}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{false}}"
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap items-center gap-2 mt-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "상태 뱃지 (모바일)",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "if": "{{!!item.option_status_icon}}",
+                                                                    "props": {
+                                                                        "name": "{{item.option_status_icon ?? ''}}",
+                                                                        "className": "text-xs"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{item.option_status_label ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "배송사 + 운송장 (모바일)",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!item.carrier_name}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{item.carrier_name}} {{item.tracking_number ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "모바일: 구매확정/리뷰 버튼",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{true}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{false}}"
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "flex gap-2 mt-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "구매확정 버튼 (모바일)",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{item.can_confirm === true}}",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "confirmTarget": {
+                                                                                    "id": "{{item.id}}",
+                                                                                    "orderId": "{{order.data.id}}",
+                                                                                    "product_name": "{{$localized(item.product_name)}}",
+                                                                                    "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
+                                                                                    "thumbnail_url": "{{item.thumbnail_url ?? ''}}",
+                                                                                    "subtotal_earned_points_amount": "{{item.subtotal_earned_points_amount ?? 0}}",
+                                                                                    "subtotal_earned_points_amount_formatted": "{{item.subtotal_earned_points_amount_formatted ?? ''}}"
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "modal_confirm_purchase"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                            },
+                                                            "text": "$t:mypage.order_detail.confirm_purchase"
+                                                        },
+                                                        {
+                                                            "comment": "리뷰작성 버튼 (모바일)",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{item.can_write_review === true}}",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "reviewTarget": {
+                                                                                    "id": "{{item.id}}",
+                                                                                    "orderId": "{{order.data.id}}",
+                                                                                    "product_id": "{{item.product_id}}",
+                                                                                    "product_name": "{{$localized(item.product_name)}}",
+                                                                                    "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
+                                                                                    "thumbnail_url": "{{item.thumbnail_url ?? ''}}"
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "modal_write_review"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                            },
+                                                            "text": "$t:mypage.order_detail.write_review"
+                                                        },
+                                                        {
+                                                            "comment": "리뷰 작성 완료 뱃지 (모바일)",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{item.has_review === true}}",
+                                                            "props": {
+                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "check",
+                                                                        "size": "xs"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:mypage.order_detail.review_written"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "리뷰 작성 기간 만료 안내 (모바일) — 버튼이 사라진 이유 안내",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{item.review_deadline_passed === true}}",
+                                                            "props": {
+                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "clock",
+                                                                        "size": "xs"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:mypage.order_detail.review_deadline_passed"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "적용 프로모션 목록 (쿠폰/할인코드)",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(item.subtotal_discount_amount_value ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "mt-1.5 space-y-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "적용 쿠폰 목록",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(item.promotions_applied_snapshot?.coupons ?? []).length > 0}}",
+                                                            "iteration": {
+                                                                "source": "{{item.promotions_applied_snapshot?.coupons ?? []}}",
+                                                                "item_var": "coupon"
+                                                            },
+                                                            "props": {
+                                                                "className": "flex items-center gap-1.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "ticket",
+                                                                        "className": "text-red-500 dark:text-red-400",
+                                                                        "size": "xs"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-xs text-red-500 dark:text-red-400"
+                                                                    },
+                                                                    "text": "{{coupon.name ?? ''}} -{{coupon.total_discount_formatted ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "적용 할인코드 목록",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(item.promotions_applied_snapshot?.discount_codes ?? []).length > 0}}",
+                                                            "iteration": {
+                                                                "source": "{{item.promotions_applied_snapshot?.discount_codes ?? []}}",
+                                                                "item_var": "discountCode"
+                                                            },
+                                                            "props": {
+                                                                "className": "flex items-center gap-1.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "tag",
+                                                                        "className": "text-orange-500 dark:text-orange-400",
+                                                                        "size": "xs"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-xs text-orange-500 dark:text-orange-400"
+                                                                    },
+                                                                    "text": "{{discountCode.name ?? discountCode.code ?? ''}} -{{discountCode.total_discount_formatted ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "적용 이벤트 목록",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(item.promotions_applied_snapshot?.events ?? []).length > 0}}",
+                                                            "iteration": {
+                                                                "source": "{{item.promotions_applied_snapshot?.events ?? []}}",
+                                                                "item_var": "event"
+                                                            },
+                                                            "props": {
+                                                                "className": "flex items-center gap-1.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "gift",
+                                                                        "className": "text-purple-500 dark:text-purple-400",
+                                                                        "size": "xs"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-xs text-purple-500 dark:text-purple-400"
+                                                                    },
+                                                                    "text": "{{event.name ?? ''}} -{{event.total_discount_formatted ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "적용 배송정책 — 「그 상품만 샀을 때 배송비」는 부분취소·재활성 재계산 때 남은 수량 기준으로 갱신된다. 취소된 행은 남은 행과 같은 상품 옵션을 공유해 그 갱신된 배송비가 붙으므로(이미 취소한 상품에 「2,500원」), 취소 행에서는 줄을 세우지 않는다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{item.option_status !== 'cancelled' && (order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}",
+                                                    "props": {
+                                                        "className": "mt-1.5 flex items-center gap-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "truck",
+                                                                "className": "text-gray-400 dark:text-gray-500",
+                                                                "size": "xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "/"
+                                                        },
+                                                        {
+                                                            "comment": "배송비가 있을 때",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}"
+                                                        },
+                                                        {
+                                                            "comment": "무료배송일 때",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}",
+                                                            "props": {
+                                                                "className": "text-xs text-green-600 dark:text-green-400 font-medium"
+                                                            },
+                                                            "text": "$t:mypage.order_detail.free_shipping"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "우측: 금액 + 상태뱃지 + 배송정보 (PC)",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "flex flex-col items-end gap-1 flex-shrink-0"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "flex flex-col items-end gap-1.5 flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "금액 (할인 있을 때)",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(item.subtotal_discount_amount_value ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "text-right"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": "text-xs text-gray-400 dark:text-gray-500 line-through"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "className": "text-sm text-gray-400 dark:text-gray-500 line-through"
+                                                            },
+                                                            "text": "{{item.subtotal_price_formatted ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": "text-sm font-bold text-gray-900 dark:text-white ml-1"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "className": "text-base font-bold text-gray-900 dark:text-white ml-1"
+                                                            },
+                                                            "text": "{{item.mc_final_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "금액 (할인 없을 때)",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(item.subtotal_discount_amount_value ?? 0) === 0}}",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "text-sm font-bold text-gray-900 dark:text-white"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "text-base font-bold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{item.subtotal_price_formatted ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "보조 통화",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(item.mc_final_amount ?? item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "currency"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-2 justify-end"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "{{currency[1]?.formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "상태 뱃지 (PC만 표시)",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{false}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{true}}"
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!!item.option_status_icon}}",
+                                                            "props": {
+                                                                "name": "{{item.option_status_icon ?? ''}}",
+                                                                "className": "text-xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{item.option_status_label ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "배송사 + 운송장번호 (PC만 표시)",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{false}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{!!item.carrier_name}}"
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "truck",
+                                                                "size": "xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{item.carrier_name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!item.tracking_number}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "{{item.tracking_number}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "구매확정 버튼 (PC)",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{false}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{item.can_confirm === true}}"
+                                                        }
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "_local",
+                                                                        "confirmTarget": {
+                                                                            "id": "{{item.id}}",
+                                                                            "orderId": "{{order.data.id}}",
+                                                                            "product_name": "{{$localized(item.product_name)}}",
+                                                                            "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
+                                                                            "thumbnail_url": "{{item.thumbnail_url ?? ''}}",
+                                                                            "subtotal_earned_points_amount": "{{item.subtotal_earned_points_amount ?? 0}}",
+                                                                            "subtotal_earned_points_amount_formatted": "{{item.subtotal_earned_points_amount_formatted ?? ''}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "modal_confirm_purchase"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                    },
+                                                    "text": "$t:mypage.order_detail.confirm_purchase"
+                                                },
+                                                {
+                                                    "comment": "리뷰작성 버튼 (PC)",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{false}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{item.can_write_review === true}}"
+                                                        }
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "_local",
+                                                                        "reviewTarget": {
+                                                                            "id": "{{item.id}}",
+                                                                            "orderId": "{{order.data.id}}",
+                                                                            "product_id": "{{item.product_id}}",
+                                                                            "product_name": "{{$localized(item.product_name)}}",
+                                                                            "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
+                                                                            "thumbnail_url": "{{item.thumbnail_url ?? ''}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "modal_write_review"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                    },
+                                                    "text": "$t:mypage.order_detail.write_review"
+                                                },
+                                                {
+                                                    "comment": "리뷰 작성 완료 뱃지 (PC)",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{false}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{item.has_review === true}}"
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "check",
+                                                                "size": "xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:mypage.order_detail.review_written"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "리뷰 작성 기간 만료 안내 (PC) — 버튼이 사라진 이유 안내",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{false}}",
+                                                    "responsive": {
+                                                        "desktop": {
+                                                            "if": "{{item.review_deadline_passed === true}}"
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "clock",
+                                                                "size": "xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:mypage.order_detail.review_deadline_passed"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
-                              },
-                              {
-                                "handler": "openModal",
-                                "target": "modal_confirm_purchase"
-                              }
                             ]
-                          }
                         }
-                      ]
-                    },
-                    {
-                      "comment": "리뷰작성 버튼 (PC)",
-                      "type": "basic",
-                      "name": "Button",
-                      "if": "{{false}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{item.can_write_review === true}}"
-                        }
-                      },
-                      "props": {
-                        "type": "button",
-                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                      },
-                      "text": "$t:mypage.order_detail.write_review",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "_local",
-                                  "reviewTarget": {
-                                    "id": "{{item.id}}",
-                                    "orderId": "{{order.data.id}}",
-                                    "product_id": "{{item.product_id}}",
-                                    "product_name": "{{$localized(item.product_name)}}",
-                                    "option_name": "{{$localized(item.option_snapshot?.option_name) ?? ''}}",
-                                    "thumbnail_url": "{{item.thumbnail_url ?? ''}}"
-                                  }
-                                }
-                              },
-                              {
-                                "handler": "openModal",
-                                "target": "modal_write_review"
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "리뷰 작성 완료 뱃지 (PC)",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{false}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{item.has_review === true}}"
-                        }
-                      },
-                      "props": { "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": { "name": "check", "size": "xs" }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:mypage.order_detail.review_written"
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "리뷰 작성 기간 만료 안내 (PC) — 버튼이 사라진 이유 안내",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{false}}",
-                      "responsive": {
-                        "desktop": {
-                          "if": "{{item.review_deadline_passed === true}}"
-                        }
-                      },
-                      "props": { "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": { "name": "clock", "size": "xs" }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:mypage.order_detail.review_deadline_passed"
-                        }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

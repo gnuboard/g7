@@ -18,6 +18,8 @@ type AdminTemplateAuthFixtures = {
   userManageToken: string;
   /** 템플릿 목록 조회 권한 보유 토큰 (탭 전환 검증용) */
   templateReadToken: string;
+  /** 확장 관리 4화면 조회 권한 보유 토큰 (보기 전환·아이콘 검증용) */
+  extensionReadToken: string;
 };
 
 export const test = base.extend<AdminTemplateAuthFixtures>({
@@ -28,10 +30,21 @@ export const test = base.extend<AdminTemplateAuthFixtures>({
     await use(issueToken('core.dashboard.read'));
   },
   userManageToken: async ({}, use) => {
-    await use(issueToken('core.users.read', 'core.users.write'));
+    await use(issueToken('core.users.read', 'core.users.create', 'core.users.update'));
   },
   templateReadToken: async ({}, use) => {
     await use(issueToken('core.templates.read'));
+  },
+  extensionReadToken: async ({}, use) => {
+    // 확장 목록 화면은 전환 오버레이가 목록과 **자동 비활성화 배너** 둘을 함께 기다린다.
+    // 배너 엔드포인트는 core.plugins.activate 를 요구하므로 빠지면 화면이 로딩에서 멈춘다.
+    await use(issueToken(
+      'core.modules.read',
+      'core.plugins.read',
+      'core.plugins.activate',
+      'core.templates.read',
+      'core.language_packs.read',
+    ));
   },
 });
 

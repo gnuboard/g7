@@ -1,0 +1,43 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   재활성 범위 × 취소 출처 × 취소 모양의 전 조합(60) 중 귀속은 한 메서드(CancelReactivationRecorder::record)가
+#   후보 조회 한 번으로 정한다. 출처는 「반품·교환 발이냐 아니냐」 두 갈래로만 갈리고, 모양은 행 자신·부모 두
+#   후보로만 갈린다 — 갈래마다 대표 조합을 못박는다. effects 축은 면제하지 않는다.
+# e2e:allow 배지 노출 조건은 레이아웃 구조·렌더 테스트가, 실제 화면은 07 문서 Chrome MCP 실측(Q1~Q7)이 잰다.
+feature: 재활성된 취소신청서 표시 (Q29) — #747 C3b
+
+description: |
+  취소한 상품을 운영자가 나중에 다시 판매 상태로 되살리면(주문 재활성 R-주문, 상품 재활성 R-상품) 그 취소신청서에
+  「재활성됨(일시)」 배지를 단다. 일부만 되살렸으면 「일부 재활성됨」. 취소·환불 기록은 지우지 않는다.
+
+    - 재활성 이력(order_meta)은 주문 단위라 취소신청서마다 판정할 수 없다. 행이 되살아나는 순간(분할·병합 전)에
+      그 행 또는 부모 행을 가리키는 완료 취소 상품에 나중 취소부터 수량을 귀속해 order_cancels·
+      order_cancel_options.reactivated_quantity 와 reactivated_at 을 쓴다.
+    - 반품·교환 발 환불이 만든 취소신청서는 대상이 아니다(상품이 반품·교환 상태로 남는다).
+    - 귀속할 곳이 없으면(기록 이전 취소) 로그만 남기고 재활성은 진행한다.
+    - 구매자 응답에는 재활성 값을 싣지 않는다(운영 사건).
+
+axes:
+  revival: [whole_order, partial_rows]
+  cancel_origin: [cancel_or_direct, return_refund, exchange_refund]
+  cancel_shape: [full_row, split_child, two_cancels_same_row]
+
+effects:
+  - revival_attributes_quantity_to_cancel_documents_before_merge
+  - latest_cancel_is_reverted_first
+  - return_or_exchange_origin_cancel_is_never_marked
+  - unattributable_revival_is_logged_not_blocked
+  - reactivation_marks_reverted_cancel_documents
+  - claim_list_cancel_row_shows_reactivated_badge_with_time
+  - claim_list_cancel_row_shows_partial_reactivated_badge
+  - claim_detail_header_shows_reactivated_badge
+  - claim_detail_cancel_card_shows_reactivated_time_and_quantity
+  - buyer_claim_detail_hides_reactivation_fields
+  - cancel_created_after_reactivation_has_no_badge
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/OrderCancelReactivationColumnsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CancelReactivationRecorderTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ManualPaidReactivationRestorationTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBody.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBodyRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx

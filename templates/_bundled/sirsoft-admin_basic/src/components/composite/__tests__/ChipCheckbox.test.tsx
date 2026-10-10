@@ -4,12 +4,20 @@ import { ChipCheckbox } from '../ChipCheckbox';
 
 describe('ChipCheckbox', () => {
   describe('기본 렌더링', () => {
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_renders_label_icon_and_hidden_input, chip_checkbox_contract_with_decorative_icon
+     */
     it('라벨을 렌더링해야 함', () => {
       render(<ChipCheckbox value="test" label="테스트 라벨" />);
 
       expect(screen.getByText('테스트 라벨')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_renders_label_icon_and_hidden_input, chip_checkbox_contract_with_decorative_icon
+     */
     it('체크박스 input이 hidden으로 렌더링되어야 함', () => {
       const { container } = render(<ChipCheckbox value="test" label="테스트" />);
 
@@ -18,26 +26,38 @@ describe('ChipCheckbox', () => {
       expect(checkbox).toHaveClass('hidden');
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_renders_label_icon_and_hidden_input, chip_checkbox_contract_with_decorative_icon
+     */
     it('아이콘이 지정되면 렌더링해야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" icon="clock" />
       );
 
-      const icon = container.querySelector('i[role="img"]');
+      const icon = container.querySelector('i[class*="fa-"]');
       expect(icon).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_renders_label_icon_and_hidden_input, chip_checkbox_contract_with_decorative_icon
+     */
     it('아이콘이 없으면 아이콘을 렌더링하지 않아야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" />
       );
 
-      const icon = container.querySelector('i[role="img"]');
+      const icon = container.querySelector('i[class*="fa-"]');
       expect(icon).not.toBeInTheDocument();
     });
   });
 
   describe('variant 스타일', () => {
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('기본 variant는 blue여야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" />
@@ -47,6 +67,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveClass('bg-blue-50');
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('checked 상태에서 variant 스타일이 적용되어야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" variant="green" checked={true} />
@@ -57,6 +81,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveClass('text-white');
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('unchecked 상태에서 variant 스타일이 적용되어야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" variant="orange" checked={false} />
@@ -70,6 +98,10 @@ describe('ChipCheckbox', () => {
     const variants = ['green', 'orange', 'yellow', 'gray', 'blue'] as const;
 
     variants.forEach((variant) => {
+      /**
+       * @scenario component=chip_checkbox
+       * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+       */
       it(`variant="${variant}" unchecked 스타일이 적용되어야 함`, () => {
         const { container } = render(
           <ChipCheckbox value="test" label="테스트" variant={variant} checked={false} />
@@ -82,6 +114,10 @@ describe('ChipCheckbox', () => {
         expect(label).toHaveClass('rounded-lg');
       });
 
+      /**
+       * @scenario component=chip_checkbox
+       * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+       */
       it(`variant="${variant}" checked 스타일이 적용되어야 함`, () => {
         const { container } = render(
           <ChipCheckbox value="test" label="테스트" variant={variant} checked={true} />
@@ -94,6 +130,10 @@ describe('ChipCheckbox', () => {
   });
 
   describe('customColor prop', () => {
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('customColor가 있으면 variant를 무시하고 인라인 스타일을 적용해야 함', () => {
       const { container } = render(
         <ChipCheckbox
@@ -112,6 +152,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveStyle({ color: '#FF5733' });
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('customColor checked 상태에서 배경색이 커스텀 색상이어야 함', () => {
       const { container } = render(
         <ChipCheckbox
@@ -130,6 +174,10 @@ describe('ChipCheckbox', () => {
       });
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('customColor unchecked 상태에서 rgba 배경이 적용되어야 함', () => {
       const { container } = render(
         <ChipCheckbox
@@ -147,6 +195,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveStyle({ color: '#FF5733' });
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('customColor가 없으면 기존 variant 로직을 사용해야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" variant="blue" checked={false} />
@@ -158,6 +210,10 @@ describe('ChipCheckbox', () => {
       expect(label?.style.backgroundColor).toBeFalsy();
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('customColor + style prop이 함께 작동해야 함', () => {
       const { container } = render(
         <ChipCheckbox
@@ -173,6 +229,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveStyle({ marginLeft: '8px' });
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('customColor + className이 함께 작동해야 함', () => {
       const { container } = render(
         <ChipCheckbox
@@ -188,6 +248,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveClass('inline-flex');
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('잘못된 hex 색상이면 빈 스타일을 적용해야 함', () => {
       const { container } = render(
         <ChipCheckbox
@@ -203,6 +267,10 @@ describe('ChipCheckbox', () => {
       expect(label).toBeTruthy();
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('hover 시 스타일이 변경되어야 함 (checked)', () => {
       const { container } = render(
         <ChipCheckbox
@@ -226,6 +294,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveStyle({ opacity: '1' });
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('hover 시 unchecked 배경 투명도가 증가해야 함', () => {
       const { container } = render(
         <ChipCheckbox
@@ -249,6 +321,10 @@ describe('ChipCheckbox', () => {
   });
 
   describe('onChange 이벤트', () => {
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_change_reaches_handler, chip_checkbox_contract_with_decorative_icon
+     */
     it('onChange 핸들러가 호출되어야 함', () => {
       const handleChange = vi.fn();
       const { container } = render(
@@ -261,6 +337,10 @@ describe('ChipCheckbox', () => {
       expect(handleChange).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_change_reaches_handler, chip_checkbox_contract_with_decorative_icon
+     */
     it('customColor 모드에서도 onChange가 호출되어야 함', () => {
       const handleChange = vi.fn();
       const { container } = render(
@@ -278,6 +358,10 @@ describe('ChipCheckbox', () => {
       expect(handleChange).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_change_reaches_handler, chip_checkbox_contract_with_decorative_icon
+     */
     it('onChange 없이도 오류 없이 렌더링되어야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" />
@@ -290,6 +374,10 @@ describe('ChipCheckbox', () => {
   });
 
   describe('스타일 커스터마이징', () => {
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('className prop이 적용되어야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" className="extra-class" />
@@ -299,6 +387,10 @@ describe('ChipCheckbox', () => {
       expect(label).toHaveClass('extra-class');
     });
 
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
+     */
     it('style prop이 적용되어야 함', () => {
       const { container } = render(
         <ChipCheckbox value="test" label="테스트" style={{ padding: '20px' }} />
@@ -310,6 +402,10 @@ describe('ChipCheckbox', () => {
   });
 
   describe('value prop', () => {
+    /**
+     * @scenario component=chip_checkbox
+     * @effects chip_checkbox_renders_label_icon_and_hidden_input, chip_checkbox_contract_with_decorative_icon
+     */
     it('checkbox에 value가 설정되어야 함', () => {
       const { container } = render(
         <ChipCheckbox value="my_value" label="테스트" />

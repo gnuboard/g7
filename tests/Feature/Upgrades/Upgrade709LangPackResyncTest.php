@@ -5,8 +5,6 @@ namespace Tests\Feature\Upgrades;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Extension\UpgradeContext;
-use App\Models\IdentityMessageDefinition;
-use App\Models\IdentityMessageTemplate;
 use App\Models\LanguagePack;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
@@ -30,6 +28,11 @@ class Upgrade709LangPackResyncTest extends TestCase
 
     private string $packRoot = '';
 
+    /**
+     * 7.0.9 업그레이드 마이그레이션 파일을 수동 로드하고 테스트 언어팩의 seed 디렉터리를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +45,11 @@ class Upgrade709LangPackResyncTest extends TestCase
         File::ensureDirectoryExists($this->packRoot.'/seed');
     }
 
+    /**
+     * 테스트 언어팩 디렉터리를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->packRoot);
@@ -75,7 +83,7 @@ class Upgrade709LangPackResyncTest extends TestCase
     /**
      * 마이그레이션을 업그레이드 컨텍스트로 실행합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function runMigration(): void
     {
@@ -91,6 +99,8 @@ class Upgrade709LangPackResyncTest extends TestCase
      * @scenario domain=notification, entry=upgrade_resync
      *
      * @effects upgrade_resync_restores_wiped_pack_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_resync_restores_wiped_notification_locale_and_preserves_overrides(): void
     {
@@ -159,36 +169,41 @@ class Upgrade709LangPackResyncTest extends TestCase
     }
 
     /**
-     * 본인인증 메시지 템플릿의 소실된 ja 도 같은 재동기화로 복구된다.
+     * 본인인증 알림 템플릿의 소실된 ja 도 같은 재동기화로 복구된다.
+     *
+     * 7.1.0 부터 본인인증 문구는 알림 정의(identity.*)이고 번역은 seed/notifications.json 의 type 키로 온다(#699).
+     * 7.0.8 에서 여러 버전을 건너뛰는 업데이트는 이 스텝을 7.1.0 코드 위에서 돌리므로 그 경로를 잠근다.
      *
      * @scenario domain=identity, entry=upgrade_resync
      *
      * @effects upgrade_resync_restores_wiped_identity_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_resync_restores_wiped_identity_message_locale(): void
     {
-        File::put($this->packRoot.'/seed/identity_messages.json', json_encode([
-            'mail.purpose.signup' => [
+        File::put($this->packRoot.'/seed/notifications.json', json_encode([
+            'identity.purpose.signup' => [
                 'definition' => ['name' => '会員登録認証'],
                 'templates' => ['mail' => ['subject' => '[アプリ] 認証コード', 'body' => '<p>{code}</p>']],
             ],
         ]));
         $this->createActivePack();
 
-        $cfg = config('core.identity_messages')['mail.purpose.signup'];
-        $definition = IdentityMessageDefinition::query()->create([
+        $definition = NotificationDefinition::query()->create([
+            'type' => 'identity.purpose.signup',
+            'hook_prefix' => 'core.identity',
+            'category' => 'identity',
             'extension_type' => 'core',
             'extension_identifier' => 'core',
-            'provider_id' => $cfg['provider_id'],
-            'scope_type' => $cfg['scope_type'],
-            'scope_value' => $cfg['scope_value'],
             'name' => ['ko' => '회원가입 인증'],
             'channels' => ['mail'],
+            'hooks' => [],
             'variables' => [],
             'is_active' => true,
             'is_default' => true,
         ]);
-        $template = IdentityMessageTemplate::query()->create([
+        $template = NotificationTemplate::query()->create([
             'definition_id' => $definition->id,
             'channel' => 'mail',
             'subject' => ['ko' => '[앱] 인증 코드'],
@@ -202,6 +217,6 @@ class Upgrade709LangPackResyncTest extends TestCase
         $this->runMigration();
 
         $this->assertSame('[アプリ] 認証コード', $template->fresh()->subject['ja'] ?? null,
-            '소실된 본인인증 템플릿 subject 에 활성 팩 seed 의 ja 가 병합 복구되어야 한다');
+            '소실된 본인인증 알림 템플릿 subject 에 활성 팩 seed 의 ja 가 병합 복구되어야 한다');
     }
 }

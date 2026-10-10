@@ -16,15 +16,15 @@ description: |
   핵심 동작:
     - 모듈 활성: quick_menu 슬롯에 상품/주문/리뷰/쿠폰/배송 버튼 5개 + commerce 슬롯에 카드(오늘 주문 배지 7종, 판매 추세 그래프, 최신 리뷰, 미답변 문의) 주입
     - 모듈 비활성: 두 슬롯 모두 default([]) 로 처리되어 이커머스 흔적이 화면에서 사라짐
-    - 데이터 소스 4종: overview / sales-graph / recent-reviews / pending-inquiries — overview/sales-graph 는 ecommerce_stats 집계 테이블만, recent-reviews/pending-inquiries 는 인덱스+LIMIT N 만 조회 (원본 풀스캔 금지)
-    - 판매 수량/순매출: 주문상품(order_options) 의 매출 반영 7종 상태(option_status) 옵션만 SUM(unit_price × (quantity − cancelled_quantity)), 날짜는 orders.ordered_at 귀속
+    - 데이터 소스 4종: overview / sales-graph / recent-reviews / pending-inquiries — sales-graph 는 ecommerce_stats 집계 테이블만, overview(오늘 배지)는 배지 링크와 같은 목록 조건으로 사이트 오늘 주문 수(ordered_at 인덱스 범위), recent-reviews/pending-inquiries 는 인덱스+LIMIT N 만 조회 (원본 풀스캔 금지)
+    - 판매 수량/순매출: 주문상품(order_options) 의 매출 반영 7종 상태(option_status) 옵션만 SUM(unit_price × quantity) — quantity 는 분할 뒤 잔여 수량, cancelled_quantity 는 이력, 날짜는 orders.ordered_at 귀속
     - 변화율: 직전 7일 데이터 부족 시 '—' 폴백 + 색상은 emerald(상승)/rose(하락)/slate(폴백)
     - ExtensionBadge: commerce 슬롯 우상단에 sirsoft-ecommerce 모듈 배지
 
 axes:
   module_state: [active, inactive]
   data_state: [has_orders, no_orders, has_reviews, no_reviews, has_inquiries, no_inquiries, has_previous_week, no_previous_week]
-  user_role: [admin_with_dashboard_permission, admin_without_dashboard_permission, non_admin]
+  user_role: [admin_with_dashboard_permission, admin_without_dashboard_permission, non_admin, unauthenticated]
 
 exclusions:
   - { module_state: inactive, data_state: has_orders, reason: "모듈 비활성 시 API 미호출 — 데이터 상태 무관" }
@@ -45,7 +45,16 @@ effects:
   - total_quantity_displays_sum_of_7_days
   - total_sales_displays_sum_of_7_days
   - net_sales_sums_only_sales_eligible_statuses
-  - net_sales_deducts_cancelled_quantity
+  # 부분취소 뒤 남은 수량을 한 번만 센다 — cancelled_quantity(이력 카운터)는 빼지 않는다 (S-Q26-a).
+  - net_sales_counts_remaining_quantity_once
+  # 카운터가 수량보다 큰 레거시 행이 있어도 집계가 1690(unsigned 범위) 오류로 멈추지 않는다.
+  - net_sales_aggregate_survives_counter_above_quantity
+  # 부분취소는 살아 있는 행의 quantity 를 잔여로 줄이고 cancelled_quantity 는 이력으로 남긴다.
+  - partial_cancel_keeps_cancelled_quantity_as_history_counter
+  # 1.3.0 업그레이드가 예전 식으로 쌓인 과거 집계 행을 새 식으로 다시 쓴다(집계 행이 있는 날짜만).
+  - upgrade_recalculates_past_net_sales_stats
+  # 일 집계의 상태별 수량 기록은 반품완료 옵션 수량을 returns 칸에 남긴다(배지는 주문 수 — admin-dashboard-badge-order-count).
+  - aggregate_status_record_counts_returned_option_quantity
   - net_sales_attributed_by_order_ordered_at
   - sales_change_rate_emerald_when_positive
   - sales_change_rate_rose_when_negative
@@ -59,9 +68,74 @@ effects:
   - quick_menu_buttons_hidden_when_module_inactive
   - commerce_section_hidden_when_module_inactive
   - non_admin_blocked_from_dashboard
+  # ── 집계 서비스 계약 (Unit — 화면 effects 가 읽는 값을 만드는 쪽) ──────────
+  # 오늘 주문이 없으면 배지는 전부 0 이다 — null 이 새어 나가면 화면이 빈칸을 그린다.
+  # (배지는 주문 수를 주문 표에서 바로 센다 — 7.1.0 결정, admin-dashboard-badge-order-count.yaml)
+  - overview_buckets_are_zero_when_no_orders_today
+  # 증감률은 직전 같은 길이 구간과 비교해 산출한다 (7일 ↔ 그 앞 7일).
+  - sales_change_rate_compares_against_the_previous_window_of_the_same_length
+  # 비교할 직전 구간이 비면 0% 가 아니라 null 이다 — 화면의 대시(–) 표기가 이 값에 선다.
+  - sales_change_rate_is_null_when_the_previous_window_has_no_rows
+  # 상태 버킷은 취소 옵션(cancelled)을 cancellations 한 칸으로 모은다.
+  - status_buckets_merge_cancelled_options_into_one_cancellations_count
+  # 최근 N일만 upsert 한다 — 그 밖의 과거 행은 손대지 않는다.
+  - aggregate_recent_days_upserts_only_the_window_and_preserves_older_rows
+  # 같은 구간을 다시 돌려도 행이 늘지 않는다 (스케줄러 재실행 안전).
+  - aggregate_recent_days_is_idempotent_on_rerun
+  # 미답변 문의 카드 재료 — 건수·항목과 함께 게시판 이동용 slug 를 서버가 낸다.
+  - pending_inquiries_payload_carries_the_board_slug_for_navigation
+  # ── 대시보드 API 계약 (Feature — 가드·응답 형태) ──────────────────────────
+  # 로그인하지 않은 요청은 네 엔드포인트 모두 401 이다.
+  - dashboard_api_rejects_unauthenticated_request_with_401
+  # 관리자라도 대시보드 조회 권한(sirsoft-ecommerce.dashboard.view)이 없으면 403 이다.
+  - dashboard_api_rejects_admin_without_dashboard_permission_with_403
+  # 판매 추세 응답은 7일 막대·합계·증감률·갱신 시각 필드를 모두 싣는다.
+  - sales_graph_api_payload_carries_days_totals_change_rates_and_updated_at
+  # 최신 리뷰 응답 행은 상품명·평점·작성자를 싣는다.
+  - recent_reviews_api_returns_review_rows_with_product_and_author
+  # 미답변 문의 건수는 답변 완료 문의를 세지 않는다.
+  - pending_inquiries_api_counts_only_unanswered_inquiries
+  # 목록형 API(최신 리뷰·미답변 문의)는 허용 범위 밖 limit 를 422 로 거부한다.
+  - dashboard_list_api_rejects_out_of_range_limit_with_422
+  # ── 집계 커맨드 (Feature — sirsoft-ecommerce:aggregate-stats) ────────────────
+  # --dry-run 은 집계만 하고 행을 저장하지 않는다.
+  - aggregate_command_dry_run_persists_no_rows
+  # 대시보드 집계 스케줄러 설정이 꺼져 있으면 저장하지 않는다.
+  - aggregate_command_skips_when_scheduler_disabled
+  # ── 레이아웃 확장 구조 (Vitest — 정적 JSON) ──────────────────────────────────
+  # quick_menu 확장은 append 모드·priority 40 으로 게시판(50)보다 앞에 붙는다.
+  - quick_menu_extension_appends_before_board_with_priority_40
+  # 빠른 메뉴 버튼 다섯 개는 각자의 이커머스 관리자 경로로 이동한다.
+  - quick_menu_buttons_link_to_ecommerce_admin_routes
+  # 빠른 메뉴 버튼은 아이콘과 라벨을 함께 그린다.
+  - quick_menu_buttons_render_icon_and_label
+  # 확장이 쓰는 다국어 키는 sirsoft-ecommerce 네임스페이스(또는 코어 공용 키)다.
+  - dashboard_extension_lang_keys_use_ecommerce_namespace
+  # commerce 확장은 데이터 소스 네 개(overview/sales-graph/recent-reviews/pending-inquiries)를 선언한다.
+  - commerce_extension_declares_four_dashboard_data_sources
+  # 각 데이터 소스는 모듈 대시보드 API 엔드포인트를 호출한다.
+  - commerce_data_sources_call_module_dashboard_endpoints
+  # 각 데이터 소스는 인증 필요(GET)이며 실패 시 fallback 을 갖는다.
+  - commerce_data_sources_require_auth_and_declare_fallback
+  # commerce 영역은 오늘 배지·판매 차트·최신 리뷰·미답변 문의 카드 네 개를 그린다.
+  - commerce_section_renders_four_cards
+  # 오늘 주문 배지를 누르면 그 상태 + 사이트 오늘 날짜로 거른 주문 목록으로 간다.
+  - today_order_status_badge_click_navigates_to_filtered_order_list
+  # 리뷰 카드의 「전체 보기」는 리뷰 관리 화면으로 간다.
+  - latest_reviews_view_all_links_to_review_admin
+  # 미답변 문의 항목·「전체 보기」는 board_slug 기반 게시판 글 경로로 간다(slug 없으면 링크 숨김).
+  - pending_inquiries_link_to_board_post_via_board_slug
+  # 판매 차트는 매출액 데이터셋을 보조 Y축(y1)에 그려 수량 막대가 묻히지 않는다.
+  - sales_graph_chart_plots_amount_on_secondary_axis
+  # 세 카드는 h-full 로 높이를 맞춘다.
+  - dashboard_cards_share_equal_height
+  # 카드는 회색톤(bg-slate-100 / dark:bg-slate-800) 배경을 쓴다.
+  - dashboard_cards_use_slate_tone
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/DashboardApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/RecalculateEcommerceStatsNetSalesTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/PartialCancelNetSalesTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/AggregateEcommerceStatsCommandTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceDashboardServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_dashboard_commerce_extension.test.tsx

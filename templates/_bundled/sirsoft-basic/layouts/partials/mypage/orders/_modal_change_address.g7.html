@@ -1,0 +1,120 @@
+<!-- 주문 배송지 변경 창 — 배송이 시작되기 전까지만 열린다. 회원은 저장된 배송지에서 고르거나 직접 쓸 수
+     있고 비회원은 주소록이 없어 직접 입력만 보인다. 창이 별도 컨텍스트라 고른 값이 `_global` 에 산다. -->
+<partial description="주문 배송지 변경 모달" editor_label="$t:user.modal_label.mypage_orders.changeAddressModal">
+  <modal data-type="composite" data-ref="changeAddressModal" title="$t:mypage.order_detail.change_shipping_address" size="md" :closeOnBackdropClick="false">
+    <div class="space-y-4">
+      <!-- 탭: 저장된 배송지 / 직접 입력 — 회원만. 비회원은 주소록이 없어 탭 없이 직접입력 폼만 노출. -->
+      <div data-if="{{_global.currentUser?.uuid}}" class="flex border-b border-gray-200 dark:border-gray-700">
+        <button type="button" class="{{(_global.changeAddressMode ?? 'saved') === 'saved' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+          <on type="click">
+            <!-- 저장된 배송지 탭 -->
+            <set-state target="global" changeAddressMode="saved"/>
+          </on>
+          $t:mypage.order_detail.saved_addresses
+        </button>
+        <button type="button" class="{{(_global.changeAddressMode ?? 'saved') === 'manual' ? 'px-4 py-2 text-sm font-medium border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+          <on type="click">
+            <!-- 직접 입력 탭 — 비회원에게는 이 모드만 있고 탭 줄 자체가 보이지 않는다 -->
+            <set-state target="global" changeAddressMode="manual"/>
+          </on>
+          $t:mypage.order_detail.manual_input
+        </button>
+      </div>
+      <!-- 저장된 배송지 목록 — 회원 + saved 탭. 비회원은 주소록이 없어 비노출. -->
+      <div data-if="{{_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved'}}" class="space-y-2 max-h-80 overflow-y-auto">
+        <!-- 배송지 있을 때 -->
+        <div data-if="{{(userAddresses?.data?.addresses?.data ?? []).length > 0}}" data-each="addr, addrIdx in {{userAddresses?.data?.addresses?.data ?? []}}" class="space-y-2">
+          <div class="{{_global.selectedAddressId === addr.id ? 'border-2 border-gray-900 dark:border-white rounded-lg p-3 cursor-pointer bg-gray-50 dark:bg-gray-700' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors'}}">
+            <on type="click">
+              <!-- 카드 전체가 고르기 영역이다 — 고르기만 하고 실제 반영은 아래 확인 버튼이 한다 -->
+              <set-state target="global" selectedAddressId="{{addr.id}}"/>
+            </on>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-medium text-gray-900 dark:text-white text-sm">{{$localized(addr.name)}}</span>
+              <span data-if="{{addr.is_default}}" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium">
+                <icon name="star" class="text-[10px]"/>
+                <span>$t:mypage.addresses.default</span>
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{addr.recipient_name}} | {{addr.recipient_phone}}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">[{{addr.zipcode}}] {{addr.address}} {{addr.address_detail}}</p>
+          </div>
+        </div>
+        <!-- 배송지 없을 때 -->
+        <div data-if="{{!(userAddresses?.data?.addresses?.data ?? []).length}}" class="text-center py-8">
+          <icon name="map-pin" class="text-[2.5rem] mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
+          <p class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.addresses.empty</p>
+        </div>
+      </div>
+      <!-- 직접 입력 폼 — 비회원은 항상 노출(탭 없음), 회원은 manual 탭 선택 시 노출. 모달은 부모 _local 미접근이므로 dataKey 를 _global.editingShippingAddress 로 설정(트리거가 현재 배송지로 채움). 내부 Input 의 name(recipient_name 등 하위 키)이 _global.editingShippingAddress 와 자동 동기화됨. _modal_address.g7.html(_global.editingAddress) 와 동일 패턴. 자동바인딩 Input 에는 수동 value 를 두지 않는다. -->
+      <div data-key="_global.editingShippingAddress" data-if="{{!_global.currentUser?.uuid || (_global.changeAddressMode ?? 'saved') === 'manual'}}" class="space-y-3">
+        <!-- 받는 분 + 연락처 -->
+        <div class="grid grid-cols-2 gap-3">
+          <responsive on="portable" class="grid grid-cols-1 gap-3"/>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <span>$t:mypage.addresses.form.recipient</span>
+              <span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <input type="text" name="recipient_name" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <span>$t:mypage.addresses.form.phone</span>
+              <span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <input type="tel" name="recipient_phone" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"/>
+          </div>
+        </div>
+        <!-- 주소 검색 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <span>$t:mypage.addresses.form.address</span>
+            <span class="text-red-500 ml-0.5">*</span>
+          </label>
+          <div class="space-y-2">
+            <div class="flex gap-2">
+              <input type="text" name="zipcode" placeholder="$t:shop.checkout.zipcode_placeholder" class="w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm" :readOnly="true"/>
+              <extension-point name="address_search_slot" data-ref="modal_change_address_search_slot">
+                <prop name="readOnlyFields">
+                  <item>zipcode</item>
+                  <item>address</item>
+                </prop>
+                <callback name="onAddressSelect">
+                  <set-state target="global" editingShippingAddress.zipcode="{{$event.zipcode}}" editingShippingAddress.address="{{$event.address}}" editingShippingAddress.region="{{$event.region}}" editingShippingAddress.city="{{$event.city}}"/>
+                </callback>
+              </extension-point>
+            </div>
+            <input type="text" name="address" placeholder="$t:shop.checkout.address_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm" :readOnly="true"/>
+          </div>
+        </div>
+        <!-- 상세 주소 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
+          <input type="text" name="address_detail" placeholder="$t:mypage.addresses.form.detail_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm"/>
+        </div>
+      </div>
+      <!-- 버튼 영역 -->
+      <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
+        <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}">
+          <responsive on="portable" type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}"/>
+          <on type="click">
+            <!-- 적용 — 저장된 배송지 탭에서 아무것도 고르지 않았으면 잠겨 있다(address_id 없이 나가면 서버가 직접 입력 칸을 요구해 422, #703).
+                 회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다. -->
+            <action handler="sirsoft-ecommerce.changeShippingAddress" confirm="$t:mypage.order_detail.confirm_change_address" orderId="{{order.data.id}}"/>
+          </on>
+          <icon data-if="{{_local.isSubmittingAddress}}" name="spinner" class="animate-spin" size="sm"/>
+          <span>{{_local.isSubmittingAddress ? '$t:common.processing' : '$t:mypage.order_detail.apply_change'}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

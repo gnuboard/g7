@@ -1,0 +1,27 @@
+feature: KG이니시스 에스크로 구매결정 창 — 로그인 회원의 한시 서명 주소
+
+description: |
+  주문 상세의 [구매결정] 은 새 창으로 구매결정 창을 연다. 사이트 화면 로그인은 API 토큰이라 새 창 이동에는 로그인 정보가
+  실리지 않으므로, 영수증 조회 API(토큰 인증)가 본인 에스크로 결제에 한시 서명 주소(escrow_confirm_url)를 내려 주고
+  구매결정 창은 그 서명을 본인 확인으로 받는다. 서명 없는 주소(세션 로그인도 없음)는 종전대로 401 안내.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D19):
+    - 구매결정 창이 웹 세션 로그인(Auth::check)으로만 본인을 판정해, 로그인한 회원도 늘 401 「로그인한 뒤 주문 상세에서
+      구매결정을 다시 진행해 주세요.」 를 봤다(실측: m2 에스크로 결제완료 주문 737).
+
+axes:
+  case: [receipt_api_link, signed_link_opens, tampered_or_unsigned, non_escrow, window_locale]
+
+effects:
+  - owner_gets_signed_confirm_link              # 본인 에스크로 결제 → 영수증 조회 응답 escrow_confirm_url(서명·만료)
+  - confirm_window_opens_with_signature         # 세션 없이 서명 주소로 열면 확인창(증표 결과 주소 포함)
+  - confirm_window_refuses_unsigned_or_tampered # 서명 없음·uid 바꿈 → 401
+  - no_link_for_non_escrow                      # 에스크로 아님 → null
+  - confirm_window_follows_screen_locale        # 확인창 문서 언어·제목·안내가 화면 언어(Accept-Language) — 한국어 고정 아님
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/EscrowConfirmSignedLinkTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/escrowConfirmSignedLink.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 로그인 m2 의 에스크로 결제완료 주문 상세 [구매결정] → 새 창에 이니시스 구매결정 화면(401 안내 아님)

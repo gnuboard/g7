@@ -1,4 +1,5 @@
 {
+    "comment": "언어팩 한 벌의 상세 창. 목록 카드의 메뉴에서 열며, **목록과 다른 데이터소스**를 쓴다 —\n  매니페스트·호환 제약·변경 이력은 목록 응답에 실리지 않아 열 때 따로 받는다. 그래서 값이\n  오기 전 잠깐 「불러오는 중」이 뜨는 갈래가 정상으로 있다.\n  네 구획으로 나뉜다: 기본 정보 · 호환(코어와 대상 확장의 버전 제약, 어긋나면 경고 띠) ·\n  출처(어디서 왔고 언제 깔렸는가) · 변경 이력. 코어에 내장된 팩이면 맨 위에 그 사실을 먼저 알린다.",
     "meta": {
         "is_partial": true,
         "description": "언어팩 상세 정보 모달 — 모듈 detail 모달 패턴(섹션별 구조) 적용",
@@ -57,7 +58,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fas fa-info-circle",
-                                                "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                             }
                                         },
                                         {
@@ -101,7 +102,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-cog",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -122,12 +123,99 @@
                                             },
                                             "children": [
                                                 {
+                                                    "id": "lp_detail_icon",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
+                                                        "className": "col-span-2 flex items-center gap-3 mb-4"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지된다.\n                     깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 언어팩까지 전부\n                     아이콘을 잃으므로(다른 상세 창과 같은 결함) 식별자 목록으로 든다.",
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "fas fa-language",
+                                                                        "className": "text-xl text-gray-600 dark:text-gray-400",
+                                                                        "aria-hidden": "true"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Img",
+                                                                    "if": "{{language_pack_detail?.data?.icon_url && !(_local.detailIconBroken ?? []).includes(language_pack_detail?.data?.identifier)}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가\n                         다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다.",
+                                                                            "event": "onError",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "detailIconBroken": "{{[...(_local.detailIconBroken ?? []), language_pack_detail?.data?.identifier]}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "src": "{{language_pack_detail?.data?.icon_url}}",
+                                                                        "alt": "$t:extensions.icon.alt|name={{language_pack_detail?.data?.name ?? ''}}",
+                                                                        "loading": "lazy",
+                                                                        "decoding": "async",
+                                                                        "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{language_pack_detail?.data?.icon_source !== 'manifest'}}",
+                                                                    "props": {
+                                                                        "className": "absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800",
+                                                                        "aria-label": "$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}"
+                                                                    },
+                                                                    "text": "{{language_pack_detail?.data?.locale}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-primary font-semibold truncate"
+                                                                    },
+                                                                    "text": "{{language_pack_detail?.data?.name ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Code",
+                                                                    "props": {
+                                                                        "className": "text-label-subtle text-xs"
+                                                                    },
+                                                                    "text": "{{language_pack_detail?.data?.identifier ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{language_pack_detail?.data?.name}}",
+                                                    "props": {
                                                         "className": "col-span-2"
                                                     },
-                                                    "if": "{{language_pack_detail?.data?.name}}",
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -418,7 +506,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-link",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -527,7 +615,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-folder-open",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -697,7 +785,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-clock-rotate-left",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -750,13 +838,13 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
-                                                            "props": {
-                                                                "className": "row-stack"
-                                                            },
                                                             "iteration": {
                                                                 "source": "entry.categories",
                                                                 "item_var": "category",
                                                                 "index_var": "catIdx"
+                                                            },
+                                                            "props": {
+                                                                "className": "row-stack"
                                                             },
                                                             "children": [
                                                                 {
@@ -774,13 +862,13 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
-                                                                            "props": {
-                                                                                "className": "ml-3 space-y-0.5"
-                                                                            },
                                                                             "iteration": {
                                                                                 "source": "category.items",
                                                                                 "item_var": "changeItem",
                                                                                 "index_var": "itemIdx"
+                                                                            },
+                                                                            "props": {
+                                                                                "className": "ml-3 space-y-0.5"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -817,16 +905,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

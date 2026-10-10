@@ -19,15 +19,24 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
  * Report 기능 통합 테스트
+ *
+ * 시나리오 축·효과는 매니페스트 tests/scenarios/admin-report-management.yaml 참조.
  */
 class ReportTest extends ModuleTestCase
 {
-
     private User $admin;
+
     private User $reporter;
+
     private User $author;
+
     private Board $board;
 
+    /**
+     * 신고 조회·관리 권한을 가진 관리자, 신고자, 작성자와 신고를 켠 게시판을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -92,6 +101,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 목록 조회 테스트
+     *
+     * @scenario case=list_reports
+     *
+     * @effects admin_report_list_returns_paginated_reports
+     *
+     * @return void 반환값 없음
      */
     public function test_can_fetch_reports_list(): void
     {
@@ -136,6 +151,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 검색 필터 테스트 - 상태별
+     *
+     * @scenario case=filter_reports
+     *
+     * @effects admin_report_list_filters_by_status
+     *
+     * @return void 반환값 없음
      */
     public function test_can_filter_reports_by_status(): void
     {
@@ -163,6 +184,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 검색 필터 테스트 - 타입별
+     *
+     * @scenario case=filter_reports
+     *
+     * @effects admin_report_list_filters_by_target_type
+     *
+     * @return void 반환값 없음
      */
     public function test_can_filter_reports_by_type(): void
     {
@@ -190,6 +217,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 상세 조회 테스트
+     *
+     * @scenario case=report_detail
+     *
+     * @effects admin_report_detail_returns_report
+     *
+     * @return void 반환값 없음
      */
     public function test_can_fetch_report_detail(): void
     {
@@ -227,6 +260,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 상태 변경 테스트 (단일)
+     *
+     * @scenario case=update_status
+     *
+     * @effects admin_report_status_update_persists_status_and_note
+     *
+     * @return void 반환값 없음
      */
     public function test_can_update_report_status(): void
     {
@@ -259,6 +298,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 대량 상태 변경 테스트
+     *
+     * @scenario case=bulk_update_status
+     *
+     * @effects admin_report_bulk_status_update_persists_all
+     *
+     * @return void 반환값 없음
      */
     public function test_can_bulk_update_report_status(): void
     {
@@ -292,6 +337,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 삭제 테스트
+     *
+     * @scenario case=delete_report
+     *
+     * @effects admin_report_delete_soft_deletes_row
+     *
+     * @return void 반환값 없음
      */
     public function test_can_delete_report(): void
     {
@@ -316,6 +367,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 권한 체크 테스트 - 조회 권한 없음
+     *
+     * @scenario case=permission_denied
+     *
+     * @effects admin_report_list_without_view_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_view_reports(): void
     {
@@ -332,6 +389,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 권한 체크 테스트 - 상태 변경 권한 없음
+     *
+     * @scenario case=permission_denied
+     *
+     * @effects admin_report_status_update_without_manage_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_update_status(): void
     {
@@ -354,6 +417,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 중복 신고 방지 테스트
+     *
+     * @scenario case=submit_report
+     *
+     * @effects duplicate_report_returns_409
+     *
+     * @return void 반환값 없음
      */
     public function test_prevents_duplicate_reports(): void
     {
@@ -372,6 +441,15 @@ class ReportTest extends ModuleTestCase
             'reporter_id' => $this->reporter->id,
         ]);
 
+        // 신고 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트 S7) — 중복 판정까지 가도록 부여한다
+        $readRole = Role::create(['identifier' => 'report_reader_'.uniqid(), 'name' => ['ko' => '글 읽기', 'en' => 'Post Reader'], 'is_active' => true]);
+        $readPermission = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$this->board->slug}.posts.read"],
+            ['name' => ['ko' => '게시글 조회', 'en' => 'Read Posts'], 'type' => 'user']
+        );
+        $readRole->permissions()->attach($readPermission->id);
+        $this->reporter->roles()->syncWithoutDetaching([$readRole->id]);
+
         // When: 같은 사용자가 같은 게시글 재신고 시도
         $response = $this->actingAs($this->reporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
@@ -386,6 +464,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 페이지네이션 제한 테스트 (10~20개)
+     *
+     * @scenario case=list_reports
+     *
+     * @effects admin_report_list_per_page_clamped_between_10_and_20
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_limit_between_10_and_20(): void
     {
@@ -415,6 +499,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 검증 실패 테스트 - 상태 변경 시 잘못된 status 값
+     *
+     * @scenario case=status_validation
+     *
+     * @effects admin_report_status_update_rejects_invalid_status_422
+     *
+     * @return void 반환값 없음
      */
     public function test_validation_fails_with_invalid_status(): void
     {
@@ -437,6 +527,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 검증 실패 테스트 - process_note 길이 초과
+     *
+     * @scenario case=status_validation
+     *
+     * @effects admin_report_status_update_rejects_too_long_process_note_422
+     *
+     * @return void 반환값 없음
      */
     public function test_validation_fails_with_too_long_process_note(): void
     {
@@ -460,6 +556,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 스냅샷 데이터 저장 테스트
+     *
+     * @scenario case=submit_report
+     *
+     * @effects report_creation_saves_target_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_saves_snapshot_data_on_report_creation(): void
     {
@@ -492,6 +594,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 상태 변경 후 게시글 상태 동기화 테스트 (suspended)
+     *
+     * @scenario case=update_status
+     *
+     * @effects admin_report_suspend_blinds_post
+     *
+     * @return void 반환값 없음
      */
     public function test_report_status_update_blinds_post_content(): void
     {
@@ -524,6 +632,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 상태 변경 후 게시글 상태 동기화 테스트 (deleted)
+     *
+     * @scenario case=update_status
+     *
+     * @effects admin_report_delete_status_deletes_post
+     *
+     * @return void 반환값 없음
      */
     public function test_report_status_update_deletes_post_content(): void
     {
@@ -556,6 +670,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 반려 후 게시글 복구 테스트
+     *
+     * @scenario case=update_status
+     *
+     * @effects admin_report_rejection_restores_post
+     *
+     * @return void 반환값 없음
      */
     public function test_report_rejection_restores_post_content(): void
     {
@@ -598,6 +718,12 @@ class ReportTest extends ModuleTestCase
     /**
      * 댓글 신고 목록에서 board.title은 스냅샷 기반(null)이고,
      * 상세 조회에서 상위 게시글 제목이 포함되는지 테스트
+     *
+     * @scenario case=list_reports
+     *
+     * @effects admin_comment_report_title_snapshot_in_list_and_post_title_in_detail
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_report_includes_post_title_in_board_title(): void
     {
@@ -642,6 +768,12 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 신고 목록 API 응답에서 author/reporter가 uuid를 반환하는지 검증
+     *
+     * @scenario case=list_reports
+     *
+     * @effects admin_report_list_exposes_author_and_reporter_uuid_only
+     *
+     * @return void 반환값 없음
      */
     public function test_report_list_returns_uuid_for_author_and_reporter(): void
     {
@@ -649,19 +781,19 @@ class ReportTest extends ModuleTestCase
         $postId = $this->createTestPost();
 
         $report = Report::factory()->create([
-            'board_id'   => $this->board->id,
+            'board_id' => $this->board->id,
             'target_type' => 'post',
-            'target_id'  => $postId,
-            'author_id'  => $this->author->id,
+            'target_id' => $postId,
+            'author_id' => $this->author->id,
         ]);
 
         ReportLog::factory()->create([
-            'report_id'   => $report->id,
+            'report_id' => $report->id,
             'reporter_id' => $this->reporter->id,
-            'snapshot'    => [
-                'board_name'  => $this->board->name,
-                'title'       => '테스트 게시글',
-                'content'     => '테스트 내용',
+            'snapshot' => [
+                'board_name' => $this->board->name,
+                'title' => '테스트 게시글',
+                'content' => '테스트 내용',
                 'content_mode' => 'text',
                 'author_name' => $this->author->name,
             ],
@@ -690,6 +822,12 @@ class ReportTest extends ModuleTestCase
      * 신고 목록 API 응답에서 processor가 uuid를 반환하는지 검증
      *
      * processor는 ReportResource(목록 API)에만 포함됨 (ReportDetailResource 제외)
+     *
+     * @scenario case=list_reports
+     *
+     * @effects admin_report_list_exposes_processor_uuid_only
+     *
+     * @return void 반환값 없음
      */
     public function test_report_list_returns_uuid_for_processor(): void
     {
@@ -697,19 +835,19 @@ class ReportTest extends ModuleTestCase
         $postId = $this->createTestPost();
 
         $report = Report::factory()->create([
-            'board_id'    => $this->board->id,
+            'board_id' => $this->board->id,
             'target_type' => 'post',
-            'target_id'   => $postId,
-            'author_id'   => $this->author->id,
+            'target_id' => $postId,
+            'author_id' => $this->author->id,
         ]);
 
         ReportLog::factory()->create([
-            'report_id'   => $report->id,
+            'report_id' => $report->id,
             'reporter_id' => $this->reporter->id,
-            'snapshot'    => [
-                'board_name'  => $this->board->name,
-                'title'       => '테스트 게시글',
-                'content'     => '테스트 내용',
+            'snapshot' => [
+                'board_name' => $this->board->name,
+                'title' => '테스트 게시글',
+                'content' => '테스트 내용',
                 'content_mode' => 'text',
                 'author_name' => $this->author->name,
             ],
@@ -740,6 +878,8 @@ class ReportTest extends ModuleTestCase
 
     /**
      * 테스트용 게시글 생성 헬퍼
+     *
+     * @return int 생성된 게시글 ID
      */
     private function createTestPost(): int
     {

@@ -8,11 +8,14 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
+use Plugins\Sirsoft\PayKginicis\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\PaymentCloseReportRequest;
 
 class PaymentCloseReportController
@@ -20,13 +23,19 @@ class PaymentCloseReportController
     use ResolvesEasyPaySelection;
     use SerializesPaymentCallbacks;
     use ValidatesCbtOrderContext;
+    use VerifiesOrderOwnership;
 
     private const FAILURE_CODE = 'USER_CANCEL';
 
     private const FAILURE_MESSAGE = '사용자가 KG 이니시스 결제창을 닫았습니다.';
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 처리 서비스
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
+        private readonly GuestOrderAuthService $guestOrderAuthService,
     ) {}
 
     /**
@@ -48,6 +57,16 @@ class PaymentCloseReportController
             ]);
         }
         RateLimiter::hit($rateLimitKey, 60);
+
+        // 클레임 추가결제(CP 채번)는 기록할 주문 결제 이력이 없다 — 결제 건은 결제 대기로 남아
+        // 신청서 상세에서 재시도하므로 보고만 받고 무시한다 (주문 조회로 흘리면 404 가 프론트
+        // 흐름을 끊고 error 로그만 쌓인다).
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            return ResponseHelper::success('common.success', [
+                'recorded' => false,
+                'reason' => 'claim_payment',
+            ]);
+        }
 
         $callbackLock = null;
 
@@ -88,9 +107,9 @@ class PaymentCloseReportController
                 ]);
             }
 
-            if (! $this->requestMatchesOrderBuyer($request, $order)) {
+            if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
                 return ResponseHelper::error('common.failed', 403, [
-                    'message' => ['Order buyer verification failed.'],
+                    'message' => ['Order ownership verification failed.'],
                 ]);
             }
 
@@ -142,11 +161,25 @@ class PaymentCloseReportController
         }
     }
 
+    /**
+     * 레이트리밋 키를 생성합니다 (IP + 주문번호 조합).
+     *
+     * @param  PaymentCloseReportRequest  $request  요청
+     * @param  string  $oid  주문번호
+     * @return string 레이트리밋 키
+     */
     private function rateLimitKey(PaymentCloseReportRequest $request, string $oid): string
     {
         return 'sirsoft-pay_kginicis:payment-close-report:'.sha1($request->ip().'|'.$oid);
     }
 
+    /**
+     * 결제창을 닫을 때 고른 간편결제 수단을 결제 메타에 남깁니다 (운영자 원인 파악용).
+     *
+     * @param  Order  $order  실패 처리된 주문
+     * @param  string|null  $selectedEasyPayMethod  정규화된 간편결제 수단 (없으면 기록 안 함)
+     * @return void
+     */
     private function persistEasyPayCloseContext(Order $order, ?string $selectedEasyPayMethod): void
     {
         if ($selectedEasyPayMethod === null || ! $order->exists) {

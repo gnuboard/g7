@@ -41,9 +41,8 @@ class ImageReferenceScanService
      * @var list<array{table: string, columns: list<string>}>
      */
     private const CORE_SOURCES = [
+        // 알림 템플릿 — 본인인증 메일 본문도 7.1.0 부터 여기에 있다(옛 identity_message_templates·mail_templates 는 없어졌다).
         ['table' => 'notification_templates', 'columns' => ['body']],
-        ['table' => 'mail_templates', 'columns' => ['body']],
-        ['table' => 'identity_message_templates', 'columns' => ['body']],
         ['table' => 'template_layouts', 'columns' => ['content']],
         ['table' => 'template_layout_extensions', 'columns' => ['content']],
         ['table' => 'template_layout_versions', 'columns' => ['content']],

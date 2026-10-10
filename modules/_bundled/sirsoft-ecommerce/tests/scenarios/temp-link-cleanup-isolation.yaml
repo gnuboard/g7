@@ -1,0 +1,17 @@
+feature: 임시 이미지 연결 — 임시 디렉토리 정리 실패 격리 (ProductImageService::linkTempImages)
+
+description: |
+  임시 업로드를 본경로로 옮긴 뒤의 임시 디렉토리 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가
+  잠시 붙잡고 있으면 정리가 lstat 오류를 던졌고, 그 예외가 저장 전체를 500 으로 되돌려 파일과 DB 경로가
+  어긋났다(#703 브라우저 실측 — 게시판 첨부에서 발견, 같은 구조인 상품 이미지에 같은 격리를 적용).
+
+  축 module 은 연결 경로다.
+
+axes:
+  module: [ecommerce_product_image]
+
+effects:
+  - temp_cleanup_failure_does_not_abort_link
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductImageTempCleanupTest.php

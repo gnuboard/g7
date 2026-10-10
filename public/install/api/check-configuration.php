@@ -17,6 +17,8 @@ use App\Support\PrivilegedDatabaseAccounts;
 // 한쪽만 고치면 다른 쪽이 우회로가 되므로 의존성 없는 공용 파일로 두고 양쪽에서 로드한다.
 require_once __DIR__.'/../includes/utf8.php';
 require_once __DIR__.'/../includes/binary-path-policy.php';
+// 설치 소유권·CSRF·DB 연결 지문 헬퍼 (의존성 없는 순수 함수)
+require_once __DIR__.'/../includes/installer-ownership.php';
 
 /**
  * 검증 API 클래스
@@ -111,9 +113,12 @@ class ValidationApi
             exit;
         }
 
+        // DB 테스트는 세션에 "검사 통과" 지문과 기존 테이블 삭제 확인 토큰을 남기는 상태변경이다.
+        installer_require_csrf();
+
         try {
             // POST 데이터 파싱
-            $input = json_decode(file_get_contents('php://input'), true);
+            $input = installer_request_json_body();
 
             if (! $input || ! is_array($input)) {
                 throw new Exception(lang('api_invalid_request'));
@@ -188,21 +193,45 @@ class ValidationApi
                 );
             }
 
-            // 연결 및 권한 검증 성공 플래그 (Write/Read 구분)
+            // 연결 및 권한 검증 성공 플래그 (Write/Read 구분) + 검사한 연결설정 지문.
+            // Step 3 제출 시 같은 지문을 다시 계산해 "검사한 설정 = 제출한 설정" 을 확인한다.
+            $tested = [
+                'host' => $input['host'] ?? 'localhost',
+                'port' => $input['port'] ?? '3306',
+                'database' => $database,
+                'username' => $username,
+                'password' => $input['password'] ?? '',
+            ];
             if ($isReadDb) {
                 $_SESSION['db_read_tested'] = true;
+                $_SESSION['db_read_fp'] = installer_db_fingerprint($tested, installer_owner_token());
                 $message = lang('success_db_read_connected');
             } else {
+                $tested['prefix'] = $input['db_prefix'] ?? '';
                 $_SESSION['db_write_tested'] = true;
+                $_SESSION['db_write_fp'] = installer_db_fingerprint($tested, installer_owner_token());
                 $message = lang('success_db_write_connected');
             }
 
             // 기존 테이블 감지 (Write DB만 수행)
             // 사용자가 입력한 db_prefix를 g7 시그니처에 적용하여 정확히 비교
             $existingTables = null;
+            $dropConfirmToken = null;
             if (! $isReadDb) {
                 $detectPrefix = ($input['db_prefix'] ?? '') !== '' ? (string) $input['db_prefix'] : 'g7_';
                 $existingTables = checkExistingTables($pdo, $database, $detectPrefix);
+
+                // 기존 테이블이 있으면 삭제 확인 토큰을 발급한다 — drop_tables 는 이 토큰과
+                // 탐지 테이블 불변이 확인될 때만 실행된다 (요청 본문의 액션 값만으로는 삭제 불가).
+                unset($_SESSION['drop_confirm']);
+                if (! empty($existingTables['has_tables'])) {
+                    $issued = installer_issue_drop_confirm(
+                        $detectPrefix,
+                        filterTablesByPrefix($existingTables['all_tables'] ?? [], $detectPrefix)
+                    );
+                    $_SESSION['drop_confirm'] = $issued['record'];
+                    $dropConfirmToken = $issued['token'];
+                }
             }
 
             // 성공 응답
@@ -216,16 +245,14 @@ class ValidationApi
                     'required' => $privileges['required'],
                 ],
                 'existing_tables' => $existingTables,
+                'drop_confirm' => $dropConfirmToken,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } catch (PDOException $e) {
             // 연결 실패 플래그
             $isReadDb = isset($type) && $type === 'read';
 
-            if ($isReadDb) {
-                $_SESSION['db_read_tested'] = false;
-            } else {
-                $_SESSION['db_write_tested'] = false;
-            }
+            // 실패는 "검사 안 됨" 과 같다 — false 를 저장하면 isset 계열 검사가 통과시킨다.
+            installer_forget_db_test($isReadDb);
 
             // 에러 로깅
             logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
@@ -241,11 +268,7 @@ class ValidationApi
             $isReadDb = isset($type) && $type === 'read';
 
             if (isset($type)) {
-                if ($isReadDb) {
-                    $_SESSION['db_read_tested'] = false;
-                } else {
-                    $_SESSION['db_write_tested'] = false;
-                }
+                installer_forget_db_test($isReadDb);
             }
 
             // 에러 로깅

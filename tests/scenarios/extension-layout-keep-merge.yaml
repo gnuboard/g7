@@ -1,0 +1,129 @@
+feature: 확장 업데이트의 「수정 유지」 — 운영자가 고친 레이아웃·조각에 새 버전을 3자 병합한다
+
+description: |
+  모듈·플러그인·템플릿을 「수정 유지(keep)」 로 업데이트하거나 켤 때, 운영자가 고친 레이아웃·레이아웃 조각을
+  통째로 두지도(새 버전 변경 유실) 통째로 덮지도(운영자 수정 유실) 않고, 기준(설치 당시 파일) · 운영자 · 새 버전
+  셋을 비교해 **고친 부분은 운영자 것, 손대지 않은 부분은 새 버전** 으로 합친다 (#727).
+
+  병합 단위는 partial 파일 · 최상위 키 · data_sources 항목 id 다. 컴파일 결과에는 partial 출처 표식이
+  `original_content` 에만 남고 화면에 쓰이는 `content` 에는 없다. 기준을 찾지 못하면(original_content 도,
+  백업 파일도 해시가 맞지 않으면) 운영자 판을 건드리지 않고 「기준 없음」 으로 보고한다. 같은 곳을 양쪽이 고쳤거나
+  구조가 어긋나면 운영자 판을 남기고 새 버전 원본은 다음 병합 기준으로 옮긴다(충돌).
+
+  결과는 업데이트 응답 메시지·CLI 표·활동 로그와 버전 기록(요약 `source=extension_update`)으로 남는다.
+
+# 축 의미 (계획서 §6.4 — 출처 × 동기화 경로 × 병합 단위):
+#   source — 행을 소유한 확장 종류. 템플릿은 자기 레이아웃과 조각 오버라이드(templates/{id}/extensions)를 가진다.
+#   path   — 파일 → DB 행 쓰기 경로.
+#            update_keep            = 업데이트 keep (refresh*Layouts(id, true, 백업))
+#            update_keep_backup_base = 원본 본문 없는 옛 행 + 백업 컴파일 해시 일치 → 백업이 기준
+#            update_keep_no_base    = 원본 본문 없음 + 백업·새 파일 해시 불일치 → 기준 없음(통째 유지)
+#            update_overwrite       = 업데이트 overwrite (refresh*Layouts(id, false, 백업))
+#            manual_refresh         = 수동 「레이아웃 갱신」 (refresh*Layouts(id) — 덮어쓰기 유지, L12)
+#            activate               = 확장 자기 활성화 (D3)
+#            template_activate      = 템플릿 활성화가 부르는 등록들 (D3·D11)
+#            other_extension_activate = 다른 확장 활성화의 전 확장 조각 재등록
+#            removed_in_new_version = 새 버전에서 빠진 행 (D4)
+#            inactive_update_then_activate = 꺼 둔 채 업데이트 → 켜기 (D11)
+#            operator_deleted / operator_name_collision / operator_renamed = 운영자가 지운·만든 같은 이름·이름 바꾼 화면 (D9·D10·W15)
+#   unit   — 운영자·새 버전이 고친 자리. partial = 레이아웃 안 조각 파일 · top_level_key = 레이아웃 최상위 키 ·
+#            extension_fragment = 확장 조각 행(템플릿은 조각 오버라이드 행).
+# 병합기·비교기·컴파일 표식·보고(API·CLI)·버전 기록 테스트는 경로 축과 무관한 계약이라 @effects 로만 매핑한다.
+axes:
+  source: [template, module, plugin]
+  path: [update_keep, update_keep_backup_base, update_keep_no_base, update_overwrite, manual_refresh, activate, template_activate, other_extension_activate, removed_in_new_version, inactive_update_then_activate, operator_deleted, operator_name_collision, operator_renamed]
+  unit: [partial, top_level_key, extension_fragment]
+
+exclusions:
+  - { path: [update_keep_backup_base, update_keep_no_base, update_overwrite, manual_refresh, removed_in_new_version, inactive_update_then_activate, operator_deleted, operator_name_collision, operator_renamed], unit: top_level_key, reason: "기준 확보·덮어쓰기·삭제 후보·운영자 행 조작은 행 단위 판정이라 병합 단위 종류가 결과를 가르지 않는다 — 단위별 병합 결과는 update_keep 칸이 세 단위 모두 잰다" }
+  - { path: [activate, template_activate], unit: top_level_key, reason: "활성화는 파일 판이 원본과 같아 병합기 지름길(새 판 = 기준 → 운영자 판 유지)로 끝난다 — 단위 종류가 결과를 가르지 않는다" }
+  - { path: other_extension_activate, unit: [partial, top_level_key], reason: "다른 확장 활성화는 활성 확장 조각 재등록만 돈다 — 레이아웃 행을 쓰지 않는다" }
+  - { source: template, path: activate, reason: "템플릿 자신의 활성화는 template_activate 칸이 잰다" }
+  - { source: template, path: other_extension_activate, reason: "전 확장 조각 재등록은 모듈·플러그인 조각만 다시 쓴다 — 템플릿 레이아웃·조각 오버라이드를 쓰지 않는다" }
+  - { source: template, path: update_keep_backup_base, unit: extension_fragment, reason: "템플릿 조각 오버라이드 갱신(registerExtensionOverrides)은 백업 컴파일을 받지 않는다 — 원본 없는 옛 오버라이드 행의 기준은 7.1.0 업그레이드 스텝(BackfillTemplateOverrideOriginals)이 채우고 기준이 없을 때의 결과는 update_keep_no_base 칸이 잰다" }
+  - { source: template, path: removed_in_new_version, unit: extension_fragment, reason: "템플릿 조각 오버라이드는 파일에서 빠져도 갱신이 행을 지우지 않는다(정리 경로 없음 — 템플릿 제거 때만 지운다) — 빠진 수정본은 늘 남는다" }
+  - { source: template, path: inactive_update_then_activate, unit: extension_fragment, reason: "비활성 업데이트의 원본 미리 저장(stash) 대상은 템플릿 레이아웃 행이다 — 조각 오버라이드 옛 행의 기준은 7.1.0 업그레이드 스텝이 채우고 원본이 있는 행의 켜기 병합은 update_keep 과 같은 syncExtension 경로다" }
+  - { source: [module, plugin], path: operator_deleted, reason: "모듈·플러그인 화면은 운영자가 지울 수 없다(LayoutFileService 가 템플릿 소유 행만 허용) — 지운 행은 확장 비활성화의 잔재라 되살려 평소대로 처리한다" }
+  - { source: [module, plugin], path: operator_renamed, reason: "모듈·플러그인 화면은 운영자가 이름을 바꿀 수 없다(LayoutFileService 가 템플릿 소유 행만 허용)" }
+  - { source: [module, plugin], path: operator_name_collision, reason: "편집기 새 파일 이름 규칙이 점(.)을 막아 모듈·플러그인 접두 이름({식별자}.화면)과 겹칠 수 없다" }
+  - { path: [operator_deleted, operator_name_collision, operator_renamed], unit: extension_fragment, reason: "운영자가 지우기·이름 바꾸기·새로 만들기를 하는 대상은 편집기 파일 목록의 레이아웃뿐 — 확장 조각 행에는 그런 조작이 없다" }
+
+effects:
+  # 병합 엔진 — 단위별 판정
+  - untouched_unit_takes_new_version
+  - operator_modified_unit_is_kept
+  - backup_base_survives_one_unreadable_layout
+  - conflicting_change_keeps_operator_version_and_is_reported
+  - removal_follows_the_side_that_removed
+  - data_sources_merge_by_item_id
+  - moved_partial_is_matched_by_projection
+  - modified_child_is_not_orphaned
+  - instance_count_change_is_guarded
+  - merge_result_carries_no_markers_and_bookkeeping_keys_are_not_counted
+  # 비교 — 표기 차이는 수정이 아니다
+  - representation_only_differences_are_not_modifications
+  - editor_round_trip_is_not_a_modification  # 편집기로 열어 그대로 저장한 판(역변환→컴파일)은 원본과 같다 — 실제 번들 레이아웃 (W4)
+  # 컴파일 표식
+  - compile_marks_partial_origin_only_in_original
+  # 행 동기화
+  - merge_bumps_lock_version_and_records_versions
+  - base_is_recovered_from_backup_when_hash_matches
+  - missing_base_keeps_operator_layout_untouched
+  - invalid_merge_result_keeps_operator_version
+  - conflict_moves_base_to_new_version  # 충돌로 끝나도 원본·해시는 새 판으로 옮긴다 (W17)
+  - overwrite_replaces_operator_layout
+  - manual_refresh_keeps_overwrite_semantics  # 수동 「레이아웃 갱신」 은 keep 도입 뒤에도 파일 판으로 되돌린다 (L12)
+  - new_version_layouts_are_created
+  # 생명주기 (업데이트·활성화·재등록)
+  - keep_update_merges_new_version_into_modified_layout
+  - activation_preserves_operator_modification
+  - modified_layout_removed_in_new_version_is_kept
+  - operator_created_or_deleted_layout_is_respected
+  - inactive_update_stashes_base_for_activation  # 꺼 둔 채 업데이트하면 이전 판 원본을 미리 저장해 켤 때 병합한다 (D11)
+  # 조각·템플릿 오버라이드
+  - fragment_modification_is_merged_not_lost
+  - template_override_layouts_are_merged
+  - legacy_override_rows_get_a_base_on_upgrade  # 7.0.x 가 원본 없이 남긴 오버라이드 행에 7.1.0 업그레이드 스텝이 병합 기준을 채움 (C-1)
+  # 보고 (CLI·API)
+  - layout_sync_report_lists_operator_rows
+  - layout_sync_result_is_shown_in_cli
+  - core_update_prints_layout_sync_summary_per_extension  # core:update 번들 일괄 업데이트는 확장마다 요약 한 줄 (표 없음)
+  - overwrite_warns_about_modified_layouts
+  - modified_layouts_check_lists_operator_rows
+  - update_api_rejects_unauthorized_and_invalid_requests
+  - update_api_reports_available_updates
+  - update_api_returns_updated_extension
+  - update_api_routes_are_named
+  - update_api_passes_layout_strategy
+  - update_api_message_summarizes_layout_sync
+  # 버전 기록
+  - version_history_marks_extension_update_rows
+
+test_files:
+  - tests/Unit/Extension/Layout/LayoutThreeWayMergerTest.php
+  - tests/Unit/Extension/Layout/LayoutContentComparatorTest.php
+  - tests/Unit/Extension/Layout/LayoutEditorRoundTripMergeTest.php
+  - tests/Unit/Extension/Layout/BackupLayoutReaderTest.php
+  - tests/Unit/Extension/ValidatesLayoutFilesPartialOriginTest.php
+  - tests/Feature/Extension/LayoutRowSynchronizerTest.php
+  - tests/Feature/Extension/LayoutKeepMergeTest.php
+  - tests/Feature/Extension/LayoutSyncPathMatrixTest.php
+  - tests/Feature/Extension/UpdateLayoutStrategyKeepTest.php
+  - tests/Feature/Extension/LayoutExtensionKeepTest.php
+  - tests/Feature/Extension/TemplateOverrideKeepTest.php
+  - tests/Feature/Upgrade/BackfillTemplateOverrideOriginalsTest.php
+  - tests/Unit/Console/RendersLayoutSyncResultTest.php
+  - tests/Feature/Console/Commands/ExtensionUpdateLayoutSyncOutputTest.php
+  - tests/Feature/Api/Admin/ModuleUpdateTest.php
+  - tests/Feature/Api/Admin/PluginUpdateTest.php
+  - tests/Feature/Api/Admin/TemplateUpdateTest.php
+  - tests/Feature/Api/Admin/CheckModifiedLayoutsContractTest.php
+  - tests/Unit/Repositories/LayoutVersionRepositoryTest.php
+  - tests/Unit/Repositories/LayoutExtensionVersionRepositoryTest.php
+
+notes:
+  - 업데이트 확인 창의 「수정 유지」 안내 문구·목록 렌더는 admin-extension-update-screens.yaml(layout_strategy 영역)이 소유한다.
+  - 활동 로그의 레이아웃 처리 요약은 core-activity-log-hooks.yaml 의 extension_update_records_layout_sync 가 소유한다.
+  - 라이브 실측(업데이트 전·후 Chrome MCP 매트릭스)은 이력 문서에 남긴다.
+  - 경로 × 출처 × 단위 칸은 LayoutSyncPathMatrixTest 의 데이터 제공자가 대부분 재고, 운영자가 지운·만든·이름 바꾼 템플릿 화면 칸은 LayoutKeepMergeTest 가 잰다.
+  - 병합 결과 검증 실패(kept_invalid) 뒤 원본·해시 불변은 LayoutRowSynchronizerTest 가 동기화기 수준에서 잰다 — 설치 경로의 파일 검증이 data_sources id 중복을 먼저 막고 병합기가 중복을 만들 수 없어 refresh 경로로는 재현되지 않는다.

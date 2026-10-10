@@ -1,0 +1,45 @@
+<partial description="클레임 신청 철회 확인 모달" editor_label="$t:user.modal_label.mypage_claims.withdraw_modal">
+  <!-- 철회는 되돌릴 수 없고, 이미 받은 추가결제가 있으면 같은 흐름에서 환급된다. 그래서 확인을 거치고 그 자리에서 환급 안내를 함께 보여 준다. 대상은 클레임 번호로 지목한다 — 유형별 접두사(EX/RT/RF/CN)는 운영자가 채번 설정에서 바꿀 수 있으므로 화면이 접두사로 유형을 판정하지 않고, 서버가 번호로 유형을 해석한다.
+modals 배열에 등록된 모달의 _local 은 페이지 로컬이다($parent._local 은 없다 — 그렇게 쓰면 조건이 전부 거짓이 되어 제목·푸터만 남은 빈 모달이 열린다). 대상·오류·진행 여부를 여는 핸들러가 페이지 로컬에 세우고 여기서는 그것만 읽는다.
+진입점([철회] 버튼)은 신청내역 목록·상세가 소유한다(S13). 이 파일은 그 두 화면과 비회원 셸이 함께 쓰는 확인 절차이므로 한 벌만 둔다 — 화면마다 복제하면 한 곳만 고쳤을 때 나머지가 조용히 옛 규칙으로 남는다.
+철회 주소의 앞부분은 셸이 _local.claimWithdrawApiBase 로 준다. 회원과 비회원의 철회 라우트 모양이 다르기 때문이다 — 회원 /user/claims (주문 스코프 없음), 비회원 /guest/orders/{orderNumber}/claims (주문 스코프 있음). 신청서 작성이 쓰는 claimApiBase 로 조립하면 회원 경로가 404 가 된다(2026-08-31 실측). 이 모달을 마운트하는 셸은 그 값을 반드시 세운다 — 없으면 철회 요청이 나가지 않는다(잘못된 주소로 보내는 것보다 낫다). -->
+  <modal data-type="composite" data-ref="modal_claim_withdraw" title="$t:claim.withdraw.title" size="sm">
+    <div class="p-4 space-y-3">
+      <p class="text-sm text-gray-900 dark:text-white">$t:claim.withdraw.confirm_message|number={{_local.withdrawClaimNumber ?? ''}}</p>
+      <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900 space-y-1">
+        <p class="text-xs text-gray-600 dark:text-gray-400">$t:claim.withdraw.irreversible_notice</p>
+        <!-- 추가결제 환급은 서버가 철회와 같은 흐름에서 수행한다 — 화면이 따로 부르지 않는다. 안내만 남긴다. -->
+        <p class="text-xs text-gray-600 dark:text-gray-400">$t:claim.withdraw.payment_refund_notice</p>
+      </div>
+      <!-- 거절 사유는 이 모달 안에 남긴다 — 승인 뒤에는 철회할 수 없어 서버가 409 로 거절하는데, 토스트로만 알리면 사라진 뒤 왜 막혔는지 화면에 남지 않는다(§6-3 P13 과 같은 채널 규약). -->
+      <div data-if="{{!!_local.withdrawError}}" class="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+        <icon name="circle-exclamation" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
+        <p class="text-sm text-red-700 dark:text-red-300 min-w-0">{{_local.withdrawError ?? ''}}</p>
+      </div>
+    </div>
+    <!-- 모달 푸터 -->
+    <div class="flex gap-3 px-4 pb-4">
+      <!-- 닫기는 대상·오류를 함께 지운다 — 남기면 다음에 다른 신청서로 열었을 때 잠깐 앞 대상이 보이고, 그 사이에 확인을 누르면 고르지 않은 신청서가 철회된다. -->
+      <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer" disabled="{{_local.isWithdrawingClaim === true}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.closeClaimWithdraw"/>
+        </on>
+        $t:claim.withdraw.cancel
+      </button>
+      <!-- 철회를 실제로 보내는 버튼 — 성공하면 모달을 닫고 셸이 지정한 데이터소스를 다시 읽어 바뀐 상태를 보여 준다. 승인 뒤라 거절되면 사유를 이 모달 안에 남기고, 서버 장애만 토스트로 알린다.
+           주문상세 셸(회원·비회원)은 withdrawRefreshClaimable 을 세운다 — 철회로 그 상품이 다시 신청 가능해지므로 claimable 을 다시 받아야 체크박스 잠금과 신청 버튼이 풀린다(받지 않으면 새로고침 전까지 잠긴 채 남는다). 신청서 목록·상세 셸에는 claimable 데이터소스가 없어 세우지 않는다. -->
+      <button type="button" class="flex-1 px-4 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isWithdrawingClaim === true || !_local.withdrawClaimNumber}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.withdrawClaim" withdrawApiBase="{{_local.claimWithdrawApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}" refreshDataSourceId="{{_local.withdrawRefreshDataSourceId ?? ''}}"/>
+          <conditions>
+            <when if="{{_local.withdrawRefreshClaimable === true}}">
+              <refetch-data-source dataSourceId="claimable"/>
+            </when>
+          </conditions>
+        </on>
+        <icon data-if="{{_local.isWithdrawingClaim === true}}" name="spinner" class="text-sm animate-spin mr-1"/>
+        <span>{{_local.isWithdrawingClaim === true ? $t('common.processing') : $t('claim.withdraw.confirm')}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

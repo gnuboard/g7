@@ -25,6 +25,7 @@ vi.mock('../template-engine', () => ({
   initTemplateEngine: vi.fn().mockResolvedValue(undefined),
   renderTemplate: vi.fn().mockResolvedValue(undefined),
   destroyTemplate: vi.fn(),
+  releaseTemplateRoot: vi.fn(),
   getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
   getState: vi.fn().mockReturnValue({
     actionDispatcher: sharedActionDispatcher,
@@ -48,12 +49,18 @@ vi.mock('../routing/Router', () => ({
     this.on = vi.fn();
     this.navigateToCurrentPath = vi.fn();
     this.getRoutes = vi.fn().mockReturnValue([]);
+    // init() 이 라우트를 싣고(setRoutes) 첫 화면을 맞춰 본다(match) — 없으면 init 이 중간에 멈춰
+    // getRouter() 가 null 이 되고 로케일 재렌더 단언을 할 수 없었다(종전 skip 사유).
+    this.setRoutes = vi.fn();
+    this.match = vi.fn().mockReturnValue(null);
   }),
 }));
 
 vi.mock('../template-engine/LayoutLoader', () => ({
   LayoutLoader: vi.fn(function(this: any) {
     this.loadLayout = vi.fn().mockResolvedValue({ components: [] });
+    this.setCacheVersion = vi.fn();
+    this.clear = vi.fn();
   }),
 }));
 
@@ -129,6 +136,8 @@ describe('TemplateApp', () => {
   });
 
   describe('constructor', () => {
+    // @scenario surface=constructor
+    // @effects template_app_constructs_with_config
     it('기본 config로 인스턴스를 생성해야 함', () => {
       const config: TemplateAppConfig = {
         templateId: 'test-template',
@@ -143,6 +152,8 @@ describe('TemplateApp', () => {
       expect(app.getLocale()).toBe('ko');
     });
 
+    // @scenario surface=constructor
+    // @effects template_app_constructs_with_config
     it('localStorage에서 저장된 로케일을 로드해야 함', () => {
       // localStorage에 로케일 저장
       localStorageMock['g7_locale'] = 'en';
@@ -160,6 +171,8 @@ describe('TemplateApp', () => {
       expect(app.getLocale()).toBe('en');
     });
 
+    // @scenario surface=constructor
+    // @effects template_app_constructs_with_config
     it('localStorage에 현재 로케일을 저장해야 함', () => {
       const config: TemplateAppConfig = {
         templateId: 'test-template',
@@ -175,6 +188,8 @@ describe('TemplateApp', () => {
   });
 
   describe('getLocale', () => {
+    // @scenario surface=locale
+    // @effects template_app_locale_changes_reinitialize_engine_and_rerender
     it('현재 로케일을 반환해야 함', () => {
       const config: TemplateAppConfig = {
         templateId: 'test-template',
@@ -190,6 +205,8 @@ describe('TemplateApp', () => {
   });
 
   describe('changeLocale', () => {
+    // @scenario surface=locale
+    // @effects template_app_locale_changes_reinitialize_engine_and_rerender
     it('로케일을 변경하고 localStorage에 저장해야 함', async () => {
       const config: TemplateAppConfig = {
         templateId: 'test-template',
@@ -208,6 +225,8 @@ describe('TemplateApp', () => {
       expect(localStorageMock['g7_locale']).toBe('en');
     });
 
+    // @scenario surface=locale
+    // @effects template_app_locale_changes_reinitialize_engine_and_rerender
     it('동일한 로케일로 변경 시도 시 무시해야 함', async () => {
       const config: TemplateAppConfig = {
         templateId: 'test-template',
@@ -227,6 +246,8 @@ describe('TemplateApp', () => {
       expect(app.getLocale()).toBe(initialLocale);
     });
 
+    // @scenario surface=locale
+    // @effects template_app_locale_changes_reinitialize_engine_and_rerender
     it('로케일 변경 시 템플릿 엔진을 재초기화해야 함', async () => {
       const { initTemplateEngine } = await import('../template-engine');
 
@@ -257,8 +278,15 @@ describe('TemplateApp', () => {
       );
     });
 
-    // TODO: Router mock 구조 개선 필요 - 현재는 getRouter()가 mocked 인스턴스를 반환하지 않음
-    it.skip('로케일 변경 시 현재 라우트를 재렌더링해야 함', async () => {
+    // @scenario surface=locale
+    // @effects template_app_locale_changes_reinitialize_engine_and_rerender
+    it('로케일 변경 시 현재 라우트를 재렌더링해야 함', async () => {
+      // 라우트 응답이 없으면 init() 이 라우터를 만들기 전에 멈춘다 — 라우트 목록만 성공으로 돌려준다.
+      vi.stubGlobal('fetch', vi.fn(async (url: string) => ({
+        ok: true,
+        json: async () => ({ success: true, data: String(url).includes('/routes') ? { routes: [] } : {} }),
+      })));
+
       const config: TemplateAppConfig = {
         templateId: 'test-template',
         templateType: 'admin',
@@ -275,11 +303,15 @@ describe('TemplateApp', () => {
       await app.changeLocale('en');
 
       // 현재 라우트 재렌더링 확인
+      expect(router).not.toBeNull();
       expect(router?.navigateToCurrentPath).toHaveBeenCalled();
+      vi.unstubAllGlobals();
     });
   });
 
   describe('localStorage 연동', () => {
+    // @scenario surface=storage
+    // @effects template_app_tolerates_storage_failures
     it('localStorage 접근 실패 시 에러를 무시하고 계속 진행해야 함', () => {
       // localStorage.getItem을 throw하도록 설정
       vi.mocked(global.localStorage.getItem).mockImplementation(() => {
@@ -297,6 +329,8 @@ describe('TemplateApp', () => {
       expect(() => new TemplateApp(config)).not.toThrow();
     });
 
+    // @scenario surface=storage
+    // @effects template_app_tolerates_storage_failures
     it('localStorage 저장 실패 시 에러를 무시하고 계속 진행해야 함', async () => {
       // localStorage.setItem을 throw하도록 설정
       vi.mocked(global.localStorage.setItem).mockImplementation(() => {
@@ -319,6 +353,8 @@ describe('TemplateApp', () => {
   });
 
   describe('TransitionManager 연동', () => {
+    // @scenario surface=transition
+    // @effects template_app_drives_transition_state_on_route_change
     it('라우트 변경 시 TransitionManager.setPending(true)를 호출해야 함', async () => {
       const { transitionManager } = await import('../template-engine/TransitionManager');
 
@@ -359,6 +395,8 @@ describe('TemplateApp', () => {
       expect(transitionManager.setPending).toHaveBeenCalledWith(true);
     });
 
+    // @scenario surface=transition
+    // @effects template_app_drives_transition_state_on_route_change
     it('데이터 fetch 완료 후 TransitionManager.setPending(false)를 호출해야 함', async () => {
       const { transitionManager } = await import('../template-engine/TransitionManager');
 
@@ -403,6 +441,8 @@ describe('TemplateApp', () => {
       expect(setPendingCalls[setPendingCalls.length - 1]).toEqual([false]);
     });
 
+    // @scenario surface=transition
+    // @effects template_app_drives_transition_state_on_route_change
     it('데이터 fetch 실패 시에도 TransitionManager.setPending(false)를 호출해야 함', async () => {
       const { transitionManager } = await import('../template-engine/TransitionManager');
 
@@ -472,6 +512,8 @@ describe('TemplateApp', () => {
      * @see troubleshooting-cache.md 사례 8
      */
     describe('[TS-CACHE-8] _localInit 캐시 무효화 시나리오', () => {
+      // @scenario surface=routing
+      // @effects template_app_spa_navigation_keeps_layout_cache_coherent
       it('라우트 변경 시 TransitionManager.setPending이 올바르게 호출되어야 함', async () => {
         const { transitionManager } = await import('../template-engine/TransitionManager');
 
@@ -522,6 +564,8 @@ describe('TemplateApp', () => {
         expect(setPendingCalls.length).toBeGreaterThanOrEqual(2);
       });
 
+      // @scenario surface=routing
+      // @effects template_app_spa_navigation_keeps_layout_cache_coherent
       it('다른 페이지로 이동 시 레이아웃 로더가 호출되어야 함', async () => {
         const { LayoutLoader } = await import('../template-engine/LayoutLoader');
 
@@ -581,6 +625,8 @@ describe('TemplateApp', () => {
      * @see layout-json-features-actions.md - 초기화 액션 (init_actions)
      */
     describe('[TS-INIT-1] init_actions 순차 실행 보장', () => {
+      // @scenario surface=init_actions
+      // @effects template_app_runs_init_actions_once_per_layout
       it('init_actions는 정의된 순서대로 실행되어야 함', async () => {
         // TemplateApp의 executeInitActions 메서드 테스트
         // 실제 구현은 for...of 루프로 순차 실행됨
@@ -617,6 +663,8 @@ describe('TemplateApp', () => {
         expect(executionOrder).toEqual(['initTheme', 'initLocale', 'initSettings']);
       });
 
+      // @scenario surface=init_actions
+      // @effects template_app_runs_init_actions_once_per_layout
       it('init_actions 핸들러 실패 시 다음 핸들러는 계속 실행되어야 함', async () => {
         const executionOrder: string[] = [];
 
@@ -653,6 +701,8 @@ describe('TemplateApp', () => {
      * @see layout-json-features-actions.md - 데이터 바인딩 지원
      */
     describe('[TS-INIT-2] init_actions 데이터 바인딩', () => {
+      // @scenario surface=init_actions
+      // @effects template_app_runs_init_actions_once_per_layout
       it('init_actions 파라미터에서 route 파라미터에 접근할 수 있어야 함', () => {
         const dataContext = {
           route: { id: '123', slug: 'test-product' },
@@ -676,6 +726,8 @@ describe('TemplateApp', () => {
         expect(initAction.params.productId).toBe('{{route.id}}');
       });
 
+      // @scenario surface=init_actions
+      // @effects template_app_runs_init_actions_once_per_layout
       it('init_actions에서 _global 상태에 접근할 수 있어야 함', () => {
         const dataContext = {
           _global: {
@@ -700,6 +752,8 @@ describe('TemplateApp', () => {
      * @see layout-json-features-actions.md - 실행 시점
      */
     describe('[TS-INIT-3] init_actions 실행 시점', () => {
+      // @scenario surface=init_actions
+      // @effects template_app_runs_init_actions_once_per_layout
       it('init_actions는 렌더링 전에 실행되어야 함', async () => {
         const executionLog: string[] = [];
 
@@ -727,6 +781,8 @@ describe('TemplateApp', () => {
         expect(initActionsIndex).toBe(2); // blocking_data_fetched 다음
       });
 
+      // @scenario surface=init_actions
+      // @effects template_app_runs_init_actions_once_per_layout
       it('init_actions에서 설정한 _local 상태가 dataContext에 반영되어야 함', () => {
         // init_actions에서 setState로 _local 설정하는 시나리오
         const globalState: Record<string, any> = {};
@@ -757,6 +813,8 @@ describe('TemplateApp', () => {
      * 레이아웃 JSON에서 initLocal로 정의한 정적 기본값이 _local 상태에 적용되어야 함
      */
     describe('[TS-INIT-LOCAL-1] initLocal 적용', () => {
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('initLocal 값이 _local 상태에 적용되어야 함', () => {
         const globalState: Record<string, any> = {};
         const layoutData = {
@@ -781,6 +839,8 @@ describe('TemplateApp', () => {
         expect(globalState._local.formData).toEqual({ name: '', type: 'default' });
       });
 
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('state (deprecated) 값도 initLocal로 동작해야 함 (하위 호환)', () => {
         const globalState: Record<string, any> = {};
         const layoutData = {
@@ -813,6 +873,8 @@ describe('TemplateApp', () => {
      * 레이아웃 JSON에서 initGlobal로 정의한 정적 기본값이 _global 상태에 적용되어야 함
      */
     describe('[TS-INIT-GLOBAL-1] initGlobal 적용', () => {
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('initGlobal 값이 _global 상태에 적용되어야 함', () => {
         const globalState: Record<string, any> = {};
         const layoutData = {
@@ -840,6 +902,8 @@ describe('TemplateApp', () => {
      * 레이아웃 레벨 initLocal 기본값이 유지되고, 데이터소스 응답 값과 깊은 병합되어야 함
      */
     describe('[TS-INIT-MERGE-1] initLocal 병합', () => {
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('레이아웃 initLocal 기본값 + 데이터소스 initLocal이 깊은 병합되어야 함', () => {
         const globalState: Record<string, any> = {
           _local: {
@@ -884,6 +948,8 @@ describe('TemplateApp', () => {
         expect(mergedData.category).toBe('test');       // 기본값 유지
       });
 
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('레이아웃 initGlobal 기본값 + 데이터소스 initGlobal이 깊은 병합되어야 함', () => {
         const globalState: Record<string, any> = {
           settings: {
@@ -930,6 +996,8 @@ describe('TemplateApp', () => {
      * 실행 순서: initLocal/initGlobal/initIsolated → 데이터소스 → initActions
      */
     describe('[TS-INIT-ORDER-1] 상태 초기화 실행 순서', () => {
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('상태 초기화가 올바른 순서로 실행되어야 함', () => {
         const executionLog: string[] = [];
 
@@ -971,6 +1039,8 @@ describe('TemplateApp', () => {
      * 예: { "checkout.item_coupons": "data.promotions.item_coupons" }
      */
     describe('[TS-INIT-DOT-NOTATION-1] initLocal dot notation 지원', () => {
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('dot notation 경로에 값이 설정되어야 함', () => {
         const localInit: Record<string, any> = {};
 
@@ -1000,6 +1070,8 @@ describe('TemplateApp', () => {
         expect(localInit.checkout.use_points).toBe(500);
       });
 
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('중첩 객체 표기법이 dot notation으로 평탄화되어야 함', () => {
         // 중첩 객체 형식의 initLocal
         const nestedInitLocal = {
@@ -1054,6 +1126,8 @@ describe('TemplateApp', () => {
      * - "replace": 덮어쓰기
      */
     describe('[TS-INIT-MERGE-STRATEGY-1] initLocal 병합 전략', () => {
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('deep 병합 전략이 기본값이어야 함', () => {
         const existing = {
           checkout: {
@@ -1091,6 +1165,8 @@ describe('TemplateApp', () => {
         expect(result.use_points).toBe(0);
       });
 
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('shallow 병합 전략이 최상위 키만 병합해야 함', () => {
         const existing = {
           item_coupons: { '1': 100 },
@@ -1110,6 +1186,8 @@ describe('TemplateApp', () => {
         expect(result.use_points).toBe(0);
       });
 
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('replace 전략이 기존 값을 완전히 교체해야 함', () => {
         const existing = {
           item_coupons: { '1': 100 },
@@ -1128,6 +1206,8 @@ describe('TemplateApp', () => {
         expect((result as any).use_points).toBeUndefined();
       });
 
+      // @scenario surface=state_init
+      // @effects template_app_initializes_layout_level_state
       it('_merge 예약 키가 매핑에서 제외되어야 함', () => {
         const initLocalWithMerge = {
           _merge: 'shallow',
@@ -1185,6 +1265,8 @@ describe('TemplateApp', () => {
      * 해결: 레이아웃 이름 비교를 통한 선택적 _local 초기화
      */
     describe('[TS-LOCAL-RESET-1] 레이아웃 전환 시 _local 초기화', () => {
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('다른 레이아웃으로 전환 시 이전 _local 값이 제거되어야 함', () => {
         // 주문관리 레이아웃에서의 _local 상태 시뮬레이션
         const globalState: Record<string, any> = {
@@ -1227,6 +1309,8 @@ describe('TemplateApp', () => {
         expect(globalState._local.selectedItems).toEqual([]);
       });
 
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('같은 레이아웃 재진입 시 기존 _local 값이 유지되어야 함', () => {
         // 주문관리 리스트 → 상품수정 → 뒤로가기 → 주문관리 리스트
         const globalState: Record<string, any> = {
@@ -1269,6 +1353,8 @@ describe('TemplateApp', () => {
         expect(globalState._local.filter).toEqual({ status: 'pending' });
       });
 
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('첫 로딩 시 (currentLayoutName 빈 문자열) 초기화 없이 initLocal만 적용되어야 함', () => {
         const globalState: Record<string, any> = {};
 
@@ -1299,6 +1385,8 @@ describe('TemplateApp', () => {
         expect(globalState._local.formData).toEqual({ name: '', type: 'default' });
       });
 
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('연속 레이아웃 전환 시 각각 올바르게 초기화되어야 함', () => {
         const globalState: Record<string, any> = { _local: {} };
         let currentLayoutName = '';
@@ -1362,6 +1450,8 @@ describe('TemplateApp', () => {
      * 해결: cleanup 로직을 if(layoutInitLocal) 블록 바깥으로 이동
      */
     describe('[TS-LOCAL-RESET-2] initLocal 없는 레이아웃에서 _local 정리', () => {
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('레이아웃 레벨 initLocal이 없어도 다른 레이아웃 전환 시 _local이 초기화되어야 함', () => {
         // 역할 수정 페이지에서 데이터소스 initLocal로 설정된 _local.form
         const globalState: Record<string, any> = {
@@ -1408,6 +1498,8 @@ describe('TemplateApp', () => {
         expect(globalState._local.selectedItems).toEqual([]);
       });
 
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('레이아웃 레벨 initLocal이 없는 폼 레이아웃 전환 시에도 _local이 초기화되어야 함', () => {
         // 역할 목록 페이지의 _local 상태
         const globalState: Record<string, any> = {
@@ -1451,6 +1543,8 @@ describe('TemplateApp', () => {
         expect(globalState._local).toEqual({});
       });
 
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('currentLayoutName이 initLocal 유무와 관계없이 항상 갱신되어야 함', () => {
         let currentLayoutName = '';
 
@@ -1472,6 +1566,8 @@ describe('TemplateApp', () => {
         expect(currentLayoutName).toBe('admin_role_form');
       });
 
+      // @scenario surface=local_isolation
+      // @effects template_app_isolates_local_state_between_layouts
       it('역할 수정 → 역할 목록 → 역할 추가 전체 흐름에서 폼 데이터가 잔존하지 않아야 함', () => {
         const globalState: Record<string, any> = { _local: {} };
         let currentLayoutName = '';
@@ -1536,6 +1632,8 @@ describe('TemplateApp', () => {
      *       reinitializeTemplateHandlers()를 호출하여 window.G7TemplateHandlers에서 직접 등록
      */
     describe('[TS-HANDLER-INIT-1] 초기화 시 템플릿 핸들러 등록', () => {
+      // @scenario surface=handlers
+      // @effects template_app_registers_template_handlers_on_init
       it('reinitializeTemplateHandlers()가 window.G7TemplateHandlers의 핸들러를 ActionDispatcher에 등록해야 함', () => {
         // window.G7TemplateHandlers 설정 (components.iife.js가 설정하는 전역 객체)
         const mockHandlers = {
@@ -1573,6 +1671,8 @@ describe('TemplateApp', () => {
         delete (window as any).G7TemplateHandlers;
       });
 
+      // @scenario surface=handlers
+      // @effects template_app_registers_template_handlers_on_init
       it('window.G7TemplateHandlers가 없으면 에러 없이 건너뛰어야 함', () => {
         delete (window as any).G7TemplateHandlers;
 
@@ -1594,6 +1694,8 @@ describe('TemplateApp', () => {
         expect(sharedActionDispatcher.registerHandler).not.toHaveBeenCalled();
       });
 
+      // @scenario surface=handlers
+      // @effects template_app_registers_template_handlers_on_init
       it('initialize() 코드에 reinitializeTemplateHandlers() 호출이 loadExtensionAssets() 후에 존재해야 함', async () => {
         // 코드 구조 검증: TemplateApp의 init 메서드 소스에
         // reinitializeTemplateHandlers 호출이 포함되어 있는지 확인
@@ -1629,6 +1731,8 @@ describe('TemplateApp', () => {
      * blur_until_loaded가 절대 해제되지 않음
      */
     describe('[TS-WS-PROGRESSIVE-1] WebSocket 소스 progressive 필터 제외', () => {
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('WebSocket 타입 소스는 progressiveAndBackgroundSources에 포함되지 않아야 함', () => {
         const dataSources = [
           { id: 'users', type: 'api', endpoint: '/api/users' },
@@ -1661,6 +1765,8 @@ describe('TemplateApp', () => {
         expect(ids).not.toContain('notification_ws');
       });
 
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('WebSocket 소스는 progressiveDataInit에서 undefined 초기화되지 않아야 함', () => {
         const dataSources = [
           { id: 'users', type: 'api', endpoint: '/api/users' },
@@ -1689,6 +1795,8 @@ describe('TemplateApp', () => {
         expect('users' in progressiveDataInit).toBe(true);
       });
 
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('blur_until_loaded: true 체크 시 WebSocket 키가 dataContext에 없어야 영구 블러 방지', () => {
         // blur_until_loaded: true의 체크 로직 시뮬레이션 (DynamicRenderer.tsx)
         const systemKeys = ['route', 'query', '_global', '_local', '_dataSourceErrors'];
@@ -1727,6 +1835,8 @@ describe('TemplateApp', () => {
         expect(hasUndefinedAfter).toBe(false); // 수정 검증: 블러 정상 해제
       });
 
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('WebSocket 소스는 target_source로 다른 데이터소스를 트리거하지만 자체 데이터를 제공하지 않음', () => {
         // notification_ws는 콜백에서 source.target_source || source.id 사용 (DataSourceManager.subscribeWebSockets)
         // → 콜백이 호출되어도 dataContext에 'notification_ws' 키는 절대 추가되지 않음
@@ -1751,6 +1861,8 @@ describe('TemplateApp', () => {
      * AccessDeniedHttpException을 던짐. fetched 데이터를 컨텍스트로 삼아 평가해야 함.
      */
     describe('[TS-WS-CHANNEL-EXPR-1] WebSocket channel/event 표현식 평가', () => {
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('표현식이 포함된 채널명은 fetched 데이터로 평가되어야 함', () => {
         const fetchedData = {
           current_user: { data: { id: 42, username: 'admin' } },
@@ -1780,6 +1892,8 @@ describe('TemplateApp', () => {
         expect(resolved).not.toContain('{{');
       });
 
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('정적 채널은 표현식 평가 후에도 동일해야 함', () => {
         const source = {
           channel: 'core.admin.dashboard',
@@ -1791,6 +1905,8 @@ describe('TemplateApp', () => {
         expect(source.event.includes('{{')).toBe(false);
       });
 
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('미평가 표현식이 남아있으면 구독을 건너뛰어야 함 (방어 로직)', () => {
         // current_user가 아직 로드되지 않은 상태에서 평가 시도하면
         // 표현식 마커가 남아있을 수 있음 → 구독 건너뜀
@@ -1827,6 +1943,8 @@ describe('TemplateApp', () => {
      * 채널 표현식이 progressive 데이터(current_user 등)를 참조할 수 있기 때문.
      */
     describe('[TS-WS-ORDER-1] WebSocket 구독 순서', () => {
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('WebSocket 구독은 progressive fetch 완료 후에 실행되어야 함', () => {
         const executionLog: string[] = [];
 
@@ -1858,8 +1976,10 @@ describe('TemplateApp', () => {
      * 수정: id 기반 Map 조회 + WebSocket 사전 필터링 (handleRouteChange 패턴과 통일)
      */
     describe('[TS-UQP-INDEX-1] updateQueryParams id 기반 매핑', () => {
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('WebSocket 소스가 중간에 있어도 results와 autoFetchDataSources 매핑이 어긋나지 않아야 함', () => {
-        // 시뮬레이션: _admin_base.json (WebSocket 포함) + admin_settings.json 결합 데이터소스
+        // 시뮬레이션: _admin_base.g7.html (WebSocket 포함) + admin_settings.g7.html 결합 데이터소스
         const autoFetchDataSources = [
           { id: 'notifications', type: 'api' },
           { id: 'notification_unread_count', type: 'api' },
@@ -1908,6 +2028,8 @@ describe('TemplateApp', () => {
         expect(updateData.availableChannels).toEqual({ _source: 'availableChannels' });
       });
 
+      // @scenario surface=websocket
+      // @effects template_app_filters_websocket_sources
       it('인덱스 기반 매핑 (BEFORE) 은 WebSocket이 있으면 어긋남을 재현', () => {
         // 회귀 방지: 이전 버그 재현을 통해 id 기반 매핑의 필요성 증명
         const autoFetchDataSources = [

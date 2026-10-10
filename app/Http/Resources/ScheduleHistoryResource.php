@@ -9,7 +9,7 @@ class ScheduleHistoryResource extends BaseApiResource
     /**
      * 스케줄 실행 이력 리소스를 배열로 변환합니다.
      *
-     * @param Request $request HTTP 요청 객체
+     * @param  Request  $request  HTTP 요청 객체
      * @return array<string, mixed> 변환된 이력 데이터 배열
      */
     public function toArray(Request $request): array
@@ -40,6 +40,7 @@ class ScheduleHistoryResource extends BaseApiResource
             // 관계형 데이터
             'triggered_by' => $this->whenLoaded('triggeredBy', function () {
                 $user = $this->getValue('triggeredBy');
+
                 return $user ? [
                     'uuid' => $user->uuid,
                     'name' => $user->name,
@@ -73,6 +74,9 @@ class ScheduleHistoryResource extends BaseApiResource
             'status_label' => $this->getStatusLabel(),
             'exit_code' => $this->getValue('exit_code'),
             'memory_usage_formatted' => $this->resource->memory_usage_formatted ?? null,
+            // 실행 이력 창이 회차마다 정상·오류 출력을 펼쳐 보인다 — 저장소가 이번 쪽 분량만 넓은 칸을 읽는다.
+            'output' => $this->getValue('output'),
+            'error_output' => $this->getValue('error_output'),
             'trigger_type' => $this->getValue('trigger_type')?->value ?? $this->getValue('trigger_type'),
             'trigger_type_label' => $this->getTriggerTypeLabel(),
             'triggered_by' => $this->resource->relationLoaded('triggeredBy') && $this->resource->triggeredBy
@@ -93,7 +97,7 @@ class ScheduleHistoryResource extends BaseApiResource
     {
         $status = $this->getValue('status');
 
-        if (!$status) {
+        if (! $status) {
             return null;
         }
 
@@ -101,7 +105,7 @@ class ScheduleHistoryResource extends BaseApiResource
             return $status->label();
         }
 
-        return __('schedule.result.' . $status);
+        return __('schedule.result.'.$status);
     }
 
     /**
@@ -113,7 +117,7 @@ class ScheduleHistoryResource extends BaseApiResource
     {
         $type = $this->getValue('trigger_type');
 
-        if (!$type) {
+        if (! $type) {
             return null;
         }
 
@@ -121,6 +125,6 @@ class ScheduleHistoryResource extends BaseApiResource
             return $type->label();
         }
 
-        return __('schedule.trigger_type.' . $type);
+        return __('schedule.trigger_type.'.$type);
     }
 }

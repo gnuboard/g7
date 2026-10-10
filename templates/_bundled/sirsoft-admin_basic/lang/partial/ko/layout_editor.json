@@ -220,6 +220,12 @@
       "default_label1": "A",
       "default_label2": "B"
     },
+    "line_chart": {
+      "label": "선 차트",
+      "default_label1": "1일",
+      "default_label2": "2일",
+      "default_label3": "3일"
+    },
     "donut_chart": {
       "label": "도넛 차트",
       "default_label1": "A",
@@ -308,6 +314,9 @@
     },
     "permission_tree": {
       "label": "권한 트리"
+    },
+    "menu_access_tree": {
+      "label": "메뉴 접근 트리"
     },
     "category_tree": {
       "label": "카테고리 트리",

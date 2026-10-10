@@ -1,0 +1,37 @@
+feature: 태그 입력(TagInput)의 Enter 키 — 옵션 선택·새 값 만들기·중복·폼 제출
+
+description: |
+  태그 입력의 Enter 가드는 내부 입력값(inputValue)을 보고 빈 입력·중복 값에서 Enter 를 막았다. 그런데 고르기만
+  하는 칸(creatable=false)은 입력값을 제어하지 않아 inputValue 가 늘 빈 값이었고, 그 결과 검색어를 치거나 화살표로
+  옮긴 뒤의 Enter 선택이 모두 막혔다(회원 「역할 추가」 창·권한 그룹 필터·메뉴 일괄 역할 칸, 브라우저 실측).
+
+  고친 규칙(키보드 Enter 하나의 갈래):
+    - 새로 만드는 칸에서 친 값이 이미 태그면 아무것도 하지 않는다 — react-select 는 선택된 옵션을 다시 고르면
+      해제하므로, 막지 않으면 같은 IP 를 한 번 더 입력하는 순간 기존 태그가 사라진다(관리자 허용 IP 칸 실측)
+    - 메뉴가 열려 있으면 react-select 가 포커스된 옵션을 고르거나 새 값을 만든다 — 가로채지 않는다
+    - 메뉴가 닫힌 빈 칸의 Enter 는 폼 제출로 번지지 않게 막는다(종전 그대로)
+
+  Tab(7.1.0 영역 J D-J6, 관측 O-CF6): 메뉴가 열린 채 Tab 으로 칸을 떠나면 react-select 기본값(tabSelectsValue)이
+  포커스된 옵션을 골라 회원 역할 칸에 「관리자」 가 붙을 뻔했다. Tab 은 고르지 않는다(`tabSelectsValue: false`).
+  만들기 칸에서 친 글자의 Tab 태그화는 종전대로 둔다.
+
+axes:
+  mode: [select_only, creatable]
+  input: [typed_match, arrow_focus, duplicate, empty_closed, tab_with_open_menu, typed_then_tab]
+
+exclusions:
+  - { mode: select_only, input: duplicate, reason: "고르기 전용 칸은 입력값으로 태그를 만들지 않는다 — 중복 입력이라는 갈래가 없다" }
+  - { mode: creatable, input: arrow_focus, reason: "새로 만드는 칸의 화살표 선택은 고르기 전용과 같은 react-select 경로 — select_only 행이 잰다" }
+  - { mode: creatable, input: empty_closed, reason: "닫힌 빈 칸의 Enter 가드는 모드와 무관한 같은 분기 — select_only 행이 잰다" }
+  - { mode: creatable, input: tab_with_open_menu, reason: "tabSelectsValue 는 모드와 무관한 같은 react-select 설정 — select_only 행이 잰다" }
+  - { mode: select_only, input: typed_then_tab, reason: "고르기 전용 칸은 친 글자로 태그를 만들지 않는다" }
+
+effects:
+  - tag_input_enter_selects_focused_option
+  - tag_input_enter_creates_new_value
+  - tag_input_enter_ignores_duplicate_value
+  - tag_input_enter_on_closed_empty_does_not_submit
+  - tag_input_tab_never_selects_option
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.keyboard.test.tsx

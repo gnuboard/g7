@@ -1,0 +1,4 @@
+<partial description="환율 실행 이력 탭">
+<!-- 이력 탭 — 필터, 조회 중 표시, 서버 페이지네이션 그리드 순. query.tab === 'history' 일 때만 그리며 데이터소스 koreaeximRuns 도 같은 조건으로만 받는다 -->
+<div data-if="{{_computed.activeTab === 'history'}}"><include src="_history_filter.g7.html"/><div data-if="{{koreaeximRuns?.loading === true}}" role="status" class="admin-card mb-4 flex items-center gap-2"><span class="spinner-sm"></span><span>$t:sirsoft-koreaexim.loading</span></div><include src="_history_grid.g7.html"/></div>
+</partial>

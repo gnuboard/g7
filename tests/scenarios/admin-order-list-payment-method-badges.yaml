@@ -1,0 +1,47 @@
+feature: 관리자 주문 목록 결제수단 칸 — 결제 플러그인 표시 자리
+
+description: |
+  이커머스는 PG 를 모른다. 관리자 주문 목록의 결제수단 칸에 PG 별 표시(테스트 결제 배지, 간편결제 원 수단
+  라벨)를 얹는 방법을 잠근다.
+
+  왜: 종전에는 결제 플러그인 셋이 배지 하나를 얹으려고 주문 목록 11개 컬럼 전체를 복사해 `inject_props` 로
+  덮었다. 이커머스가 컬럼을 고치면 그 사본에 묻혀 화면에서 사라졌고(부분취소 배지·적립 예정 포인트 소실 전례),
+  결제수단 칸은 다른 PG 의 테스트 결제 맵까지 읽었다. 우선순위로 한 사본만 이기므로 나머지 PG 의 간편결제
+  라벨도 조용히 빠졌다.
+
+  계약:
+    - 컬럼 목록은 이커머스 레이아웃이 단일 출처다. 결제수단 칸은 확장점 `admin_order_list_payment_method_badges`
+      를 연다(DataGrid 셀 템플릿 안 확장점 — 코어가 `props.columns[].cellChildren` 까지 채운다).
+    - 결제 플러그인은 그 확장점에 **자기 배지와 자기 데이터 소스만** 끼운다. 다른 PG 를 참조하지 않는다.
+    - 간편결제 원 수단 라벨은 서버 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로
+      플러그인이 자기 결제에만 채운다. 화면은 `payment_method_display_label ?? payment_method_label`.
+    - 업데이트 복원 리스너는 overlay 뿐 아니라 확장점 조각도 되살린다.
+
+axes:
+  payment_plugin: [none, kginicis, nhnkcp, nicepayments]
+
+effects:
+  - order_list_payment_method_cell_opens_a_badge_slot
+  - badge_fragment_targets_the_ecommerce_slot_only
+  - badge_fragment_reads_only_its_own_test_map
+  - display_label_is_null_without_subscribers
+  - display_label_comes_from_the_payment_plugin_filter
+  - display_label_listener_subscribes_to_the_ecommerce_filter
+  - display_label_listener_labels_only_its_own_easy_pay_payments
+  - extension_point_fragment_is_restored_after_plugin_update
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderListPaymentMethodSlot.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/OrderListPaymentDisplayLabelTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/adminOrderListPaymentMethodBadge.test.ts
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/adminOrderListPaymentMethodBadge.test.ts
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/adminOrderListPaymentMethodBadge.test.ts
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/ProvidePaymentMethodDisplayLabelListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/ProvidePaymentMethodDisplayLabelListenerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+
+limitations:
+  - "셀 템플릿 안 확장점은 서빙 조립에서 채워진다. 위지윅 편집기의 확장점 시각 편집은 `children` 트리만 다루므로 셀 안 확장점은 편집기 캔버스에서 조각 편집 대상으로 잡히지 않는다."
+  - "KG이니시스는 간편결제 원 수단 표시 라벨을 제공하지 않는다(종전에도 제공하지 않았다) — 필터 구독자는 NHN KCP·나이스페이먼츠 둘이다."

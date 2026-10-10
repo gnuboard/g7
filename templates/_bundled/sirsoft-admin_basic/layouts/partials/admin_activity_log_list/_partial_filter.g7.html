@@ -1,0 +1,223 @@
+<!-- 활동 로그 목록의 검색 조건 영역. 여기서 고른 값은 **로컬 상태 `filter` 에만 쌓이고 바로
+  조회되지 않는다** — 검색 버튼이나 입력창 Enter 가 명명 액션을 불러 URL 질의로 옮길 때
+  비로소 서버에 나간다. 그래서 조건을 여러 개 고쳐도 목록이 그때마다 깜박이지 않는다.
+  초기화 버튼만 예외로, 값을 비우고 질의 없는 주소로 곧장 이동한다. -->
+<partial description="Activity Log List Filter Section">
+  <div data-ref="filter_section" class="admin-card">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'all'}}">
+          <options>
+            <option value="all">$t:admin.activity_log.filter.search_type_all</option>
+            <option value="action">$t:admin.activity_log.filter.search_type_action</option>
+            <option value="description">$t:admin.activity_log.filter.search_type_description</option>
+            <option value="ip_address">$t:admin.activity_log.filter.search_type_ip_address</option>
+          </options>
+          <on type="change">
+            <!-- 검색어를 어느 칸에 대고 찾을지만 정해 둔다 — 「전체」일 때는 질의에서 아예 빠져 서버 기본값을 쓴다. -->
+            <set-state target="local" filter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <input name="search" type="text" placeholder="$t:admin.activity_log.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <!-- 타이핑은 담아만 둔다. 실제 조회는 Enter 또는 아래 검색 버튼이 한다. -->
+              <set-state target="local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <action-ref name="searchActivityLogs"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="log_type_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.activity_log.filter.log_type_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.logTypes || _local.filter.logTypes.length === 0}}">
+              <on type="change">
+                <!-- 「전체」는 별도 값이 아니라 **고른 것이 하나도 없는 상태**다 — 목록을 비우면 아래 셋의 체크도 함께 풀린다(체크 표시가 길이 0 을 보고 있다). -->
+                <set-state target="local" filter.logTypes="{{[]}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_all</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.logTypes || []).includes('admin')}}">
+              <on type="change">
+                <!-- 관리자 API 경로로 들어온 요청이 남긴 기록. 「누가 했는가」가 아니라 **어느 경로로
+                  들어왔는가**로 갈리므로, 관리자가 앞단 화면에서 한 일은 여기 잡히지 않는다.
+                  켤 때 같은 값을 걷어내고 다시 넣는 것은 두 번 눌러도 목록에 중복이 쌓이지 않게 하는 관용구다. -->
+                <set-state target="local" filter.logTypes="{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'admin'), 'admin'] : (_local.filter.logTypes || []).filter(t => t !== 'admin')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_admin</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.logTypes || []).includes('user')}}">
+              <on type="change">
+                <!-- 관리자 경로가 아닌 나머지 HTTP 요청이 남긴 기록 — 앞단 화면에서 일어난 일이 여기 모인다. -->
+                <set-state target="local" filter.logTypes="{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'user'), 'user'] : (_local.filter.logTypes || []).filter(t => t !== 'user')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_user</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.logTypes || []).includes('system')}}">
+              <on type="change">
+                <!-- 요청 없이 돌아간 일 — 명령줄과 스케줄러가 남긴 기록이라 행위자 칸이 비어 있는 것이 정상이다. -->
+                <set-state target="local" filter.logTypes="{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'system'), 'system'] : (_local.filter.logTypes || []).filter(t => t !== 'system')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_system</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="actor_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.activity_log.filter.actor_label</span>
+        <div class="flex-center gap-2">
+          <searchable-dropdown data-type="composite" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
+            <on event="onSearch">
+              <!-- 행위자는 목록이 아니라 **검색해서 고른다** — 회원 수가 많아 전건을 미리 받아 둘 수 없다.
+                타이핑이 멎기를 잠깐 기다렸다 찾고, 받은 회원을 드롭다운이 읽는 모양(값·이름·부가설명)으로
+                바꿔 담는다. 실패하면 결과를 비워 「없음」 문구가 뜨게 둔다. -->
+              <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
+                <success>
+                  <set-state target="local" actorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :actorSearchResults="[]"/>
+                </fail>
+                <query keyword="{{$args[0]}}"/>
+              </api-call>
+            </on>
+            <on type="change" event="onChange">
+              <!-- 고른 회원의 uuid 만 남긴다 — 목록 조회는 이 값으로 하고, 화면에 보이는 이름은 위 검색 결과가 들고 있다. -->
+              <set-state target="local" filter.createdBy="{{$args[0]}}"/>
+            </on>
+          </searchable-dropdown>
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <on type="click">
+              <!-- 고른 사람을 물릴 때 검색 결과까지 비운다 — 남겨 두면 지운 이름이 드롭다운에 계속 떠 있다. -->
+              <set-state target="local" filter.createdBy="" :actorSearchResults="[]"/>
+            </on>
+            <icon name="xmark" class="text-base"/>
+          </button>
+        </div>
+      </div>
+      <div data-ref="date_range_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.activity_log.filter.date_range_label</span>
+        <div class="flex-center gap-2 flex-wrap">
+          <input name="dateFrom" type="datetime-local" aria-label="$t:common.range_start|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateFrom || ''}}">
+            <on type="change">
+              <!-- 시작 시각을 직접 고르면 아래 기간 버튼의 선택 표시를 지운다 — 버튼이 만든 범위를 손으로 고친 순간 그 버튼은 더 이상 지금 조건이 아니다. -->
+              <set-state target="local" filter.dateFrom="{{$event.target.value}}" filter.dateQuick=""/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input name="dateTo" type="datetime-local" aria-label="$t:common.range_end|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateTo || ''}}">
+            <on type="change">
+              <!-- 끝 시각도 마찬가지다. 초 단위까지 받으므로 같은 날 안에서 시간대를 좁혀 볼 수 있다. -->
+              <set-state target="local" filter.dateTo="{{$event.target.value}}" filter.dateQuick=""/>
+            </on>
+          </input>
+          <div class="flex-center gap-1">
+            <button type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 오늘 00:00:00 ~ 23:59:59. 여섯 버튼 모두 끝은 오늘 자정 직전으로 고정이고 시작만 달라지며, 계산 결과를 위 두 입력칸에 그대로 옮겨 담는다(직접 고른 날짜와 같은 자리다). -->
+                <sequence>
+                  <action handler="setDateRange" preset="today"/>
+                  <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.activity_log.filter.date_quick.today
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 오늘을 **포함한** 7일 — 지난 일요일부터가 아니라 6일 전 0시부터다. -->
+                <sequence>
+                  <action handler="setDateRange" preset="week"/>
+                  <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.activity_log.filter.date_quick.week
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 한 달 전 같은 날 0시부터 — 이번 달 1일부터가 아니다. -->
+                <sequence>
+                  <action handler="setDateRange" preset="month"/>
+                  <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.activity_log.filter.date_quick.month
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 석 달 전 같은 날 0시부터. -->
+                <sequence>
+                  <action handler="setDateRange" preset="3months"/>
+                  <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.activity_log.filter.date_quick.three_months
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 여섯 달 전 같은 날 0시부터. 로그 보관 기간을 넘겨 잡으면 앞쪽이 비어 보인다. -->
+                <sequence>
+                  <action handler="setDateRange" preset="6months"/>
+                  <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.activity_log.filter.date_quick.six_months
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 한 해 전 같은 날 0시부터 — 이 화면이 한 번에 잡을 수 있는 가장 넓은 범위다. -->
+                <sequence>
+                  <action handler="setDateRange" preset="1year"/>
+                  <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.activity_log.filter.date_quick.one_year
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchActivityLogs"/>
+        </on>
+        $t:admin.activity_log.filter.search_button
+      </button>
+      <!-- 검색 조건 초기화. 폼 상태와 주소를 함께 비운다 — 초기화는 걸린 조건을 없애는 것이라 지금 조건과 병합하지 않는다 -->
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <set-state target="local" :actorSearchResults="[]">
+            <field name="filter">
+              <field name="searchType" value="all"/>
+              <field name="search" value=""/>
+              <field name="logTypes" :value="[]"/>
+              <field name="createdBy" value=""/>
+              <field name="dateQuick" value=""/>
+              <field name="dateFrom" value=""/>
+              <field name="dateTo" value=""/>
+            </field>
+          </set-state>
+          <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+          <navigate path="/admin/activity-logs" :mergeQuery="false"/>
+        </on>
+        $t:admin.activity_log.filter.reset_button
+      </button>
+    </div>
+  </div>
+</partial>

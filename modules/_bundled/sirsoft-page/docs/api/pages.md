@@ -161,7 +161,7 @@ HTTP/1.1 200
 | seo_meta.title | body | string | 아니오 | max 255 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | seo_meta.description | body | string | 아니오 | max 500 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
 | seo_meta.keywords | body | string | 아니오 | max 500 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 첨부 업로드 시 발급받은 임시 키. 생성된 페이지에 임시 첨부를 귀속시키는 데 사용합니다 |
+| temp_key | body | string | 아니오 | UUID | 저장 전 첨부 업로드 시 발급받은 임시 키. 생성된 페이지에 임시 첨부를 귀속시키는 데 사용합니다 |
 
 **요청 예시**
 
@@ -186,7 +186,7 @@ Content-Type: application/json
     "seo_meta.title": "예시 제목",
     "seo_meta.description": "예시 내용입니다.",
     "seo_meta.keywords": "예시값",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
@@ -275,7 +275,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 새 페이지를 생성합니다. `slug`(고유 필수)·`title`(다국어 배열 필수)·`content`·`content_mode`(html/text)·`published`·`seo_meta` 를 받아 `PageService::createPage()` 로 저장하고, `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 201 로 반환합니다. `temp_key` 는 페이지 저장 전 임시 업로드한 첨부(첨부 업로드 시 발급받은 키)를 생성된 페이지에 귀속시키는 데 씁니다.
+**설명** 새 페이지를 생성합니다. `slug`(고유 필수)·`title`(다국어 배열 필수)·`content`·`content_mode`(html/text)·`published`·`seo_meta` 를 받아 `PageService::createPage()` 로 저장하고, `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 201 로 반환합니다. `temp_key` 는 페이지 저장 전 임시 업로드한 첨부(첨부 업로드 시 발급받은 키)를 생성된 페이지에 귀속시키는 데 씁니다. 다국어 `title` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.title` 이 칸 이름과 언어 이름을 함께 알린다(「페이지 제목의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the page title field is required.").
 
 
 ### PATCH /api/modules/sirsoft-page/admin/pages/bulk-publish
@@ -350,7 +350,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-page.admin.pages.check-slug -->
 - **라우트명**: `api.modules.sirsoft-page.admin.pages.check-slug`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageController@checkSlug`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create|sirsoft-page.pages.update,false` (OR)
 
 **요청 파라미터**
 
@@ -408,7 +408,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 슬러그 중복 여부를 확인합니다. `slug`(필수)와 선택 `exclude_id`(수정 화면에서 자기 자신을 중복 검사에서 제외)를 받아 `{ "exists": true|false }` 를 반환합니다. 페이지 생성/수정 폼에서 슬러그 입력 시 실시간 중복 검증에 사용합니다. 권한은 `pages.create` 를 요구합니다.
+**설명** 슬러그 중복 여부를 확인합니다. `slug`(필수)와 선택 `exclude_id`(수정 화면에서 자기 자신을 중복 검사에서 제외)를 받아 `{ "exists": true|false }` 를 반환합니다. 페이지 생성/수정 폼에서 슬러그 입력 시 실시간 중복 검증에 사용합니다. 권한은 `pages.create` 를 요구합니다. 7.1.0 부터 등록 화면과 수정 화면이 함께 쓰므로 등록·수정 권한 중 하나만 있어도 됩니다.
 
 
 ### DELETE /api/modules/sirsoft-page/admin/pages/{page}
@@ -605,7 +605,7 @@ HTTP/1.1 200
 | seo_meta.title | body | string | 아니오 | max 255 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | seo_meta.description | body | string | 아니오 | max 500 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
 | seo_meta.keywords | body | string | 아니오 | max 500 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 첨부 업로드 시 발급받은 임시 키. 새로 업로드한 첨부를 이 페이지에 귀속시키는 데 사용합니다 |
+| temp_key | body | string | 아니오 | UUID | 저장 전 첨부 업로드 시 발급받은 임시 키. 새로 업로드한 첨부를 이 페이지에 귀속시키는 데 사용합니다 |
 
 **요청 예시**
 
@@ -630,7 +630,7 @@ Content-Type: application/json
     "seo_meta.title": "예시 제목",
     "seo_meta.description": "예시 내용입니다.",
     "seo_meta.keywords": "예시값",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
@@ -720,7 +720,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 페이지를 수정합니다. `{page}` 는 페이지 ID 입니다. `title`(필수)·`slug`·`content`·`content_mode`·`published`·`seo_meta` 를 받아 `PageService::updatePage()` 로 반영하고, 수정 시 이전 상태가 버전 이력으로 적재됩니다(`current_version` 증가). `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 반환합니다. 미존재 404, 스코프 밖 403.
+**설명** 페이지를 수정합니다. `{page}` 는 페이지 ID 입니다. `title`(필수)·`slug`·`content`·`content_mode`·`published`·`seo_meta` 를 받아 `PageService::updatePage()` 로 반영하고, 수정 시 이전 상태가 버전 이력으로 적재됩니다(`current_version` 증가). `creator`/`updater`/`attachments` 를 eager load 한 `PageResource` 를 반환합니다. 미존재 404, 스코프 밖 403. 다국어 `title` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.title` 이 칸 이름과 언어 이름을 함께 알린다(「페이지 제목의 한국어(ko) 값은 필수입니다.」).
 
 
 ### PATCH /api/modules/sirsoft-page/admin/pages/{page}/publish
@@ -1204,7 +1204,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이미지 바이트를 인라인으로 내려주는 스트리밍 응답(`StreamedResponse`, `Content-Disposition: inline`)이며, 실패 시에만 JSON 오류 봉투를 반환합니다._
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이미지 바이트를 인라인으로 내려주는 스트리밍 응답(`StreamedResponse`, `Content-Disposition: inline`, `X-Content-Type-Options: nosniff`)이며, 인라인 미리보기는 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 대상입니다(SVG 는 이미지로 취급하지 않음 — KVE-2026-2366). 실패 시에만 JSON 오류 봉투를 반환합니다._
 
 **응답 예시**
 
@@ -1212,6 +1212,7 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이
 HTTP/1.1 200
 Content-Type: image/jpeg
 Content-Disposition: inline
+X-Content-Type-Options: nosniff
 
 (이미지 바이너리 스트림)
 ```
@@ -1230,7 +1231,7 @@ Content-Disposition: inline
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | 해시에 해당하는 첨부가 없는 경우(`첨부파일을 찾을 수 없습니다.`), 미발행 페이지의 첨부를 `sirsoft-page.pages.read` 권한·유효 서명 없이 요청한 경우(존재를 숨기기 위해 동일하게 404), 첨부가 이미지가 아니거나 스토리지에 실제 파일이 없는 경우(`첨부파일이 스토리지에 존재하지 않습니다.`) |
+| 404 | Not Found | 해시에 해당하는 첨부가 없는 경우(`첨부파일을 찾을 수 없습니다.`), 미발행 페이지의 첨부를 `sirsoft-page.pages.read` 권한·유효 서명 없이 요청한 경우(존재를 숨기기 위해 동일하게 404), 첨부가 미리보기 대상 이미지(JPG·PNG·GIF·WebP 등)가 아닌 경우(`미리보기를 제공하지 않는 파일 형식입니다.` — SVG·TXT 등, 미발행 첨부는 권한 판정을 먼저 거쳐 형식이 드러나지 않음), 이미지인데 스토리지에 실제 파일이 없는 경우(`첨부파일이 스토리지에 존재하지 않습니다.`) |
 
 <!-- @generated:end -->
 
@@ -1315,6 +1316,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 발행된 페이지를 슬러그로 조회하는 공개 엔드포인트입니다. 실제 미들웨어는 `optional.sanctum` 으로 비로그인 사용자도 발행 페이지를 볼 수 있습니다(위 표의 `auth:sanctum` 은 생성기 표기이며 토큰 없이도 통과). `sirsoft-page.pages.read` 권한을 가진 관리자는 미발행 페이지도 사용자 화면에서 미리볼 수 있으며(이때 응답에 preview 표시가 실림), 비로그인·일반 회원은 미발행 시 404 를 받습니다. `PublicPageResource` 는 관리자용 상세보다 축소된 공개 표면을 노출하고 `attachments` 를 포함합니다. `{slug}` 는 문자열 라우트 파라미터라 문서 생성 시 자동 실측에서 제외됩니다.
+**설명** 발행된 페이지를 슬러그로 조회하는 공개 엔드포인트입니다. 실제 미들웨어는 `optional.sanctum` 으로 비로그인 사용자도 발행 페이지를 볼 수 있습니다(위 표의 `auth:sanctum` 은 생성기 표기이며 토큰 없이도 통과). `sirsoft-page.pages.read` 권한을 가진 관리자는 미발행 페이지도 사용자 화면에서 미리볼 수 있으며(이때 응답에 preview 표시가 실림), 비로그인·일반 회원은 미발행 시 404 를 받습니다. `PublicPageResource` 는 관리자용 상세보다 축소된 공개 표면을 노출하고 `attachments` 를 포함합니다. `{slug}` 는 문자열 라우트 파라미터라 문서 생성 시 자동 실측에서 제외됩니다. 응답에 `abilities.can_update`(페이지 수정 권한·스코프)를 싣고, 페이지가 없으면 404 응답의 `errors.abilities.can_create`(페이지 등록 권한)를 싣습니다 — 공개 화면의 [편집]·[페이지 만들기] 를 그 권한자에게만 여는 근거입니다(7.1.0).
 
 

@@ -1,0 +1,18 @@
+feature: 확장 확인 창 문구는 이름 뒤에 종류 단어를 다시 붙이지 않는다
+
+description: |
+  모듈·플러그인·템플릿의 설치·제거·업데이트·레이아웃 갱신·활성화·비활성화 확인 문구가
+  「{{name}} 모듈을 설치하시겠습니까?」처럼 이름 뒤에 종류 단어를 붙여, 이름에 종류가 들어 있는 확장은
+  「Hello 모듈 모듈을 설치하시겠습니까?」로 보였다(#736 F 영역 실측 O-F6). 창 제목이 이미 종류를 말하므로
+  문구는 이름을 따옴표로 묶고 종류 단어를 뺀다(ko·en 템플릿 언어 파일, ja 동봉 언어팩).
+  업데이트 창 코어 호환 경고도 제약식(「>=7.2.0」) 뒤에 「이상」을 붙여 「>=7.2.0 이상」으로 겹쳤다(O-F9) — 같은 시험 파일이 맡는다.
+
+axes:
+  locale: [ko, en, ja]
+
+effects:
+  - confirm_message_has_no_duplicated_type_word
+  - compat_warning_has_no_duplicated_operator_word
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/i18n/extension-confirm-name-type-word.test.ts

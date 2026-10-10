@@ -101,6 +101,7 @@ Content-Type: application/json
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 **만료된 경우** (`templates.layout_not_found`). 조회 시 `notExpired()` 스코프가 적용되므로 만료 토큰은 미존재와 동일하게 404 다 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -154,8 +155,8 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | extends | string\|null | `"_user_base"` | 상속할 베이스 레이아웃 이름 (미리보기 서빙 시 이미 병합됨) |
 | slots | object | `{"content": [ ... ]}` | 베이스 레이아웃 슬롯에 삽입할 컴포넌트 배열 (extends 레이아웃) |
 | components | array | `[{"type":"basic","name":"Div", ...}]` | 렌더링할 컴포넌트 트리 (병합·확장 적용 결과) |
-| endpoint | string\|null | `"/api/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
-| data_sources | array | `[{"id":"products","endpoint":"/api/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
+| endpoint | string\|null | `"/api/modules/sirsoft-ecommerce/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
+| data_sources | array | `[{"id":"products","endpoint":"/api/modules/sirsoft-ecommerce/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
 | meta | object | `{"title":"상품 목록","auth_required":false}` | 메타 정보 (title, description, keywords, auth_required, is_base, guest_only, is_error_layout, error_code, seo) |
 | permissions | array\|object | `["core.templates.layouts.edit"]` | 레이아웃 접근에 필요한 권한 (flat 배열=AND, 구조화 객체=OR/AND 중첩) |
 | modals | object | `{}` | 모달 컴포넌트 정의 |
@@ -183,7 +184,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
     "data_sources": [
         {
             "id": "products",
-            "endpoint": "/api/products",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products",
             "method": "GET"
         }
     ],
@@ -215,11 +216,13 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 만료된 경우 (`templates.layout_not_found`) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
 **설명** 편집 중인 레이아웃을 미리보기 토큰(UUID)으로 조회해 JSON으로 서빙합니다. 토큰으로 대상 레이아웃을 찾은 뒤 상속 병합과 확장(extension) 적용까지 마친 결과를 반환하며, 토큰이 유효하지 않으면 404를 반환합니다. 인증 미들웨어가 적용되지만 실질적 보안 메커니즘은 토큰 자체이며, 레이아웃 편집기에서 저장 전 변경분을 실제 렌더링으로 확인하는 용도입니다.
 
+**권한 필터(7.1.0)** 미리보기 응답도 공개 서빙과 같이 컴포넌트 `permissions` 를 요청자 기준으로 걸러 내고 속성을 지운다. 모달 `children`·DataGrid 셀(`cellChildren` 등) 안의 컴포넌트도 같은 규칙으로 걸러진다.
 
 ### GET /api/layouts/{templateIdentifier}/{layoutName}
 <!-- @generated:start:api.public.layouts.serve.extensionless -->
@@ -285,6 +288,7 @@ Content-Type: application/json
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 **만료된 경우** (`templates.layout_not_found`). 서버의 정적 최적화 블록이 `.json` 확장자를 가로채도 404 가 되므로, 이 경우 확장자 없는 형태로 재요청한다 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -294,6 +298,10 @@ Content-Type: application/json
 
 두 형태가 함께 등록되는 이유는 서버 설정 차이 때문이다. 정규식 location(`location ~* \.(js|css|json)$`)이 프리픽스 location 보다 먼저 매칭되는 nginx 구성에서는 `.json` 으로 끝나는 동적 응답이 `try_files ... /index.php` 폴백 없이 404 가 된다. 그래서 라우트는 `Route::dualSuffix()` 로 두 형태를 동시에 등록하고, 클라이언트는 `/api/system/asset-probe` 프로브 결과에 따라 어느 쪽을 쓸지 결정한다. URL 조립은 서버측 `App\Support\AssetUrl`, 프론트측 `resources/js/core/support/assetUrl.ts` 가 담당하며 직접 문자열로 조립하지 않는다.
 
+
+**빈 객체 보존** — 병합된 레이아웃 응답은 원본(`.g7.html`·짝 `.json`·DB 행)이 빈 객체 `{}` 인 자리를 `{}` 로 돌려준다. `initLocal`·`initGlobal`·`initIsolated`·`state` 섹션의 값, 액션 `params`·데이터 소스 `fallback` 아래 값이 대상이고, 비어 있는 맵 섹션(`meta`·`initLocal`·`initGlobal`·`initIsolated`·`state`·`computed`·`defines`·`named_actions`)도 `{}` 로 낸다. 목록(`[]`)은 그대로 목록이다. 종전에는 배열로 디코드하는 단계에서 `{}` 가 `[]` 로 바뀌어 화면이 키-값 상태를 배열로 받았다.
+
+**PHP 쪽 소비자** — 이 보존은 병합 단계에서 일어나므로 응답만이 아니라 PHP 가 받는 레이아웃에도 적용된다. `LayoutService::getLayout()`·`loadAndMergeLayout()` 의 반환값과 `core.layout.filter_parent_data`·`core.layout.filter_child_data`·`core.layout.filter_merged`·`core.layout.after_merge`·`core.layout.after_load`·`core.layout.after_get` 훅 페이로드에서, 위 값 자리의 빈 객체는 빈 배열이 아니라 `stdClass` 다(섹션 자체와 `props`·`params` 키 자신의 값은 종전대로 배열). 그 자리를 배열로 다루는 확장 코드(`array_merge`, `count`, 배열 인덱싱 등)는 `is_array()` 로 먼저 가리거나, 화면에 넘기지 않고 PHP 안에서만 쓸 레이아웃이면 `App\Support\LayoutEmptyObjects::toArrays($layout)` 로 빈 배열로 되돌려 쓴다(코어 SEO 렌더러가 이렇게 한다). 화면에 내보낼 레이아웃을 되돌리면 `{}` 가 다시 `[]` 로 나간다.
 
 ### GET /api/layouts/{templateIdentifier}/{layoutName}.json
 <!-- @generated:start:api.public.layouts.serve -->
@@ -328,8 +336,8 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | extends | string\|null | `"_user_base"` | 상속한 베이스 레이아웃 이름 (서빙 시 이미 병합 반영됨) |
 | slots | object | `{"content": [ ... ]}` | 베이스 슬롯에 삽입되는 컴포넌트 배열 (extends 레이아웃) |
 | components | array | `[{"type":"basic","name":"Div", ...}]` | 렌더링할 컴포넌트 트리 (병합·확장·권한 필터 적용 결과) |
-| endpoint | string\|null | `"/api/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
-| data_sources | array | `[{"id":"products","endpoint":"/api/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
+| endpoint | string\|null | `"/api/modules/sirsoft-ecommerce/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
+| data_sources | array | `[{"id":"products","endpoint":"/api/modules/sirsoft-ecommerce/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
 | meta | object | `{"title":"상품 목록","auth_required":false}` | 메타 정보 (title, description, keywords, auth_required, is_base, guest_only, is_error_layout, error_code, seo) |
 | permissions | array\|object | `["core.templates.layouts.edit"]` | 레이아웃 접근에 필요한 권한 (flat 배열=AND, 구조화 객체=OR/AND 중첩) |
 | modals | object | `{}` | 모달 컴포넌트 정의 |
@@ -365,7 +373,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
         "data_sources": [
             {
                 "id": "products",
-                "endpoint": "/api/products",
+                "endpoint": "/api/modules/sirsoft-ecommerce/products",
                 "method": "GET"
             }
         ],
@@ -391,6 +399,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | 401 | Unauthorized | 비회원이 `permissions` 요구 레이아웃에 접근 (`auth.layout_guest_permission_denied`), 또는 비회원이 `with_source_meta=1` 요청 |
 | 403 | Forbidden | 회원이지만 레이아웃 `permissions` 미충족 (`auth.layout_permission_denied`), 또는 `with_source_meta=1` 요청 시 `core.templates.layouts.edit` 권한 없음 |
 | 404 | Not Found | 템플릿이 없거나 비활성 상태, 또는 레이아웃/부모 레이아웃 미존재 (`templates.layout_not_found`) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 

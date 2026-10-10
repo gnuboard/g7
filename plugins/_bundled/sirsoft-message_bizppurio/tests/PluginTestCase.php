@@ -10,6 +10,7 @@ use App\Extension\PluginManager;
 use App\Models\Plugin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -50,6 +51,8 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -59,6 +62,34 @@ abstract class PluginTestCase extends TestCase
         $this->snapshotHookManager();
         $this->snapshotHookListenerRegistrar();
         $this->activateSelfForMiddlewareGate();
+        $this->registerPluginApiRoutes();
+    }
+
+    /**
+     * 플러그인 API 라우트를 테스트 앱에 등록합니다.
+     *
+     * `PluginRouteServiceProvider` 는 활성 플러그인 목록을 대조해서만 라우트를 등록하는데,
+     * 그 등록은 `parent::setUp()` 의 앱 부팅 시점에 끝나고 테스트 DB 초기화·활성 행 심기는
+     * 그 뒤에 온다. 그래서 이 플러그인의 모든 엔드포인트가 404 가 된다(연결 확인 테스트 7건이
+     * 항상 404 로 실패했다). 다른 번들 확장 테스트 베이스와 같이 라우트 파일을 직접 물린다.
+     *
+     * prefix·name·middleware 는 프로바이더와 동일하게 맞춘다 — 어긋나면 운영 주소와 다른 곳을
+     * 밟고, 라우트명으로 선언한 webhook IP 게이트도 매칭되지 않는다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function registerPluginApiRoutes(): void
+    {
+        $apiRoutesFile = dirname(__DIR__).'/src/routes/api.php';
+
+        if (! file_exists($apiRoutesFile)) {
+            return;
+        }
+
+        Route::prefix('api/plugins/sirsoft-message_bizppurio')
+            ->name('api.plugins.sirsoft-message_bizppurio.')
+            ->middleware('api')
+            ->group($apiRoutesFile);
     }
 
     /**
@@ -68,6 +99,8 @@ abstract class PluginTestCase extends TestCase
      * 활성 플러그인 registry 를 대조해 실행하므로, 테스트 환경에서도 plugins 테이블
      * 활성 행 + PluginManager 인스턴스 등록 + 인덱스 무효화가 있어야 매칭된다.
      * 누락 시 게이트가 미들웨어를 부착하지 못해 차단 IP 도 통과한다.
+     *
+     * @return void 반환값 없음
      */
     protected function activateSelfForMiddlewareGate(): void
     {
@@ -94,6 +127,8 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * tearDown 에 HookManager 상태 + plugins 스토리지 복원.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -113,6 +148,8 @@ abstract class PluginTestCase extends TestCase
      * (RefreshDatabase 는 DB 만 롤백하고 파일시스템은 되돌리지 않음). 디스크 root 를
      * 임시 경로로 바꾸고 resolved 인스턴스를 purge 하여 실제 파일을 원천적으로 못
      * 건드리게 한다. (회귀 배경: #458)
+     *
+     * @return void 반환값 없음
      */
     private function isolatePluginStorage(): void
     {
@@ -133,6 +170,8 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 격리 임시 디렉토리를 제거한다 (테스트 간 잔여 파일 격리).
+     *
+     * @return void 반환값 없음
      */
     private function restorePluginStorage(): void
     {
@@ -147,6 +186,8 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     *
+     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
@@ -160,6 +201,8 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 스냅샷 시점으로 HookManager 복원.
+     *
+     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -177,6 +220,8 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * HookListenerRegistrar static $registered 를 스냅샷.
+     *
+     * @return void 반환값 없음
      */
     private function snapshotHookListenerRegistrar(): void
     {
@@ -187,6 +232,8 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 스냅샷 시점으로 HookListenerRegistrar::$registered 를 복원.
+     *
+     * @return void 반환값 없음
      */
     private function restoreHookListenerRegistrar(): void
     {
@@ -205,7 +252,7 @@ abstract class PluginTestCase extends TestCase
      *
      * RefreshDatabase 의 migrate:fresh 명령에 코어 + 번들 확장 마이그레이션 경로를 전달합니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> migrate:fresh 명령 옵션 (경로·뷰/타입 삭제·시드 여부)
      */
     protected function migrateFreshUsing(): array
     {

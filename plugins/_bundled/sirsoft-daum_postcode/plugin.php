@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\DaumPostcode;
 
 use App\Extension\AbstractPlugin;
+use Plugins\Sirsoft\DaumPostcode\Listeners\RegisterSettingsAttributeLabelsListener;
 
 /**
  * Daum 우편번호 서비스 플러그인
@@ -48,29 +49,35 @@ class Plugin extends AbstractPlugin
                 ],
                 'required' => false,
             ],
+            // 팝업 크기는 화면에 띄울 수 있는 범위로 묶는다 — 정수 여부만 보던 때는 -10 도 저장됐다(7.1.0 실측).
+            // 코어 설정 저장 검증이 min·max 를 그대로 규칙으로 쓰고, 설정 화면 입력칸도 같은 값을 쓴다.
             'popup_width' => [
                 'type' => 'integer',
                 'default' => 500,
+                'min' => 100,
+                'max' => 2000,
                 'label' => [
                     'ko' => '팝업 너비 (px)',
                     'en' => 'Popup Width (px)',
                 ],
                 'hint' => [
-                    'ko' => '팝업 모드에서 사용되는 창 너비입니다.',
-                    'en' => 'Window width used in popup mode.',
+                    'ko' => '팝업 모드에서 사용되는 창 너비입니다. (100~2000)',
+                    'en' => 'Window width used in popup mode. (100–2000)',
                 ],
                 'required' => false,
             ],
             'popup_height' => [
                 'type' => 'integer',
                 'default' => 600,
+                'min' => 100,
+                'max' => 2000,
                 'label' => [
                     'ko' => '팝업 높이 (px)',
                     'en' => 'Popup Height (px)',
                 ],
                 'hint' => [
-                    'ko' => '팝업 모드에서 사용되는 창 높이입니다.',
-                    'en' => 'Window height used in popup mode.',
+                    'ko' => '팝업 모드에서 사용되는 창 높이입니다. (100~2000)',
+                    'en' => 'Window height used in popup mode. (100–2000)',
                 ],
                 'required' => false,
             ],
@@ -108,38 +115,28 @@ class Plugin extends AbstractPlugin
     /**
      * 플러그인이 제공하는 훅 정보 반환
      *
-     * @return array 훅 정의 배열
+     * 제공하는 서버 훅이 없다. 주소 선택은 브라우저에서 일어나는 흐름이고 프론트엔드 엔진에는 확장이 끼어드는
+     * 훅 체계가 없어, 종전에 선언했던 address.selected·filter_address_data 는 발화처가 한 번도 없었다 —
+     * 선언에서 뺐다(#138 후속, 설계 결정). 주소를 받은 뒤의 동작은 레이아웃 액션으로 잇는다.
+     *
+     * @return array 훅 정의 배열 (없음)
      */
     public function getHooks(): array
     {
+        return [];
+    }
+
+    /**
+     * 구독하는 훅 리스너 목록 반환
+     *
+     * 환경설정 저장 검증 오류 문구의 항목 이름을 요청 언어로 등록한다(스키마 label 은 ko/en 만 있다).
+     *
+     * @return array<int, class-string> 리스너 클래스 목록
+     */
+    public function getHookListeners(): array
+    {
         return [
-            [
-                'name' => 'sirsoft-daum_postcode.address.selected',
-                'type' => 'action',
-                'description' => [
-                    'ko' => '주소 선택 완료 시 실행되는 액션 훅',
-                    'en' => 'Action hook executed when address selection is complete',
-                ],
-                'parameters' => [
-                    'zonecode' => 'string - 우편번호',
-                    'address' => 'string - 기본 주소',
-                    'roadAddress' => 'string - 도로명 주소',
-                    'jibunAddress' => 'string - 지번 주소',
-                    'buildingName' => 'string - 건물명',
-                ],
-            ],
-            [
-                'name' => 'sirsoft-daum_postcode.filter_address_data',
-                'type' => 'filter',
-                'description' => [
-                    'ko' => '선택된 주소 데이터를 필터링하는 훅',
-                    'en' => 'Filter hook to modify selected address data',
-                ],
-                'parameters' => [
-                    'data' => 'array - 주소 데이터',
-                ],
-                'return' => 'array - 필터링된 주소 데이터',
-            ],
+            RegisterSettingsAttributeLabelsListener::class,
         ];
     }
 }

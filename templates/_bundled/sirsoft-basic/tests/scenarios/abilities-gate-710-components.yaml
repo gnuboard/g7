@@ -1,0 +1,24 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 관리자 템플릿 컴포넌트 계약과 대칭으로 맞춘 사용자 템플릿 컴포넌트 회귀 묶음. 컴포넌트마다 독립 축이다.
+
+feature: 사용자 템플릿 컴포넌트의 disabled·권한 계약 (7.1.0 abilities 게이트)
+
+description: |
+  관리자 템플릿과 같은 계약을 사용자 템플릿 컴포넌트에도 둔다.
+  - HtmlEditor — disabled 를 readOnly 와 같이 다룬다(G09)
+  - NotificationCenter — canUpdate·canDelete 가 false 면 모두 읽음·삭제를 숨기고 닫을 때 읽음 처리를 보내지 않는다(G27)
+  - Header — 데스크톱 헤더가 알림 권한(notificationCanUpdate·notificationCanDelete)을 NotificationCenter 에 넘긴다.
+    권한이 없으면 레이아웃이 false 를 명시해 넘기고, 값을 받지 못하면 NotificationCenter 와 같은 기본값 true 로 넘긴다
+    (루트 레이아웃을 keep 으로 업데이트해 새 prop 바인딩이 없는 사이트에서 버튼·닫힘 읽음 처리가 사라지지 않게, 최종 방어선은 서버 403).
+
+axes:
+  component: [HtmlEditor, NotificationCenter, Header]
+  state: [disabled, enabled]
+
+effects:
+  - html_editor_disabled_blocks_editing
+  - notification_center_hides_write_actions_without_permission
+  - header_passes_notification_abilities
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ComponentDisabledContract.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/HeaderNotificationAbilities.test.tsx

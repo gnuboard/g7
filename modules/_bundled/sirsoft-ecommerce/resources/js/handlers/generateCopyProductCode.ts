@@ -34,7 +34,7 @@ interface ActionWithParams {
  */
 export async function generateCopyProductCodeHandler(
     action: ActionWithParams,
-    context: ActionContext
+    context: ActionContext & { data?: Record<string, any> }
 ): Promise<void> {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state || !G7Core?.api) {
@@ -54,9 +54,9 @@ export async function generateCopyProductCodeHandler(
 
         const newProductCode = response.data.product_code;
 
-        // 모달 컨텍스트 확인: __g7LayoutContextStack에 부모 컨텍스트가 있는지 확인
-        const contextStack = (window as any).__g7LayoutContextStack || [];
-        const isInModalContext = contextStack.length > 0;
+        // 모달 컨텍스트 확인: 모달 안의 컴포넌트는 데이터 컨텍스트에 부모 레이아웃($parent)을 갖는다.
+        // 엔진 내부 스택을 들여다보지 않고 핸들러가 받은 컨텍스트로 판정한다.
+        const isInModalContext = context?.data?.$parent != null;
 
         if (isInModalContext && G7Core.state.setParentLocal) {
             // 모달에서 호출된 경우 - 부모의 _local에 저장

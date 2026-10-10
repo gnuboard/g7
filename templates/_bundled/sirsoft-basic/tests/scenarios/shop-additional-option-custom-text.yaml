@@ -1,0 +1,28 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 화면마다 검사하는 계약이 다르다(상세의 필수 가드는 장바구니에 없다). 교차 조합에는 뜻이 없고, 효과마다 그 효과를 여는 화면을 테스트 docblock 이 직접 적는다.
+feature: 추가옵션 직접입력(custom_text)과 주문 목록 추가옵션 요약
+
+description: |
+  상품 상세·장바구니·옵션변경 모달이 추가옵션 직접입력 값을 조건부로 받고 요청에 싣는지, 마이페이지 주문 목록이
+  추가옵션 요약(대표 라벨 + 「외 N건」)을 다국어 키로 보여 주는지 레이아웃 계약으로 잠근다.
+
+axes:
+  surface: [product_detail, cart, option_change_modal, mypage_order_list]
+
+effects:
+  - custom_text_input_shown_only_for_allowing_choice
+  - custom_text_input_passes_value_to_handler
+  - cart_payload_carries_custom_text
+  - custom_text_required_only_for_required_group
+  - custom_text_input_is_visibly_an_input
+  - cart_shows_custom_text
+  - option_change_modal_seeded_with_custom_texts
+  - modal_custom_text_input_conditional
+  - modal_custom_text_input_is_visibly_an_input
+  - option_change_patch_carries_custom_text
+  - order_list_shows_additional_option_summary
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-additional-option-custom-text.test.tsx
+
+notes: |
+  e2e_browser=not_applicable — 레이아웃 JSON 계약 검사다. 화면 동작은 장바구니·주문 E2E 가 덮는다.

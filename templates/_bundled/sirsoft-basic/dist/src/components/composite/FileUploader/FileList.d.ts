@@ -11,7 +11,7 @@ export interface FileListProps {
     /** 최대 파일 수 */
     maxFiles: number;
     /** 최대 파일 크기 (MB) */
-    maxSize: number;
+    maxSize?: number;
     /** 허용 확장자 */
     accept?: string;
     /** 파일 삭제 핸들러 */

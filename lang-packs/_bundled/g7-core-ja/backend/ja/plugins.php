@@ -66,6 +66,7 @@ return [
     'deactivate_warning' => 'このプラグインに依存する有効化された拡張があります。',
     'deactivate_warning_extended' => 'このプラグインに依存する有効化された拡張(テンプレート、モジュール、プラグイン)があります。',
     'errors' => [
+        'uninstall_blocked_by_dependents' => 'このプラグインに依存する拡張が有効なため削除できません。先に無効化または削除してください: :extensions',
         'force_update_no_source' => ':plugin を強制アップデートするソースが見つかりません。バンドルと GitHub URL の両方がありません。',
         'downgrade_blocked' => 'ダウングレードがブロックされました (:from → :to)。意図的なダウングレードは --force オプションを使用してください。',
         'invalid_permission_structure' => 'プラグイン ":identifier" の権限構造が正しくありません: :reason',
@@ -80,7 +81,8 @@ return [
         'layout_validation_json_error' => 'レイアウトファイル :file の JSON パース に失敗しました: :error',
         'layout_validation_missing_name' => 'レイアウトファイル :file に layout_name がありません。',
         'layout_validation_partial_error' => 'レイアウトファイル :file の partial 処理に失敗しました: :error (partial: :partial)',
-        'layout_validation_validation_failed' => 'プラグイン :identifier のレイアウト バリデーションに失敗しました。:count 個のエラーが見つかりました: :error',
+        'layout_validation_markup_error' => 'レイアウトファイル :file のマークアップコンパイルに失敗しました: :error',
+        'layout_validation_validation_failed' => 'プラグイン :identifier のレイアウト バリデーションに失敗しました。:count 個のエラーが見つかりました。',
         'operation_in_progress' => 'プラグイン ":name" は現在 :status 状態です。作業が完了するまでお待ちください。',
         'github_api_failed' => 'GitHub API 呼び出しに失敗しました: :error',
         'invalid_github_url' => '無効な GitHub URL です。',
@@ -221,8 +223,8 @@ return [
             'backup_restored' => 'バックアップから前のバージョンが復元されました。',
             'force_mode' => '強制アップデートモード: バージョン比較をスキップして再インストールします。',
             'layout_strategy' => 'レイアウト戦略: :strategy',
-            'modified_extensions_warning' => '管理者が編集したレイアウト拡張 :count件が上書きされます。',
-            'modified_extension_item' => '  - :target (ソース: :source)',
+            'modified_layouts_warning' => '管理者が修正したレイアウト・拡張フラグメント :count 個が上書きされます:',
+            'modified_layout_item' => '  - :name (修正日: :date)',
         ],
     ],
     'composer_install' => [

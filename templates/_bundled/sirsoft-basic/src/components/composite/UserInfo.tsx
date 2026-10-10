@@ -46,6 +46,7 @@ import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
+import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
 // G7Core 참조
 const getG7Core = () => (window as any).G7Core;
@@ -85,7 +86,7 @@ export interface AuthorInfo {
   /** 아바타 URL */
   avatar?: string;
   /** 사용자 상태 */
-  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn';
+  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn' | 'dormant' | 'pending_verification';
   /** 비회원 여부 */
   is_guest?: boolean;
 }
@@ -342,7 +343,8 @@ export const UserInfo: React.FC<UserInfoProps> = ({
       const g7Core = getG7Core();
       if (g7Core?.navigate) {
         g7Core.navigate(path);
-      } else {
+      } else if (isSameOriginNavPath(path)) {
+        // 보안: 엔진 navigate 가 없을 때의 폴백도 같은 출처 경로로만 이동한다(메뉴 데이터의 외부 주소 차단).
         window.location.href = path;
       }
     }
@@ -448,3 +450,19 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     </Div>
   );
 };
+
+/**
+ * 이동 폴백이 따라가도 되는 같은 출처 주소인지 판정합니다.
+ *
+ * `/` 하나로 시작하는 경로(`//`·`/\` 제외)는 문서 주소와 무관하게 같은 출처이고, 그 밖의 주소는 출처를 비교한다.
+ *
+ * @param target 이동할 주소
+ * @returns 같은 출처면 true
+ */
+function isSameOriginNavPath(target: unknown): boolean {
+  if (typeof target === 'string' && /^\/(?![/\\])/.test(target)) {
+    return true;
+  }
+
+  return isSameOriginRequest(target);
+}

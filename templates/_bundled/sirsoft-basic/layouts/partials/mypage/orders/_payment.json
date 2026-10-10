@@ -1,634 +1,965 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "주문 상세 - 결제 정보"
-  },
-  "_comment_id": "id 는 확장의 overlay 앵커다. KG 플러그인의 resources/extensions/user_order_show.json 이 target_id 로 이 이름을 지정하고 mypageOrderShowInjector.ts 가 getElementById 로 찾는데, 그동안 이 노드에 id 가 없어 주입이 조용히 실패하고 있었다(#454 에서 부수 복구).",
-  "type": "basic",
-  "name": "Div",
-  "id": "order_payment_info_panel",
-  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
-  "responsive": {
-    "portable": {
-      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
-    }
-  },
-  "children": [
-    {
-      "comment": "섹션 제목",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": { "name": "credit-card", "className": "text-xl text-gray-700 dark:text-gray-300" }
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
-          "text": "$t:mypage.order_detail.payment_title",
-          "responsive": {
-            "portable": {
-              "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
-            }
-          }
-        }
-      ]
+    "comment": "주문 상세의 결제 칸 — 결제수단과 금액 분해. 무통장·가상계좌는 입금 계좌와 기한까지 함께 나온다.\n     금액은 주문에 굳은 값이라 지금 시세나 설정이 바뀌어도 달라지지 않는다.\n     data-ref 는 결제 플러그인 조각이 붙는 자리다(쇼핑몰 docs/extension-points.md 의 약속 id).\n     조각은 이 id 로만 찾는다 — 화면 제목 글자로 찾으면 언어마다 빠진다.",
+    "meta": {
+        "is_partial": true,
+        "description": "주문 상세 - 결제 정보"
     },
-    {
-      "comment": "결제 정보 목록",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "space-y-3" },
-      "children": [
-        {
-          "comment": "상품 금액",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.product_amount",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.subtotal_amount_formatted ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
+    "id": "order_payment_info_panel",
+    "type": "basic",
+    "name": "Div",
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg p-4"
             }
-          ]
-        },
-        {
-          "comment": "=== 할인 섹션 (할인이 있을 때만) ===",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(order.data.total_discount_amount ?? 0) > 0}}",
-          "props": { "className": "space-y-2" },
-          "children": [
-            {
-              "comment": "총 할인 합계",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center justify-between" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-gray-500 dark:text-gray-400" },
-                  "text": "$t:mypage.order_detail.discount_amount",
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                    }
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-red-500 dark:text-red-400 font-medium" },
-                  "text": "-{{order.data.total_discount_amount_formatted ?? ''}}",
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "text-red-500 dark:text-red-400 font-medium text-sm" }
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "comment": "할인 상세 내역",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "ml-4 space-y-1.5" },
-              "children": [
-                {
-                  "comment": "상품 쿠폰 할인",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(order.data.total_product_coupon_discount_amount ?? 0) > 0}}",
-                  "props": { "className": "flex items-center justify-between" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-1.5" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": { "name": "ticket", "className": "text-sm text-red-400 dark:text-red-500" }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                          "text": "$t:mypage.order_detail.product_coupon_discount"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-sm text-red-500 dark:text-red-400" },
-                      "text": "-{{order.data.total_product_coupon_discount_amount_formatted ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "comment": "적용 상품 쿠폰 상세 목록",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []).length > 0}}",
-                  "props": { "className": "ml-5 space-y-1" },
-                  "iteration": { "source": "{{order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []}}", "item_var": "pCoupon" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center justify-between" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "flex items-center gap-1" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "ticket", "className": "text-xs text-red-400 dark:text-red-500" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                              "text": "{{pCoupon.name ?? ''}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-xs text-red-400 dark:text-red-500" },
-                          "text": "-{{pCoupon.total_discount_formatted ?? ''}}"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "comment": "주문 쿠폰 할인",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(order.data.total_order_coupon_discount_amount ?? 0) > 0}}",
-                  "props": { "className": "flex items-center justify-between" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-1.5" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": { "name": "ticket", "className": "text-sm text-red-400 dark:text-red-500" }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                          "text": "$t:mypage.order_detail.order_coupon_discount"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-sm text-red-500 dark:text-red-400" },
-                      "text": "-{{order.data.total_order_coupon_discount_amount_formatted ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "comment": "적용 주문 쿠폰 상세 목록",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}",
-                  "props": { "className": "ml-5 space-y-1" },
-                  "iteration": { "source": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount')}}", "item_var": "oCoupon" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center justify-between" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "flex items-center gap-1" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "ticket", "className": "text-xs text-red-400 dark:text-red-500" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                              "text": "{{oCoupon.name ?? ''}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-xs text-red-400 dark:text-red-500" },
-                          "text": "-{{oCoupon.total_discount_formatted ?? ''}}"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "comment": "할인코드 할인",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(order.data.total_code_discount_amount ?? 0) > 0}}",
-                  "props": { "className": "flex items-center justify-between" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-1.5" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": { "name": "tag", "className": "text-sm text-orange-400 dark:text-orange-500" }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                          "text": "$t:mypage.order_detail.code_discount"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-sm text-red-500 dark:text-red-400" },
-                      "text": "-{{order.data.total_code_discount_amount_formatted ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "comment": "적용 할인코드 상세 목록",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []).length > 0}}",
-                  "props": { "className": "ml-5 space-y-1" },
-                  "iteration": { "source": "{{order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []}}", "item_var": "dCode" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center justify-between" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "flex items-center gap-1" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": { "name": "tag", "className": "text-xs text-orange-400 dark:text-orange-500" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                              "text": "{{dCode.code ?? ''}} ({{dCode.name ?? ''}})"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-xs text-red-400 dark:text-red-500" },
-                          "text": "-{{dCode.total_discount_formatted ?? ''}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "=== 배송비 섹션 ===",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.shipping_fee",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "comment": "무료배송 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false → Number() 캐스팅으로 안전 비교 (유료 분기도 동일).",
-              "type": "basic",
-              "name": "Span",
-              "if": "{{Number(order.data.total_shipping_amount ?? 0) === 0}}",
-              "props": { "className": "text-green-600 dark:text-green-400 font-medium" },
-              "text": "$t:mypage.order_detail.free_shipping",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-green-600 dark:text-green-400 font-medium text-sm" }
-                }
-              }
-            },
-            {
-              "comment": "유료배송",
-              "type": "basic",
-              "name": "Span",
-              "if": "{{Number(order.data.total_shipping_amount ?? 0) > 0}}",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.total_shipping_amount_formatted ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "배송비 쿠폰 할인 (있을 때만)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}",
-          "props": { "className": "ml-4 space-y-1" },
-          "iteration": { "source": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}", "item_var": "sCoupon" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center justify-between" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center gap-1.5" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": { "name": "ticket", "className": "text-sm text-red-400 dark:text-red-500" }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                      "text": "{{sCoupon.name ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-xs text-red-400 dark:text-red-500" },
-                  "text": "-{{sCoupon.total_discount_formatted ?? ''}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "=== 마일리지 사용 (있을 때만) ===",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(order.data.total_points_used_amount ?? 0) > 0}}",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.points_used",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-red-500 dark:text-red-400 font-medium" },
-              "text": "-{{order.data.total_points_used_amount_formatted ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-red-500 dark:text-red-400 font-medium text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "=== 예치금 사용 (있을 때만) ===",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(order.data.total_deposit_used_amount ?? 0) > 0}}",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.deposit_used",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-red-500 dark:text-red-400 font-medium" },
-              "text": "-{{order.data.total_deposit_used_amount_formatted ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-red-500 dark:text-red-400 font-medium text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "구분선",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "border-t border-gray-200 dark:border-gray-700 my-3" }
-        },
-        {
-          "comment": "총 결제금액",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-start justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white font-medium" },
-              "text": "$t:mypage.order_detail.total_amount",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white font-medium text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "text-right" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
-                  "text": "{{order.data.total_amount_formatted ?? ''}}",
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" }
-                    }
-                  }
-                },
-                {
-                  "comment": "보조 통화들",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
-                  "iteration": {
-                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
-                    "item_var": "currency"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                      "text": "{{currency[1]?.formatted ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "comment": "결제 통화 실청구액 — base≠결제 통화일 때 유저가 실제 결제한 통화/금액 명시",
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{order.data.payment?.is_cross_currency}}",
-                  "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
-                  "text": "$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "적립 예정 마일리지 (있을 때만)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(order.data.total_earned_points_amount ?? 0) > 0 && order.data.order_status !== 'cancelled' && !order.data.is_partially_cancelled}}",
-          "props": { "className": "flex items-center justify-between mt-1" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.points_earning"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm font-medium text-blue-600 dark:text-blue-400" },
-              "text": "+{{order.data.total_earned_points_amount_formatted ?? ''}}"
-            }
-          ]
-        },
-        {
-          "comment": "구분선",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "border-t border-gray-200 dark:border-gray-700 my-3" }
-        },
-        {
-          "comment": "결제 방법",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.payment_method",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.payment?.payment_method_label ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "현금영수증 카드 확장 슬롯 — 이커머스 모듈이 resources/extensions/mypage_order_cash_receipt.json 으로 주입한다. 결제수단/프로바이더/발급상태에 따른 표시 분기는 주입 측이 if 로 처리한다(무통장이 아니거나 프로바이더 미설정이면 카드 자체 미렌더).",
-          "type": "extension_point",
-          "name": "mypage_order_cash_receipt_slot",
-          "default": []
         }
-      ]
-    }
-  ]
+    },
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg p-6"
+    },
+    "children": [
+        {
+            "comment": "섹션 제목",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "credit-card",
+                        "className": "text-xl text-gray-700 dark:text-gray-300"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:mypage.order_detail.payment_title"
+                }
+            ]
+        },
+        {
+            "comment": "결제 정보 목록",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "상품 금액",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.product_amount"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.subtotal_amount_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 할인 섹션 (할인이 있을 때만) ===",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.total_discount_amount ?? 0) > 0}}",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "총 할인 합계",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:mypage.order_detail.discount_amount"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "text-red-500 dark:text-red-400 font-medium text-sm"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "text-red-500 dark:text-red-400 font-medium"
+                                    },
+                                    "text": "-{{order.data.total_discount_amount_formatted ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "할인 상세 내역",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ml-4 space-y-1.5"
+                            },
+                            "children": [
+                                {
+                                    "comment": "상품 쿠폰 할인",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(order.data.total_product_coupon_discount_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex items-center justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "ticket",
+                                                        "className": "text-sm text-red-400 dark:text-red-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.order_detail.product_coupon_discount"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-red-500 dark:text-red-400"
+                                            },
+                                            "text": "-{{order.data.total_product_coupon_discount_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "적용 상품 쿠폰 상세 목록",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []).length > 0}}",
+                                    "iteration": {
+                                        "source": "{{order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []}}",
+                                        "item_var": "pCoupon"
+                                    },
+                                    "props": {
+                                        "className": "ml-5 space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center justify-between"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "ticket",
+                                                                "className": "text-xs text-red-400 dark:text-red-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "{{pCoupon.name ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                                    },
+                                                    "text": "-{{pCoupon.total_discount_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "주문 쿠폰 할인",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(order.data.total_order_coupon_discount_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex items-center justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "ticket",
+                                                        "className": "text-sm text-red-400 dark:text-red-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.order_detail.order_coupon_discount"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-red-500 dark:text-red-400"
+                                            },
+                                            "text": "-{{order.data.total_order_coupon_discount_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "적용 주문 쿠폰 상세 목록",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}",
+                                    "iteration": {
+                                        "source": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount')}}",
+                                        "item_var": "oCoupon"
+                                    },
+                                    "props": {
+                                        "className": "ml-5 space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center justify-between"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "ticket",
+                                                                "className": "text-xs text-red-400 dark:text-red-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "{{oCoupon.name ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                                    },
+                                                    "text": "-{{oCoupon.total_discount_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "할인코드 할인",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(order.data.total_code_discount_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex items-center justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "tag",
+                                                        "className": "text-sm text-orange-400 dark:text-orange-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.order_detail.code_discount"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-red-500 dark:text-red-400"
+                                            },
+                                            "text": "-{{order.data.total_code_discount_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "적용 할인코드 상세 목록",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []).length > 0}}",
+                                    "iteration": {
+                                        "source": "{{order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []}}",
+                                        "item_var": "dCode"
+                                    },
+                                    "props": {
+                                        "className": "ml-5 space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center justify-between"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "tag",
+                                                                "className": "text-xs text-orange-400 dark:text-orange-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "{{dCode.code ?? ''}} ({{dCode.name ?? ''}})"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                                    },
+                                                    "text": "-{{dCode.total_discount_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 배송비 섹션 ===",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.shipping_fee"
+                        },
+                        {
+                            "comment": "무료배송 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false → Number() 캐스팅으로 안전 비교 (유료 분기도 동일).",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{Number(order.data.total_shipping_amount ?? 0) === 0}}",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-green-600 dark:text-green-400 font-medium text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-green-600 dark:text-green-400 font-medium"
+                            },
+                            "text": "$t:mypage.order_detail.free_shipping"
+                        },
+                        {
+                            "comment": "유료배송",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{Number(order.data.total_shipping_amount ?? 0) > 0}}",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.total_shipping_amount_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "배송비 쿠폰 할인 (있을 때만)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}",
+                    "iteration": {
+                        "source": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}",
+                        "item_var": "sCoupon"
+                    },
+                    "props": {
+                        "className": "ml-4 space-y-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-1.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "ticket",
+                                                "className": "text-sm text-red-400 dark:text-red-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "{{sCoupon.name ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                    },
+                                    "text": "-{{sCoupon.total_discount_formatted ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 마일리지 사용 (있을 때만) ===",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.total_points_used_amount ?? 0) > 0}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.points_used"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-red-500 dark:text-red-400 font-medium text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-red-500 dark:text-red-400 font-medium"
+                            },
+                            "text": "-{{order.data.total_points_used_amount_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 예치금 사용 (있을 때만) ===",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.total_deposit_used_amount ?? 0) > 0}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.deposit_used"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-red-500 dark:text-red-400 font-medium text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-red-500 dark:text-red-400 font-medium"
+                            },
+                            "text": "-{{order.data.total_deposit_used_amount_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "클레임(교환·반품) 추가결제 실수납 합계 (D20 · §2 해석 확정). 원 주문서 총 결제금액에 합산하지 않고 별도 표기하며, 합계 0원이면 행 자체를 렌더하지 않는다. 표기는 서버가 준 claim_additional_paid_total_formatted 를 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.claim_additional_paid_total ?? 0) > 0}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-blue-600 dark:text-blue-400 font-medium text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-blue-600 dark:text-blue-400 font-medium"
+                            },
+                            "text": "$t:mypage.order_detail.claim_additional_paid"
+                        },
+                        {
+                            "comment": "기준통화 표기 + 보조통화 병기. 형제 금액 줄과 같은 규약이다 — 이 줄만 기준통화 단독이면 보조통화를 쓰는 구매자가 같은 카드 안에서 한 줄만 자기 통화로 읽지 못한다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "text-blue-600 dark:text-blue-400 font-medium text-sm"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "text-blue-600 dark:text-blue-400 font-medium"
+                                    },
+                                    "text": "+{{order.data.claim_additional_paid_total_formatted ?? ''}}"
+                                },
+                                {
+                                    "comment": "보조 통화들",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{Object.entries(order.data.mc_claim_additional_paid_total ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                        "item_var": "claimPaidCurrency"
+                                    },
+                                    "props": {
+                                        "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "{{claimPaidCurrency[1]?.formatted ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "현금 환불 중 회원 마일리지로 지급한 금액(「마일리지로 환불」 — Q3). 결제 상태는 결제완료로 남으므로 이 줄이 없으면 구매자는 환불이 어디로 갔는지 알 수 없다. 0원이면 렌더하지 않는다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.total_refunded_mileage_credit_amount ?? 0) > 0}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.refund_mileage_credit"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                            },
+                            "text": "{{order.data.total_refunded_mileage_credit_amount_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "구분선",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 my-3"
+                    }
+                },
+                {
+                    "comment": "총 결제금액",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                            },
+                            "text": "$t:mypage.order_detail.total_amount"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "text-lg font-bold text-gray-900 dark:text-white"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{order.data.total_amount_formatted ?? ''}}"
+                                },
+                                {
+                                    "comment": "보조 통화들",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                        "item_var": "currency"
+                                    },
+                                    "props": {
+                                        "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "{{currency[1]?.formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "결제 통화 실청구액 — base≠결제 통화일 때 유저가 실제 결제한 통화/금액 명시",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{order.data.payment?.is_cross_currency}}",
+                                    "props": {
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                    },
+                                    "text": "$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "적립 예정 마일리지 (있을 때만)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.total_earned_points_amount ?? 0) > 0 && order.data.order_status !== 'cancelled' && !order.data.is_partially_cancelled}}",
+                    "props": {
+                        "className": "flex items-center justify-between mt-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.points_earning"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm font-medium text-blue-600 dark:text-blue-400"
+                            },
+                            "text": "+{{order.data.total_earned_points_amount_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "구분선",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 my-3"
+                    }
+                },
+                {
+                    "comment": "결제 방법 — id 는 PG 플러그인과의 약속이다. 간편결제 이름(예: 카카오페이)을 이 행의 값에 덧붙이려고 이 id 로만 찾는다(행 이름 글자는 언어마다 다르다).",
+                    "id": "order_payment_method_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.payment_method"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.payment?.payment_method_label ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "현금영수증 카드 확장 슬롯 — 이커머스 모듈이 resources/extensions/mypage_order_cash_receipt.json 으로 주입한다. 결제수단/프로바이더/발급상태에 따른 표시 분기는 주입 측이 if 로 처리한다(무통장이 아니거나 프로바이더 미설정이면 카드 자체 미렌더).",
+                    "type": "extension_point",
+                    "name": "mypage_order_cash_receipt_slot",
+                    "default": []
+                },
+                {
+                    "comment": "PG 제공 블록(가상계좌 입금 안내 · 영수증 · 부가세 내역) 확장 슬롯 — 결제 플러그인 4종(kginicis / nhnkcp / nicepayments / tosspayments)이 resources/extensions/ 로 주입한다. 표시 분기(pg_provider·결제수단·발급상태)는 주입 측이 if 로 처리한다.",
+                    "type": "extension_point",
+                    "name": "mypage_order_payment_provider_slot",
+                    "default": []
+                }
+            ]
+        }
+    ]
 }

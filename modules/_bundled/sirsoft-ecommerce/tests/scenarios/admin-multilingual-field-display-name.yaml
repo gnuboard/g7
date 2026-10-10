@@ -1,0 +1,23 @@
+feature: 이커머스 관리자 요청 다국어 필수 칸의 표시 이름
+
+description: |
+  카테고리·브랜드·쿠폰·상품 공통정보·상품정보제공고시 템플릿·상품(옵션그룹·추가옵션·고시 항목)·배송사·배송정책 저장에서
+  다국어 칸을 비우면 「한국어(ko) 값은 필수입니다.」처럼 칸 이름 없이 나왔다(7.1.0 전수 실측). 코어 규칙
+  (LocaleRequiredTranslatable)은 요청에 표시 이름이 있는 칸에만 칸 이름을 싣는데, 이 요청들에 다국어 칸의
+  표시 이름 매핑(attributes)이 없었다. 같은 결함군인 쇼핑몰 환경설정 배송 탭의 새 배송사·배송유형 이름도 함께 고친다.
+
+  규칙 단위(요청 클래스 x 칸 x 로케일)는 MultilingualFieldDisplayNameTest, 실제 라우트·관리자 언어 미들웨어를 거친
+  응답은 MultilingualFieldDisplayNameApiTest 가 맡는다. 생성·수정 경로는 두 테스트의 데이터 공급자가 함께 덮는다(축이 아니라 케이스 목록). ja 문구는 번들 언어팩(g7-module-sirsoft-ecommerce-ja)이 같은 키를 채운다.
+
+axes:
+  locale: [ko, en]
+
+exclusions: []
+
+effects:
+  - ecommerce_request_locale_required_message_names_field
+  - ecommerce_admin_api_locale_required_message_names_field
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/MultilingualFieldDisplayNameTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/MultilingualFieldDisplayNameApiTest.php

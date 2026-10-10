@@ -14,7 +14,7 @@
 feature: 비즈뿌리오 메시지 발송 환경설정 (Phase 1)
 
 description: |
-  관리자 환경설정 화면(admin/plugin_settings.json)에서 비즈뿌리오 연동 정보를 입력·저장한다.
+  관리자 환경설정 화면(admin/plugin_settings.g7.html)에서 비즈뿌리오 연동 정보를 입력·저장한다.
   코어 플러그인 설정 인프라(/api/admin/plugins/{id}/settings)에 자동바인딩(_local.form)으로
   위임하며, 상단 안내 패널 + 2 섹션(API 연동 / 발송 설정) + 리포트 수신 설정 카드로 구성된다.
 
@@ -65,10 +65,16 @@ effects:
   - test_mode_on_empty_credentials_return_200
   - test_mode_off_filled_credentials_return_200
   - validation_error_messages_use_localized_field_labels
+  - validation_error_labels_follow_request_locale_for_every_settings_field
   - test_mode_off_selects_live_domain_test_mode_on_selects_dev_domain
+  - password_is_not_stored_as_plaintext_in_settings_file
+  - password_decrypts_back_to_original_via_settings_service_get
+  - listener_subscribes_standard_validation_rules_hook  # 옛 이름(update_rules) 구독은 개명 경고를 매번 남겼다
   # 리포트 수신 설정
   - report_url_endpoint_returns_absolute_url_from_app_url
   - report_url_endpoint_requires_authentication
+  # 설정 화면이 알림톡 템플릿 쓰기 버튼을 잠그는 근거 — 응답 abilities.can_manage_messaging 이 messaging.manage 권한을 따른다(7.1.0 abilities 게이트)
+  - report_url_reports_messaging_manage_ability
   - report_section_shows_readonly_url_with_copy_button
   # 저장
   - save_button_disabled_without_changes

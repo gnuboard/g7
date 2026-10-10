@@ -192,8 +192,8 @@ class Plugin extends AbstractPlugin
                 'default' => true,
                 'label' => ['ko' => '웹훅 secret 검증', 'en' => 'Webhook Secret Verification'],
                 'hint' => [
-                    'ko' => '가상계좌 입금통보 웹훅의 secret 을 결제 승인 응답과 대조해 위조 요청을 차단합니다.',
-                    'en' => 'Verifies the deposit webhook secret against the payment confirmation response to block forged requests.',
+                    'ko' => '가상계좌 입금통보 웹훅의 secret 을 결제 승인 응답과 대조해 위조 요청을 차단합니다. 끄면 주문번호만 아는 사람도 입금 없이 주문을 결제완료로 만들 수 있으며, 끈 상태에서 생긴 보안 사고는 운영자 책임입니다.',
+                    'en' => 'Verifies the deposit webhook secret against the payment confirmation response to block forged requests. If turned off, anyone who knows an order number can mark the order as paid without depositing, and the operator is responsible for any security incident while it is off.',
                 ],
             ],
         ];
@@ -239,12 +239,17 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
+            Listeners\ValidateRedirectUrlSettingsListener::class,
             Listeners\RegisterPgProviderListener::class,
             Listeners\RegisterTossPaymentMethodsListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
             Listeners\PaymentRefundListener::class,
+            Listeners\VbankCloseListener::class,
+            Listeners\ClaimPaymentApproveListener::class,
+            Listeners\ClaimPaymentRefundListener::class,
             Listeners\ValidateTossSettingsListener::class,
             Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
+            Listeners\ProvideNecessaryStorageKeysListener::class,
         ];
     }
 

@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 플러그인 (sirsoft-message_bizppurio) — 코어 알림에 문자(SMS/LMS)·카카오 알림톡 채널을 추가한다. 알림 자체는 정의하지 않고 발송 수단만 담당
-2. 확장 방식: 발행 훅 1개 — 잔액 부족·한도 초과 시 `balance.low`(쿨다운 내 1회). 그 외 배선은 구독 6종(코어 알림 로그·설정, 이커머스 비회원 연락처)
+2. 확장 방식: 발행 훅 1개 — 잔액 부족·한도 초과 시 `balance.low`(쿨다운 내 1회). 그 외 배선은 코어 훅 구독뿐(알림 채널 계약·알림 로그·설정) — 어떤 도메인(게시판·이커머스 등)이 알림을 보내는지 모른다
 3. 건드리면 안 되는 것: webhook 라우트의 IP 화이트리스트 제거, 승인 템플릿 직접 수정(승인 취소 선행), 잔액부족 통지를 같은 채널로만 보내기, 크리덴셜 프론트 노출
 4. 작업 위치: `plugins/_bundled/sirsoft-message_bizppurio` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-message_bizppurio --force`
@@ -55,14 +55,16 @@
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-message_bizppurio --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-message_bizppurio --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-message_bizppurio --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-message_bizppurio --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-message_bizppurio --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -87,6 +89,29 @@
 (`POST templates/{id}/sync`)으로 즉시 확인할 수도 있습니다. 승인된 템플릿을 고치려면
 `POST templates/{id}/cancel-approval` 로 승인을 먼저 취소합니다.
 
+**카카오 관리 API 실패의 응답 규약**: 카카오 관리 API 를 부르는 컨트롤러는 실패를 422 로
+돌려줍니다. 참조 조회(분류, 발신 프로필)는 `GuardsKakaoRequests::guard()`, 수명주기 액션은
+`BizppurioTemplateController::guardLifecycle()` 이 맡습니다. 카카오가 실패 사유를 주면
+(`BizppurioApiException`) `errors.bizppurio_message`, `errors.result_code` 에 원문을 싣고,
+서버에 닿지 못하면(`ConnectionException`: 타임아웃, DNS, 프록시) 연결 확인 버튼과 같은
+`messages.error.connection_failed` 안내만 내고 경고 로그를 남깁니다. 연결 실패를 잡지 않으면
+편집 창을 열 때마다 서버 오류(500)와 스택 추적이 쌓입니다. 이 둘 밖의 예외는 우리 쪽 결함이라
+잡지 않고 500 으로 드러냅니다. 템플릿 삭제(`destroy`)와 예약 동기화(`bizppurio:sync-template-status`)는
+가드를 거치지 않습니다 — 삭제는 서비스가 카카오측 실패(사유, 연결 실패)를 잡아 DB 행을 지우고 200 과
+`kakao_skip_reason` 으로 끝내고, 예약 동기화는 그 주기만 건너뛰고 명령을 성공으로 끝냅니다.
+
+**임시 저장과 검수 신청의 검증 분담**: 플러그인 설정 화면 작성 창의 「저장」과 코어 알림 편집
+창 하단의 통합 「저장」은 본문에 `draft: true` 를 실어 보내고(두 화면이 같게 동작한다), `ValidatesTemplateContent::contentRules()` 는 이때
+`relaxForDraft()` 로 필수 조건(`required*` · `min:` · 링크 종류별 필수 칸)만 걷어 냅니다 —
+유형 코드 허용값·최대 길이 같은 형식 제약은 그대로입니다. 쓰다 만 내용도 초안으로 남기기
+위해서이며, 종전에는 본문·카테고리 같은 등록 필수값을 모두 채워야만 저장돼 초안을 남길 수
+없었습니다. 걷어 낸 필수값은 `RequestBizppurioInspectionRequest` 가 확인합니다 — 요청 본문의
+content 가 아니라 **저장된 행의 content** 를 검증 입력으로 싣고(`prepareForValidation`), 같은
+trait 의 전체 규칙과 조건부 검증(`validateContentConditionals`)을 걸어 카카오 호출 전에 항목별
+422 로 알립니다. 이 요청의 `isDraftSave()` 는 항상 `false` 라 본문에 `draft` 를 실어도 완화되지
+않습니다. 두 화면의 「저장 후 검수 신청」은 `draft` 를 싣지 않으므로 종전대로 전부 검증하고,
+빠진 필수값을 항목별 422 로 돌려줍니다.
+
 **알림 이력 연결**: 코어가 알림 발송 성공·실패를 기록하면
 (`core.notification_log.after_log_sent` / `after_log_failed`) `LinkNotificationLogListener`
 가 그 로그와 이 플러그인의 발송 기록을 연결합니다. 관리자 "알림 발송 이력" 화면에서 문자·
@@ -99,8 +124,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 1개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 6개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 11개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -133,11 +158,13 @@ HookManager::addAction(
 부족 알림을 문자·알림톡이 아닌 다른 경로로 받고 싶을 때 여기에 붙입니다 — 같은 채널로 보내면
 잔액이 없으므로 그 알림도 함께 실패합니다.
 
-**구독 6종이 이 플러그인의 배선 전부**입니다. 코어 알림 로그 2종(발송 기록 연결) · 코어 설정
-2종(저장 시 토큰 무효화 · 운영 모드 전환 시 필수값 검증) · 이커머스 1종(비회원 연락처 주입) ·
-자기 훅 1종(잔액부족 알림 데이터). `sirsoft-ecommerce.notification.extract_data` 는 manifest
-의존이 아니라 훅 구독이므로, 이커머스가 없으면 비회원 문자 발송만 비고 나머지는 정상
-동작합니다.
+**배선은 전부 코어 훅**입니다. 코어 알림 채널 계약 4종(채널 노출 · 준비 상태 · 미저장=꺼짐 ·
+채널 후보 `core.notification.channels`) · 코어 알림 정의 시딩 2종(템플릿 행 시딩
+`core.notification.filter_seed_definitions` · 기본값 복원) · 코어 알림 로그 2종(발송 기록 연결) · 코어 설정 2종(저장 시
+토큰 무효화 · 운영 모드 전환 시 필수값 검증) · 자기 훅 1종(잔액부족 알림 데이터). 도메인 접두사
+(`core.auth`·게시판·이커머스)의 훅을 구독하지 않으므로 새 도메인이 알림을 보내도 문자 채널이 그대로
+후보에 오릅니다. 비회원 수신 번호는 알림을 보내는 도메인이 코어 표준 키
+(`GenericNotification::RECIPIENT_PHONE_KEY`)로 알림 data 에 싣고, 이 플러그인은 그 키만 읽습니다.
 
 레이아웃 조각 7개가 UI 대부분입니다 — 알림 설정 화면의 비즈뿌리오 탭(코어·게시판·이커머스
 각각), 알림 목록 행 하단 요약, 알림 템플릿 편집 창의 알림톡·문자 섹션과 하단 버튼, 발송 이력
@@ -151,7 +178,7 @@ HookManager::addAction(
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-message_bizppurio` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] webhook 라우트를 추가·변경했다면 `getMiddleware()` 의 `targets` 에 그 라우트 이름을 함께 추가 (누락 시 인증 없는 공개 경로가 된다)
@@ -184,10 +211,10 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 37개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
-| Playwright | 2개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
+| PHPUnit | 43개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| Vitest | 19개 | `vitest.config.ts` |
+| Playwright | 3개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -221,3 +248,27 @@ cd plugins/_bundled/sirsoft-message_bizppurio && npm run test:e2e -- specs/<대�
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 확장 조각의 CSS 클래스 규약
+
+resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
+클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+
+두 가지를 지킨다.
+
+1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
+   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
+   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
+   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
+   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
+   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
+
+2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
+   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
+   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
+   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
+
+이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
+열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
+떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
+정적 검사가 대조한다.

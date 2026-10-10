@@ -1,244 +1,595 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Order List - Bulk Action Confirm Modal"
-  },
-  "id": "modal_bulk_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_title",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_message|count={{(_global.bulkConfirmData?.selectedItems || []).length}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{_global.bulkConfirmData?.orderStatus}}",
-                  "props": {
-                    "className": "flex-center text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_status_label"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "font-semibold text-gray-900 dark:text-gray-100"
-                      },
-                      "text": "{{({'pending_order':'$t:sirsoft-ecommerce.admin.order.status.waiting','pending_payment':'$t:sirsoft-ecommerce.admin.order.status.payment_pending','payment_complete':'$t:sirsoft-ecommerce.admin.order.status.payment_complete','shipping_hold':'$t:sirsoft-ecommerce.admin.order.status.shipping_hold','preparing':'$t:sirsoft-ecommerce.admin.order.status.preparing','shipping_ready':'$t:sirsoft-ecommerce.admin.order.status.shipping_ready','shipping':'$t:sirsoft-ecommerce.admin.order.status.shipping','delivered':'$t:sirsoft-ecommerce.admin.order.status.delivered','cancelled':'$t:sirsoft-ecommerce.admin.order.status.cancelled','confirmed':'$t:sirsoft-ecommerce.admin.order.status.confirmed'})[_global.bulkConfirmData.orderStatus] ?? _global.bulkConfirmData.orderStatus}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{_global.bulkConfirmData?.courierId}}",
-                  "props": {
-                    "className": "flex-center text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_carrier_label"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "font-semibold text-gray-900 dark:text-gray-100"
-                      },
-                      "text": "{{(active_carriers?.data ?? []).find(c => String(c.value) === String(_global.bulkConfirmData.courierId))?.label ?? _global.bulkConfirmData.courierId}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{_global.bulkConfirmData?.trackingNumber}}",
-                  "props": {
-                    "className": "flex-center text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_tracking_label"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "font-semibold text-gray-900 dark:text-gray-100"
-                      },
-                      "text": "{{_global.bulkConfirmData.trackingNumber}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber}}",
-                  "props": {
-                    "className": "text-sm text-yellow-600 dark:text-yellow-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_no_changes"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{(_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)}}",
-                  "props": {
-                    "className": "text-sm text-red-600 dark:text-red-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.bulk.carrier_required"
-                }
-              ]
-            }
-          ],
-          "props": {
-          }
-        }
-      ]
+    "comment": "주문 목록 — 일괄변경 확인 창. 목록에서 고른 주문들에 상태·택배사·송장을 한꺼번에 적용하기 전에\n  무엇이 바뀌는지 보여 준다. 고른 건수와 바꿀 값은 목록의 `_local` 이 아니라 `_global.bulkConfirmData`\n  로 읽는다 — 창은 별도 컨텍스트라 부모의 `_local` 을 보지 못하므로, 일괄변경 영역이 창을 열기 전에\n  값을 `_global` 로 옮겨 담는다(`_partial_bulk_action_section` 의 적용 버튼).",
+    "meta": {
+        "is_partial": true,
+        "description": "Order List - Bulk Action Confirm Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "modal_bulk_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_title",
+        "size": "md"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isProcessing}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_cancel"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_message|count={{(_global.bulkConfirmData?.selectedItems || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.bulkConfirmData?.orderStatus}}",
+                                    "props": {
+                                        "className": "flex-center text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_status_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{({'pending_order':'$t:sirsoft-ecommerce.admin.order.status.waiting','pending_payment':'$t:sirsoft-ecommerce.admin.order.status.payment_pending','payment_complete':'$t:sirsoft-ecommerce.admin.order.status.payment_complete','shipping_hold':'$t:sirsoft-ecommerce.admin.order.status.shipping_hold','preparing':'$t:sirsoft-ecommerce.admin.order.status.preparing','shipping_ready':'$t:sirsoft-ecommerce.admin.order.status.shipping_ready','shipping':'$t:sirsoft-ecommerce.admin.order.status.shipping','delivered':'$t:sirsoft-ecommerce.admin.order.status.delivered','cancelled':'$t:sirsoft-ecommerce.admin.order.status.cancelled','confirmed':'$t:sirsoft-ecommerce.admin.order.status.confirmed'})[_global.bulkConfirmData.orderStatus] ?? _global.bulkConfirmData.orderStatus}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.bulkConfirmData?.courierId}}",
+                                    "props": {
+                                        "className": "flex-center text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_carrier_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{(active_carriers?.data ?? []).find(c => String(c.value) === String(_global.bulkConfirmData.courierId))?.label ?? _global.bulkConfirmData.courierId}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.bulkConfirmData?.trackingNumber}}",
+                                    "props": {
+                                        "className": "flex-center text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_tracking_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{_global.bulkConfirmData.trackingNumber}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber}}",
+                                    "props": {
+                                        "className": "text-sm text-yellow-600 dark:text-yellow-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_no_changes"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)}}",
+                                    "props": {
+                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.bulk.carrier_required"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "수동 결제 처리 항목 (Q13·Q14) — 결제 전 주문을 결제완료 이후로 올리거나 취소 주문·상품을 되살릴 때만 나타난다.\n          무엇이 해당하는지는 서버 미리보기(`manual-paid-preview`)가 정한다 — 화면에서 다시 판정하지 않는다.\n          세 체크는 창을 열 때마다 모두 켜진 채 시작한다(기본값: 모두 체크). 해당 없는 항목은 숨긴다.",
+                            "id": "manual_paid_loading",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.manualPaidPreviewLoading === true}}",
+                            "props": {
+                                "className": "flex-center gap-2 text-hint mt-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "animate-spin",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.loading"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "manual_paid_error",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.manualPaidPreviewError}}",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400 mt-3"
+                            },
+                            "text": "{{_global.manualPaidPreviewError}}"
+                        },
+                        {
+                            "id": "manual_paid_effects",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.manualPaidPreviewLoading !== true && _global.manualPaidPreview?.summary?.any_applicable === true}}",
+                            "props": {
+                                "className": "mt-3 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-hint"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.description|count={{_global.manualPaidPreview?.summary?.affected_order_count ?? 0}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "합계·상품 상태 복원 (Q26) — 취소 주문을 되살리면 취소된 상품도 함께 되살리고 주문 합계를 처음 주문 조건으로\n            다시 계산한다. 운영자가 고를 항목이 아니라(되살리면 함께 복원하는 것이 정상이므로) 체크박스 없이 안내만 한다.\n            쿠폰을 다른 주문이 이미 썼으면 되살릴 수 없어(Q27) 빨간 경고를 띄우고 적용 버튼을 잠근다.",
+                                    "id": "manual_paid_restoration",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.manualPaidPreview?.summary?.restoration?.applicable_count ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-body font-medium"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_label|count={{_global.manualPaidPreview?.summary?.restoration?.applicable_count ?? 0}}|quantity={{_global.manualPaidPreview?.summary?.restoration?.revived_quantity ?? 0}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-hint"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_hint"
+                                        },
+                                        {
+                                            "id": "manual_paid_restoration_conflict",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{(_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0}}",
+                                            "props": {
+                                                "className": "text-xs text-red-600 dark:text-red-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_coupon_conflict|order_numbers={{(_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).join(', ')}}"
+                                        },
+                                        {
+                                            "id": "manual_paid_restoration_legacy",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{(_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0) > 0}}",
+                                            "props": {
+                                                "className": "text-xs text-amber-600 dark:text-amber-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_legacy_snapshot|count={{_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "manual_paid_stock",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "if": "{{(_global.manualPaidPreview?.summary?.stock_deduction?.applicable_count ?? 0) > 0 }}",
+                                    "props": {
+                                        "className": "flex items-start gap-2 cursor-pointer select-none"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "체크를 바꾸면 「재고 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_stock_deduction)에 싣는다",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.setManualPaidOption",
+                                                    "params": {
+                                                        "optionKey": "apply_stock_deduction",
+                                                        "value": "{{_global.manualPaidOptions?.apply_stock_deduction === false}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "apply_stock_deduction",
+                                                "className": "checkbox mt-0.5",
+                                                "checked": "{{_global.manualPaidOptions?.apply_stock_deduction !== false}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body font-medium block"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_label|count={{_global.manualPaidPreview?.summary?.stock_deduction?.applicable_count ?? 0}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-hint block"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_hint"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_global.manualPaidOptions?.apply_stock_deduction === false}}",
+                                                    "props": {
+                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_off_warning"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "manual_paid_mileage",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "if": "{{(_global.manualPaidPreview?.summary?.mileage_deduction?.applicable_count ?? 0) > 0 }}",
+                                    "props": {
+                                        "className": "flex items-start gap-2 cursor-pointer select-none"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "체크를 바꾸면 「사용 마일리지 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_mileage_deduction)에 싣는다",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.setManualPaidOption",
+                                                    "params": {
+                                                        "optionKey": "apply_mileage_deduction",
+                                                        "value": "{{_global.manualPaidOptions?.apply_mileage_deduction === false}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "apply_mileage_deduction",
+                                                "className": "checkbox mt-0.5",
+                                                "checked": "{{_global.manualPaidOptions?.apply_mileage_deduction !== false}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body font-medium block"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_label|count={{_global.manualPaidPreview?.summary?.mileage_deduction?.applicable_count ?? 0}}|amount={{_global.manualPaidPreview?.summary?.mileage_deduction?.total_amount_formatted ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-hint block"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_hint"
+                                                },
+                                                {
+                                                    "id": "manual_paid_mileage_short",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_global.manualPaidOptions?.apply_mileage_deduction !== false && (_global.manualPaidPreview?.summary?.mileage_deduction?.short_order_numbers ?? []).length > 0}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_short_warning|order_numbers={{(_global.manualPaidPreview?.summary?.mileage_deduction?.short_order_numbers ?? []).join(', ')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_global.manualPaidOptions?.apply_mileage_deduction === false}}",
+                                                    "props": {
+                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_off_warning"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "manual_paid_record",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "if": "{{(_global.manualPaidPreview?.summary?.paid_amount_record?.applicable_count ?? 0) > 0 }}",
+                                    "props": {
+                                        "className": "flex items-start gap-2 cursor-pointer select-none"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "체크를 바꾸면 「결제금액 기록」 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(record_paid_amount)에 싣는다",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.setManualPaidOption",
+                                                    "params": {
+                                                        "optionKey": "record_paid_amount",
+                                                        "value": "{{_global.manualPaidOptions?.record_paid_amount === false}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "record_paid_amount",
+                                                "className": "checkbox mt-0.5",
+                                                "checked": "{{_global.manualPaidOptions?.record_paid_amount !== false}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body font-medium block"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_label|count={{_global.manualPaidPreview?.summary?.paid_amount_record?.applicable_count ?? 0}}|amount={{_global.manualPaidPreview?.summary?.paid_amount_record?.total_amount_formatted ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-hint block"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_hint"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_global.manualPaidOptions?.record_paid_amount === false}}",
+                                                    "props": {
+                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_off_warning"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "결제행에 입금이 이미 기록된 주문은 체크와 무관하게 헤더 결제금액을 맞춘다(S2-D4) — 체크박스 없이 안내만.",
+                                    "id": "manual_paid_auto_sync",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.manualPaidPreview?.summary?.paid_amount_record?.auto_sync_count ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.auto_sync_note|count={{_global.manualPaidPreview?.summary?.paid_amount_record?.auto_sync_count ?? 0}}"
+                                },
+                                {
+                                    "comment": "입금 전에 취소된 주문의 재활성(Q28) — 「결제금액 기록」을 켜 두면 복원 합계를 받은 것으로 기록한다.",
+                                    "id": "manual_paid_never_paid",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.manualPaidPreview?.summary?.never_paid_count ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.never_paid_note|count={{_global.manualPaidPreview?.summary?.never_paid_count ?? 0}}"
+                                },
+                                {
+                                    "comment": "PG 결제가 이미 취소된 주문의 재활성(Q24) — 이후 환불은 계좌·마일리지로만 가능하다는 경고만 한다(수단 강제 없음).",
+                                    "id": "manual_paid_pg_warning",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled_orders|order_numbers={{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).join(', ')}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{(!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.isProcessing}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isProcessing": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isProcessing}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_cancel"
+                        }
+                    ]
                 },
                 {
-                  "handler": "sirsoft-ecommerce.executeOrderBulkAction",
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isProcessing": false
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄 적용. 버튼이 열리는 조건이 두 겹이라 잠금 식이 길다 — 바꿀 값이 하나라도 있어야 하고 대상이 비어 있지 않아야 한다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "적용. 버튼이 열리는 조건이 두 겹이라 disabled 식이 길다 — 바꿀 값이 하나라도 있어야 하고,\n              배송준비·배송중으로 보낼 때는 택배사와 송장이 **둘 다** 있어야 한다(택배사만 골라 두면 막힌다).\n              실패해도 창을 닫지 않는다: 무엇이 틀렸는지 읽고 값을 고쳐 다시 시도할 자리가 이 창이다.",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": true
+                                    }
+                                },
+                                {
+                                    "handler": "sirsoft-ecommerce.executeOrderBulkAction",
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": {
+                                        "comment": "사유 토스트는 핸들러가 이미 띄운다 — 여기서 또 띄우면 같은 문구가 두 번 뜬다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{(!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0 || _global.isProcessing}}"
                     },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isProcessing": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isProcessing}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isProcessing}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

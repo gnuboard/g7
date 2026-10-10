@@ -1,0 +1,54 @@
+<!-- 반응 한 건을 해제하는 창. 지우는 것은 내가 누른 표시일 뿐이고 글·댓글은 그대로라는
+     사실을 본문이 분명히 말한다 — 「삭제」로 읽히면 누르기를 주저하게 된다.
+
+     대상이 이미 지워진 건은 제목을 실을 수 없으므로 문구가 갈린다(`isDeleted`). -->
+<partial description="마이페이지 게시판 활동 - 반응 해제 확인" editor_label="$t:user.modal_label.mypage_board.reactionDeleteModal">
+  <modal data-type="composite" data-ref="reaction_delete_modal" id="reaction_delete_modal" title="$t:mypage.board_activities.reactions.delete_title" icon="trash" iconClassName="text-red-500" size="sm">
+    <div data-testid="reaction-delete-modal" class="space-y-4">
+      <p data-if="{{!_global.reactionDeleteModal?.isDeleted}}" class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_confirm|title={{_global.reactionDeleteModal?.title ?? ''}}</p>
+      <p data-if="{{_global.reactionDeleteModal?.isDeleted}}" class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_confirm_deleted</p>
+      <p class="text-sm text-gray-500 dark:text-gray-500">$t:mypage.board_activities.reactions.delete_notice</p>
+      <div class="flex justify-end gap-3">
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <on type="click">
+            <!-- 취소 — 이 창은 여러 행이 돌려 쓰므로 대상 정보를 비우지 않으면 다음에 열 때 앞의 행이 남는다 -->
+            <sequence>
+              <set-state target="global" :reactionDeleteModal="null"/>
+              <close-modal/>
+            </sequence>
+          </on>
+          $t:common.cancel
+        </button>
+        <button data-testid="reaction-delete-confirm" disabled="{{_local.reactionDeleteSubmitting}}" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 반응 단건 해제 — 성공하면 선택 배열에서 그 ID 를 빼고 목록·통계를 다시 받는다 -->
+            <sequence>
+              <set-state target="local" :reactionDeleteSubmitting="true"/>
+              <api-call target="/api/modules/sirsoft-board/me/reactions/{{_global.reactionDeleteModal?.id}}" :auth_required="true" method="DELETE">
+                <success>
+                  <!-- 지운 행이 선택 배열에 남아 있으면 다음 일괄 해제가 없는 ID 를 싣는다.
+                    처리 중 표시는 이 창의 값이고 선택 배열은 목록과 함께 쓰는 전역 값이라 스코프가
+                    갈린다 — 한 set-state 로 묶으면 둘 중 하나가 엉뚱한 자리에 쓰인다 -->
+                  <set-state target="local" :reactionDeleteSubmitting="false"/>
+                  <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).filter(v => v !== _global.reactionDeleteModal?.id)}}"/>
+                  <toast type="success" message="$t:mypage.board_activities.reactions.removed"/>
+                  <refetch-data-source dataSourceId="myReactions"/>
+                  <!-- 위쪽 통계 카드의 「남긴 반응」 숫자도 같이 줄어야 한다 -->
+                  <refetch-data-source dataSourceId="myActivityStats"/>
+                  <set-state target="global" :reactionDeleteModal="null"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="local" :reactionDeleteSubmitting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.reactionDeleteSubmitting}}" name="spinner" size="sm" class="animate-spin mr-2"/>
+          <span>$t:mypage.board_activities.reactions.delete_confirm_button</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

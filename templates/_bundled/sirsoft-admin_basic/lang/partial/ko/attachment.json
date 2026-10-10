@@ -13,5 +13,9 @@
   "drag_to_reorder": "드래그하여 순서 변경",
   "reorder_failed": "순서 변경에 실패했습니다.",
   "primary_image": "대표 이미지",
-  "set_as_primary": "대표 이미지로 설정"
+  "set_as_primary": "대표 이미지로 설정",
+  "empty_file": "[{{name}}] 빈 파일(0바이트)은 올릴 수 없습니다.",
+  "file_too_large": "[{{name}}] 파일 크기({{size}})가 최대 허용 크기({{max}}MB)를 초과합니다.",
+  "type_not_allowed": "[{{name}}] 허용되지 않는 파일 형식입니다. (허용: {{accept}})",
+  "upload_response_invalid": "업로드 응답을 해석하지 못했습니다."
 }

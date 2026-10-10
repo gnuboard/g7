@@ -1,0 +1,15 @@
+feature: 게시판 유형 시더가 운영자가 만든 유형을 지우지 않는다
+
+description: |
+  게시판 유형 표는 운영자가 「유형 추가」 로 직접 유형을 만드는 표인데, 운영자 행을 가를 표식이 없어
+  시더의 stale 정리("선언에 없는 slug 삭제")가 운영자 유형까지 지웠다. 이 시더는 언어팩을 켜고 끌 때마다
+  다시 돌기 때문에 삭제가 흔적 없이 반복됐다 (#727 D5-④). 시더는 이제 stale 정리를 하지 않는다.
+
+axes:
+  row_origin: [operator_created]
+
+effects:
+  - operator_created_board_type_survives_reseed
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Seeders/BoardTypeSeederTest.php

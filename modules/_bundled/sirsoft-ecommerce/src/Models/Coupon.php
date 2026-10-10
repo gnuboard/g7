@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
 use Illuminate\Database\Eloquent\Builder;
@@ -304,26 +305,28 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 유효기간 포맷팅 반환
      *
+     * 저장값은 UTC 라 그대로 찍으면 사이트 자정으로 받은 시작일이 하루 이르게 보인다 — 사이트 시간대 날짜로 찍는다.
+     *
      * @return string 포맷팅된 유효기간
      */
     public function getValidPeriodFormattedAttribute(): string
     {
         if ($this->valid_type === 'days_from_issue') {
-            return __('sirsoft-ecommerce::messages.coupons.valid_days_format', [
+            return trans_choice('sirsoft-ecommerce::messages.coupons.valid_days_format', (int) $this->valid_days, [
                 'days' => $this->valid_days,
             ]);
         }
 
         if ($this->valid_from && $this->valid_to) {
-            return $this->valid_from->format('Y-m-d').' ~ '.$this->valid_to->format('Y-m-d');
+            return TimezoneHelper::toSiteDateString($this->valid_from).' ~ '.TimezoneHelper::toSiteDateString($this->valid_to);
         }
 
         if ($this->valid_from) {
-            return $this->valid_from->format('Y-m-d').' ~';
+            return TimezoneHelper::toSiteDateString($this->valid_from).' ~';
         }
 
         if ($this->valid_to) {
-            return '~ '.$this->valid_to->format('Y-m-d');
+            return '~ '.TimezoneHelper::toSiteDateString($this->valid_to);
         }
 
         return '-';
@@ -337,15 +340,15 @@ class Coupon extends Model implements FulltextSearchable
     public function getIssuePeriodFormattedAttribute(): string
     {
         if ($this->issue_from && $this->issue_to) {
-            return $this->issue_from->format('Y-m-d').' ~ '.$this->issue_to->format('Y-m-d');
+            return TimezoneHelper::toSiteDateString($this->issue_from).' ~ '.TimezoneHelper::toSiteDateString($this->issue_to);
         }
 
         if ($this->issue_from) {
-            return $this->issue_from->format('Y-m-d').' ~';
+            return TimezoneHelper::toSiteDateString($this->issue_from).' ~';
         }
 
         if ($this->issue_to) {
-            return '~ '.$this->issue_to->format('Y-m-d');
+            return '~ '.TimezoneHelper::toSiteDateString($this->issue_to);
         }
 
         return __('sirsoft-ecommerce::messages.coupons.issue_period_unlimited');
@@ -482,7 +485,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * FULLTEXT 검색 대상 컬럼 목록을 반환합니다.
      *
-     * @return array<string>
+     * @return array<string> 검색 대상 컬럼 이름 목록
      */
     public function searchableColumns(): array
     {
@@ -492,7 +495,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 컬럼별 검색 가중치를 반환합니다.
      *
-     * @return array<string, float>
+     * @return array<string, float> 컬럼별 검색 가중치
      */
     public function searchableWeights(): array
     {
@@ -521,7 +524,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 검색 인덱스용 배열을 반환합니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 검색 인덱스에 넣을 값
      */
     public function toSearchableArray(): array
     {

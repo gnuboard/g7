@@ -1,0 +1,303 @@
+<!-- 알림 문안 편집 창 — 위는 「누구에게 보낼지」 규칙 목록, 아래는 언어별 제목·본문이다. 규칙은 종류(발생시킨 사람·관계된 사람·역할·지정 회원)마다 필요한 칸이 달라 그 종류로 갈라 보여준다. 값·오류·검색결과가 모두 `_global.board_notification_template_form_modal` 한 객체에 모여 있고, 목록이 창을 열 때마다 통째로 갈아 끼운다 -->
+<partial description="게시판 알림 템플릿 편집 모달 — _global.ecommerce_board_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장.">
+  <modal data-type="composite" data-ref="modal_board_notification_template_edit" title="$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
+    <div data-ref="board_template_form_container" data-blur-until-loaded="{{_global.board_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
+      <div class="flex-1 overflow-y-auto space-y-5 pr-1">
+        <div data-ref="board_template_validation_error" data-if="{{_global.board_notification_template_form_modal?.errors}}" class="alert-danger items-start">
+          <div class="flex items-start gap-3">
+            <icon name="triangle-exclamation" class="text-sm leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.validation_error</h3>
+              <ul data-if="{{typeof _global.board_notification_template_form_modal?.errors === 'object' &amp;&amp; Object.keys(_global.board_notification_template_form_modal.errors).length > 0}}" data-each="errMsg in Object.entries(_global.board_notification_template_form_modal?.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{errMsg}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div data-ref="board_template_type_channel" class="flex-center flex-wrap gap-2">
+          <span class="text-label-subtle font-medium">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.type_label</span>
+          <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.settings.notification_definitions.types.{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}</span>
+          <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}</span>
+          <span class="text-sm text-gray-400 dark:text-gray-500">·</span>
+          <span class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.channel_label</span>
+          <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.name ?? _global.board_notification_template_form_modal?.template?.channel ?? ''}}</span>
+        </div>
+        <div data-ref="board_template_recipients_section" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
+          <h4 class="text-sm font-medium text-purple-800 dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
+          <div class="stack-tight">
+            <div data-each="rcpt, rcptIdx in {{_global.board_notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
+              <div class="flex-between">
+                <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
+                <button aria-label="$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}" type="button" class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                  <on type="click">
+                    <!-- 이 수신 규칙을 뺀다 — 규칙들은 이름이 아니라 «순서»로 구분되므로 그 자리(`rcptIdx`)를 걸러 새 목록을 만든다 -->
+                    <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"/>
+                  </on>
+                  <icon name="fa-solid fa-xmark" size="sm"/>
+                </button>
+              </div>
+              <div>
+                <div>
+                  <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.type_label</label>
+                  <!-- 선언된 relation 이 없는 정의에서 「관련 사용자」를 고르면 수신자가 **0명**이 되고 로그도 남지 않는다 — 그 정의가 지원하는 relation 키를 서버가 실어 줄 때만 이 선택지를 세운다 (E4). -->
+                  <select value="{{rcpt.type ?? ''}}" class="w-full text-sm" options="{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.board_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}">
+                    <on type="change">
+                      <!-- 규칙 종류 전환 — 이 줄을 **새 종류의 빈 규칙**으로 갈아 끼운다. 앞 종류의 값(`value`·`display_names`)과
+                           관계(`relation`)는 새 종류에서 뜻을 잃는다: 회원 UUID 가 역할 칸에 남으면 그대로 역할 식별자로 저장돼
+                           수신자가 0명이 되고 예외도 로그도 남지 않는다. 「행위자 제외」는 역할·특정 회원에서만 뜻이 있어
+                           그 두 종류 사이에서만 이어 간다(발생시킨 본인 규칙에 남으면 그 본인이 빠져 역시 0명이 된다).
+                           관련 사용자는 서버가 relation 을 필수로 받으므로 그 정의가 선언한 첫 관계를 채워 둔다. -->
+                      <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? { type: $event.target.value, ...((($event.target.value === 'role') || ($event.target.value === 'specific_users')) &amp;&amp; ((r.type === 'role') || (r.type === 'specific_users')) &amp;&amp; r.exclude_trigger_user ? { exclude_trigger_user: true } : {}), ...(($event.target.value === 'related_user') ? { relation: (_global.board_notification_template_form_modal?.definition?.relations ?? [])[0] ?? '' } : {}) } : r)}}"/>
+                    </on>
+                  </select>
+                </div>
+                <div data-if="{{rcpt.type === 'related_user'}}">
+                  <div>
+                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.relation_label</label>
+                    <!-- 예전에는 읽기 전용 막대였다 — 「관련 사용자」를 골라도 관계를 지정할 방법이 없어 수신자가 0명이 됐다. 선택지는 그 정의가 선언한 relation 키다(리스너가 `context.related_users` 에 실제로 넣어 주는 키). -->
+                    <select value="{{rcpt.relation ?? ''}}" class="w-full text-sm" options="{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.board_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.board_notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}">
+                      <on type="change">
+                        <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, relation: $event.target.value} : r)}}"/>
+                      </on>
+                    </select>
+                    <!-- 저장된 관계가 이 정의의 선언 밖이면(정의가 관계를 바꿨거나 옛 규칙) 서버가 저장을 422 로 거절한다 — 선택칸은 빈칸으로만 보여 이유를 알 수 없으므로 여기서 밝힌다. -->
+                    <p data-if="{{((rcpt.relation ?? '') !== '') &amp;&amp; !(_global.board_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}" class="text-warning-soft mt-1">$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}</p>
+                  </div>
+                </div>
+                <div data-if="{{rcpt.type === 'role'}}">
+                  <div>
+                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.role_label</label>
+                    <!-- 고른 역할 칩 — 하나씩 뺄 수 있다. 값과 표시 이름은 같은 자리(인덱스)에서 함께 뺀다. 드롭다운 위에 둔다 — 펼친 목록은 트리거 아래로 떠서 그 아래를 덮고, 여러 개를 고르는 칸은 고른 뒤에도 목록이 열려 있어 칩이 아래에 있으면 방금 고른 칩과 빼기 단추가 가려졌다(7.1.0 실측). -->
+                    <div data-ref="board_rcpt_role_chips_{{rcptIdx}}" data-if="{{(rcpt.value ?? []).length > 0}}" class="flex flex-wrap gap-1.5 mb-2">
+                      <div data-each="rid, ridIdx in {{rcpt.value ?? []}}" class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                        <span>{{String((rcpt.display_names ?? [])[ridIdx] ?? rid)}}</span>
+                        <button type="button" class="inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200" aria-label="$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[ridIdx] ?? rid)}}">
+                          <on type="click">
+                            <!-- 이 역할 하나를 규칙 줄에서 뺀다 — 값과 표시 이름을 같은 자리(ridIdx)로 함께 걸러야 두 배열의 순서 짝이
+                                 어긋나지 않는다. 하나만 빼면 남은 칩에 다른 역할의 이름이 붙는다. -->
+                            <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: (r.value ?? []).filter((_, k) => k !== ridIdx), display_names: (r.display_names ?? []).filter((_, k) => k !== ridIdx)} : r)}}"/>
+                          </on>
+                          <icon name="xmark" class="text-xs"/>
+                        </button>
+                      </div>
+                    </div>
+                    <!-- 역할은 여러 개를 고를 수 있다 (E3). 서버가 `value` 를 언제나 배열로 실어 주므로(문자열로 저장된 기존 규칙도 읽을 때 배열이 된다) 화면은 사용자 칸과 같은 모양을 쓴다 — 화면에서 문자열/배열을 가르면 그 판정이 두 벌이 되고, 한쪽만 고쳐졌을 때 값이 조용히 덮인다. 선택값이 비어 있을 때 `.map` 을 그냥 돌리지 않고 길이를 먼저 본다 — 실측(§9 T-D2)에서 빈 선택값이 라벨이 배열인 유령 항목 하나를 만들었고, 운영자가 검색어 첫 글자를 치는 순간 드롭다운이 통째로 사라졌다. 라벨을 문자열로 좁히는 것은 그 두 번째 방어선이다. -->
+                    <searchable-dropdown data-type="composite" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.board_notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.role_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.roles_selected_count|count={{(rcpt.value ?? []).length}}" class="w-full">
+                      <on event="onSearch">
+                        <!-- 역할 찾기 — 타이핑마다 부르지 않도록 300ms 쉬었다 보낸다. 결과는 목록에 바로 꽂지 않고 따로 담아 두고, 이미 고른 역할과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 갈릴 때 고른 이름표가 사라진다) -->
+                        <api-call :debounce="300" :auth_required="true" target="/api/admin/roles" method="GET">
+                          <success>
+                            <set-state target="global" board_notification_template_form_modal.roleSearchResults="{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :board_notification_template_form_modal.roleSearchResults="[]"/>
+                          </fail>
+                          <query search="{{$args[0]}}" :per_page="50"/>
+                        </api-call>
+                      </on>
+                      <on event="onChange">
+                        <!-- 고른 역할(배열)을 이 규칙 줄에 담는다 — 역할도 여러 개를 고를 수 있어 회원 칸과 값 모양이 같다.
+                             표시 이름(display_names)도 같은 순서로 함께 담는다 — 서버는 저장된 값에만 이름을 붙여 주므로, 방금 고른 항목은
+                             검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라졌다(2026-10-06 실측). -->
+                        <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0], display_names: ($args[0] ?? []).map(v => (r.value ?? []).map(String).includes(String(v)) ? String((r.display_names ?? [])[(r.value ?? []).map(String).indexOf(String(v))] ?? v) : String(((_global.board_notification_template_form_modal?.roleSearchResults ?? []).find(o => String(o.value) === String(v)) ?? {}).label ?? v))} : r)}}"/>
+                      </on>
+                    </searchable-dropdown>
+                  </div>
+                </div>
+                <div data-if="{{rcpt.type === 'specific_users'}}">
+                  <div>
+                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.users_label</label>
+                    <!-- 고른 회원 칩 — 하나씩 뺄 수 있다. 드롭다운 위에 둔다 — 펼친 목록은 트리거 아래로 떠서 그 아래를 덮고, 여러 개를 고르는 칸은 고른 뒤에도 목록이 열려 있어 칩이 아래에 있으면 방금 고른 칩과 빼기 단추가 가려졌다(7.1.0 실측). -->
+                    <div data-ref="board_rcpt_user_chips_{{rcptIdx}}" data-if="{{(rcpt.value ?? []).length > 0}}" class="flex flex-wrap gap-1.5 mb-2">
+                      <div data-each="uid, uidIdx in {{rcpt.value ?? []}}" class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                        <span>{{String((rcpt.display_names ?? [])[uidIdx] ?? uid)}}</span>
+                        <button type="button" class="inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200" aria-label="$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[uidIdx] ?? uid)}}">
+                          <on type="click">
+                            <!-- 이 회원 한 명을 규칙 줄에서 뺀다 — 검색어로 걸러져 목록에 안 보이는 회원도 여기서 풀 수 있다.
+                                 값과 표시 이름은 같은 자리(uidIdx)로 함께 걸러 순서 짝을 지킨다. -->
+                            <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: (r.value ?? []).filter((_, k) => k !== uidIdx), display_names: (r.display_names ?? []).filter((_, k) => k !== uidIdx)} : r)}}"/>
+                          </on>
+                          <icon name="xmark" class="text-xs"/>
+                        </button>
+                      </div>
+                    </div>
+                    <searchable-dropdown data-type="composite" data-ref="board_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.board_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}" class="w-full">
+                      <on event="onSearch">
+                        <!-- 회원 찾기 — 역할 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`userSearchResults`). 두 칸이 한 자리를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다.
+                          검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다(역할 목록은 빈 검색어면 전체를 주므로 조건이 없다) -->
+                        <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
+                          <success>
+                            <set-state target="global" board_notification_template_form_modal.userSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :board_notification_template_form_modal.userSearchResults="[]"/>
+                          </fail>
+                          <query keyword="{{$args[0]}}"/>
+                        </api-call>
+                      </on>
+                      <on event="onChange">
+                        <!-- 고른 회원들을 이 규칙에 담는다 — 여럿을 고를 수 있어 값이 배열이다(역할 칸과 다른 점)
+                             표시 이름(display_names)도 같은 순서로 함께 담는다 — 서버는 저장된 값에만 이름을 붙여 주므로, 방금 고른 항목은
+                             검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라졌다(2026-10-06 실측). -->
+                        <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0], display_names: ($args[0] ?? []).map(v => (r.value ?? []).map(String).includes(String(v)) ? String((r.display_names ?? [])[(r.value ?? []).map(String).indexOf(String(v))] ?? v) : String(((_global.board_notification_template_form_modal?.userSearchResults ?? []).find(o => String(o.value) === String(v)) ?? {}).label ?? v))} : r)}}"/>
+                      </on>
+                    </searchable-dropdown>
+                  </div>
+                </div>
+                <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="flex-center gap-2">
+                  <!-- 스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에
+                       이름 없는 스위치로 읽혔다(7.1.0 실측 P-5). label 이 스위치 옆 글자도 함께 그린다. -->
+                  <toggle data-type="composite" label="$t:admin.settings.notification_definitions.recipients.exclude_trigger_user" checked="{{rcpt.exclude_trigger_user ?? false}}">
+                    <on type="change">
+                      <!-- 「그 일을 일으킨 본인은 빼기」 — 역할·지정 회원처럼 여러 사람을 묶는 규칙에서만 뜬다. 자기가 쓴 글에 자기가 알림을 받는 것을 막는 자리다 -->
+                      <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"/>
+                    </on>
+                  </toggle>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium">
+            <on type="click">
+              <!-- 수신 규칙 한 줄 더하기 — 「발생시킨 사람」을 기본 종류로 붙인다(추가 입력이 필요 없는 유일한 종류라 그대로 두어도 완결된 규칙이 된다) -->
+              <set-state target="global" board_notification_template_form_modal.recipients="{{[...(_global.board_notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"/>
+            </on>
+            $t:admin.settings.notification_definitions.recipients.add_rule
+          </button>
+        </div>
+        <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
+        <extension-point name="notification_template_form_sections" data-ref="board_template_form_sections_ext" definition="{{_global.board_notification_template_form_modal?.definition}}" template="{{_global.board_notification_template_form_modal?.template}}" channel="{{_global.board_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_board_notification_template_edit" stateKey="board_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}" refetchDataSourceId="boardNotificationDefinitions"/>
+        <div data-ref="board_template_lang_tabs" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="flex border-b border-gray-200 dark:border-gray-700">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
+            <on type="click">
+              <!-- 언어 탭 — 설치된 언어만큼 버튼이 생긴다. 값을 나르지 않고 아래 제목·본문 칸이 어느 언어를 보여줄지만 가른다 -->
+              <set-state target="global" board_notification_template_form_modal.editLang="{{loc}}"/>
+            </on>
+            {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+          </button>
+        </div>
+        <div data-ref="board_template_subject_input" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}">
+          <div>
+            <label class="form-label">
+              <span>$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.subject</span>
+              <span class="text-required">*</span>
+            </label>
+            <input type="text" value="{{_global.board_notification_template_form_modal?.template?.subject?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
+              <on type="change">
+                <!-- 제목 — 언어별 값 묶음을 통째로 다시 지으면서 지금 탭의 언어 자리만 바꾼다(그래야 다른 언어에 적어 둔 제목이 지워지지 않는다) -->
+                <set-state target="global" board_notification_template_form_modal.template.subject="{{Object.assign({}, _global.board_notification_template_form_modal?.template?.subject, {[_global.board_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+        <div data-ref="board_template_body_input" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}">
+          <div>
+            <label class="form-label">
+              <span>$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.body</span>
+              <span class="text-required">*</span>
+            </label>
+            <!-- 본문 편집기는 **채널이 정한다** (E2). 메일 본문은 HTML 로 나가고 사이트내 알림은 평문으로 그려지므로, 한 편집기로 두 채널을 다루면 관리자 미리보기와 사용자 화면이 서로 다른 문자열을 보여 준다. 리치는 확장 슬롯이라 CKEditor 가 없으면 기존 입력으로 폴백한다 — 슬롯을 직접 `composite/HtmlEditor` 로 부르면 CKEditor 가 영영 붙지 않는다. -->
+            <div>
+              <!-- 서식 편집기는 언어마다 하나씩 두고 편집 중인 언어의 것만 세운다. 편집기는 마운트 때 본문과 쓰기 경로를 한 번만 받으므로, 한 인스턴스를 언어 사이에 돌려 쓰면 탭을 바꿔도 이전 언어 본문이 보이고 입력이 **이전 언어** 칸에 저장된다(실측 2026-10-03). 노드 id 에 언어를 넣는 것으로는 다시 서지 않는다 — 엔진은 자식 key 를 바인딩 전 원문 id 로 잡는다. 탭을 바꾸면 이전 언어의 슬롯이 내려가고(data-if) 새 언어의 슬롯이 그 언어 본문·쓰기 경로로 새로 선다. 편집기 이름도 언어별이라 내려가는 편집기와 서는 편집기가 같은 컨테이너를 두고 다투지 않는다. -->
+              <div data-each="bodyLoc in {{$locales}}">
+                <extension-point name="html_editor" data-ref="template_body_rich_{{bodyLoc}}" data-if="{{((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'rich') &amp;&amp; (_global.board_notification_template_form_modal?.editLang ?? $locale) === bodyLoc}}" content="{{_global.board_notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}" :multilingual="false" :trackChanges="false" writeScope="global" writePath="board_notification_template_form_modal.template.body.{{bodyLoc}}">
+                  <prop name="name">"notification_template_body_{{bodyLoc}}"</prop>
+                  <default>
+              <html-editor data-type="composite" content="{{_global.board_notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
+                <on type="change">
+                  <!-- 본문 — 제목과 같은 규칙으로 지금 탭의 언어 자리만 바꾼다. 알림 본문은 늘 HTML 로 다루므로 모드 토글을 주지 않는다 -->
+                  <set-state target="global" board_notification_template_form_modal.template.body="{{Object.assign({}, _global.board_notification_template_form_modal?.template?.body, {[bodyLoc]: $event.target.value})}}"/>
+                </on>
+              </html-editor>
+                  </default>
+                </extension-point>
+              </div>
+              <!-- 평문 채널의 게시판 알림 본문. 사이트 안 알림함은 본문을 평문으로 그려 여기 넣은 태그가 회원 화면에 글자로 드러나고, 편집기를 따로 선언하지 않은 채널도 이 칸을 쓴다. -->
+              <html-editor data-type="composite" data-ref="template_body_plain" data-if="{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor !== 'rich'}}" content="{{_global.board_notification_template_form_modal?.template?.body?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="false" :showHtmlModeToggle="false" class="min-h-[200px]">
+                <on type="change">
+                  <set-state target="global" board_notification_template_form_modal.template.body="{{Object.assign({}, _global.board_notification_template_form_modal?.template?.body, {[_global.board_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+                </on>
+              </html-editor>
+          </div>
+        </div>
+        </div>
+        <div data-ref="board_template_click_url_input" data-if="{{(_global.board_notification_template_form_modal?.template?.channel === 'database') &amp;&amp; !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}">
+          <div>
+            <label class="form-label">$t:admin.settings.notification_definitions.edit_modal.click_url</label>
+            <input type="text" value="{{_global.board_notification_template_form_modal?.template?.click_url ?? ''}}" placeholder="/mypage/orders/{order_number}" class="font-mono">
+              <on type="change">
+                <!-- 알림을 눌렀을 때 갈 주소 — 사이트 안 알림함(`database` 채널)에서만 뜻이 있어 그 채널일 때만 칸이 나온다. 비우면 빈 문자열이 아니라 `null` 로 담아 「주소 없음」이 되게 한다 -->
+                <set-state target="global" board_notification_template_form_modal.template.click_url="{{$event.target.value || null}}"/>
+              </on>
+            </input>
+            <p class="form-hint">$t:admin.settings.notification_definitions.edit_modal.click_url_hint</p>
+          </div>
+        </div>
+        <div data-ref="board_template_variables_info" data-if="{{((_global.board_notification_template_form_modal?.definition?.variables ?? []).length > 0) &amp;&amp; !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4">
+          <h4 class="text-body font-medium mb-2">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.variables_title</h4>
+          <div class="flex flex-wrap gap-2">
+            <span data-each="v in {{_global.board_notification_template_form_modal?.definition?.variables ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300">
+              <span class="font-mono">{</span>
+              <span class="font-mono">{{v.key}}</span>
+              <span class="font-mono">}</span>
+              <span> — {{v.description ?? ''}}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="board_template_modal_footer" class="flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
+        <div>
+          <!-- 미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다 -->
+          <button data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
+                <success>
+                  <set-state target="global" board_notification_template_form_modal.preview="{{response.data}}"/>
+                  <open-modal target="modal_board_notification_template_preview"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body definition_id="{{_global.board_notification_template_form_modal?.definition?.id}}" subject="{{_global.board_notification_template_form_modal?.template?.subject}}" body="{{_global.board_notification_template_form_modal?.template?.body}}" locale="{{_global.board_notification_template_form_modal?.editLang ?? $locale}}"/>
+              </api-call>
+            </on>
+            $t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <close-modal target="modal_board_notification_template_edit"/>
+            </on>
+            $t:common.cancel
+          </button>
+          <!-- 편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
+          <extension-point name="notification_template_form_footer_actions" data-ref="board_template_form_footer_ext" definition="{{_global.board_notification_template_form_modal?.definition}}" template="{{_global.board_notification_template_form_modal?.template}}" channel="{{_global.board_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_board_notification_template_edit" stateKey="board_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}" refetchDataSourceId="boardNotificationDefinitions"/>
+          <button data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <!-- 저장 — 문안과 수신 규칙을 함께 보낸다. 성공하면 폼 객체를 통째로 비우고 목록을 다시 읽어, 고친 제목이 목록 요약에도 반영되게 한다 -->
+              <sequence>
+                <set-state target="global" :board_notification_template_form_modal.isSaving="true" :board_notification_template_form_modal.errors="null"/>
+                <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}" method="PUT">
+                  <success>
+                    <refetch-data-source dataSourceId="boardNotificationDefinitions"/>
+                    <toast message="$t:sirsoft-board.admin.settings.notification_definitions.save_success" type="success"/>
+                    <close-modal target="modal_board_notification_template_edit"/>
+                    <set-state target="global" :board_notification_template_form_modal="null"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :board_notification_template_form_modal.isSaving="false" board_notification_template_form_modal.errors="{{error.errors}}"/>
+                    <toast message="{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.save_error'}}" type="error"/>
+                  </fail>
+                  <body subject="{{_global.board_notification_template_form_modal?.template?.subject}}" body="{{_global.board_notification_template_form_modal?.template?.body}}" click_url="{{_global.board_notification_template_form_modal?.template?.click_url ?? null}}" recipients="{{_global.board_notification_template_form_modal?.recipients ?? []}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_global.board_notification_template_form_modal?.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
+            <span>{{_global.board_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </modal>
+</partial>

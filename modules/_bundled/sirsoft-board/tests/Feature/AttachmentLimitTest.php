@@ -14,6 +14,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 첨부파일 개수 상한 서버측 불변조건 테스트 (B3)
@@ -21,19 +22,29 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 수정 전에는 `files[]` 직접 업로드만 FormRequest 에서 막고, `attachment_ids` · `temp_key` ·
  * 단일 업로드 반복 경로에는 개수 검사가 없었습니다. 같은 8개 파일을 `temp_key` 로 보내면
  * 201 로 전부 연결되어 사용자 페이지에 그대로 노출됐습니다.
- *
- * @group board
- * @group attachment
  */
+#[Group('board')]
+#[Group('attachment')]
 class AttachmentLimitTest extends BoardTestCase
 {
     private User $memberUser;
 
+    /**
+     * 테스트 게시판 슬러그를 반환합니다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'attachment-limit';
     }
 
+    /**
+     * 테스트 게시판 기본 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -45,6 +56,11 @@ class AttachmentLimitTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,6 +81,7 @@ class AttachmentLimitTest extends BoardTestCase
      *
      * @param  string  $tempKey  임시 업로드 키
      * @param  int  $count  생성 개수
+     * @return void 반환값 없음
      */
     private function seedTempAttachments(string $tempKey, int $count): void
     {
@@ -73,6 +90,8 @@ class AttachmentLimitTest extends BoardTestCase
                 'board_id' => 0,
                 'post_id' => null,
                 'temp_key' => $tempKey,
+                // 실제 업로드처럼 올린 회원을 남긴다 — 번호(attachment_ids)로 잇는 경로는 올린 사람이 같을 때만 잇는다
+                'created_by' => $this->memberUser->id,
                 'collection' => 'attachments',
                 'original_filename' => "temp-{$i}.png",
                 'stored_filename' => "temp-{$i}.png",
@@ -89,6 +108,7 @@ class AttachmentLimitTest extends BoardTestCase
      *
      * @param  int  $postId  게시글 ID
      * @param  int  $count  생성 개수
+     * @return void 반환값 없음
      */
     private function seedLinkedAttachments(int $postId, int $count): void
     {
@@ -111,6 +131,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * temp_key 경로로 상한을 초과하면 차단된다 (실측 재현된 우회 경로).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects temp_key_link_over_limit_blocked
      */
     public function test_temp_key_link_over_limit_is_blocked(): void
     {
@@ -129,6 +153,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * 상한과 정확히 같은 개수는 통과한다 (경계).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects temp_key_link_at_limit_passes
      */
     public function test_temp_key_link_at_limit_passes(): void
     {
@@ -147,6 +175,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * 기존 첨부와 합산해 상한을 넘으면 차단된다 (수정 경로).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects existing_plus_new_over_limit_blocked
      */
     public function test_existing_plus_new_over_limit_is_blocked(): void
     {
@@ -167,6 +199,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * 기존 4 + 신규 1 = 5 는 통과한다 (경계).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects existing_plus_new_at_limit_passes
      */
     public function test_existing_plus_new_at_limit_passes(): void
     {
@@ -187,6 +223,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * attachment_ids 경로도 합산 판정된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_ids_path_counted_in_total
      */
     public function test_attachment_ids_over_limit_is_blocked(): void
     {
@@ -209,6 +249,10 @@ class AttachmentLimitTest extends BoardTestCase
      * 컨트롤러의 catch 가 게시글 *조회* try 에 붙어 있어, 예외를 실제로 던지는 저장 try 는
      * 이 예외를 잡지 못하고 generic 500 으로 떨어졌다. 조회 mock 이 정상 반환하고 저장 mock 이
      * 예외를 던지는 구성으로 그 매핑만 격리해 검증한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects limit_violation_returns_422_not_500
      */
     public function test_admin_update_maps_attachment_limit_to_422(): void
     {
@@ -241,6 +285,10 @@ class AttachmentLimitTest extends BoardTestCase
      *
      * 소스가 나뉘면 각 소스는 상한 이하인데 총합만 초과하는 조합이 만들어진다. 어느 한 소스만
      * 세는 구현은 이 조합을 그대로 통과시킨다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_ids_path_counted_in_total
      */
     public function test_mixed_files_and_attachment_ids_over_limit_is_blocked(): void
     {
@@ -275,6 +323,10 @@ class AttachmentLimitTest extends BoardTestCase
      * `>=` 로 어긋나거나 기존 첨부 0 건을 1 건으로 세면 상한 동수가 조용히 막히는데,
      * 초과 케이스만 보는 테스트는 그 회귀를 통과시킨다. 저장 건수까지 단언해 "차단은
      * 안 했지만 첨부도 안 됐다" 는 절반짜리 통과를 배제한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects direct_files_at_limit_pass_and_persist
      */
     public function test_files_at_limit_on_create_passes_and_persists(): void
     {
@@ -301,6 +353,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * 작성 시 상한을 1 건 넘기면 차단된다 (위 경계의 대조군).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects direct_files_over_limit_blocked
      */
     public function test_files_over_limit_on_create_is_blocked(): void
     {
@@ -328,6 +384,10 @@ class AttachmentLimitTest extends BoardTestCase
      * 단일 업로드를 반복해도 상한을 넘는 순간 차단된다.
      *
      * 한 번에 여러 개를 보내는 경로만 막으면, 한 개씩 N 번 부르는 경로로 그대로 우회된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects single_upload_repeat_blocked_at_limit
      */
     public function test_repeated_single_upload_is_blocked_at_the_limit(): void
     {
@@ -362,6 +422,10 @@ class AttachmentLimitTest extends BoardTestCase
      * 두 계층이 같은 응답을 내야 소비자가 분기하지 않는다 — 선차단은 필드 검증 오류가 아니라
      * `AttachmentLimitExceededException` 을 던지고, 그 `render()` 가 컨트롤러 catch 와
      * 동일한 `errors.code=attachment_limit_exceeded` 를 만든다. 이 테스트가 그 동일성을 고정한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects limit_violation_returns_422_not_500
      */
     public function test_single_upload_endpoint_blocks_over_limit_with_422(): void
     {
@@ -384,6 +448,10 @@ class AttachmentLimitTest extends BoardTestCase
      *
      * `AttachmentService` 를 통째로 mock 해 `upload()` 가 아예 호출되지 않음을 단언한다 —
      * Service 가 최종 관문으로 남아 있어도 요청 계층이 먼저 막아야 선차단이라 부를 수 있다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects single_upload_repeat_blocked_at_limit
      */
     public function test_single_upload_over_limit_is_blocked_before_reaching_service(): void
     {
@@ -407,11 +475,15 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * temp_key 임시 업로드도 상한을 넘는 순간 요청 계층에서 차단된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects single_upload_repeat_blocked_at_limit
      */
     public function test_single_upload_with_temp_key_over_limit_is_blocked(): void
     {
         $slug = $this->getTestBoardSlug();
-        $tempKey = 'temp-single-upload-limit';
+        $tempKey = '6a1d4b4f-2c3d-4e6f-9a01-b2c3d4e5f6a7';
 
         $this->seedTempAttachments($tempKey, 5);
 
@@ -426,6 +498,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * 상한 이내 단일 업로드는 그대로 통과한다 (경계).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects single_upload_within_limit_passes
      */
     public function test_single_upload_endpoint_allows_within_limit(): void
     {
@@ -449,6 +525,10 @@ class AttachmentLimitTest extends BoardTestCase
      *   넘기지 않았다. 그래서 같은 요청이 검증(형식·개수 상한 합산)은 통과하고 200 을 받는데
      *   첨부만 조용히 연결되지 않았다 — 화면에는 성공으로 보이고 첨부만 사라진다.
      *   작성 경로의 `files[]` 유실과 같은 계열이며, 두 경로가 같은 강도여야 한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects update_attachment_ids_linked_on_user_path
      */
     public function test_update_links_attachment_ids_on_user_path(): void
     {
@@ -478,6 +558,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * 수정 경로의 `attachment_ids` 도 개수 상한을 넘기면 차단된다 (위 경계의 대조군).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_ids_path_counted_in_total
      */
     public function test_update_attachment_ids_over_limit_is_blocked(): void
     {
@@ -502,6 +586,10 @@ class AttachmentLimitTest extends BoardTestCase
 
     /**
      * 상한 미설정(0) 게시판은 제한하지 않는다 (기존 동작 유지).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects unlimited_board_not_restricted
      */
     public function test_board_without_limit_is_not_restricted(): void
     {

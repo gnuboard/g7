@@ -1,0 +1,141 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
+#   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
+#   green 이다.
+
+feature: 방문자 통계 보존·용량·파기 (이슈 #682 S2)
+
+description: |
+  쌓인 원장을 언제 지우고 무엇을 남길지, 그리고 너무 많이 쌓였을 때 어떻게 알릴지.
+
+  배경:
+    - 방문자 통계는 조용히 자란다. 정리하는 쪽이 없으면 디스크가 찰 때까지 아무도
+      모르고, 알림이 없으면 운영자는 지울 시점을 놓친다.
+    - 정리가 너무 많이 지우면 운영자는 사라진 줄도 모른다. 그래서 대상마다 「보존
+      안쪽은 남고 바깥쪽만 사라진다」를 행 수로 잠근다.
+    - 집계 표와 이름 사전은 정리 대상이 아니다. 원장이 사라져도 과거 숫자는 남아야
+      하고, 집계 행이 사전을 가리키고 있어 사전을 지우면 과거 리포트의 라벨이 사라진다.
+    - 보존일 하한은 서비스가 소유한다. 커맨드 옵션이나 과거 설정으로 0 이 들어오면
+      오늘 방문까지 지워진다.
+
+  적용 지점:
+    - `app/Services/Analytics/PruneService` 가 대상별 보존 창을 적용하고 청크로 지운다.
+    - `app/Services/Analytics/VolumeCheckService` 가 한계를 넘었을 때 하루 한 번 알린다.
+    - `app/Services/Analytics/AnonymizeService` 가 쌓인 기록에 마스킹·해시를 소급한다.
+    - `app/Services/Analytics/PurgeService` 가 전체 삭제를 수행한다.
+    - `app/Services/Analytics/CloudIpRangeService` 가 차단용 대역 목록을 갱신한다.
+
+coverage_strategy: pairwise
+
+axes:
+  target:
+    - actions
+    - conversions
+    - visits
+    - stats_hourly
+    - bot_hits
+    - collect_failures
+    - archive_runs
+    - salts
+    - menus
+  row_age: [within, beyond]
+  dry_run: [true, false]
+  retention_source: [setting, option, floor]
+  # 확장 제거 정리
+  extension: [module, plugin, module+plugin]
+  delete_data: [true, false]
+  outcome: [success, failure]
+
+exclusions:
+  - { retention_source: floor, row_age: beyond, reason: "하한이 적용되면 그 기간 안은 정의상 「보존 안쪽」이 된다" }
+  - { target: salts, retention_source: option, reason: "솔트 보존일은 옵션으로 바꾸지 않는다 — 익명 기록 조회 창이 코드 계약이다" }
+
+effects:
+  # 7.1.0 업그레이드 — 방문자 통계 메뉴 자리
+  - core_menus_shift_for_analytics_on_upgrade
+  - operator_menu_order_is_preserved_on_upgrade
+  - menu_order_upgrade_is_idempotent
+  - menu_order_upgrade_skips_when_nothing_matches
+  # 정리
+  - ledger_beyond_retention_is_deleted
+  - ledger_within_retention_is_kept
+  - actions_are_deleted_before_their_visits
+  - each_target_uses_its_own_retention_window
+  - daily_stats_survive_pruning
+  - action_name_dictionary_survives_pruning
+  - retention_floor_protects_recent_ledger
+  - prune_deletes_in_chunks_until_nothing_is_left
+  - salt_retention_never_drops_below_the_subject_lookup_window
+  - dry_run_counts_without_deleting
+  - prune_hooks_fire_before_and_after
+  # 용량 경고
+  - volume_check_reports_current_ledger_size
+  - crossing_the_threshold_fires_the_limit_hook
+  - staying_under_the_threshold_fires_nothing
+  - the_same_warning_is_sent_once_a_day
+  - storage_stats_list_every_analytics_table
+  - storage_stats_count_the_two_ledger_tables_exactly
+  # 소급 익명화
+  - retro_masking_rewrites_stored_addresses
+  - retro_hashing_clears_the_address_and_keeps_a_hash
+  - retro_masking_reaches_bot_hits_and_failure_logs
+  - retro_anonymization_pseudonymizes_member_ids
+  - retro_anonymization_reduces_referrers_to_their_domain
+  - retro_anonymization_leaves_aggregates_untouched
+  - retro_anonymization_records_progress_in_a_run
+  - anonymize_command_requires_a_mask_or_hash_option
+  # 전체 삭제
+  - purge_removes_ledger_and_aggregates
+  - purge_removes_the_action_name_dictionary
+  - purge_requires_explicit_confirmation
+  - purge_fires_the_data_purged_hook
+  # 확장 제거 정리 (S2 결함 보수 — 호출부·발사부가 없어 죽어 있던 배선)
+  - extension_purge_removes_only_that_extensions_rows
+  - extension_purge_removes_that_extensions_goal_rows
+  - extension_purge_is_recorded_in_the_run_history
+  - extension_purged_hook_fires_with_counts
+  - preserved_extension_data_survives_uninstall
+  - uninstall_hook_argument_order_is_read_per_extension_type
+  # 부분 실패 시 되돌림 — 전환만 지워지고 차원이 남으면 운영자가 원인을 못 찾는다
+  - extension_purge_rolls_back_when_a_target_fails
+  # 예약 등록
+  - analytics_schedules_are_registered_with_their_periods
+  - only_prune_lives_inside_the_gc_block
+  - scheduled_commands_are_registerable_through_the_admin_allowlist
+  - irreversible_commands_stay_out_of_the_allowlist
+  - maintenance_commands_are_exposed_in_the_dev_dashboard
+  - conditional_schedules_stay_out_when_their_feature_is_off
+  - conditional_schedules_appear_when_their_feature_is_on
+  # 클라우드 대역 목록
+  - cloud_ranges_are_downloaded_and_stored
+  - a_failed_download_keeps_the_existing_list
+  - cloud_range_status_reports_presence_and_time
+  # 진행률 방송 — 집계가 아닌 실행도 진단 화면의 같은 자리에 뜬다
+  - non_archive_runs_broadcast_their_progress
+  - every_run_writing_service_broadcasts_progress
+  - progress_broadcast_times_use_the_site_timezone
+  # 멈춘 실행 — 워커가 도중에 죽은 「실행 중」 행이 진단 버튼을 잠그지 않는다
+  - stale_running_rows_do_not_lock_the_diagnostics_buttons
+  - stale_running_rows_are_closed_by_the_hourly_archive
+  - failed_jobs_close_the_runs_they_started
+  - stale_threshold_outlasts_every_job_timeout
+  - extension_purge_command_requires_confirmation
+  - extension_purge_command_refuses_an_active_extension
+  - extension_purge_command_warns_about_an_unknown_identifier
+  - extension_purge_command_removes_only_that_extensions_rows
+  - extension_purge_command_reports_failure
+
+test_files:
+  - tests/Feature/Console/Analytics/PurgeExtensionCommandTest.php
+  - tests/Feature/Upgrade/ShiftCoreMenuOrderForAnalyticsTest.php
+  - tests/Feature/Console/Analytics/PruneCommandTest.php
+  - tests/Feature/Console/Analytics/CheckVolumeCommandTest.php
+  - tests/Feature/Console/Analytics/AnonymizeCommandTest.php
+  - tests/Feature/Console/Analytics/PurgeCommandTest.php
+  - tests/Feature/Analytics/ExtensionPurgeTest.php
+  - tests/Feature/Analytics/RunProgressBroadcastTest.php
+  - tests/Feature/Analytics/StaleRunServiceTest.php
+  - tests/Feature/Console/Analytics/UpdateCloudRangesCommandTest.php
+  - tests/Feature/Console/Analytics/AnalyticsScheduleRegistrationTest.php
+
+# 보존·파기에는 사용자 화면이 없다 — 설정 화면에서 이 값을 다루는 E2E 는 S3 이 소유한다.

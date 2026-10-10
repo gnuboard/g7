@@ -1,0 +1,37 @@
+<!-- 마이페이지 «적립금» 탭 — 남은 잔액과 쌓이고 쓰인 내역. 둘을 따로 받는 이유는 잔액은 늘 한 줄이고
+     내역만 쪽이 나뉘기 때문이다. -->
+<layout name="mypage/mileage" version="1.0.0" extends="_user_base">
+  <!-- 지금 잔액과 소멸 예정분 -->
+  <data-source id="mileage_balance" label_key="$t:editor.data_source.mileage_balance" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/mileage" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <!-- 적립·사용 내역. 조건이 URL 쿼리에 있어 쪽을 넘기면 주소가 바뀌고 그에 따라 다시 받는다 -->
+  <data-source id="mileage_history" label_key="$t:editor.data_source.mileage_history" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/mileage/history" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :blur_until_loaded="true">
+    <params page="{{query.page ?? 1}}" category="{{query.category}}" per_page="{{query.per_page ?? 20}}"/>
+  </data-source>
+  <computed name="currentTab">mileage</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <init>
+    <set-state target="local" mileagePage="{{query.page ?? 1}}" mileageCategory="{{query.category ?? ''}}"/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 마일리지 내역 -->
+          <include src="partials/mypage/mileage/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+</layout>

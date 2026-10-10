@@ -1,626 +1,923 @@
 {
-  "meta": { "is_partial": true, "description": "옵션 선택, 선택상품 목록, 구매 버튼 카드" },
-  "type": "basic",
-  "name": "Div",
-  "if": "{{product.data?.sales_status === 'on_sale'}}",
-  "props": { "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5" },
-  "children": [
-    {
-      "comment": "=== 배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가) ===",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.is_shippable_to_selected_country === false}}",
-      "props": { "className": "flex items-start gap-2 px-3 py-2.5 mb-4 rounded-lg border bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": { "name": "triangle-exclamation", "size": "sm", "className": "text-red-500 dark:text-red-400 mt-0.5 shrink-0" }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": { "className": "text-sm font-medium text-red-700 dark:text-red-300" },
-          "text": "$t:shop.shippability.not_shippable"
-        }
-      ]
+    "comment": "상품 상세의 구매 카드 — 옵션을 고르면 **바로 담기지 않고** 「선택한 상품」 목록(`_local.selectedOptionItems`)에\n     한 줄로 쌓인다. 그래서 색·사이즈를 바꿔 가며 여러 줄을 담은 뒤 한 번에 장바구니로 보내거나 바로 살 수 있다.\n     금액 계산은 전부 `sirsoft-basic.*` 전용 핸들러가 맡는다 — 옵션 추가금·수량·통화가 얽혀 있어 표현식으로\n     풀면 같은 계산이 여러 자리에 흩어지기 때문이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "옵션 선택, 선택상품 목록, 구매 버튼 카드"
     },
-    {
-      "comment": "=== 옵션 선택 안내 텍스트 (2개 이상 옵션 있고, 아직 선택 안 했을 때만, 판매중일 때만) ===",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && product.data?.option_groups?.length > 0 && (product.data?.options?.length ?? 0) > 1 && (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}",
-      "props": { "className": "border-b border-gray-200 dark:border-gray-700 pb-4 text-green-600 dark:text-green-400 text-sm font-medium mb-4" },
-      "text": "$t:shop.product.select_options_guide"
+    "type": "basic",
+    "name": "Div",
+    "if": "{{product.data?.sales_status === 'on_sale'}}",
+    "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5"
     },
-    {
-      "comment": "=== 옵션 선택 섹션 (옵션 그룹이 있고 선택할 옵션이 2개 이상일 때만, 판매중일 때만) ===",
-      "type": "basic",
-      "name": "Div",
-      "id": "option-select",
-      "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && product.data?.option_groups?.length > 0 && (product.data?.options?.length ?? 0) > 1}}",
-      "props": { "className": "mb-4 space-y-3" },
-      "children": [
+    "children": [
         {
-          "comment": "옵션 그룹별 Select",
-          "type": "basic",
-          "name": "Div",
-          "iteration": { "source": "{{product.data?.option_groups ?? []}}", "item_var": "group", "index_var": "groupIndex" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "mb-3" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": { "className": "block text-sm text-gray-700 dark:text-gray-300 mb-1" },
-                  "text": "{{group.name_localized}}"
-                },
-                {
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "option_{{groupIndex}}",
-                    "data-testid": "option-group-{{groupIndex}}",
-                    "className": "w-full",
-                    "value": "{{_local.currentSelection?.[group.name_localized] ?? ''}}",
-                    "placeholder": "{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}",
-                    "disabled": "{{groupIndex > 0 && !_local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized]}}",
-                    "options": "{{[{ value: '', label: groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...($computed.optionChoices?.[groupIndex] ?? (group.values_localized ?? []).map(v => ({ value: v, label: v })))] ?? []}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "comment": "현재 선택 상태 업데이트",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "currentSelection": "{{Object.assign({}, _local.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"
-                          }
-                        },
-                        {
-                          "comment": "마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회)",
-                          "handler": "sirsoft-basic.addSelectedItemIfComplete",
-                          "params": {
-                            "productId": "{{product.data?.id}}",
-                            "optionGroups": "{{product.data?.option_groups}}",
-                            "options": "{{product.data?.options}}",
-                            "currentSelection": "{{_local.currentSelection ?? {}}}",
-                            "selectedOptionItems": "{{_local.selectedOptionItems ?? []}}",
-                            "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}",
-                            "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
-                            "newGroupName": "{{group.name_localized}}",
-                            "newValue": "{{$event.target.value}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "=== 수량 선택만 표시 (옵션 없거나, 기본 옵션 1개뿐인 상품, 판매중일 때만) ===",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.sales_status === 'on_sale' && (!product.data?.has_options || !product.data?.option_groups || product.data?.option_groups.length === 0 || (product.data?.options?.length ?? 0) <= 1)}}",
-      "props": { "className": "mb-4" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
-              "text": "$t:shop.product.quantity"
+            "comment": "=== 배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가) ===",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.is_shippable_to_selected_country === false}}",
+            "props": {
+                "className": "flex items-start gap-2 px-3 py-2.5 mb-4 rounded-lg border bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
             },
-            {
-              "type": "composite",
-              "name": "QuantitySelector",
-              "props": {
-                "value": "{{_local.noOptionQuantity ?? 1}}",
-                "min": "{{product.data?.min_purchase_qty ?? 1}}",
-                "max": "{{product.data?.max_purchase_qty > 0 ? Math.min(product.data.max_purchase_qty, product.data?.stock_quantity ?? 999) : (product.data?.stock_quantity ?? 999)}}",
-                "size": "sm"
-              },
-              "actions": [
+            "children": [
                 {
-                  "event": "onChange",
-                  "handler": "sirsoft-basic.updateNoOptionQuantity",
-                  "params": {
-                    "newQuantity": "{{$args[0]}}",
-                    "multiCurrencyUnitPrice": "{{product.data?.multi_currency_selling_price}}"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "=== 수량 제한 안내 (판매중일 때만) ===",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.sales_status === 'on_sale' && (product.data?.min_purchase_qty > 1 || product.data?.max_purchase_qty > 0)}}",
-      "props": { "className": "px-1 mb-2 space-y-0.5" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{product.data?.min_purchase_qty > 1}}",
-          "props": { "className": "block text-xs text-gray-500 dark:text-gray-400" },
-          "text": "$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty}}"
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{product.data?.max_purchase_qty > 0}}",
-          "props": { "className": "block text-xs text-gray-500 dark:text-gray-400" },
-          "text": "$t:shop.max_purchase_qty_notice|qty={{product.data?.max_purchase_qty}}"
-        }
-      ]
-    },
-    {
-      "comment": "=== 선택한 상품 섹션 (옵션 있는 상품, 총 금액 위에 표시, 판매중일 때만) ===",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && (product.data?.options?.length ?? 0) > 1 && _local.selectedOptionItems && _local.selectedOptionItems.length > 0}}",
-      "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mb-4" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H4",
-          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-3" },
-          "text": "$t:shop.selected_products"
-        },
-        {
-          "comment": "선택된 상품 목록 (space-y-4 는 부모, iteration 은 자식 — 분리해야 형제 간 간격 적용됨)",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "space-y-4" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "iteration": { "source": "{{_local.selectedOptionItems ?? []}}", "item_var": "item", "index_var": "itemIndex" },
-              "props": { "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3" },
-              "children": [
-                {
-                  "comment": "상품 옵션명 + 삭제 버튼",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center justify-between mb-2" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
-                      "text": "{{item.options ? Object.values(item.options).join(' / ') : ''}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": { "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" },
-                      "children": [
-                        { "type": "basic", "name": "Icon", "props": { "name": "x", "size": "sm" } }
-                      ],
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sirsoft-basic.removeSelectedItem",
-                          "params": {
-                            "itemIndex": "{{itemIndex}}",
-                            "selectedOptionItems": "{{_local.selectedOptionItems}}"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "triangle-exclamation",
+                        "size": "sm",
+                        "className": "text-red-500 dark:text-red-400 mt-0.5 shrink-0"
                     }
-                  ]
                 },
                 {
-                  "comment": "=== 블럭별 추가옵션 그룹 선택 (D2/D10: 옵션 블럭 내부) ===",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{product.data?.additional_options?.length > 0}}",
-                  "props": { "className": "mb-3 space-y-2" },
-                  "iteration": { "source": "{{product.data?.additional_options ?? []}}", "item_var": "addGroup", "index_var": "addGroupIndex" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm font-medium text-red-700 dark:text-red-300"
+                    },
+                    "text": "$t:shop.shippability.not_shippable"
+                }
+            ]
+        },
+        {
+            "comment": "=== 옵션 선택 안내 텍스트 (2개 이상 옵션 있고, 아직 선택 안 했을 때만, 판매중일 때만) ===",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && product.data?.option_groups?.length > 0 && (product.data?.options?.length ?? 0) > 1 && (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}",
+            "props": {
+                "className": "border-b border-gray-200 dark:border-gray-700 pb-4 text-green-600 dark:text-green-400 text-sm font-medium mb-4"
+            },
+            "text": "$t:shop.product.select_options_guide"
+        },
+        {
+            "comment": "=== 옵션 선택 섹션 (옵션 그룹이 있고 선택할 옵션이 2개 이상일 때만, 판매중일 때만) ===",
+            "id": "option-select",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && product.data?.option_groups?.length > 0 && (product.data?.options?.length ?? 0) > 1}}",
+            "props": {
+                "className": "mb-4 space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "옵션 그룹별 Select",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{product.data?.option_groups ?? []}}",
+                        "item_var": "group",
+                        "index_var": "groupIndex"
+                    },
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
-                          "children": [
-                            { "type": "basic", "name": "Span", "text": "{{addGroup.name}}" },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{addGroup.is_required}}",
-                              "props": { "className": "text-red-500 dark:text-red-400 ml-0.5" },
-                              "text": "*"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "composite",
-                          "name": "Select",
-                          "props": {
-                            "name": "add_option_{{itemIndex}}_{{addGroup.id}}",
-                            "data-testid": "add-option-{{itemIndex}}-{{addGroup.id}}",
-                            "className": "w-full",
-                            "value": "{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}",
-                            "placeholder": "$t:shop.additional_option_placeholder",
-                            "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "sirsoft-basic.setBlockAdditionalOption",
-                              "params": {
-                                "itemIndex": "{{itemIndex}}",
-                                "additionalOptionId": "{{addGroup.id}}",
-                                "valueId": "{{$event.target.value}}",
-                                "selectedOptionItems": "{{_local.selectedOptionItems}}",
-                                "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
-                                "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출(입력 필수). 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용",
-                          "type": "basic",
-                          "name": "Div",
-                          "if": "{{(addGroup.values ?? []).find(v => v.id === item.additionalOptionSelections?.[addGroup.id])?.allow_custom_text === true}}",
-                          "props": { "className": "mt-2" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Label",
-                              "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
-                              "text": "$t:shop.additional_option_custom_text_label"
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mb-3"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "text",
-                                "name": "add_option_text_{{itemIndex}}_{{addGroup.id}}",
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500",
-                                "value": "{{item.additionalOptionCustomTexts?.[addGroup.id] ?? ''}}",
-                                "placeholder": "$t:shop.additional_option_custom_text_placeholder",
-                                "maxLength": 255
-                              },
-                              "actions": [
+                            "children": [
                                 {
-                                  "type": "input",
-                                  "handler": "sirsoft-basic.setBlockAdditionalOption",
-                                  "params": {
-                                    "itemIndex": "{{itemIndex}}",
-                                    "additionalOptionId": "{{addGroup.id}}",
-                                    "valueId": "{{item.additionalOptionSelections?.[addGroup.id]}}",
-                                    "customText": "{{$event.target.value}}",
-                                    "selectedOptionItems": "{{_local.selectedOptionItems}}",
-                                    "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
-                                    "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
-                                  }
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "text": "{{group.name_localized}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "옵션을 한 칸 고를 때마다 «다 골랐는지» 를 판정해, 마지막 칸이 채워지는 순간 한 줄을 추가한다.\n                   방금 고른 값을 핸들러에 따로 넘기는 이유는 위 `set-state` 가 아직 반영되기 전이기 때문이다",
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "현재 선택 상태 업데이트",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "currentSelection": "{{Object.assign({}, _local.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회)",
+                                                    "handler": "sirsoft-basic.addSelectedItemIfComplete",
+                                                    "params": {
+                                                        "productId": "{{product.data?.id}}",
+                                                        "optionGroups": "{{product.data?.option_groups}}",
+                                                        "options": "{{product.data?.options}}",
+                                                        "currentSelection": "{{_local.currentSelection ?? {}}}",
+                                                        "selectedOptionItems": "{{_local.selectedOptionItems ?? []}}",
+                                                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}",
+                                                        "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
+                                                        "newGroupName": "{{group.name_localized}}",
+                                                        "newValue": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "option_{{groupIndex}}",
+                                        "data-testid": "option-group-{{groupIndex}}",
+                                        "className": "w-full",
+                                        "value": "{{_local.currentSelection?.[group.name_localized] ?? ''}}",
+                                        "placeholder": "{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}",
+                                        "disabled": "{{groupIndex > 0 && !_local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized]}}",
+                                        "options": "{{[{ value: '', label: groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...($computed.optionChoices?.[groupIndex] ?? (group.values_localized ?? []).map(v => ({ value: v, label: v })))] ?? []}}"
+                                    }
                                 }
-                              ]
-                            }
-                          ]
+                            ]
                         }
-                      ]
-                    }
-                  ]
-                },
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "=== 수량 선택만 표시 (옵션 없거나, 기본 옵션 1개뿐인 상품, 판매중일 때만) ===",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.sales_status === 'on_sale' && (!product.data?.has_options || !product.data?.option_groups || product.data?.option_groups.length === 0 || (product.data?.options?.length ?? 0) <= 1)}}",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
                 {
-                  "comment": "추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때)",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(item.additionalOptionsTotal ?? 0) > 0}}",
-                  "props": { "data-testid": "additional-options-amount", "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2" },
-                  "children": [
-                    { "type": "basic", "name": "Span", "text": "$t:shop.additional_options_amount" },
-                    { "comment": "추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백", "type": "basic", "name": "Span", "text": "{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}" }
-                  ]
-                },
-                {
-                  "comment": "수량 조절 + 가격",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center justify-between" },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "QuantitySelector",
-                      "props": {
-                        "value": "{{item.quantity}}",
-                        "min": 1,
-                        "max": "{{item.stock}}",
-                        "size": "sm"
-                      },
-                      "actions": [
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
                         {
-                          "event": "onChange",
-                          "handler": "sirsoft-basic.updateSelectedItemQuantity",
-                          "params": {
-                            "itemIndex": "{{itemIndex}}",
-                            "newQuantity": "{{$args[0]}}",
-                            "selectedOptionItems": "{{_local.selectedOptionItems}}",
-                            "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
-                          }
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:shop.product.quantity"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "QuantitySelector",
+                            "actions": [
+                                {
+                                    "comment": "옵션이 없는(또는 조합이 하나뿐인) 상품은 줄을 쌓지 않고 수량만 센다 — 그래서 별도 핸들러다",
+                                    "event": "onChange",
+                                    "handler": "sirsoft-basic.updateNoOptionQuantity",
+                                    "params": {
+                                        "newQuantity": "{{$args[0]}}",
+                                        "multiCurrencyUnitPrice": "{{product.data?.multi_currency_selling_price}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_local.noOptionQuantity ?? 1}}",
+                                "min": "{{product.data?.min_purchase_qty ?? 1}}",
+                                "max": "{{product.data?.max_purchase_qty > 0 ? Math.min(product.data.max_purchase_qty, product.data?.stock_quantity ?? 999) : (product.data?.stock_quantity ?? 999)}}",
+                                "size": "sm"
+                            }
                         }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-sm font-bold text-gray-900 dark:text-white" },
-                      "text": "{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.totalPriceFormatted}}"
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "=== 총 금액 + 구매 버튼 섹션 (판매중일 때만) ===",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.sales_status === 'on_sale'}}",
-      "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-4" },
-      "children": [
-        {
-          "comment": "총 금액 (옵션 선택형 상품 - 2개 이상)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1}}",
-          "props": { "className": "flex justify-between items-center mb-4" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
-              "text": "$t:shop.total_amount ({{(_local.selectedOptionItems ?? []).reduce((sum, item) => sum + item.quantity, 0)}}$t:shop.count_unit)"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "data-testid": "purchase-total", "className": "text-xl font-bold text-gray-900 dark:text-white" },
-              "text": "{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}"
-            }
-          ]
+            ]
         },
         {
-          "comment": "총 금액 (옵션 없거나 기본 옵션 1개뿐인 상품)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!product.data?.has_options || (product.data?.options?.length ?? 0) <= 1}}",
-          "props": { "className": "flex justify-between items-center mb-4" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
-              "text": "$t:shop.product.total_amount ({{_local.noOptionQuantity ?? 1}}$t:shop.product.count_unit)"
+            "comment": "=== 수량 제한 안내 (판매중일 때만) ===",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.sales_status === 'on_sale' && (product.data?.min_purchase_qty > 1 || product.data?.max_purchase_qty > 0)}}",
+            "props": {
+                "className": "px-1 mb-2 space-y-0.5"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "data-testid": "purchase-total", "className": "text-xl font-bold text-gray-900 dark:text-white" },
-              "text": "{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{product.data?.min_purchase_qty > 1}}",
+                    "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{product.data?.max_purchase_qty > 0}}",
+                    "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}|qty={{product.data?.max_purchase_qty}}"
+                }
+            ]
         },
         {
-          "comment": "=== 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) ===",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "grid md:grid-cols-2 gap-2" },
-          "children": [
-            {
-              "comment": "바로구매 버튼",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "data-testid": "buy-now",
-                "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_local.isOrdering || product.data?.is_shippable_to_selected_country === false}}"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center justify-center gap-2" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "if": "{{_local.isOrdering}}",
-                      "props": { "name": "spinner", "spin": true, "size": "md" }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{!_local.isOrdering}}",
-                      "text": "$t:shop.product.buy_now"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.isOrdering}}",
-                      "text": "$t:shop.product.ordering"
-                    }
-                  ]
-                }
-              ],
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "conditions",
-                  "conditions": [
-                    {
-                      "comment": "배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증)",
-                      "if": "{{product.data?.is_shippable_to_selected_country === false}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.shippability.not_shippable" } }
-                    },
-                    {
-                      "if": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 && (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.product.please_select_options" } }
-                    },
-                    {
-                      "comment": "필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증)",
-                      "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id]))}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.additional_option_required" } }
-                    },
-                    {
-                      "comment": "직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증)",
-                      "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required && v?.allow_custom_text === true && (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; }))}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.additional_option_custom_text_required" } }
-                    },
-                    {
-                      "then": {
-                        "handler": "sequence",
-                        "actions": [
-                          { "handler": "setState", "params": { "target": "local", "isOrdering": true } },
-                          {
-                            "comment": "바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음)",
-                            "handler": "apiCall",
-                            "auth_mode": "optional",
-                            "target": "/api/modules/sirsoft-ecommerce/checkout",
-                            "params": {
-                              "method": "POST",
-                              "headers": { "X-Cart-Key": "{{_global.cartKey}}" },
-                              "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}"
-                            },
-                            "onSuccess": [
-                              {
-                                "comment": "로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨",
-                                "handler": "conditions",
-                                "conditions": [
-                                  {
-                                    "if": "{{_global.currentUser?.uuid}}",
-                                    "then": {
-                                      "comment": "audit:allow layout-list-context-navigate-merge-query 주문서로 이동 — 상품 목록/상세와 다른 클러스터(주문 흐름)로 나가는 이동이다.",
-                                      "handler": "navigate",
-                                      "params": { "path": "{{_global.shopBase}}/checkout" }
-                                    }
-                                  },
-                                  {
-                                    "then": {
-                                      "handler": "navigate",
-                                      "params": {
-                                        "path": "/login",
-                                        "query": { "redirect": "{{_global.shopBase}}/checkout" }
-                                      }
-                                    }
-                                  }
-                                ]
-                              }
-                            ],
-                            "onError": [
-                              { "handler": "setState", "params": { "target": "local", "isOrdering": false } },
-                              { "handler": "toast", "params": { "type": "error", "message": "{{error.errors?.message ?? error.message}}" } }
-                            ]
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              ]
+            "comment": "=== 선택한 상품 섹션 (옵션 있는 상품, 총 금액 위에 표시, 판매중일 때만) ===",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && (product.data?.options?.length ?? 0) > 1 && _local.selectedOptionItems && _local.selectedOptionItems.length > 0}}",
+            "props": {
+                "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mb-4"
             },
-            {
-              "comment": "장바구니 버튼",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "data-testid": "add-to-cart",
-                "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_local.isAddingToCart || _local.isOrdering || product.data?.is_shippable_to_selected_country === false}}"
-              },
-              "children": [
-                { "type": "basic", "name": "Icon", "if": "{{!_local.isAddingToCart}}", "props": { "name": "shopping-cart", "size": "lg" } },
-                { "type": "basic", "name": "Icon", "if": "{{_local.isAddingToCart}}", "props": { "name": "spinner", "size": "lg", "className": "animate-spin" } },
-                { "type": "basic", "name": "Span", "text": "$t:shop.product.add_to_cart" }
-              ],
-              "actions": [
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "conditions",
-                  "conditions": [
-                    {
-                      "comment": "배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증)",
-                      "if": "{{product.data?.is_shippable_to_selected_country === false}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.shippability.not_shippable" } }
+                    "type": "basic",
+                    "name": "H4",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white mb-3"
                     },
-                    {
-                      "if": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 && (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.product.please_select_options" } }
+                    "text": "$t:shop.selected_products"
+                },
+                {
+                    "comment": "선택된 상품 목록 (space-y-4 는 부모, iteration 은 자식 — 분리해야 형제 간 간격 적용됨)",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-4"
                     },
-                    {
-                      "comment": "필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증)",
-                      "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id]))}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.additional_option_required" } }
-                    },
-                    {
-                      "comment": "직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증)",
-                      "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required && v?.allow_custom_text === true && (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; }))}}",
-                      "then": { "handler": "toast", "params": { "type": "warning", "message": "$t:shop.additional_option_custom_text_required" } }
-                    },
-                    {
-                      "then": {
-                        "handler": "sequence",
-                        "actions": [
-                          { "handler": "setState", "params": { "target": "local", "isAddingToCart": true } },
-                          {
-                            "handler": "apiCall",
-                            "auth_mode": "optional",
-                            "target": "/api/modules/sirsoft-ecommerce/cart",
-                            "params": {
-                              "method": "POST",
-                              "headers": { "X-Cart-Key": "{{_global.cartKey}}" },
-                              "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}"
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{_local.selectedOptionItems ?? []}}",
+                                "item_var": "item",
+                                "index_var": "itemIndex"
                             },
-                            "onSuccess": [
-                              { "handler": "setState", "params": { "target": "local", "isAddingToCart": false, "selectedOptionItems": [], "currentSelection": {}, "noOptionQuantity": 1, "additionalOptions": {} } },
-                              { "handler": "setState", "params": { "target": "global", "cartCount": "{{response.data.cart_count}}" } },
-                              { "handler": "openModal", "target": "cart_added_modal" }
-                            ],
-                            "onError": [
-                              { "handler": "setState", "params": { "target": "local", "isAddingToCart": false } },
-                              { "handler": "toast", "params": { "type": "error", "message": "{{error.errors?.message ?? error.message}}" } }
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3"
+                            },
+                            "children": [
+                                {
+                                    "comment": "상품 옵션명 + 삭제 버튼",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{item.options ? Object.values(item.options).join(' / ') : ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "쌓아 둔 줄 하나를 뺀다. 총액도 함께 다시 계산되므로 핸들러가 맡는다",
+                                                    "type": "click",
+                                                    "handler": "sirsoft-basic.removeSelectedItem",
+                                                    "params": {
+                                                        "itemIndex": "{{itemIndex}}",
+                                                        "selectedOptionItems": "{{_local.selectedOptionItems}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "aria-label": "$t:common.delete",
+                                                "className": "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "x",
+                                                        "size": "sm"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "=== 블럭별 추가옵션 그룹 선택 (D2/D10: 옵션 블럭 내부) ===",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{product.data?.additional_options?.length > 0}}",
+                                    "iteration": {
+                                        "source": "{{product.data?.additional_options ?? []}}",
+                                        "item_var": "addGroup",
+                                        "index_var": "addGroupIndex"
+                                    },
+                                    "props": {
+                                        "className": "mb-3 space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{addGroup.name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{addGroup.is_required}}",
+                                                            "props": {
+                                                                "className": "text-red-500 dark:text-red-400 ml-0.5"
+                                                            },
+                                                            "text": "*"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "추가옵션은 상품 전체가 아니라 **그 줄에** 붙는다 — 같은 상품을 두 줄 담아도 각각 다른\n                       추가옵션을 고를 수 있어야 하므로 `itemIndex` 를 함께 넘긴다",
+                                                            "type": "change",
+                                                            "handler": "sirsoft-basic.setBlockAdditionalOption",
+                                                            "params": {
+                                                                "itemIndex": "{{itemIndex}}",
+                                                                "additionalOptionId": "{{addGroup.id}}",
+                                                                "valueId": "{{$event.target.value}}",
+                                                                "selectedOptionItems": "{{_local.selectedOptionItems}}",
+                                                                "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
+                                                                "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "add_option_{{itemIndex}}_{{addGroup.id}}",
+                                                        "data-testid": "add-option-{{itemIndex}}-{{addGroup.id}}",
+                                                        "className": "w-full",
+                                                        "value": "{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}",
+                                                        "placeholder": "$t:shop.additional_option_placeholder",
+                                                        "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출(입력 필수). 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(addGroup.values ?? []).find(v => v.id === item.additionalOptionSelections?.[addGroup.id])?.allow_custom_text === true}}",
+                                                    "props": {
+                                                        "className": "mt-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1"
+                                                            },
+                                                            "text": "$t:shop.additional_option_custom_text_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "같은 핸들러에 고른 값은 그대로 두고 문구만 실어 보낸다 — 글자를 고칠 때 선택이 풀리지 않게",
+                                                                    "type": "input",
+                                                                    "handler": "sirsoft-basic.setBlockAdditionalOption",
+                                                                    "params": {
+                                                                        "itemIndex": "{{itemIndex}}",
+                                                                        "additionalOptionId": "{{addGroup.id}}",
+                                                                        "valueId": "{{item.additionalOptionSelections?.[addGroup.id]}}",
+                                                                        "customText": "{{$event.target.value}}",
+                                                                        "selectedOptionItems": "{{_local.selectedOptionItems}}",
+                                                                        "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
+                                                                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "text",
+                                                                "name": "add_option_text_{{itemIndex}}_{{addGroup.id}}",
+                                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                                                "value": "{{item.additionalOptionCustomTexts?.[addGroup.id] ?? ''}}",
+                                                                "placeholder": "$t:shop.additional_option_custom_text_placeholder",
+                                                                "maxLength": 255
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(item.additionalOptionsTotal ?? 0) > 0}}",
+                                    "props": {
+                                        "data-testid": "additional-options-amount",
+                                        "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:shop.additional_options_amount"
+                                        },
+                                        {
+                                            "comment": "추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? ($t('sirsoft-ecommerce.currency.krw_prefix') + n + $t('sirsoft-ecommerce.currency.krw_suffix')) : (s + n)); })()}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "수량 조절 + 가격",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "QuantitySelector",
+                                            "actions": [
+                                                {
+                                                    "comment": "줄 단위 수량. 상한은 재고와 1인 구매 한도 중 작은 쪽이라 컴포넌트 `max` 가 그것을 계산한다",
+                                                    "event": "onChange",
+                                                    "handler": "sirsoft-basic.updateSelectedItemQuantity",
+                                                    "params": {
+                                                        "itemIndex": "{{itemIndex}}",
+                                                        "newQuantity": "{{$args[0]}}",
+                                                        "selectedOptionItems": "{{_local.selectedOptionItems}}",
+                                                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{item.quantity}}",
+                                                "min": 1,
+                                                "max": "{{product.data?.max_purchase_qty > 0 ? Math.min(item.stock, product.data.max_purchase_qty) : item.stock}}",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-bold text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.totalPriceFormatted}}"
+                                        }
+                                    ]
+                                }
                             ]
-                          }
-                        ]
-                      }
-                    }
-                  ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "comment": "=== 총 금액 + 구매 버튼 섹션 (판매중일 때만) ===",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.sales_status === 'on_sale'}}",
+            "props": {
+                "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
+            },
+            "children": [
+                {
+                    "comment": "총 금액 (옵션 선택형 상품 - 2개 이상)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1}}",
+                    "props": {
+                        "className": "flex justify-between items-center mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:shop.total_amount ({{(_local.selectedOptionItems ?? []).reduce((sum, item) => sum + item.quantity, 0)}}$t:shop.count_unit)"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "data-testid": "purchase-total",
+                                "className": "text-xl font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "총 금액 (옵션 없거나 기본 옵션 1개뿐인 상품)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!product.data?.has_options || (product.data?.options?.length ?? 0) <= 1}}",
+                    "props": {
+                        "className": "flex justify-between items-center mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:shop.product.total_amount ({{_local.noOptionQuantity ?? 1}}$t:shop.product.count_unit)"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "data-testid": "purchase-total",
+                                "className": "text-xl font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 구매할 수 있는 옵션이 없는 상품 안내 — 판매 중인 옵션이 하나도 없으면(옵션 행 없음·전부 판매 중지)\n           아래 두 버튼이 잠기므로 그 이유를 먼저 보여 준다. 서버도 같은 상품의 담기·바로 구매를 422 로 거절한다 ===",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(Array.isArray(product.data?.options) && product.data.options.length === 0)}}",
+                    "props": {
+                        "data-testid": "no-purchasable-option",
+                        "className": "flex items-start gap-2 px-3 py-2.5 mb-3 rounded-lg border bg-gray-50 border-gray-200 dark:bg-gray-700/50 dark:border-gray-600"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "size": "sm",
+                                "className": "text-gray-500 dark:text-gray-400 mt-0.5 shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:shop.product.no_purchasable_option"
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) ===",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid md:grid-cols-2 gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{product.data?.abilities?.can_order === false}}",
+                            "props": {
+                                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+                            },
+                            "text": "$t:shop.order_permission_denied"
+                        },
+                        {
+                            "comment": "바로구매 버튼 — 판매 중인 옵션이 하나도 없는 상품은 잠근다(서버가 422 로 거절하는 상품). 옵션이 둘 이상인 상품은 선택한 옵션 라인 수량의 **합계**로 구매 한도를 판정한다. 라인별 max 만으로는 여러 라인을 합쳐 한도를 넘길 수 있다. 옵션이 없거나 하나뿐인 상품은 옵션 칸 대신 수량 선택기가 서고(위 분기와 같은 기준) 그 min/max 가 이미 막으므로 조건을 걸지 않는다 — option_groups 로 가르면 옵션 하나짜리 상품이 합계 0 으로 영영 잠긴다.",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "comment": "배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증)",
+                                            "if": "{{product.data?.is_shippable_to_selected_country === false}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.shippability.not_shippable"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "if": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 && (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.product.please_select_options"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증)",
+                                            "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id]))}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.additional_option_required"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증)",
+                                            "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required && v?.allow_custom_text === true && (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; }))}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.additional_option_custom_text_required"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "then": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isOrdering": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음)",
+                                                        "handler": "apiCall",
+                                                        "target": "/api/modules/sirsoft-ecommerce/checkout",
+                                                        "auth_mode": "optional",
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}",
+                                                            "headers": {
+                                                                "X-Cart-Key": "{{_global.cartKey}}"
+                                                            }
+                                                        },
+                                                        "onSuccess": {
+                                                            "comment": "로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨",
+                                                            "handler": "conditions",
+                                                            "conditions": [
+                                                                {
+                                                                    "if": "{{_global.currentUser?.uuid}}",
+                                                                    "then": {
+                                                                        "comment": "audit:allow layout-list-context-navigate-merge-query 주문서로 이동 — 상품 목록/상세와 다른 클러스터(주문 흐름)로 나가는 이동이다.",
+                                                                        "handler": "navigate",
+                                                                        "params": {
+                                                                            "path": "{{_global.shopBase}}/checkout"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "then": {
+                                                                        "handler": "navigate",
+                                                                        "params": {
+                                                                            "path": "/login",
+                                                                            "query": {
+                                                                                "redirect": "{{_global.shopBase}}/checkout"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isOrdering": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.errors?.message ?? error.message}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "buy-now",
+                                "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{(_local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options && (product.data?.options?.length ?? 0) > 1) && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))) || product.data?.abilities?.can_order !== true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_local.isOrdering}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "spin": true,
+                                                "size": "md"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!_local.isOrdering}}",
+                                            "text": "$t:shop.product.buy_now"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.isOrdering}}",
+                                            "text": "$t:shop.product.ordering"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "장바구니 버튼 — 구매할 수 있는 옵션이 없는 상품 잠금과 구매 한도 판정은 바로구매 버튼과 동일. 옵션 상품만 합계로 본다.",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "comment": "배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증)",
+                                            "if": "{{product.data?.is_shippable_to_selected_country === false}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.shippability.not_shippable"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "if": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 && (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.product.please_select_options"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증)",
+                                            "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id]))}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.additional_option_required"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증)",
+                                            "if": "{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required && v?.allow_custom_text === true && (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; }))}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.additional_option_custom_text_required"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "then": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isAddingToCart": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/modules/sirsoft-ecommerce/cart",
+                                                        "auth_mode": "optional",
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}",
+                                                            "headers": {
+                                                                "X-Cart-Key": "{{_global.cartKey}}"
+                                                            }
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isAddingToCart": false,
+                                                                    "selectedOptionItems": [],
+                                                                    "currentSelection": {},
+                                                                    "noOptionQuantity": 1,
+                                                                    "additionalOptions": {}
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "cartCount": "{{response.data.cart_count}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "cart_added_modal"
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isAddingToCart": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.errors?.message ?? error.message}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "add-to-cart",
+                                "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.isAddingToCart || _local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options && (product.data?.options?.length ?? 0) > 1) && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_local.isAddingToCart}}",
+                                    "props": {
+                                        "name": "shopping-cart",
+                                        "size": "lg"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.isAddingToCart}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "lg",
+                                        "className": "animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:shop.product.add_to_cart"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

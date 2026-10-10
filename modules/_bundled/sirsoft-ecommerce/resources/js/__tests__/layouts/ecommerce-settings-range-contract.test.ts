@@ -18,6 +18,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
+import claimPolicySection from '../../../layouts/admin/partials/admin_ecommerce_settings/_claim_policy_section.json';
 import tabMileageBasic from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_basic_card.json';
 import tabOrderSettings from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_order_settings.json';
 import tabReviewSettings from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_review_settings.json';
@@ -159,6 +160,12 @@ const FIELDS: Array<{ key: string; layout: any }> = [
     { key: 'order_settings.auto_cancel_days', layout: tabOrderSettings },
     { key: 'order_settings.cart_expiry_days', layout: tabOrderSettings },
     { key: 'mileage.default_earn_rate', layout: tabMileageBasic },
+    // 12차: 클레임 3축은 규칙 ↔ config ↔ 화면의 3점 파리티 중 규칙↔config 링크가 무보호였다 —
+    // 규칙에 리터럴을 되써도 `_meta.limits` 는 config 를 그대로 싣고 422 프로바이더 값은 어느
+    // 상한에서도 거절되어 전건 초록이었다.
+    { key: 'claim.max_images', layout: claimPolicySection },
+    { key: 'claim.image_max_size_kb', layout: claimPolicySection },
+    { key: 'claim.request_period_days', layout: claimPolicySection },
 ];
 
 describe('설정 화면 경계값 ↔ 서버 규칙 계약', () => {

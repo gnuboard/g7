@@ -9,7 +9,11 @@
             "gdprPolicyVersionHistory": "Policy Version History",
             "gdprPolicyVersionSnapshot": "Policy Version Snapshot",
             "gdprPublicSettings": "GDPR Public Settings",
-            "gdprSettings": "GDPR Settings"
+            "gdprSettings": "GDPR Settings",
+            "gdprNoticeLog": "Privacy notice log",
+            "gdprAnnualNoticePreview": "Annual notice target count",
+            "privacyTargets": "Annual notice target members",
+            "privacyManualRuns": "Privacy action manual run status"
         }
     },
     "consent": {
@@ -17,7 +21,8 @@
         "granted_again": "Consent has been renewed.",
         "rejected_saved": "Continuing without consent. Optional items will not be used.",
         "revoked": "Consent has been revoked.",
-        "renew_all_success": "{renewed} active consent item(s) renewed to the new policy version.",
+        "renew_all_success": "{renewed} active consent items renewed to the new policy version.",
+        "renew_all_success_one": "{renewed} active consent item renewed to the new policy version.",
         "granting": "Granting...",
         "revoking": "Revoking...",
         "renewing": "Renewing...",
@@ -56,7 +61,7 @@
         "description": "Operators control the cookie consent banner and the MyPage privacy card.",
         "section": {
             "operator": "Operator / Privacy Policy",
-            "operator_desc": "Register the operator name, data storage location, and privacy policy page slug shown in the cookie banner and policy page.",
+            "operator_desc": "Register the operator name, data storage location, and privacy policy address shown in the cookie banner and policy page.",
             "cookie_banner": "Cookie Consent Banner",
             "cookie_banner_desc": "Configure visibility, position, categories, and policy version of the cookie consent banner — all in one place.",
             "cookie_banner_settings": "Banner Display Settings",
@@ -84,10 +89,10 @@
                 "label": "Policy Version",
                 "hint": "When the policy body, category semantics, or operator/retention information changes, click \"+ Publish new version\". On publish, all members will re-consent on their next visit."
             },
-            "privacy_policy_slug": {
-                "label": "Privacy Policy Page Slug",
-                "hint": "Slug of the privacy policy page registered in the Page plugin. If empty, the policy link in the cookie banner is hidden.",
-                "placeholder": "e.g., privacy-policy"
+            "privacy_policy_url": {
+                "label": "Privacy Policy Address",
+                "hint": "Enter where your privacy policy is published. For a page on this site, use a path starting with / (e.g., /page/privacy); for another site, use a full address starting with https://. If empty, the policy link in the cookie banner is hidden.",
+                "placeholder": "e.g., /page/privacy or https://example.com/privacy"
             },
             "legal_entity_name": {
                 "label": "Legal Entity / Operator Name",
@@ -130,10 +135,12 @@
                 "warnings_title": "Notes",
                 "warning_purpose": "Only the items listed here survive without functional consent. Anything else is cleared on every visit, with no error or warning — it surfaces only as a setting that will not save.",
                 "warning_wildcard": "A trailing * matches every name with that prefix. For example g7_filters_* covers g7_filters_orders_1. The * is only allowed at the end.",
-                "warning_discovery": "The item names a newly installed extension writes are listed in that extension documentation, or visible in browser devtools (Application → Storage).",
+                "warning_discovery": "Most items an extension writes are provided by that extension itself and appear automatically under \"Provided by extensions\" below. For anything not shown there, check that extension documentation or browser devtools (Application → Storage).",
                 "warning_necessary_only": "List only what the site genuinely needs to work. Adding tracking or analytics items defeats the pre-consent blocking principle.",
                 "locked_label": "Locked items (cannot be removed)",
                 "locked_hint": "The site cannot operate without these. They cannot be removed from the list.",
+                "provided_label": "Provided by extensions (automatic)",
+                "provided_hint": "Items that active extensions provide on their own. They drop out when the extension is deactivated and are not edited here.",
                 "tag_input_placeholder": "Type an item name and press Enter (e.g., g7_locale, myplugin_*)",
                 "tag_no_options": "No suggestions. Type to add.",
                 "scope": {
@@ -223,9 +230,9 @@
             "snapshot_modal": {
                 "editor_label": "View policy version snapshot",
                 "title": "Policy version v{version} snapshot",
-                "description": "Full snapshot of settings at publication time — categories, privacy policy slug, blocked domains. Used by DPO as evidence in consent disputes.",
+                "description": "The full record of what was saved when this version was published — cookie categories, privacy policy address, blocked domains. The data protection officer (DPO) can use it as evidence in a consent dispute.",
                 "section_categories": "Cookie categories",
-                "section_privacy_policy": "Privacy policy slug",
+                "section_privacy_policy": "Privacy policy address",
                 "section_blocked_domains": "Blocked domain catalog",
                 "category_required_badge": "Required",
                 "no_categories": "No categories registered.",
@@ -233,7 +240,8 @@
                 "view_button": "View v{version} snapshot",
                 "close": "Close",
                 "open_policy_page": "Open policy page",
-                "no_policy_slug": "No privacy policy page registered."
+                "no_policy_url": "No privacy policy address registered.",
+                "legacy_slug_note": "Recorded in the previous format (page slug \"{slug}\"). Showing the address the link pointed to at the time."
             },
             "not_found": "Policy version not found.",
             "history_page_summary": "{total} total · page {current} / {last}",
@@ -330,7 +338,8 @@
             "needs_renewal_hint": "Strictly necessary cookies are essential for site operation and remain unchanged regardless of policy updates.",
             "btn_renew_all": "Renew Current Consent",
             "btn_renew_this_item": "Renew Policy",
-            "renew_all_success": "Renewed {renewed} active item(s) to the new policy version.",
+            "renew_all_success": "Renewed {renewed} active items to the new policy version.",
+            "renew_all_success_one": "Renewed {renewed} active item to the new policy version.",
             "operator_and_storage_meta": "This site is operated by {entity}, and data is stored in {location}.",
             "operator_only_meta": "This site is operated by {entity}.",
             "storage_only_meta": "User data is stored in {location}."
@@ -358,5 +367,114 @@
         "operator_and_storage_line": "This site is operated by {entity}, and data is stored in {location}.",
         "operator_only_line": "This site is operated by {entity}.",
         "storage_only_line": "User data is stored in {location}."
-    }
+    },
+    "annual_notice": {
+        "title": "Annual privacy notice",
+        "description": "Notify active members annually once they have been registered for one year.",
+        "policy_hint": "Before enabling, explain the notices in your privacy policy and verify the data collected, purposes and retention periods.",
+        "enabled": "Enable automatic notices",
+        "channels": "Delivery channels",
+        "mail": "Email",
+        "database": "Site notification",
+        "batch_size": "Recipients per run (1–1,000)",
+        "introduction": "Introduction",
+        "test_send": "Send a test to me",
+        "test_queued": "Test queued. Check the log for delivery results.",
+        "save_before_test": "Save settings first. Tests do not change the annual notice schedule.",
+        "log_title": "Privacy notice log",
+        "log_description": "Requests and per-channel results are recorded separately. Queued does not mean delivered.",
+        "total": "{count} events",
+        "total_one": "{count} event",
+        "empty": "No notice history.",
+        "created_at": "Recorded at",
+        "user_id": "Member ID",
+        "status": "Status",
+        "kind": "Kind",
+        "test": "Test",
+        "scheduled": "Scheduled",
+        "targets": {
+            "count": "Due this cycle: {{count}}",
+            "view": "View targets",
+            "row_label": "Annual privacy usage notice",
+            "title": "Members due for the annual notice",
+            "hint": "Shows how many members would be notified even while this is off. Each run sends at most the send limit.",
+            "total": "{{count}} in total",
+            "empty": "There are no targets.",
+            "loading": "Loading...",
+            "close": "Close",
+            "editor_label": "Annual notice recipients"
+        },
+        "manual_run": {
+            "run": "Run now",
+            "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+            "status_active": "{{status}} — queued {{at}} · {{by}}",
+            "last_completed": "Last manual send: {{at}} · {{by}} · {{count}} queued · {{remaining}} remaining",
+            "last_failed": "Last manual send failed: {{at}} · {{by}} — {{error}}",
+            "unknown_requester": "Unknown",
+            "modal_title": "{{target}} — manual run",
+            "confirm_desc": "Queue the notice once now without waiting for the scheduler. Each run queues up to the batch limit; run again to continue with the rest. Members who already received it this cycle are skipped.",
+            "count_label": "Due this cycle",
+            "count_value": "{{count}} members",
+            "count_value_one": "{{count}} member",
+            "loading": "Counting...",
+            "mode_label": "Method",
+            "modes": {
+                "anonymize": "Anonymize",
+                "delete": "Delete",
+                "erase_ip": "Erase author IP"
+            },
+            "disabled_notice": "Automatic annual notices are off. A manual run ignores the toggle and queues once with the saved channels and text.",
+            "irreversible": "Queued notices cannot be cancelled. Make sure the text and channels are saved before running.",
+            "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+            "cancel": "Cancel",
+            "execute": "Run",
+            "executing": "Queuing...",
+            "queued_toast": "The notice has been queued. The result will appear when it finishes.",
+            "queue_failed": "Could not queue the run.",
+            "preview_failed": "Could not load the target count.",
+            "editor_label": "Annual notice manual send"
+        }
+    },
+    "edit_template": "Edit template",
+    "reset": "Restore defaults",
+    "notification_definitions": {
+        "reset_success": "Notification has been reset to default.",
+        "reset_failed": "Failed to reset notification.",
+        "reset_modal": {
+            "title": "Reset to Default",
+            "confirm_message": "All channel templates of this notification will be restored to defaults.",
+            "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+            "target_label": "Target:",
+            "btn_confirm": "Reset",
+            "btn_confirming": "Resetting..."
+        },
+        "save_success": "Notification settings saved successfully.",
+        "save_error": "Failed to save notification settings.",
+        "edit_modal": {
+            "title": "Edit Notification Template",
+            "type_label": "Type:",
+            "channel_label": "Channel:",
+            "subject": "Subject",
+            "body": "Body",
+            "variables_title": "Available Variables",
+            "btn_preview": "Preview",
+            "validation_error": "Please check the input fields."
+        },
+        "preview_modal": {
+            "title": "Notification Preview",
+            "rendered_subject": "Rendered Subject",
+            "rendered_body": "Rendered Body",
+            "btn_close": "Close"
+        },
+        "card_description": "Choose delivery channels for each notification and edit per-channel subject, body and recipients. Definitions added by this extension do not appear on the core notification list.",
+        "empty_message": "No notification definitions yet.",
+        "forbidden_message": "You do not have permission to view notification templates. Ask an administrator who can manage notifications to change them.",
+        "load_failed_message": "Could not load the notification definitions. Refresh the page and try again later."
+    },
+    "notification_channels": "Delivery channels",
+    "save_channels": "Save channels",
+    "cancel": "Cancel",
+    "channel_template_missing": "No template for this channel — nothing will be sent",
+    "notifications": "Notification templates",
+    "plugin_read_only": "You do not have permission to change privacy settings, so they are shown read-only."
 }

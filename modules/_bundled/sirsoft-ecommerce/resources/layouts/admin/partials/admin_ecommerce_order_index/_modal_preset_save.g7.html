@@ -1,0 +1,18 @@
+<!-- 지금 걸린 검색 조건을 이름 붙여 저장하는 창.
+  **아직 시안이다** — 이름 입력칸이 어디에도 매이지 않았고 저장 버튼은 창을 닫기만 한다.
+  같은 이름의 창이 주문 목록 화면(`admin_ecommerce_order_list`)에도 있고 그쪽이 배선된 정본이다
+  — 거기서는 저장할 조건 20여 개를 여는 쪽이 전역에 담아 넘긴다. -->
+<partial description="Save Search Preset Modal">
+  <modal data-type="composite" data-ref="modal_preset_save" title="$t:sirsoft-ecommerce.admin.order.modal.preset_save.title" size="sm">
+    <footer>
+      <button type="button" class="btn btn-primary w-full">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.order.modal.preset_save.save
+      </button>
+    </footer>
+    <p class="text-secondary text-sm mb-6">$t:sirsoft-ecommerce.admin.order.modal.preset_save.description</p>
+    <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder" class="input"/>
+  </modal>
+</partial>

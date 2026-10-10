@@ -1,0 +1,64 @@
+feature: 관리자 페이지 화면(목록·등록/수정 폼·상세) 레이아웃 계약
+
+description: |
+  관리자 페이지 목록(admin_page_list)·등록/수정 폼(admin_page_form)·상세(admin_page_detail) 레이아웃 JSON 이
+  지켜야 할 계약을 화면 영역별로 고정한다 — 데이터 소스와 오류 처리, 권한(abilities)에 따른 버튼 비활성,
+  모달·이동 대상, 발행 필터, 읽기 전용 모드, 슬러그 중복 확인, 첨부 업로더, 공용 스타일 자산.
+
+  기존 레이아웃 계약 테스트(admin-page-layouts.test.ts)의 소유권을 7.1.0 abilities 게이트 작업 중 시험 파일을 고치며
+  테스트별로 사후 매핑했다. 축 case 는 화면과 영역을 묶은 단위이고, 한 영역의 여러 테스트가 같은 효과를 함께 받친다.
+  첨부 순서·폼 잔존·버전 변경 라벨 효과(edit_mode_drag_persists_via_reorder_api 등)는
+  page-attachment-order-and-seo-cache.yaml 이 선언하고 이 파일의 해당 테스트가 같은 이름으로 마킹한다.
+
+axes:
+  case:
+    - list_data_source
+    - list_data_grid
+    - list_abilities
+    - list_actions
+    - list_columns
+    - list_published_filter
+    - list_search
+    - list_styles
+    - form_data_source
+    - form_save
+    - form_uploader
+    - form_slug
+    - form_read_only
+    - form_field_layout
+    - form_reset_on_create
+    - form_styles
+    - detail_data_source
+    - detail_actions
+    - detail_abilities
+    - detail_attachments
+    - detail_versions
+    - detail_styles
+
+effects:
+  # 목록
+  - admin_page_list_fetches_pages_with_paging_and_403_handling
+  - admin_page_list_data_grid_binds_server_paged_rows
+  - admin_page_list_actions_follow_abilities
+  - admin_page_list_modals_and_create_button_call_expected_targets
+  - admin_page_list_title_and_slug_columns_link_to_public_page
+  - admin_page_list_published_filter_select_drives_query
+  - admin_page_list_search_state_stays_local
+  - admin_page_list_buttons_use_semantic_classes
+  # 등록/수정 폼
+  - admin_page_form_loads_page_and_initialises_state
+  - admin_page_form_save_uploads_then_submits_with_temp_key
+  - admin_page_form_uploader_targets_admin_attachment_api
+  - admin_page_form_slug_check_resets_and_excludes_current_page
+  - admin_page_form_read_only_disables_inputs_and_hides_save
+  - admin_page_form_fields_use_shared_form_assets
+  - admin_page_form_error_box_and_action_buttons_use_semantic_classes
+  # 상세
+  - admin_page_detail_loads_page_and_versions_with_error_handling
+  - admin_page_detail_actions_and_modals_call_expected_targets
+  - admin_page_detail_actions_follow_abilities
+  - admin_page_detail_attachment_list_renders_each_item
+  - admin_page_detail_cards_and_buttons_use_semantic_classes
+
+test_files:
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-layouts.test.ts

@@ -69,7 +69,26 @@
         "tax_breakdown_title": "Tax Breakdown",
         "supply_amount": "Supply Amount",
         "vat_amount": "VAT",
-        "tax_free_amount": "Tax-Free Amount"
+        "tax_free_amount": "Tax-Free Amount",
+        "receipt_print": "Print",
+        "loading": "Loading...",
+        "cbt_confirmation_title": "KG Inicis CBT payment confirmation",
+        "vbank_title": "Virtual Account Deposit Guide",
+        "vbank_bank": "Bank",
+        "vbank_bank_code": "Bank code",
+        "vbank_account_number": "Account number",
+        "vbank_holder": "Account holder",
+        "vbank_amount": "Deposit Amount",
+        "vbank_due": "Deposit deadline",
+        "vbank_notice": "Your order will be automatically cancelled if payment is not received by the deadline.",
+        "cvs_title": "Japan convenience store deposit details",
+        "cvs_status": "Status",
+        "cvs_due_amount": "Amount due",
+        "cvs_code": "Convenience store code",
+        "cvs_confirmation_no": "Confirmation number",
+        "cvs_receipt_no": "Receipt number",
+        "cvs_payment_term": "Deposit deadline",
+        "easy_pay_label": "Easy pay"
     },
     "admin": {
         "test_mode_badge": "Test Payment",
@@ -189,6 +208,7 @@
         "escrow_delivery_invoice_placeholder": "Enter invoice number",
         "escrow_delivery_courier_label": "Courier",
         "escrow_delivery_courier_placeholder": "Select courier",
+        "escrow_delivery_courier_etc": "Other",
         "escrow_delivery_register_button": "Register",
         "escrow_delivery_change_button": "Update",
         "escrow_delivery_registering": "Registering...",
@@ -208,7 +228,9 @@
         "escrow_deny_confirm_done": "Denial Confirmed",
         "escrow_deny_confirm_done_at": "Confirmed At",
         "escrow_deny_confirm_status_label": "Purchase Status",
-        "escrow_deny_confirm_buyer_denied": "Denied by Buyer"
+        "escrow_deny_confirm_buyer_denied": "Denied by Buyer",
+        "escrow_deny_confirm_buyer_denied_at": "Date",
+        "easy_pay_provider": "Easy pay: {{provider}}"
     },
     "settings": {
         "title": "KG Inicis Settings",
@@ -242,6 +264,9 @@
         "easy_pay_lpay_hint": "Enable KG Inicis L.pay. Enter your live KG Inicis merchant ID and web sign key before live payments.",
         "easy_pay_kakaopay": "Enable Kakao Pay (KG Inicis)",
         "easy_pay_kakaopay_hint": "Enable KG Inicis Kakao Pay. Enter your live KG Inicis merchant ID and web sign key before live payments.",
+        "section_general_options": "General Payment Options",
+        "use_credit_point": "KG Inicis Credit Card Point Payment",
+        "use_credit_point_hint": "Applies only to stores that have a credit card point payment contract with Inicis. When enabled, PC checkout shows a popup asking whether to use credit card points, and mobile checkout allows credit card points.",
         "section_japan": "Japan Payment (CBT)",
         "section_japan_hint": "Settings for Japanese Yen (JPY) payments via KG Inicis CBT (Cross Border Trade).",
         "japan_enabled": "Enable Japan Payment",
@@ -303,7 +328,7 @@
         "redirect_success_url": "Payment Success Redirect URL",
         "redirect_success_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL (https://...). {orderId} will be replaced with the actual order number.",
         "redirect_fail_url": "Payment Failure Redirect URL",
-        "redirect_fail_url_hint": "Supports relative paths or full URLs. Error details are appended as query parameters.",
+        "redirect_fail_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL. Error details are appended as query parameters.",
         "section_vbank_notify": "Virtual Account Deposit Notification URL (PC)",
         "vbank_notify_hint": "Register this URL as the PC virtual account deposit notification URL in the KG Inicis merchant admin.",
         "vbank_notify_copied": "URL copied to clipboard.",
@@ -313,5 +338,6 @@
         "error": {
             "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

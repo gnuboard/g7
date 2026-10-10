@@ -38,3 +38,5 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/CashReceiptResourceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/cash-receipt-lifecycle.spec.ts
+  # 공개 결제설정이 발급사를 등록된 확장이 있을 때만 싣는지(체크아웃 신청 폼 렌더 조건)
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-cash-receipt.spec.ts

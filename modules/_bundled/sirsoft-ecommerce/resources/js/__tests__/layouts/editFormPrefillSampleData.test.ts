@@ -10,9 +10,9 @@
  * 실제 Resource shape 대조: ShippingPolicyResource(+CountrySetting) / CouponResource /
  * CouponIssueResource.
  *
- * 바인딩 SSoT: admin_ecommerce_shipping_policy_form.json (Form dataKey=form: name/is_active/
- * is_default + country_settings[]), admin_ecommerce_promotion_coupon_form.json (Form dataKey=form),
- * admin_ecommerce_promotion_coupon_list.json (couponIssues 발급내역 모달).
+ * 바인딩 SSoT: admin_ecommerce_shipping_policy_form.g7.html (Form dataKey=form: name/is_active/
+ * is_default + country_settings[]), admin_ecommerce_promotion_coupon_form.g7.html (Form dataKey=form),
+ * admin_ecommerce_promotion_coupon_list.g7.html (couponIssues 발급내역 모달).
  */
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';

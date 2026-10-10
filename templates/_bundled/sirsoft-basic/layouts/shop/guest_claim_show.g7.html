@@ -1,0 +1,158 @@
+<!-- 비회원 클레임 신청서 상세 셸 (§6-2 · S14). 회원 셸(mypage/claims/show.json)과 **같은 partial 9종**을 무수정으로 재사용하고, 이 파일은 데이터소스 주소와 셸 계약값만 바꾼다. 공유 partial 은 회원/비회원을 스스로 판단하지 않는다 — `_global.currentUser` 를 읽는 노드가 한 곳도 없어야 하며(계약 테스트가 고정), 인증 차이는 이 셸이 흡수한다.
+비회원 클레임 API 는 전부 주문 스코프다(`guest/orders/{주문번호}/claims/...`). 그런데 이 화면의 주소(`{shopBase}/guest/claims/{번호}`)에는 주문번호가 없다 — 조회 토큰이 주문 하나에 묶여 있으므로 그 짝인 주문번호가 곧 스코프이며, 토큰과 같은 자리에서 세워지는 `_global.guestOrderNumber`(initGuestOrderToken)가 그 값을 준다. 주소에 주문번호를 넣지 않는 것은 §5-3 이 정한 라우트 모양이고, 서버측 주소 SSoT(`ClaimUrl::GUEST_DETAIL`)도 같은 모양이다.
+셸이 세우는 계약값 — isGuest / claimWithdrawApiBase / claimPayApiBase (작성 화면이 쓰는 claimApiBase · imageDeleteBase · claimEditApiBase 는 shop/guest_claim_apply.json 소관이다). 회원은 철회·수정·결제가 주문 스코프가 **없고**(`/user/claims`, `/user/claim-payments`) 비회원은 **있다**. 앞부분을 통째로 셸이 주는 이유는 두 라우트의 모양이 달라 핸들러가 조립하면 한쪽이 404 가 되기 때문이다.
+레이아웃 initLocal 은 값을 **표현식 해석 없이 그대로** 복사한다(TemplateApp: JSON deep clone). 그래서 주문번호가 필요한 주소는 여기 둘 수 없고 — 두면 `{{_global.guestOrderNumber}}` 라는 문자열 자체가 주소에 실린다 — init_actions 의 setState 가 세운다. 정적인 값만 이 자리에 남긴다. -->
+<layout name="shop/guest_claim_show" version="1.0.0" extends="_user_base">
+  <meta title="$t:shop.guest_claim_show.page_title" description="$t:shop.guest_claim_show.page_description"/>
+  <!-- 이 데이터소스는 **blocking 이면 안 된다**. 코어는 blocking 데이터소스를 렌더 전에 먼저 발행하는데(TemplateApp), 조회 토큰을 `_global` 에 세우는 것은 부모 레이아웃의 init_actions(initGuestOrderToken)이고 그것은 그보다 **뒤에** 실행된다. blocking 으로 두면 토큰 헤더가 빈 채 요청이 나가 404 가 되고, 그 404 가 토큰을 폐기하며 조회 폼으로 튕긴다 — 유효한 토큰을 손에 쥔 사용자에게도 그렇게 된다(2026-09-01 브라우저 실측). 빈 화면 노출은 blur_until_loaded 가 막는다 (guest_order_show 와 같은 처방).
+토큰은 이 데이터소스에 명시 주입한다 — _user_base 의 globalHeaders 광역 패턴에 기대면 회원 라우트에도 토큰이 실릴 수 있다(guest_order_show 와 같은 규율).
+철회·수정 뒤 이 화면으로 돌아오므로 캐시된 응답을 쓰면 방금 바꾼 내용이 보이지 않는다. 상태는 운영자 쪽에서도 바뀌므로 진입할 때마다 다시 읽는다.
+토큰이 없거나 만료됐거나 다른 주문의 신청서면 404 다(존재 여부를 드러내지 않는다). 그때는 남은 토큰을 비우고 조회 폼으로 돌려보낸다 — 비우지 않으면 다음 진입이 만료된 토큰을 다시 들고 같은 404 를 반복한다(guest_order_show 와 같은 흐름). -->
+  <data-source id="claim" label_key="$t:editor.data_source.claim" type="api" endpoint="/api/modules/sirsoft-ecommerce/guest/orders/{{_global.guestOrderNumber ?? 0}}/claims/{{route.claim_number}}" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" :cache="false" :refetchOnMount="true">
+    <headers X-Guest-Order-Token="{{_global.guestOrderToken}}"/>
+    <success>
+      <!-- 주문번호를 세운 뒤 주문 상세를 부른다. 두 액션은 반드시 같은 sequence 안에 있어야 한다 — refetchDataSource 가 읽는 로컬 상태는 직전 setState 의 pending 값이다. -->
+      <sequence>
+        <set-state target="_local" claimOrderNumber="{{response.data.data.claim.order_number}}"/>
+        <refetch-data-source dataSourceId="order"/>
+      </sequence>
+    </success>
+    <error-handling>
+      <on-code code="401">
+        <sequence>
+          <action handler="clearGuestOrderToken"/>
+          <toast type="warning" message="{{error.message ?? '$t:shop.order_complete.guest_token_expired'}}"/>
+          <navigate path="{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}"/>
+        </sequence>
+      </on-code>
+      <on-code code="404">
+        <sequence>
+          <action handler="clearGuestOrderToken"/>
+          <toast type="warning" message="{{error.message ?? '$t:shop.order_complete.guest_token_expired'}}"/>
+          <navigate path="{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}"/>
+        </sequence>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 원 주문 — 주문자/배송지/결제 정보 정본 partial 이 읽는 데이터소스다. 주문번호는 신청서가 알려 주므로 **스스로 부르지 않는다**(auto_fetch: false). auto_fetch 를 켜 두면 주문번호를 모르는 첫 호출이 나가고, 그 404 가 체인의 200 **뒤에** 해소되면서 이미 받아 둔 주문을 덮어 쓴다(2026-09-01 회원 상세 실측 결함 ⓐ — 대비표의 '원 주문' 열과 결제 정보 금액이 통째로 비었다). refetchDataSource 는 auto_fetch 를 무시하고 부르므로 체인은 그대로 동작한다. -->
+  <data-source id="order" label_key="$t:editor.data_source.order" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{_local.claimOrderNumber ?? 0}}" method="GET" :auto_fetch="false" auth_mode="optional" loading_strategy="progressive" :cache="false">
+    <headers X-Guest-Order-Token="{{_global.guestOrderToken}}"/>
+    <error-handling>
+      <on-code code="404">
+        <!-- 주문을 읽지 못해도 신청서 화면은 선다 — 주문 쪽 카드(주문자·결제 정보)만 비고, 신청서 자신의 값은 claim 데이터소스가 갖는다. 여기서 토큰을 비우면 정상 경로(첫 호출)가 화면을 닫는다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="comment" value="배송지 카드를 조회 전용으로 연다 — 이 화면에는 배송지 변경 모달이 없어 버튼을 두면 눌리지 않는 버튼이 생긴다(회원 셸과 같은 근거)."/>
+    <field name="isGuest" :value="true"/>
+    <field name="withdrawRefreshDataSourceId" value="claim"/>
+    <field name="orderShippingReadonly" :value="true"/>
+  </init-local>
+  <permissions/>
+  <init>
+    <!-- 주문 스코프 주소 두 개를 세운다 — 이 화면이 부르는 API 는 철회와 추가결제뿐이다(수정은 화면 이동이고 첨부 삭제는 작성 화면 소관이라, 그 주소를 여기 두면 쓰이지 않는 값이 살아 있는 배선처럼 보인다). 회원 상세 셸이 세우는 것과 같은 키 집합이다. `_global.guestOrderNumber` 는 부모 레이아웃(_user_base)의 initGuestOrderToken 이 이미 세웠다 — 부모 init_actions 가 자식보다 먼저 실행되고(LayoutService::mergeInitActions), 액션마다 데이터 컨텍스트의 _global 이 갱신된다. `_local` 을 읽지 않는다는 규율(2026-09-01 실측 결함 ⓑ)은 그대로다: init_actions 시점에 비어 있는 것은 `_local` 이지 `_global` 이 아니다. -->
+    <set-state target="local" claimWithdrawApiBase="{{'/api/modules/sirsoft-ecommerce/guest/orders/' + (_global.guestOrderNumber ?? '') + '/claims'}}" claimPayApiBase="{{'/api/modules/sirsoft-ecommerce/guest/orders/' + (_global.guestOrderNumber ?? '') + '/claim-payments'}}"/>
+  </init>
+  <slot name="content">
+    <!-- blur_until_loaded — 신청서 응답 도착 전까지 콘텐츠를 가린다. 데이터소스를 blocking 으로 두지 못하는 자리(위 _comment_loading_strategy)라 빈 화면 노출은 이 게이트가 막는다. -->
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <blur-until-loaded>
+        <item>claim</item>
+      </blur-until-loaded>
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 뒤로가기 — 비회원에게는 신청내역 목록이 없다(토큰이 주문 하나에 묶인다). 그래서 돌아갈 곳은 이 주문의 상세이며, 그 화면의 '이 주문의 클레임' 섹션이 곧 비회원의 목록이다. -->
+        <div class="flex items-center gap-2 mb-4">
+          <!-- 돌아갈 주문번호는 신청서 응답의 값을 먼저 읽고, 없으면 조회 토큰의 짝 주문번호를 쓴다. 쿼리를 물려주므로 주문 상세의 클레임 목록이 보던 서브탭·페이지로 다시 열린다. -->
+          <button type="button" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+            <on type="click">
+              <navigate path="{{_global.shopBase}}/guest/orders/{{claim.data?.claim?.order_number ?? _global.guestOrderNumber ?? ''}}" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="chevron-left" class="text-base"/>
+            <span class="text-base font-medium">$t:claim.detail.back_to_order</span>
+          </button>
+        </div>
+        <!-- 상태 헤더 — 클레임번호·유형·상태·신청일 + [수정][철회]. 노출 조건은 서버 판정(is_editable / is_withdrawable)이며 회원 화면의 것과 같은 값을 쓴다. -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 mb-4">
+          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4 mb-3"/>
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{claim.data?.claim?.claim_type_label ?? ''}}</h1>
+                <!-- 출처 뱃지 — 회원 상세와 같은 서버 필드(`request_source`)를 그린다. 비회원 주문도 판매자가 대신 접수할 수 있다(D8). -->
+                <span data-if="{{claim.data?.claim?.request_source === 'admin'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{{claim.data?.claim?.request_source_label ?? ''}}</span>
+                <span>
+                  <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{claim.data?.claim?.status_variant}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                    <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+                    <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
+                    <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
+                    <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                    <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                    <variant when="secondary">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+                    <variant when="dark">bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200</variant>
+                  </class-map>
+                  <!-- 상태 아이콘 — 서버가 상태 Enum 에서 실어 준 값(status_icon). 진행 단계 스텝퍼와 같은 그림이다. -->
+                  <icon data-if="{{!!claim.data?.claim?.status_icon}}" name="{{claim.data?.claim?.status_icon}}" class="text-xs"/>
+                  <span>{{claim.data?.claim?.status_label ?? ''}}</span>
+                </span>
+              </div>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{claim.data?.claim?.claim_number ?? ''}}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:claim.list.requested_at|at={{claim.data?.claim?.requested_at_formatted ?? ''}}</p>
+              <!-- 원 주문으로 — 신청서에서 주문을 되짚어 볼 수 있어야 한다. 비회원의 주문 상세는 조회 토큰으로 열리며 같은 토큰이 이 화면도 열었다. -->
+              <button data-if="{{!!claim.data?.claim?.order_number}}" type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 cursor-pointer">
+                <on type="click">
+                  <!-- audit:allow layout-list-context-navigate-merge-query 주문 상세로 나가는 이동 — 이 화면의 목록 상태(유형 서브탭·페이지)는 주문 상세가 알지 못하는 파라미터다. -->
+                  <navigate path="{{_global.shopBase}}/guest/orders/{{claim.data?.claim?.order_number}}"/>
+                </on>
+                $t:claim.list.order_number|number={{claim.data?.claim?.order_number ?? ''}}
+              </button>
+              <!-- 판매자 접수 안내(D8) — 판매자가 접수한 신청은 고객이 고치거나 철회할 수 없다. 버튼이 사라진 이유를 알려 주고 문의 경로를 남긴다. 끝난 신청서에는 더 할 일이 없으므로 세우지 않는다. -->
+              <p data-if="{{claim.data?.claim?.request_source === 'admin' &amp;&amp; claim.data?.claim?.is_final !== true}}" class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">$t:claim.detail.admin_requested_notice</p>
+            </div>
+            <div data-if="{{claim.data?.claim?.is_editable === true || claim.data?.claim?.is_withdrawable === true}}" class="flex items-center gap-2 flex-shrink-0">
+              <button data-if="{{claim.data?.claim?.is_editable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                <on type="click">
+                  <!-- 수정 화면 주소 — .../claims/{번호}/edit 의 **위치**로 번호를 읽는다(resolveClaimEditNumber). 접두사(EX/RT/…)로 유형을 가르지 않으므로 회원과 같은 핸들러가 이 주소도 해석한다. -->
+                  <navigate path="{{_global.shopBase}}/guest/claims/{{claim.data?.claim?.claim_number}}/edit" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </on>
+                $t:claim.list.edit
+              </button>
+              <!-- [철회] — 회원 상세와 같은 확인 모달을 연다. 비회원 철회 주소는 주문 스코프가 붙은 모양이라, 그 앞부분은 이 셸이 진입 때 세운 값을 모달이 읽는다. -->
+              <button data-if="{{claim.data?.claim?.is_withdrawable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
+                <on type="click">
+                  <action handler="sirsoft-ecommerce.openClaimWithdraw" claimNumber="{{claim.data?.claim?.claim_number}}" claimLabel="{{claim.data?.claim?.claim_type_label ?? ''}}"/>
+                </on>
+                $t:claim.list.withdraw
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- 본문 섹션 — 회원 상세와 **같은 partial 을 같은 순서로** 마운트한다. 한쪽에만 섹션을 더하면 같은 신청서가 회원/비회원에서 다른 내용을 보여 준다. -->
+        <div class="space-y-4">
+          <responsive on="portable" class="space-y-3"/>
+          <include src="partials/mypage/claims/_detail_progress.g7.html"/>
+          <include src="partials/mypage/claims/_detail_items.g7.html"/>
+          <include src="partials/mypage/claims/_detail_shipping.g7.html"/>
+          <include src="partials/mypage/claims/_detail_claim_info.g7.html"/>
+          <include src="partials/mypage/claims/_detail_reason.g7.html"/>
+          <!-- 주문자 정보 — 주문 상세 정본 재사용(order.data.orderer_* 바인딩, 액션 0개). -->
+          <include src="partials/mypage/orders/_orderer.g7.html"/>
+          <!-- 배송지 정보 — 주문 상세 정본 재사용. 조회 전용으로 연다(initLocal.orderShippingReadonly). -->
+          <include src="partials/mypage/orders/_shipping.g7.html"/>
+          <!-- 결제 정보 — 주문 상세 정본 재사용(order.data 금액 바인딩, 액션 0개). 클레임 추가결제 합계 행도 이 파일이 이미 그린다. -->
+          <include src="partials/mypage/orders/_payment.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+  <!-- 철회 확인 — 회원 화면과 같은 파일. 철회 뒤에는 이 화면의 신청서를 다시 읽어 상태가 바뀐 것이 보이게 한다(withdrawRefreshDataSourceId). -->
+  <modal src="partials/mypage/claims/_modal_withdraw.g7.html"/>
+  <!-- 첨부 확대 — 사유 카드(_detail_reason)의 사진 클릭이 이 모달을 연다. 마운트하지 않으면 클릭이 무반응이 된다(오류도 남지 않는다). -->
+  <modal src="partials/mypage/claims/_modal_image_viewer.g7.html"/>
+</layout>

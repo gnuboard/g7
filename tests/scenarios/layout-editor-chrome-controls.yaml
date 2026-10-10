@@ -1,3 +1,5 @@
+# audit:allow test-scenario-coverage reason: 9축 cross product 는 105,840 조합이라 E2E 전수 전개가 불가능하다. 축별 판정은 test_files 의 단위/렌더 테스트(useDevicePreview 클램프·overlayGeometry 44px 임계·EditorToolbar hover/outline·ComponentPalette 태그 배지·admin-template-layout-edit replaceUrl)가 커버하고, 브라우저 통합은 chrome-controls.spec.ts(코어 chrome) + code-editor-route-sync.spec.ts(템플릿 소유 코드편집기)가 나눠 맡는다. effects 15건은 @effects 마킹으로 전건 커버(미커버 0)이며 이 면제는 cross_product 축에만 적용된다.
+
 feature: 레이아웃 편집기 chrome 컨트롤 (디바이스 custom width / 툴바 나가기·코드편집·저장 스피너·hover / 오버레이 겹침 회피 / 팔레트 태그)
 phase: 3
 session: S5b-pre
@@ -40,9 +42,12 @@ sub_flows:
   - id: code_editor_route_sync
     description: |
       코드편집기(텍스트 화면)의 `?route=` 쿼리 동기화. 진입 경로별로 쿼리를 싣거나 비운다.
-      축: code_editor_entry(from_wysiwyg_with_route·direct_route_query·file_select_in_editor·extension_select_in_editor)
+      축: code_editor_entry(from_wysiwyg_with_route·direct_route_query·no_route_query·stale_selection_from_other_template) ×
+          file_select_in_editor · extension_select_in_editor
     effects:
       - code_editor_restores_layout_from_route_query
+      - code_editor_defaults_to_first_layout_without_route_query
+      - code_editor_clears_selection_left_over_from_another_template
       - code_editor_file_select_syncs_route_query
       - code_editor_extension_select_clears_route_query
   - id: overlay_affordance_placement
@@ -67,6 +72,8 @@ effects:
   - toolbar_exit_navigates_to_template_list_by_type
   - toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route
   - code_editor_restores_layout_from_route_query
+  - code_editor_defaults_to_first_layout_without_route_query
+  - code_editor_clears_selection_left_over_from_another_template
   - code_editor_file_select_syncs_route_query
   - code_editor_extension_select_clears_route_query
   - toolbar_save_shows_spinner_while_pending_then_restores
@@ -92,7 +99,7 @@ notes:
   - overlayGeometry.affordancePlacement.test.ts 가 selected_box_size × affordance_kind cross 의 핵심 판정(resolveAffordancePlacement)을 단위로 커버. affordance_kind=insertion_cross 는 resolveInsertionCrossOffsets(박스 중심 십자 배치) 단위 + 2×2 극단 대각 비겹침을 검증.
   - insertion_cross 결함 7 재조사: info/lock/nav 는 박스 우측 바깥 세로 분산(ElementOverlay), 4방향 삽입(+)은 박스 중심 십자(InsertionAffordances). 작은 박스가 캔버스 가장자리에 있을 때 박스 밖 버튼 잘림은 오버레이를 frame(overflow:hidden) 형제 레이어(g7le-overlay-layer, overflow:visible)로 분리해 해결 — chrome-controls.spec.ts 가 비겹침·비잘림·십자 대칭을 브라우저로 가드.
   - chrome-controls.spec.ts(코어) 는 위지윅 chrome 책임만 — toolbar_action(exit/edit_code/save) + preview_device(custom width) + code_editor_entry=from_wysiwyg_with_route(handleEditCode 가 ?route= 를 실어 이탈). 코드편집기(텍스트 화면) 자체 동작은 템플릿 소유이므로 분리.
-  - code-editor-route-sync.spec.ts(sirsoft-admin_basic 템플릿) 는 code_editor_entry=direct_route_query(?route= 직접 진입 복원) + 무쿼리 기본 선택 보존을 커버. 코드편집기 레이아웃(admin_template_layout_edit.json)이 템플릿 소유이므로 템플릿 자체 E2E 디렉토리에 위치.
+  - code-editor-route-sync.spec.ts(sirsoft-admin_basic 템플릿) 는 code_editor_entry=direct_route_query(?route= 직접 진입 복원) + 무쿼리 기본 선택 보존을 커버. 코드편집기 레이아웃(admin_template_layout_edit.g7.html)이 템플릿 소유이므로 템플릿 자체 E2E 디렉토리에 위치.
   - edited_template_type 축: 나가기 목적지가 /admin/templates/{type} 로 분기됨. LayoutEditorChrome 이 /api/admin/templates/{id} 로 type 조회(미확정 시 user fallback). E2E 는 user(sirsoft-basic) 경로를 커버하고, admin 분기 단위 가드는 추후 보강.
   - code_editor_entry × route_path: 코드편집기 ?route= ↔ 레이아웃 매핑은 백엔드 TemplateService.getLayoutRoutePathMap 가 SSoT(layouts API route_path). file_select/extension_select 의 replaceUrl 동기화는 admin-template-layout-edit.test.tsx 가 JSON 구조로, direct_route_query 복원은 chrome-controls.spec.ts 가 브라우저로 커버.
   - toolbar_button_state=focused_after_click: 클릭 후 브라우저 기본 focus outline 잔류(검정 테두리) 회귀 가드 — EditorToolbar.test.tsx 가 outline:none 적용을 단위로 검증.

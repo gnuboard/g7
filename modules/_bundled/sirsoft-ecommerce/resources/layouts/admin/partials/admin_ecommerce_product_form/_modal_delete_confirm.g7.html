@@ -1,0 +1,72 @@
+<!-- 상품 폼 — 삭제 확인. 폼이 열기 전에 서버에 물어 둔 삭제 가능 여부(`_global.deleteProduct`)로
+  두 얼굴을 갖는다 — 지울 수 있으면 무엇을 지우는지 보여 주고, 못 지우면 그 사유를 보여 준다. -->
+<partial description="Product Form - Delete Confirmation Modal">
+  <modal data-type="composite" data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.delete.title" size="sm">
+    <!-- 삭제 가능 분기 — 목록 모달과 동일하게 can-delete 선행 결과로 분기 -->
+    <div data-if="{{_global.deleteProduct?.canDelete}}">
+      <div class="text-center">
+        <div class="flex-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 justify-center">
+          <icon name="triangle-exclamation" class="text-[2rem] text-red-500 dark:text-red-400"/>
+        </div>
+        <p class="text-primary text-lg font-medium mb-2">$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question</p>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-4">
+          <div class="flex-center justify-center gap-3">
+            <div data-if="{{_local.form.images?.length > 0}}" class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+              <img src="{{_local.form.images?.[0]?.download_url}}" alt="" class="w-full h-full object-cover"/>
+            </div>
+            <div data-if="{{!_local.form.images?.length}}" class="flex-center w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
+              <icon name="image" class="text-xl text-gray-400 dark:text-gray-500"/>
+            </div>
+            <div class="text-left">
+              <p class="text-primary font-medium text-sm">{{$localized(_local.form.name)}}</p>
+              <p class="text-tertiary">{{_local.form.product_code ?? ''}}</p>
+            </div>
+          </div>
+        </div>
+        <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message</p>
+        <div class="alert-warning">
+          <div class="flex-start gap-2">
+            <icon name="exclamation-circle" class="text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+            <p class="text-warning-soft text-left">$t:sirsoft-ecommerce.admin.product.modal.delete.permanent_warning</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 삭제 불가 분기 — 주문 이력 등으로 삭제 불가 시 사유 노출 -->
+    <div data-if="{{_global.deleteProduct?.canDelete === false}}">
+      <alert data-type="composite" type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProductDeleting}}">
+        <on type="click">
+          <close-modal target="modal_delete_confirm"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}">
+        <on type="click">
+          <!-- 삭제 — 성공하면 목록으로 나간다(지워진 상품의 수정 화면에 남아 있을 수 없다). 진행 표시를 전역에 두는 것은 창과 그 뒤 폼이 같은 값을 봐야 하기 때문이다 -->
+          <sequence>
+            <set-state target="global" :isProductDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}" method="DELETE">
+              <success>
+                <set-state target="global" :isProductDeleting="false"/>
+                <close-modal target="modal_delete_confirm"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.product.messages.deleted_success"/>
+                <navigate path="/admin/ecommerce/products" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </success>
+              <fail>
+                <set-state target="global" :isProductDeleting="false"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.product.messages.deleted_error'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isProductDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isProductDeleting ? '$t:common.deleting' : '$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_button'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

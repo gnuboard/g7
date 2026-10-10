@@ -1,513 +1,513 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "환경설정 업로드 탭 콘텐츠"
-  },
-  "id": "tab_content_upload",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'upload'}}",
-  "children": [
-    {
-      "id": "card_upload_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.upload.file_settings"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.upload.file_settings_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "grid-2col-responsive"
-              },
-              "children": [
-                {
-                  "id": "field_max_file_size",
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.settings.upload.max_file_size"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-red-500 ml-1"
-                          },
-                          "text": "*"
-                        },
-                        {
-                          "type": "composite",
-                          "name": "Badge",
-                          "if": "{{_computed.envLocked?.['upload.max_file_size'] === true}}",
-                          "props": {
-                            "text": "$t:admin.settings.env_locked_badge",
-                            "variant": "secondary",
-                            "size": "sm",
-                            "className": "ml-2"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "number",
-                            "name": "upload.max_file_size",
-                            "min": "{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}",
-                            "max": "{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}",
-                            "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.max_file_size'] === true}}",
-                            "className": "input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-label-subtle"
-                          },
-                          "text": "MB"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['upload.max_file_size']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['upload.max_file_size']?.[0] ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "id": "field_allowed_extensions",
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.settings.upload.allowed_extensions"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-red-500 ml-1"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "upload.allowed_extensions",
-                        "placeholder": "jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": "input {{_local.errors?.['upload.allowed_extensions'] ? 'input-error' : ''}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "form-hint"
-                      },
-                      "text": "$t:admin.settings.upload.allowed_extensions_hint"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['upload.allowed_extensions']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['upload.allowed_extensions']?.[0] ?? ''}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "업로드 탭 — 올릴 수 있는 파일 크기·확장자 같은 제한을 정한다.\n  여기서 정한 값은 저장 뒤 전역(`uploadSettings`)으로도 올라가, 다른 화면의 업로더가 같은 제한을 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 업로드 탭 콘텐츠"
     },
-    {
-      "id": "card_image_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "id": "tab_content_upload",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'upload'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.upload.image_settings"
+            "id": "card_upload_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.upload.file_settings"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.upload.file_settings_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "id": "field_max_file_size",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.upload.max_file_size"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-1"
+                                                    },
+                                                    "text": "*"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{_computed.envLocked?.['upload.max_file_size'] === true}}",
+                                                    "props": {
+                                                        "text": "$t:admin.settings.env_locked_badge",
+                                                        "variant": "secondary",
+                                                        "size": "sm",
+                                                        "className": "ml-2"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "number",
+                                                        "name": "upload.max_file_size",
+                                                        "min": "{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}",
+                                                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.max_file_size'] === true}}",
+                                                        "className": "input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "MB"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['upload.max_file_size']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['upload.max_file_size']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "field_allowed_extensions",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.upload.allowed_extensions"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-1"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "upload.allowed_extensions",
+                                                "placeholder": "jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "input {{_local.errors?.['upload.allowed_extensions'] ? 'input-error' : ''}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.upload.allowed_extensions_hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['upload.allowed_extensions']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['upload.allowed_extensions']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.upload.image_settings_desc"
+            "id": "card_image_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.upload.image_settings"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.upload.image_settings_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                    },
+                    "children": [
+                        {
+                            "id": "field_image_max_width",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.upload.image_max_width"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['upload.image_max_width'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "upload.image_max_width",
+                                                "min": "{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}",
+                                                "max": "{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_width'] === true}}",
+                                                "className": "input flex-1"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "px"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_image_max_height",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.upload.image_max_height"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['upload.image_max_height'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "upload.image_max_height",
+                                                "min": "{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}",
+                                                "max": "{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_height'] === true}}",
+                                                "className": "input flex-1"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "px"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_image_quality",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.upload.image_quality"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['upload.image_quality'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "upload.image_quality",
+                                                "min": "{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}",
+                                                "max": "{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_quality'] === true}}",
+                                                "className": "input flex-1"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "%"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.upload.image_quality_hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
-          },
-          "children": [
-            {
-              "id": "field_image_max_width",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.upload.image_max_width"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Badge",
-                      "if": "{{_computed.envLocked?.['upload.image_max_width'] === true}}",
-                      "props": {
-                        "text": "$t:admin.settings.env_locked_badge",
-                        "variant": "secondary",
-                        "size": "sm",
-                        "className": "ml-2"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "number",
-                        "name": "upload.image_max_width",
-                        "min": "{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}",
-                        "max": "{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}",
-                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_width'] === true}}",
-                        "className": "input flex-1"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "px"
-                    }
-                  ]
-                }
-              ]
+            "id": "card_orphan_cleanup",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "id": "field_image_max_height",
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.upload.image_max_height"
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
                     },
-                    {
-                      "type": "composite",
-                      "name": "Badge",
-                      "if": "{{_computed.envLocked?.['upload.image_max_height'] === true}}",
-                      "props": {
-                        "text": "$t:admin.settings.env_locked_badge",
-                        "variant": "secondary",
-                        "size": "sm",
-                        "className": "ml-2"
-                      }
-                    }
-                  ]
+                    "text": "$t:admin.settings.upload.orphan_cleanup"
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "number",
-                        "name": "upload.image_max_height",
-                        "min": "{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}",
-                        "max": "{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}",
-                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_height'] === true}}",
-                        "className": "input flex-1"
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "px"
-                    }
-                  ]
+                    "text": "$t:admin.settings.upload.orphan_cleanup_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "id": "field_orphan_cleanup_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.upload.orphan_cleanup_enabled"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "upload.orphan_cleanup_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.upload.orphan_cleanup_enabled_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_orphan_retention_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.upload.orphan_retention_days"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "upload.orphan_retention_days",
+                                        "min": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_max ?? 3650}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.upload.orphan_retention_days_hint"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "id": "field_image_quality",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.upload.image_quality"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Badge",
-                      "if": "{{_computed.envLocked?.['upload.image_quality'] === true}}",
-                      "props": {
-                        "text": "$t:admin.settings.env_locked_badge",
-                        "variant": "secondary",
-                        "size": "sm",
-                        "className": "ml-2"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "number",
-                        "name": "upload.image_quality",
-                        "min": "{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}",
-                        "max": "{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}",
-                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_quality'] === true}}",
-                        "className": "input flex-1"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "%"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.upload.image_quality_hint"
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    },
-    {
-      "id": "card_orphan_cleanup",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.upload.orphan_cleanup"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.upload.orphan_cleanup_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "id": "field_orphan_cleanup_enabled",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_cleanup_enabled"
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "upload.orphan_cleanup_enabled",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_cleanup_enabled_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_orphan_retention_days",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_retention_days"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "upload.orphan_retention_days",
-                    "min": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_max ?? 3650}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "input"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_retention_days_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "props": {}
+    ]
 }

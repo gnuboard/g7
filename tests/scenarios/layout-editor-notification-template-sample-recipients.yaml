@@ -1,0 +1,21 @@
+feature: 레이아웃 편집기 — 알림 템플릿 편집 창 표본의 수신자 모양
+
+description: |
+  알림 템플릿 편집 창은 7.1.0 에서 「관련 사용자」를 정의가 선언한 관계(relation) 중에서 고르고, 역할·특정 회원을
+  여러 개 고르는(값이 배열) 계약으로 바뀌었다. 코어·게시판·쇼핑몰·환율의 편집기 표본은 예전 모양(관련 사용자 value,
+  역할 value 문자열 + display_name)으로 남아, 편집기에서 창을 열면 관련 사용자 규칙의 종류 칸이 비고 관계가 선택되지
+  않았으며 역할 규칙에 고른 역할이 보이지 않았다. 표본을 계약 모양으로 맞추고, 저장소 전체 표본을 가드한다.
+
+axes:
+  host: [core, board, ecommerce, koreaexim, gdpr]
+
+effects:
+  - notification_template_sample_population_is_derived_from_repository
+  - notification_template_sample_recipients_match_contract
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/notificationTemplateSampleRecipientShape.test.ts
+
+notes: |
+  브라우저 실측: 레이아웃 편집기 ?edit=__modal__/modal_koreaexim_notification_template_edit 등 —
+  관련 사용자 규칙 「관련 사용자 / 게시글 작성자」 표시, 역할 규칙 「최고 관리자」 선택 표시.

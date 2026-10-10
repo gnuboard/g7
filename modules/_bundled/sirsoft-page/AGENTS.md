@@ -58,13 +58,15 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update sirsoft-page --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-page --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan module:update sirsoft-page --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-page --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update sirsoft-page --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update sirsoft-page --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->
 
@@ -142,7 +144,7 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-page` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 관리자 템플릿의 빌드된 CSS 에 존재하는지 확인하고 없으면 `resources/css/main.css` 에 `page-` 접두 클래스로 정의한 뒤 `php artisan module:build sirsoft-page --production`
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 페이지 저장 경로를 추가·변경했다면 버전 스냅샷 적재와 `current_version` 증가가 같은 트랜잭션에 있는지 확인
 - [ ] 첨부를 내보내는 경로를 추가하면 발행 상태 게이트를 그 자리에서 재적용 (부모에서 한 번 판정하고 끝나지 않는다)
@@ -163,6 +165,8 @@
 | 소프트 삭제를 다시 도입 | 삭제는 실삭제, 되돌리기는 버전 이력 | 지운 페이지가 남아 있으면 같은 slug 를 다시 쓸 수 없고, slug 는 이 도메인에서 주소 그 자체다 |
 | 첨부 개수·용량 상한을 서비스에 리터럴로 재클램프 | 설정(`attachment.*`) 을 읽고 검증은 FormRequest 에 둔다 | 이중 클램프가 생기면 설정을 올려도 반영되지 않는다 |
 | 페이지 목록을 만들기 위해 공개 목록 API 를 추가 | 목록이 필요하면 게시판 모듈을 쓴다 | 페이지는 "주소 하나 = 문서 하나" 도메인이다. 목록을 들이면 게시판과 역할이 겹치면서 둘 다 애매해진다 |
+| 요청의 `temp_key` 를 형식 검증 없이 `temp/{temp_key}` 경로에 넣거나, 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 첨부가 있을 때만 이동·정리 | 페이지 첨부는 basePath 없이 저장해 게시판보다 얕다 — 순회 키 한 단계로 모듈 저장소 루트에 닿는다 (게시판 KVE-2026-2349 와 같은 패턴) |
+| 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory('attachments', 'temp/{temp_key}')`)의 예외를 그대로 던지게 두기 | `PageAttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`페이지 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 페이지 저장 전체가 500 으로 되돌아가고 파일·DB 경로가 어긋난다(#703 게시판 실측과 같은 구조). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -170,10 +174,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 30개 | `modules/_bundled/sirsoft-page/tests` |
-| Vitest | 4개 | `vitest.config.ts` |
+| PHPUnit | 48개 | `modules/_bundled/sirsoft-page/tests` |
+| Vitest | 11개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 35개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

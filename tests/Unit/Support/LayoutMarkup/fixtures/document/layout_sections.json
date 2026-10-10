@@ -1,0 +1,79 @@
+{
+    "layout_name": "admin_dashboard",
+    "initGlobal": {
+        "dashboardReady": false
+    },
+    "computed": {
+        "total": "{{a + b}}",
+        "hasItems": "{{items.length > 0}}"
+    },
+    "permissions": [
+        "dashboard.read",
+        "reports.read"
+    ],
+    "defines": {
+        "statuses": [
+            "active",
+            "inactive",
+            "pending"
+        ]
+    },
+    "errorHandling": {
+        "403": {
+            "handler": "showErrorPage",
+            "params": {
+                "target": "content"
+            }
+        },
+        "default": {
+            "handler": "toast",
+            "params": {
+                "message": "{{error.message}}",
+                "type": "error"
+            }
+        }
+    },
+    "globalHeaders": [
+        {
+            "pattern": "*",
+            "headers": {
+                "X-Dashboard": "{{_global.dashboardKey}}"
+            }
+        }
+    ],
+    "transition_overlay": {
+        "style": "spinner",
+        "target": "content_area",
+        "wait_for": [
+            "stats"
+        ],
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "scripts": [
+        {
+            "src": "//t1.daumcdn.net/mapjsapi/js/main.js",
+            "id": "daum-map",
+            "label": "$t:core.assets.layout_script",
+            "async": true
+        }
+    ],
+    "named_actions": {
+        "refreshDashboard": {
+            "handler": "refetchDataSource",
+            "params": {
+                "dataSourceId": "stats"
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "isLoading": false
+            }
+        }
+    ]
+}

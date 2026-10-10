@@ -1,629 +1,636 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Form - Copy Product Modal"
-  },
-  "id": "modal_copy_product",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.modal.copy.title",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "comment": "상품 폼 — 상품 복사 창. 원본의 어느 구획을 가져올지 고른 뒤 등록 폼을 복사 진입으로 연다.\n  고른 항목은 폼이 들고 있어야 하므로(창이 아니라 그쪽이 복사 주소를 만든다) `$parent` 로 건너\n  써넣고, 원본 미리보기도 같은 경로로 폼의 값을 읽는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Form - Copy Product Modal"
+    },
+    "id": "modal_copy_product",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product.modal.copy.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "id": "copy_source_info",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{$parent._local.form.images?.length > 0}}",
-                  "props": {
-                    "className": "w-12 h-12 rounded-lg overflow-hidden flex-shrink-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Img",
-                      "props": {
-                        "src": "{{$parent._local.form.images?.[0]?.download_url}}",
-                        "alt": "{{$localized($parent._local.form.name)}}",
-                        "className": "w-full h-full object-cover"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{!$parent._local.form.images?.length}}",
-                  "props": {
-                    "className": "flex-center w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "image",
-                        "className": "w-6 h-6 text-gray-400 dark:text-gray-500"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-1 min-w-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-primary font-medium truncate"
-                      },
-                      "text": "{{$localized($parent._local.form.name) || '$t:sirsoft-ecommerce.admin.product.modal.copy.no_name'}}"
+                    "id": "copy_source_info",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
                     },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "{{$parent._local.form.product_code ?? ''}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "copy_options_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-body font-medium"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.options_label"
-            },
-            {
-              "id": "copy_option_images",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_images",
-                    "checked": "{{$parent._local.ui.copyOptions?.images ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.images": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_images"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_options",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_options",
-                    "checked": "{{$parent._local.ui.copyOptions?.options ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.options": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_product_options"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_categories",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_categories",
-                    "checked": "{{$parent._local.ui.copyOptions?.categories ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.categories": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_categories"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_sales_info",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_sales_info",
-                    "checked": "{{$parent._local.ui.copyOptions?.sales_info ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.sales_info": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_sales_info"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_description",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_description",
-                    "checked": "{{$parent._local.ui.copyOptions?.description ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.description": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_description"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_notice",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_notice",
-                    "checked": "{{$parent._local.ui.copyOptions?.notice ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.notice": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_notice"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_common_info",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_common_info",
-                    "checked": "{{$parent._local.ui.copyOptions?.common_info ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.common_info": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_common_info"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_other_info",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_other_info",
-                    "checked": "{{$parent._local.ui.copyOptions?.other_info ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.other_info": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_other_info"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_shipping",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_shipping",
-                    "checked": "{{$parent._local.ui.copyOptions?.shipping ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.shipping": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_shipping"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_seo",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_seo",
-                    "checked": "{{$parent._local.ui.copyOptions?.seo ?? false}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.seo": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_seo"
-                }
-              ]
-            },
-            {
-              "id": "copy_option_identification",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "copy_identification",
-                    "checked": "{{$parent._local.ui.copyOptions?.identification ?? true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "ui.copyOptions.identification": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-label cursor-pointer"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_identification"
-                }
-              ]
-            }
-          ],
-          "props": {
-          }
-        },
-        {
-          "id": "copy_note",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "alert-info"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-start gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "info-circle",
-                    "className": "w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-info-soft"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.note"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_global.isCopyingProduct}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "closeModal",
-                  "target": "modal_copy_product"
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.common.cancel"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_global.isCopyingProduct}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "params": {
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "isCopyingProduct": true
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{$parent._local.form.images?.length > 0}}",
+                                    "props": {
+                                        "className": "w-12 h-12 rounded-lg overflow-hidden flex-shrink-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Img",
+                                            "props": {
+                                                "src": "{{$parent._local.form.images?.[0]?.download_url}}",
+                                                "alt": "{{$localized($parent._local.form.name)}}",
+                                                "className": "w-full h-full object-cover"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!$parent._local.form.images?.length}}",
+                                    "props": {
+                                        "className": "flex-center w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "image",
+                                                "className": "text-2xl text-gray-400 dark:text-gray-500"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1 min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-primary font-medium truncate"
+                                            },
+                                            "text": "{{$localized($parent._local.form.name) || '$t:sirsoft-ecommerce.admin.product.modal.copy.no_name'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "{{$parent._local.form.product_code ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      },
-                      {
-                        "handler": "sirsoft-ecommerce.copyProduct"
-                      }
                     ]
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "if": "{{_global.isCopyingProduct}}",
-                  "props": {
-                    "name": "spinner",
-                    "className": "spinner-sm"
-                  }
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "{{_global.isCopyingProduct ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.copy.submit'}}"
+                    "id": "copy_options_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-body font-medium"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.options_label"
+                        },
+                        {
+                            "id": "copy_option_images",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "이미지 — 원본 파일을 복사해 새 상품에 붙인다(가리키기만 하면 원본을 지울 때 함께 사라진다)",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.images": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_images",
+                                        "checked": "{{$parent._local.ui.copyOptions?.images ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_images"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_options",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "옵션 — 조합과 추가금까지 가져오되 재고는 따라오지 않는다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.options": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_options",
+                                        "checked": "{{$parent._local.ui.copyOptions?.options ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_product_options"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_categories",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "분류",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.categories": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_categories",
+                                        "checked": "{{$parent._local.ui.copyOptions?.categories ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_categories"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_sales_info",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "판매정보 — 가격·판매상태",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.sales_info": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_sales_info",
+                                        "checked": "{{$parent._local.ui.copyOptions?.sales_info ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_sales_info"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_description",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "상세설명",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.description": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_description",
+                                        "checked": "{{$parent._local.ui.copyOptions?.description ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_description"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "상품정보제공고시",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.notice": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_notice",
+                                        "checked": "{{$parent._local.ui.copyOptions?.notice ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_notice"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_common_info",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "공통정보",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.common_info": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_common_info",
+                                        "checked": "{{$parent._local.ui.copyOptions?.common_info ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_common_info"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_other_info",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "기타정보",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.other_info": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_other_info",
+                                        "checked": "{{$parent._local.ui.copyOptions?.other_info ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_other_info"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_shipping",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "배송정보",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.shipping": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_shipping",
+                                        "checked": "{{$parent._local.ui.copyOptions?.shipping ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_shipping"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_seo",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "SEO — 혼자 기본이 꺼져 있다. 같은 제목·설명이 둘로 노출되면 검색엔진이 중복으로 본다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.seo": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_seo",
+                                        "checked": "{{$parent._local.ui.copyOptions?.seo ?? false}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_seo"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "copy_option_identification",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "식별코드 — 바코드처럼 상품마다 고유해야 하는 값은 서버가 복사에서 걸러 낸다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "ui.copyOptions.identification": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "copy_identification",
+                                        "checked": "{{$parent._local.ui.copyOptions?.identification ?? true}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-label cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_identification"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "copy_note",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-info"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "info-circle",
+                                        "className": "text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-info-soft"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.note"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "modal_copy_product"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isCopyingProduct}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "복사 시작 — 진행 표시를 전역에 두는 것은 이 창과 그 뒤 폼이 같은 값을 봐야 하기 때문이다. 실제 이동은 핸들러가 고른 항목을 쿼리로 엮어 처리한다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isCopyingProduct": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "sirsoft-ecommerce.copyProduct"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isCopyingProduct}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isCopyingProduct}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isCopyingProduct ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.copy.submit'}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ],
-      "props": {
-      }
-    }
-  ]
+    ]
 }

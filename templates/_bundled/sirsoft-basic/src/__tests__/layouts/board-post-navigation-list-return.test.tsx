@@ -320,7 +320,7 @@ describe('47-4 답글 상세에서 이전/다음 버튼 미렌더', () => {
     setupTestRegistry();
   });
 
-  // _navigation.json 의 이전/다음 버튼 if 조건 구조를 그대로 재현
+  // _navigation.g7.html 의 이전/다음 버튼 if 조건 구조를 그대로 재현
   const navButtonsLayout = {
     version: '1.0.0',
     layout_name: 'board_nav_buttons_test',

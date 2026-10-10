@@ -1,0 +1,23 @@
+<layout name="admin_user_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.users.title"/>
+  <data-source id="users" endpoint="/api/admin/users" method="GET" :auto_fetch="true" label_key="admin.users.source" loading_strategy="blocking"/>
+  <init-local><field name="selectedIds_admin_users" :value="[]"/></init-local>
+
+  <slot name="content">
+    <div data-ref="user_list_card" class="admin-card">
+      <data-grid data-type="composite" data-ref="user_grid" :serverSidePagination="true" data="{{users?.data?.data ?? []}}">
+        <on event="onRowAction">
+          <switch on="{{$args[0]}}">
+            <case when="edit"><navigate path="/admin/users/{{$args[1].uuid}}/edit"/></case>
+            <case when="delete">
+              <set-state target="global" modal_data="{{$args[1]}}"/>
+              <open-modal target="delete_confirm_modal"/>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+
+  <modal src="partials/admin_user_list/_modal_delete.g7.html"/>
+</layout>

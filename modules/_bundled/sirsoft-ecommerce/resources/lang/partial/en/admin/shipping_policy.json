@@ -123,6 +123,7 @@
     "conditional": "Under {{threshold}}: {{fee}} / {{threshold}}+: Free",
     "api": "External API (Real-time calculation)",
     "per_quantity": "{{fee}} per {{unit}} items",
+    "per_quantity_one": "{{fee}} per {{unit}} item",
     "per_weight": "{{fee}} per {{unit}}kg",
     "per_volume": "{{fee}} per {{unit}}L",
     "per_volume_weight": "{{fee}} per {{unit}}kg",
@@ -144,7 +145,8 @@
       "confirm": "Copy",
       "policy_name": "Policy Name:",
       "country_count": "Country Settings:",
-      "country_count_value": "{{count}} countries"
+      "country_count_value": "{{count}} countries",
+      "country_count_value_one": "{{count}} country"
     },
     "delete": {
       "title": "Delete Shipping Policy",
@@ -156,6 +158,7 @@
     "bulk_delete": {
       "title": "Bulk Delete Shipping Policies",
       "message": "Are you sure you want to delete {{count}} shipping policies?",
+      "message_one": "Are you sure you want to delete {{count}} shipping policy?",
       "warning": "Deleted policies cannot be recovered.",
       "product_warning": "Products using these policies will have their shipping policy unset.",
       "confirm": "Delete"
@@ -163,6 +166,7 @@
     "bulk_toggle": {
       "title": "Change Status",
       "message": "Change the status of {{count}} shipping policies?",
+      "message_one": "Change the status of {{count}} shipping policy?",
       "confirm": "Change"
     },
     "set_default": {
@@ -276,7 +280,32 @@
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
-    "back_to_list": "Back to List"
+    "back_to_list": "Back to List",
+    "section_claim_addresses": "Claim Pickup Addresses",
+    "claim_addresses_description": "Addresses shown to customers when an exchange or return is filed. One address per claim type.",
+    "claim_addresses_snapshot_notice": "The pickup address is copied onto the request when it is filed. Changing it here does not affect claims already filed.",
+    "claim_address_exchange": "Exchange pickup address",
+    "claim_address_return": "Return pickup address",
+    "claim_address_recipient_name": "Recipient name",
+    "claim_address_recipient_name_placeholder": "e.g. Returns desk",
+    "claim_addresses_loading_notice": "Loading pickup addresses. If this notice does not go away, loading failed — reload the page. Pickup addresses cannot be edited until then.",
+    "claim_addresses_requires_update": "Return addresses are saved separately after the policy is created and require the shipping policy update permission. An administrator with that permission sets them on the policy's edit screen.",
+    "claim_address_phone": "Phone",
+    "claim_address_phone_placeholder": "e.g. +82-2-1234-5678",
+    "claim_address_zipcode": "Postal code",
+    "claim_address_address1": "Address",
+    "claim_address_address2": "Address detail",
+    "claim_address_clear": "Clear this address",
+    "claim_address_clear_confirm": "Clear this pickup address? Saving will delete the registered address.",
+    "section_claim_fee": "Claim Shipping Fee",
+    "claim_fee_description": "Shipping fee charged to the customer when an exchange or return happens in this country.",
+    "claim_fee_mode": "Calculation mode",
+    "claim_fee_mode_hint": "Fixed Amount charges the values below as-is; Recalculate by Original Policy re-runs this policy's charge rules.",
+    "claim_fee_original_policy_notice": "Recalculated with this country's charge rules (free / fixed / tiered / per-unit). Returns are charged one way, exchanges round trip.",
+    "return_fixed_fee": "Return fee (one way)",
+    "return_fixed_fee_hint": "Covers a single pickup leg.",
+    "exchange_fixed_fee": "Exchange fee (round trip)",
+    "exchange_fixed_fee_hint": "Covers pickup plus redelivery."
   },
 
   "modal_extra_fee": {
@@ -307,6 +336,7 @@
     "apply_confirm": "Existing settings will be overwritten. Continue?",
     "delete_confirm": "Delete this template?",
     "bulk_delete_confirm": "Delete {{count}} selected templates?",
+    "bulk_delete_confirm_one": "Delete {{count}} selected template?",
     "no_templates": "No templates found.",
     "items_count": "items",
     "apply": "Apply"
@@ -346,7 +376,9 @@
     "not_found": "Shipping policy not found.",
     "template_saved": "Extra fee template saved successfully.",
     "template_deleted": "Extra fee template deleted successfully.",
-    "template_bulk_deleted": "Selected extra fee templates deleted successfully."
+    "template_bulk_deleted": "Selected extra fee templates deleted successfully.",
+    "claim_settings_save_error": "Failed to save the claim pickup address. The shipping policy itself was saved.",
+    "claim_settings_not_loaded": "The pickup addresses were not saved because they could not be loaded. The shipping policy itself was saved. Reload the page and try again."
   },
 
   "common": {

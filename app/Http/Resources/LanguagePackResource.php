@@ -37,7 +37,7 @@ class LanguagePackResource extends BaseApiResource
             'latest_version' => $this->getValue('latest_version'),
             'target_version_constraint' => $this->getValue('target_version_constraint'),
             'target_version_mismatch' => (bool) $this->getValue('target_version_mismatch', false),
-            'name' => $this->resolveLocalizedManifestField('name'),
+            'name' => $this->resolveLocalizedManifestField('name') ?? $this->resolveBuiltInName(),
             'license' => $this->getValue('license'),
             'description' => $this->getLocalizedField('description'),
             'status' => $this->getValue('status'),
@@ -49,9 +49,15 @@ class LanguagePackResource extends BaseApiResource
             'github_changelog_url' => $this->resolveManifestField('github_changelog_url'),
             'bundled_identifier' => $this->getValue('bundled_identifier'),
             'install_blocked_reason' => $this->getValue('install_blocked_reason'),
+            // 설치는 되지만 알려 둘 사정 (예: target_inactive — 대상이 꺼져 있어 꺼진 채 설치되고, 대상을 켠 뒤 켤 수 있음)
+            'install_notice' => $this->getValue('install_notice'),
+            // 켜져 있지 않은 사유 (awaiting_host — 대상 확장을 켤 때 함께 켜짐)
+            'deactivated_reason' => $this->getValue('deactivated_reason'),
             'files_missing' => (bool) $this->getValue('files_missing', false),
             'bundled_source_available' => (bool) $this->getValue('bundled_source_available', false),
             'target_name' => $this->resolveTargetName(),
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             'installed_at' => $this->formatTimestamp('installed_at'),
             'activated_at' => $this->formatTimestamp('activated_at'),
             'created_at' => $this->formatTimestamp('created_at'),
@@ -99,6 +105,34 @@ class LanguagePackResource extends BaseApiResource
         $first = reset($value);
 
         return is_string($first) && $first !== '' ? $first : null;
+    }
+
+    /**
+     * 매니페스트 이름이 없는 내장(보호) 언어팩의 표시 이름을 만듭니다.
+     *
+     * 확장·코어에 동봉된 언어팩은 매니페스트 파일이 없어 이름이 없고, 관리 화면은 이름이 없으면 식별자를
+     * 그린다(#736 O-F4). 대상 확장 이름(코어는 「코어」)과 언어 이름으로 사람이 읽는 이름을 만든다.
+     * 보호 언어팩이 아니면 null 을 돌려 종전처럼 화면이 식별자로 대신한다.
+     *
+     * @return string|null 표시 이름 또는 null
+     */
+    private function resolveBuiltInName(): ?string
+    {
+        if (! (bool) $this->getValue('is_protected', false)) {
+            return null;
+        }
+
+        $target = $this->getValue('scope') === 'core'
+            ? __('language_packs.core_target')
+            : ($this->resolveTargetName() ?? $this->getValue('target_identifier'));
+        if (! is_string($target) || $target === '') {
+            return null;
+        }
+
+        $locale = $this->getValue('locale');
+        $language = $this->getValue('locale_native_name') ?: (is_string($locale) ? $locale : '');
+
+        return __('language_packs.built_in_name', ['target' => $target, 'language' => $language]);
     }
 
     /**

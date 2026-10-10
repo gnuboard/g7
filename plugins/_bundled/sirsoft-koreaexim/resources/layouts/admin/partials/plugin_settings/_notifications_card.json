@@ -1,0 +1,420 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "환율 실패 알림의 발송 수단 복수 지정과 채널별 템플릿 활성화"
+    },
+    "comment": "실패 알림 카드 — 이 플러그인 소유 알림 정의마다 발송 채널(복수)을 고르고, 켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-4"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-koreaexim.notifications"
+        },
+        {
+            "id": "koreaexim_notifications_forbidden",
+            "type": "basic",
+            "name": "P",
+            "if": "{{_local.koreaeximNotificationsForbidden === true}}",
+            "props": {
+                "className": "form-hint"
+            },
+            "text": "$t:sirsoft-koreaexim.notifications_forbidden"
+        },
+        {
+            "id": "koreaexim_notification_definition_{{defIdx}}",
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "{{koreaeximNotificationDefinitions?.data?.data ?? []}}",
+                "item_var": "def",
+                "index_var": "defIdx"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-heading"
+                    },
+                    "text": "{{$localized(def.name)}}"
+                },
+                {
+                    "comment": "발송 수단 — 코어가 core.notification.filter_available_channels 로 런타임에 정하는 목록을\n         그대로 깔고 복수로 켠다. 화면에 채널을 적어 두면 확장이 들인 채널에 도달할 수 없다.\n         켠 값은 폼에만 두고 저장 버튼을 눌러야 서버에 반영한다(코어 알림 정의 탭과 같은 규약).",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "form-label mt-3"
+                    },
+                    "text": "$t:sirsoft-koreaexim.notification_channels"
+                },
+                {
+                    "id": "koreaexim_channel_row_{{defIdx}}_{{chIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{koreaeximNotificationChannels?.data?.channels ?? []}}",
+                        "item_var": "ch",
+                        "index_var": "chIdx"
+                    },
+                    "props": {
+                        "className": "flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg my-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "{{ch.icon ?? 'fas fa-bell'}}",
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{ch.name ?? ch.id}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{ch.source && ch.source !== 'core'}}",
+                                            "props": {
+                                                "className": "text-hint block"
+                                            },
+                                            "text": "{{ch.source_label ?? ch.source}}"
+                                        },
+                                        {
+                                            "comment": "켰는데 그 채널 템플릿이 없으면 발송 때 조용히 건너뛴다(코어가 로그에만 남긴다).\n               화면이 그 사실을 말해 주지 않으면 \"켰는데 안 온다\" 로만 보인다.",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) && !(def.templates ?? []).some(t => t.channel === ch.id)}}",
+                                            "props": {
+                                                "className": "text-hint block text-amber-600 dark:text-amber-400"
+                                            },
+                                            "text": "$t:sirsoft-koreaexim.channel_template_missing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "actions": [
+                                {
+                                    "comment": "배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "koreaeximChannels": "{{({...(_local.koreaeximChannels ?? {}), [def.id]: ((_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) ? (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).filter(c => c !== ch.id) : [...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []), ch.id])})}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "label": "{{(ch.name ?? ch.id)}}",
+                                "checked": "{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}",
+                                "disabled": "{{_computed.isNotificationReadOnly}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2 my-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "채널을 모두 끄면 알림이 사라지므로 코어가 min:1 로 거절한다 — 버튼에서 먼저 막는다.",
+                            "id": "koreaexim_save_channels_{{defIdx}}",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "koreaeximSavingChannels": "{{def.id}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/notification-definitions/{{def.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PUT",
+                                                "body": {
+                                                    "channels": "{{_local.koreaeximChannels?.[def.id] ?? def.channels ?? []}}"
+                                                }
+                                            },
+                                            "onSuccess": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "comment": "폼의 임시 값은 **비우지 않는다**. 목록 재조회가 끝나기 전에 비우면 화면이\n                       낡은 `def.channels` 로 되돌아가, 방금 끈 스위치가 켜졌다가 다시 꺼진다\n                       (제보 2026-09-15). 「고칠 것 없음」 판정은 저장값과의 비교가 하므로,\n                       재조회가 도착하면 버튼은 저절로 가라앉는다.",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "koreaeximSavingChannels": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "koreaeximNotificationDefinitions"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{response.message}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "onError": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "comment": "실패하면 고친 값은 남긴다 — 다시 누를 수 있어야 한다.",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "koreaeximSavingChannels": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isNotificationReadOnly || _local.koreaeximSavingChannels !== null && _local.koreaeximSavingChannels !== undefined || !(JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).length === 0}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.koreaeximSavingChannels === def.id}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-koreaexim.save_channels"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "koreaexim_cancel_channels_{{defIdx}}",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}",
+                            "actions": [
+                                {
+                                    "comment": "취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다)",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "koreaeximChannels": {}
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.koreaeximSavingChannels !== null && _local.koreaeximSavingChannels !== undefined}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-koreaexim.cancel"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "템플릿 — 채널을 나눠 그리지 않는다. 목록을 template_channel=all 로 받아 켠 채널 전부를\n         한 번에 보여주므로 채널을 바꾸려고 화면을 다시 부를 일이 없다.",
+                    "id": "koreaexim_template_row_{{defIdx}}_{{tplIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{def.templates ?? []}}",
+                        "item_var": "template",
+                        "index_var": "tplIdx"
+                    },
+                    "props": {
+                        "className": "flex flex-wrap items-center gap-3 my-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "actions": [
+                                {
+                                    "comment": "채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다",
+                                    "type": "change",
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/notification-templates/{{template.id}}/toggle-active",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PATCH"
+                                    },
+                                    "onSuccess": {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "koreaeximNotificationDefinitions"
+                                        }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "label": "{{$localized(def.name) + ' / ' + ((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}",
+                                "checked": "{{template.is_active}}",
+                                "disabled": "{{_computed.isNotificationReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "템플릿 편집 창 열기 — 템플릿·수신자를 깊은 복사로 전역 폼에 실어, 창 안의 편집이 목록 데이터를 건드리지 않게 한다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "koreaexim_notification_template_form_modal": {
+                                                    "template": "{{JSON.parse(JSON.stringify(template))}}",
+                                                    "definition": "{{def}}",
+                                                    "recipients": "{{JSON.parse(JSON.stringify(template.recipients ?? []))}}",
+                                                    "editLang": "{{$locale}}",
+                                                    "errors": null,
+                                                    "isSaving": false,
+                                                    "roleSearchResults": [],
+                                                    "userSearchResults": []
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "modal_koreaexim_notification_template_edit"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_computed.isNotificationReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-koreaexim.edit_template"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "정의 초기화 창 열기 — 대상 ID·이름을 전역에 두고 확인 창에서 실제 초기화를 보낸다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "resetTargetId": "{{def.id}}",
+                                        "resetTargetName": "{{$localized(def.name)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_koreaexim_notification_definition_reset"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_computed.isNotificationReadOnly}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-koreaexim.reset"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

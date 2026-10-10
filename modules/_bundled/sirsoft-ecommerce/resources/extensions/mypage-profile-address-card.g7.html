@@ -1,0 +1,41 @@
+<!-- e2e:allow 2026-09-23 마이페이지 내 정보의 기본 배송지 카드 — 데이터소스·상태 변경 없이 로그인 응답(`user.data.ecommerce_default_address`)을 읽어 그리기만 하는 조각이라, 브라우저 관통 대신 레이아웃 계약 테스트(`resources/js/__tests__/layouts/mypageProfileAddressCard.test.ts`)가 주입 위치·빈 상태 분기·**사용자 템플릿 등록 컴포넌트만 쓰는지**를 잠근다(종전 `Badge` 는 sirsoft-basic 미등록이라 배지 자리가 조용히 비었다).
+
+  마이페이지 내 정보에 붙는 기본 배송지 카드.
+  내 정보 화면의 「주소」 는 가입할 때 적은 회원 주소이고, 물건이 실제로 가는 곳은 배송지다 —
+  그 둘이 다른데 화면이 배송지를 한 줄도 말해 주지 않아, 확인하려면 배송지 관리로 나가야 했다
+  (2026-09-21 검수 지적).
+  주소를 따로 불러오지 않는다 — 로그인 사용자 정보(`user.data.ecommerce_default_address`)에
+  이커머스가 이미 실어 보낸 한 줄을 읽기만 한다(마일리지 카드와 같은 짜임). 그래서 이 조각에는
+  데이터소스가 없고, 카드가 비어 보이면 원인은 이 파일이 아니라 그 응답에 있다.
+  아직 등록한 배송지가 없으면 값이 `null` 로 와서 안내문과 등록 링크만 선다 — 카드를 통째로
+  감추면 "배송지를 여기서 관리한다" 는 사실 자체가 화면에서 사라진다. -->
+<extension target-layout="mypage/profile" priority="321">
+  <inject target-id="mypage_tab_content" position="append_child">
+    <div data-ref="ext_my_default_address_card" class="mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <icon name="map-pin" class="text-base text-gray-600 dark:text-gray-400"/>
+          <span>$t:sirsoft-ecommerce.user_address_card.title</span>
+        </h3>
+        <button data-ref="manage_my_addresses" type="button" class="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <on type="click">
+            <navigate path="/mypage/addresses"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.user_address_card.manage</span>
+          <icon name="arrow-right" class="text-sm"/>
+        </button>
+      </div>
+      <span data-if="{{!user?.data?.ecommerce_default_address}}" class="block text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.user_address_card.empty_notice</span>
+      <div data-ref="ext_my_default_address_body" data-if="{{!!user?.data?.ecommerce_default_address}}">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{user?.data?.ecommerce_default_address?.recipient_name}}</span>
+          <!-- 「기본」 배지 — 사용자 템플릿에는 Badge 컴포넌트가 없다(관리자 템플릿 전용). 등록된 Span 으로 배지 모양을 그린다. -->
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">$t:sirsoft-ecommerce.user_address_card.default_badge</span>
+          <span data-if="{{user?.data?.ecommerce_default_address?.label}}" class="text-xs text-gray-500 dark:text-gray-400">{{user?.data?.ecommerce_default_address?.label}}</span>
+        </div>
+        <span class="block text-sm text-gray-700 dark:text-gray-300 mt-1">{{user?.data?.ecommerce_default_address?.address_summary}}</span>
+        <span data-if="{{user?.data?.ecommerce_default_address?.recipient_phone}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{user?.data?.ecommerce_default_address?.recipient_phone}}</span>
+      </div>
+    </div>
+  </inject>
+</extension>

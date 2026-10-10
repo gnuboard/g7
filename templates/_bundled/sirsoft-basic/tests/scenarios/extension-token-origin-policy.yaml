@@ -1,0 +1,35 @@
+feature: 사용자 템플릿이 직접 보내는 요청의 토큰 첨부 출처 (KVE-2026-2350)
+
+description: |
+  이 템플릿의 컴포넌트·핸들러 일부는 회원 토큰을 싣는 요청을 보낸다. 대상 주소가
+  레이아웃 prop(`uploadEndpoint`·`deleteEndpoint`)이나 서버 응답 본문
+  (`challenge_start_url`)에서 오는데, 레이아웃은 주소를 표현식으로 조립할 수 있어 저장측 검사가 외부 주소를
+  다 잡지 못한다. 출처를 보지 않고 토큰을 실으면 레이아웃 편집 권한만 있는 계정이 회원 토큰을 외부로
+  보내게 할 수 있었다.
+
+  - 프로필 사진(AvatarUploader): 회원이 마이페이지에서 사진을 올리거나 지울 때
+  - 본인인증 launcher: 교차 출처 서버가 428 을 흉내 내 자기 주소를 `challenge_start_url` 로 넣을 때
+
+  토큰은 동일 출처 대상에만 싣는다(요청 자체는 막지 않는다). #639 부터 두 경로 모두 요청을 코어
+  `G7Core.api` 로 보내고 토큰 첨부를 코어 ApiClient 에 맡긴다(교차 출처 절대 주소에는 Authorization 을 싣지
+  않고, 상대 주소는 `/api` 아래 자기 서버로 간다). 그래서 테스트는 실제 코어 ApiClient 를 세우고 전송 직전
+  요청을 가로채 잰다.
+
+axes:
+  sink: [identity_launcher, avatar_upload, avatar_delete]
+  target: [same_origin, cross_origin]
+
+effects:
+  - extension_token_same_origin_only   # 교차 출처 대상에는 Bearer 를 싣지 않고, 동일 출처는 종전대로 싣는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/support/__tests__/sameOriginRequest.test.ts
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/identityLauncher.originPolicy.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/AvatarUploader.originPolicy.test.tsx
+
+validation:
+  note: |
+    외부 주소 변형은 절대(`https://`)·protocol-relative(`//`)·백슬래시(`/\`) 3형이다. 백슬래시형은 코어
+    ApiClient 가 `/api` 아래 상대 경로로 붙여 자기 서버로 가는 것을 잰다. 코어 경로(교차 출처 428 을
+    launcher 로 넘기지 않음)는 코어 매니페스트 `tests/scenarios/layout-expression-sandbox.yaml` 과 배포 번들
+    Playwright 가 잰다.

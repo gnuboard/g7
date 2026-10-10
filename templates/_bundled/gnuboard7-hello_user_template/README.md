@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.1-0066FF?style=flat-square" alt="version 0.1.1">
+  <img src="https://img.shields.io/badge/version-0.2.0-0066FF?style=flat-square" alt="version 0.2.0">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.10-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.10">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
   <img src="https://img.shields.io/badge/requires-gnuboard7--hello__module-BF8700?style=flat-square" alt="requires gnuboard7-hello_module">
 </p>
@@ -80,9 +80,9 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.0.10` |
+| 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
-| 의존 모듈 | `gnuboard7-hello_module` `>=0.1.0` |
+| 의존 모듈 | `gnuboard7-hello_module` `>=0.2.0` |
 <!-- @generated:requirements END -->
 
 ## 설치
@@ -98,16 +98,19 @@ php artisan template:activate gnuboard7-hello_user_template
 # 업데이트 (번들 소스 기준 강제 반영)
 php artisan template:update gnuboard7-hello_user_template --force
 ```
+
+저장소: https://github.com/gnuboard/g7-template-gnuboard7-hello_user_template
 <!-- @generated:install END -->
 
 ## 제공 컴포넌트
 
 <!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 8개 (루트: `src/components`).
+컴포넌트 9개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 8개 |
+| `overrides` | 1개 |
 <!-- @generated:settings-summary END -->
 
 <!-- @intent START -->
@@ -135,7 +138,7 @@ php artisan template:activate gnuboard7-hello_user_template
 활성화하면 사이트 첫 화면이 이 최소 템플릿으로 바뀌고, 관리자에서 등록한 메모가 홈 화면에
 목록으로 나옵니다. 원래 템플릿으로 되돌리려면 그 템플릿을 다시 활성화하면 됩니다.
 
-**모듈 데이터를 화면에 연결하는 법 배우기**: 홈 화면 파일(`layouts/home.json`)의 데이터 요청
+**모듈 데이터를 화면에 연결하는 법 배우기**: 홈 화면 파일(`layouts/home.g7.html`)의 데이터 요청
 선언을 보면, 어떤 주소에서 무엇을 받아 화면 어디에 넣는지가 한눈에 들어옵니다. 새 템플릿을
 만들 때 이 선언 형태를 그대로 따라 쓰면 됩니다.
 
@@ -150,7 +153,7 @@ php artisan template:activate gnuboard7-hello_user_template
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `gnuboard7-hello_module` | 모듈 | `>=0.1.0` | ✅ |
+| `gnuboard7-hello_module` | 모듈 | `>=0.2.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
@@ -181,7 +184,8 @@ php artisan template:activate gnuboard7-hello_user_template
 | 화면이 아무것도 안 그려짐 | 빌드 결과물이 없거나 오래됨 | 템플릿을 다시 빌드하고 반영합니다 |
 | 오류가 났는데 아무 화면도 안 보임 | 해당 오류 화면이 없음 | 오류 화면 6종이 모두 있는지 확인합니다 |
 | 복제해서 만든 템플릿이 목록에 안 보임 | 복제본에 학습용 표시가 남아 있음 | 복제본의 `hidden` 표시를 지웁니다 |
-| 새로 고칠 때마다 화면이 나오다 안 나오다 함 | 화면 부품 등록이 로드 순서를 탐 | 부품 등록에 재시도를 두는 형태(관리자 샘플 참고)로 고칩니다 |
+| 부품을 고친 뒤 일부 영역만 비어 보임 | 부품의 이름을 바꿨는데 부품 목록 파일(`components.json`)은 옛 이름 그대로임 | 소스에서 내보내는 이름과 `components.json` 의 이름을 같게 맞추고 다시 빌드합니다 |
+| 메모 카드가 이 템플릿 서식이 아닌 원래 모양으로 나옴 | 대체 부품의 내보내는 이름이 `components.json` 의 선언과 다름 | 두 이름을 같게 맞추고 다시 빌드합니다 |
 <!-- @intent END -->
 
 ## 변경 이력

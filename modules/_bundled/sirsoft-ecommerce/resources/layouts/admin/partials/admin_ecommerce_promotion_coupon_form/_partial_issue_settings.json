@@ -1,381 +1,384 @@
 {
-  "id": "issue_settings_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "H2",
-      "props": {
-        "className": "card-title"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.issue_settings"
+    "comment": "쿠폰 폼의 발급 설정 구역 — 발급 수량·발급 기간·재발급 제한 셋을 정한다.\n  셋이 같은 형태다: '무제한 / 제한' 라디오가 **화면에만 쓰는 구분값**(`_local.issue_quantity_type` 등)을\n  쥐고, 그 아래 입력칸이 조건부로 나타난다. 실제로 저장되는 것은 입력칸의 값뿐이므로 구분값은\n  서버로 가지 않는다.\n  그래서 라디오마다 두 단계가 붙는다 — 구분값을 바꾸고, **무제한을 고르면 딸린 값을 지운다**.\n  지우지 않으면 화면에서는 무제한인데 저장 본문에 옛 제한값이 남아 나간다.\n  재발급만 지우는 값이 다르다 — `null` 이 아니라 `0`(무제한을 뜻하는 수)이고, 제한으로 돌아올 때는\n  최소 1 을 세운다.",
+    "meta": {
+        "is_partial": true
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-5"
-      },
-      "children": [
-            {
-              "comment": "발급수량",
-              "id": "field_issue_quantity",
-              "type": "composite",
-              "name": "FormField",
-              "props": {
-                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity",
-                "error": "{{_local.errors?.total_quantity?.[0] ?? ''}}"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "composite",
-                          "name": "RadioGroup",
-                          "props": {
-                            "value": "{{_local.issue_quantity_type}}",
-                            "inline": true,
-                            "options": [
-                              {
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
-                                "value": "unlimited"
-                              },
-                              {
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_quantity_limited",
-                                "value": "limited"
-                              }
-                            ]
-                          },
-                          "responsive": {
-                            "mobile": {
-                              "props": {
-                                "inline": false
-                              }
-                            }
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "sequence",
-                              "params": {
-                                "actions": [
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "issue_quantity_type": "{{$event.target.value}}"
-                                    }
-                                  },
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "form.total_quantity": "{{$event.target.value === 'unlimited' ? null : _local.form?.total_quantity}}"
-                                    }
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "수량제한 시: 수량 입력",
-                          "id": "issue_quantity_input",
-                          "type": "basic",
-                          "name": "Div",
-                          "if": "{{_local.issue_quantity_type === 'limited'}}",
-                          "props": {
-                            "className": "flex-center gap-2"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "number",
-                                "name": "total_quantity",
-                                "className": "input w-32",
-                                "min": 1
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_quantity"
-                            }
-                          ]
-                        }
-                      ],
-                      "props": {}
-                    }
-                  ]
-                }
-              ]
+    "id": "issue_settings_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title"
             },
-            {
-              "comment": "발급기간",
-              "id": "field_issue_period",
-              "type": "composite",
-              "name": "FormField",
-              "props": {
-                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period",
-                "error": "{{_local.errors?.issue_from?.[0] ?? _local.errors?.issue_to?.[0] ?? ''}}"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "composite",
-                          "name": "RadioGroup",
-                          "props": {
-                            "value": "{{_local.issue_period_type}}",
-                            "inline": true,
-                            "options": [
-                              {
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
-                                "value": "unlimited"
-                              },
-                              {
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_period_limited",
-                                "value": "limited"
-                              }
-                            ]
-                          },
-                          "responsive": {
-                            "mobile": {
-                              "props": {
-                                "inline": false
-                              }
-                            }
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "sequence",
-                              "params": {
-                                "actions": [
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "issue_period_type": "{{$event.target.value}}"
-                                    }
-                                  },
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "form.issue_from": "{{$event.target.value === 'unlimited' ? null : _local.form?.issue_from}}",
-                                      "form.issue_to": "{{$event.target.value === 'unlimited' ? null : _local.form?.issue_to}}"
-                                    }
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "기간설정 시: 시작일 ~ 종료일. flex-center 는 nowrap 이고 datetime-local 입력이 각 208px(w-52) 이라 좁은 뷰포트에서 행이 콘텐츠 영역을 넘친다 → portable 에서 줄바꿈 + 입력 전폭.",
-                          "id": "issue_period_range",
-                          "type": "basic",
-                          "name": "Div",
-                          "if": "{{_local.issue_period_type === 'limited'}}",
-                          "props": {
-                            "className": "flex-center gap-2"
-                          },
-                          "responsive": {
-                            "portable": {
-                              "props": {
-                                "className": "flex-center flex-wrap gap-2"
-                              }
-                            }
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "datetime-local",
-                                "name": "issue_from",
-                                "className": "input w-52"
-                              },
-                              "responsive": {
-                                "portable": {
-                                  "props": {
-                                    "type": "datetime-local",
-                                    "name": "issue_from",
-                                    "className": "input w-full"
-                                  }
-                                }
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label-subtle"
-                              },
-                              "text": "~"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "datetime-local",
-                                "name": "issue_to",
-                                "className": "input w-52"
-                              },
-                              "responsive": {
-                                "portable": {
-                                  "props": {
-                                    "type": "datetime-local",
-                                    "name": "issue_to",
-                                    "className": "input w-full"
-                                  }
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      ],
-                      "props": {}
-                    }
-                  ]
-                }
-              ]
+            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.issue_settings"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-5"
             },
-            {
-              "comment": "재발급 (중복 다운로드)",
-              "id": "field_reissue",
-              "type": "composite",
-              "name": "FormField",
-              "props": {
-                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.reissue",
-                "error": "{{_local.errors?.per_user_limit?.[0] ?? ''}}"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
+                    "comment": "발급수량",
+                    "id": "field_issue_quantity",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity",
+                        "error": "{{_local.errors?.total_quantity?.[0] ?? ''}}"
+                    },
+                    "children": [
                         {
-                          "type": "composite",
-                          "name": "RadioGroup",
-                          "props": {
-                            "value": "{{_local.reissue_type}}",
-                            "inline": true,
-                            "options": [
-                              {
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
-                                "value": "unlimited"
-                              },
-                              {
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.reissue_limited",
-                                "value": "limited"
-                              }
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "RadioGroup",
+                                            "responsive": {
+                                                "mobile": {
+                                                    "props": {
+                                                        "inline": false
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "발급 수량 제한 여부 — 화면용 구분값을 바꾸고, 무제한이면 입력해 둔 수량을 지운다(남기면 저장 본문에 옛 값이 실려 나간다).",
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "issue_quantity_type": "{{$event.target.value}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "form.total_quantity": "{{$event.target.value === 'unlimited' ? null : _local.form?.total_quantity}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{_local.issue_quantity_type}}",
+                                                "inline": true,
+                                                "options": [
+                                                    {
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
+                                                        "value": "unlimited"
+                                                    },
+                                                    {
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_quantity_limited",
+                                                        "value": "limited"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "comment": "수량제한 시: 수량 입력",
+                                            "id": "issue_quantity_input",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_local.issue_quantity_type === 'limited'}}",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity",
+                                                        "type": "number",
+                                                        "name": "total_quantity",
+                                                        "className": "input w-32",
+                                                        "min": 1
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_quantity"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
                             ]
-                          },
-                          "responsive": {
-                            "mobile": {
-                              "props": {
-                                "inline": false
-                              }
-                            }
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "sequence",
-                              "params": {
-                                "actions": [
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "reissue_type": "{{$event.target.value}}"
-                                    }
-                                  },
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "_local",
-                                      "form.per_user_limit": "{{$event.target.value === 'unlimited' ? 0 : (_local.form?.per_user_limit || 1)}}"
-                                    }
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "제한 시: 횟수 입력",
-                          "id": "reissue_limit_input",
-                          "type": "basic",
-                          "name": "Div",
-                          "if": "{{_local.reissue_type === 'limited'}}",
-                          "props": {
-                            "className": "flex-center gap-2"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.per_user"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "number",
-                                "name": "per_user_limit",
-                                "className": "input w-24",
-                                "min": 1
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_times"
-                            }
-                          ]
                         }
-                      ],
-                      "props": {}
-                    }
-                  ]
+                    ]
+                },
+                {
+                    "comment": "발급기간",
+                    "id": "field_issue_period",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period",
+                        "error": "{{_local.errors?.issue_from?.[0] ?? _local.errors?.issue_to?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "RadioGroup",
+                                            "responsive": {
+                                                "mobile": {
+                                                    "props": {
+                                                        "inline": false
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "발급 기간 제한 여부 — 위 수량과 같은 두 단계이고, 무제한이면 시작·종료일을 **둘 다** 지운다(한쪽만 남아도 서버는 기간이 걸린 것으로 읽는다).",
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "issue_period_type": "{{$event.target.value}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "form.issue_from": "{{$event.target.value === 'unlimited' ? null : _local.form?.issue_from}}",
+                                                                "form.issue_to": "{{$event.target.value === 'unlimited' ? null : _local.form?.issue_to}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{_local.issue_period_type}}",
+                                                "inline": true,
+                                                "options": [
+                                                    {
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
+                                                        "value": "unlimited"
+                                                    },
+                                                    {
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_period_limited",
+                                                        "value": "limited"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "comment": "기간설정 시: 시작일 ~ 종료일. flex-center 는 nowrap 이고 datetime-local 입력이 각 208px(w-52) 이라 좁은 뷰포트에서 행이 콘텐츠 영역을 넘친다 → portable 에서 줄바꿈 + 입력 전폭.",
+                                            "id": "issue_period_range",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_local.issue_period_type === 'limited'}}",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-2"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
+                                                                "type": "datetime-local",
+                                                                "name": "issue_from",
+                                                                "className": "input w-full"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
+                                                        "type": "datetime-local",
+                                                        "name": "issue_from",
+                                                        "className": "input w-52"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "~"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
+                                                                "type": "datetime-local",
+                                                                "name": "issue_to",
+                                                                "className": "input w-full"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
+                                                        "type": "datetime-local",
+                                                        "name": "issue_to",
+                                                        "className": "input w-52"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "재발급 (중복 다운로드)",
+                    "id": "field_reissue",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.reissue",
+                        "error": "{{_local.errors?.per_user_limit?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "RadioGroup",
+                                            "responsive": {
+                                                "mobile": {
+                                                    "props": {
+                                                        "inline": false
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "1인당 재발급 제한 — 앞의 둘과 달리 무제한을 `null` 이 아니라 **`0`** 으로 적는다(이 필드에서는 0 이 '제한 없음' 이다). 제한으로 되돌아올 때는 비어 있으면 1 을 세워 0 인 채로 저장되는 것을 막는다.",
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "reissue_type": "{{$event.target.value}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "form.per_user_limit": "{{$event.target.value === 'unlimited' ? 0 : (_local.form?.per_user_limit || 1)}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{_local.reissue_type}}",
+                                                "inline": true,
+                                                "options": [
+                                                    {
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
+                                                        "value": "unlimited"
+                                                    },
+                                                    {
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.reissue_limited",
+                                                        "value": "limited"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "comment": "제한 시: 횟수 입력",
+                                            "id": "reissue_limit_input",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_local.reissue_type === 'limited'}}",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.per_user"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "number",
+                                                        "name": "per_user_limit",
+                                                        "className": "input w-24",
+                                                        "min": 1
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_times"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-      ]
-    }
-  ]
+            ]
+        }
+    ]
 }

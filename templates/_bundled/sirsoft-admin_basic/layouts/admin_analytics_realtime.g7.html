@@ -1,0 +1,190 @@
+<!-- 실시간 화면. 소켓이 있으면 서버 방송(`analytics.realtime.updated`)을 신호로 받아 실시간 소스를 다시 받고,
+  없으면 설정 주기(기본 30초)의 폴링이 돈다 — 둘 다 켜 두어도 해가 없다(같은 API 를 두 계기로 부를 뿐). 창(분)은
+  질의 `minutes` 라 새로고침에 살아난다. 주소(IP) 열은 열람 권한이 있을 때만 서버가 채우므로, 그 열은
+  권한 노드로 감싼다. 타이머 id 는 이 화면만의 `analytics_realtime_live` 다 — 개요와 같은 id 를 쓰면 화면을
+  옮길 때 새 화면이 켠 타이머를 떠나는 화면의 정리가 그대로 꺼, 돌아온 화면이 한 번도 갱신되지 않는다. -->
+<layout name="admin_analytics_realtime" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.realtime.title"/>
+  <!-- 지금 접속자 수·목록 — 창(분)은 질의 `minutes`. 폴링 타이머·서버 방송·새로고침 버튼 세 계기가 모두 이 소스 하나를 다시 받는다. -->
+  <data-source id="analytics_realtime" label_key="$t:editor.data_source.analytics_realtime" type="api" endpoint="/api/admin/analytics/realtime" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params minutes="{{query.minutes}}"/>
+    <fallback>
+      <field name="data">
+        <field name="count" :value="0"/>
+        <field name="window_minutes" :value="5"/>
+        <field name="visitors" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 서버 방송 — 값을 쓰지 않고 「바뀌었다」는 신호로만 받아 실시간 소스를 다시 받는다. 방송은 채널의 모든
+    연결에 같은 값이라 기본 창(5분)·주소(IP) 없음으로 만들어진다 — 그 값으로 소스를 갈아 끼우면 창을 30분으로
+    고른 화면이 방송마다 「최근 5분」으로 튀고, 주소 열람 권한자의 IP 칸이 비었다(#682 S3 라운드 14, 설계 결정).
+    다시 받으면 이 화면의 창(`query.minutes`)과 보는 사람의 권한이 그대로 반영된다. 소켓이 없는 사이트에서는
+    구독만 조용히 실패하고 폴링이 값을 댄다. -->
+  <data-source id="analytics_realtime_ws" label_key="$t:editor.data_source.analytics_realtime_ws" type="websocket" channel="core.admin.analytics" event="analytics.realtime.updated" channel_type="private">
+    <on-receive>
+      <refetch-data-source dataSourceId="analytics_realtime"/>
+    </on-receive>
+  </data-source>
+  <!-- 소켓 설정 여부 배지용. -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+        <field name="broadcasting">
+          <field name="configured" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <permissions>
+    <permission>core.analytics.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_realtime</wait-for>
+  </transition-overlay>
+  <init>
+    <start-interval id="analytics_realtime_live" intervalMs="{{Math.max(10, Number(_global.settings?.analytics?.realtime_poll_seconds ?? 30)) * 1000}}">
+      <actions>
+        <refetch-data-source dataSourceId="analytics_realtime"/>
+      </actions>
+    </start-interval>
+  </init>
+  <slot name="content">
+    <div data-ref="analytics_realtime_content" class="admin-page-content-responsive-fluid">
+      <on event="unmount">
+        <stop-interval id="analytics_realtime_live"/>
+      </on>
+      <div data-ref="page_header" class="flex-between mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.realtime.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.realtime.description</p>
+        </div>
+        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
+          <on type="click">
+            <refetch-data-source dataSourceId="analytics_realtime"/>
+          </on>
+          <icon name="refresh" class="text-xl"/>
+        </button>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <div data-ref="realtime_header_card" class="admin-card mb-4">
+        <blur-until-loaded sources="analytics_realtime"/>
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-baseline gap-2">
+            <span data-ref="realtime_big_count" class="text-4xl font-bold text-gray-900 dark:text-white">{{(analytics_realtime?.data?.count ?? 0) | number}}</span>
+            <span class="text-label">$t:admin.analytics.realtime.count_label|minutes={{analytics_realtime?.data?.window_minutes ?? 5}}</span>
+          </div>
+          <div class="flex-center gap-2">
+            <span class="filter-label">$t:admin.analytics.realtime.window_label</span>
+            <select data-ref="window_select" name="analytics_realtime_minutes" class="w-24" value="{{String(query.minutes || analytics_realtime?.data?.window_minutes || 5)}}">
+              <options>
+                <option value="1">1</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="30">30</option>
+              </options>
+              <on type="change">
+                <!-- 창(분) 바꾸기 — 질의 `minutes` 에 실어 새로고침·주소 공유에 남긴다. 폴링·방송으로 다시 받을 때도 이 질의를 읽으므로
+                     고른 창이 그대로 유지된다. -->
+                <navigate path="/admin/analytics/realtime" :mergeQuery="true" :replace="true">
+                  <query minutes="{{$event.target.value}}"/>
+                </navigate>
+              </on>
+            </select>
+          </div>
+          <div class="flex-1"/>
+          <badge data-type="composite" data-ref="transport_badge_ws" data-if="{{analytics_status?.data?.broadcasting?.configured === true}}" color="green" text="$t:admin.analytics.realtime.badge_ws" size="sm"/>
+          <badge data-type="composite" data-ref="transport_badge_polling" data-if="{{analytics_status?.data?.broadcasting?.configured !== true}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
+        </div>
+      </div>
+      <div data-ref="realtime_grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div data-ref="realtime_pages_card" class="admin-card">
+          <h2 class="section-heading mb-3">$t:admin.analytics.realtime.pages_title</h2>
+          <p data-if="{{(analytics_realtime?.data?.visitors ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.realtime.empty</p>
+          <div data-each="entry, $idx in {{Object.entries((analytics_realtime?.data?.visitors ?? []).reduce((acc, v) => ({ ...acc, [v.page || '-']: (acc[v.page || '-'] || 0) + 1 }), {})).sort((a, b) => b[1] - a[1]).slice(0, 10)}}" class="py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+            <div class="flex-between gap-3">
+              <span class="text-body truncate" title="{{entry[0]}}">{{entry[0]}}</span>
+              <span class="text-heading">{{entry[1]}}</span>
+            </div>
+            <div class="h-1.5 mt-1 rounded bg-gray-100 dark:bg-gray-700">
+              <div class="h-1.5 rounded bg-emerald-500 dark:bg-emerald-400" style="{{'width:' + Math.min(100, Math.round(entry[1] / Math.max(1, (analytics_realtime?.data?.count ?? 1)) * 100)) + '%'}}"/>
+            </div>
+          </div>
+        </div>
+        <div data-ref="realtime_visitors_card" class="admin-card lg:col-span-2">
+          <h2 class="section-heading mb-3">$t:admin.analytics.realtime.visitors_title</h2>
+          <div class="overflow-x-auto">
+            <data-grid data-type="composite" data-ref="realtime_visitors_grid" data="{{analytics_realtime?.data?.visitors ?? []}}" :pagination="false" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.realtime.empty">
+              <column field="last_action_at" header="$t:admin.analytics.realtime.columns.time" width="150px">
+                <cell>
+                  <span class="text-label">{{row.last_action_at | datetime | default('-')}}</span>
+                </cell>
+              </column>
+              <column field="page" header="$t:admin.analytics.realtime.columns.page">
+                <cell>
+                  <span class="text-body break-all">{{row.page ?? '-'}}</span>
+                </cell>
+              </column>
+              <column field="country_code" header="$t:admin.analytics.realtime.columns.country" width="80px">
+                <cell>
+                  <span class="text-label">{{row.country_name ?? row.country_code ?? '-'}}</span>
+                </cell>
+              </column>
+              <column field="device_type" header="$t:admin.analytics.realtime.columns.device" width="100px">
+                <cell>
+                  <span class="text-label">{{row.device_type_label ?? row.device_type ?? '-'}}</span>
+                </cell>
+              </column>
+              <column field="visitor_type" header="$t:admin.analytics.realtime.columns.type" width="90px">
+                <cell>
+                  <badge data-type="composite" color="{{row.visitor_type === 'admin' ? 'red' : (row.visitor_type === 'member' ? 'blue' : (row.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (row.visitor_type ?? 'guest'))}}" size="sm"/>
+                </cell>
+              </column>
+              <column field="visitor_key" header="$t:admin.analytics.realtime.columns.visitor" width="200px">
+                <cell>
+                  <span class="text-label font-mono">{{row.visitor_key ?? '-'}}</span>
+                  <span data-if="{{!!row.ip}}" class="text-hint font-mono block">{{row.ip}}</span>
+                  <!-- 지금 보고 있는 사람이 회원이면 그 자리에서 회원 화면으로 건너뛴다(§4.10 「프로필 링크」).
+                       목록 화면과 같은 규율 — 목적지(/admin/users/{uuid})는 core.users.read 를 요구하므로
+                       그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다.
+                       표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4). -->
+                  <span data-if="{{!!row.user?.name &amp;&amp; !(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" class="text-hint block">{{row.user.name}}</span>
+                  <button data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" type="button" class="text-hint underline block text-left">
+                    <on type="click">
+                      <open-window path="/admin/users/{{row.user.uuid}}"/>
+                    </on>
+                    {{row.user.name}}
+                  </button>
+                </cell>
+              </column>
+            </data-grid>
+          </div>
+        </div>
+      </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_realtime_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
+    </div>
+  </slot>
+</layout>

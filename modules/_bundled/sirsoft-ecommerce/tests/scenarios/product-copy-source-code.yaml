@@ -1,0 +1,21 @@
+feature: 상품 복사 원본 코드
+
+description: |
+  상품 복사 등록 화면 「원본 상품」 칸의 상품코드 회귀
+  
+  복사 데이터 API 는 새 상품에 쓸 코드를 미리 채번해 `product_code` 로 내려준다. 원본 칸이 이 값을
+  찍으면 원본이 아닌 새 코드가 「원본 상품의 상품코드」로 보인다. 원본 코드는 진입 주소의
+  `copy_id`(복사 창이 원본 상품코드로 채운다)에서 읽는다.
+
+  수정 이력: 이커머스 전수 실측 S5 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02]
+  # c01: 원본 칸에 상품코드 줄이 있다
+  # c02: 새로 채번한 코드가 아니라 원본 코드(copy_id)를 찍는다
+
+effects:
+  - product_copy_source_code
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productCopySourceCode.test.ts

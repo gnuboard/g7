@@ -1,0 +1,22 @@
+<!-- 쇼핑몰 설정 — 마일리지 소멸 설정 카드. 기본 카드와 같이 폼 자동 바인딩만 쓴다.
+  실제 소멸 처리는 서버 스케줄이 하고 이 화면은 그 기준만 정한다. -->
+<partial description="마일리지 설정 - 유효기간 카드">
+  <div data-ref="mileage_expiry_card" class="admin-card">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.title</h3>
+    <div class="flex items-center justify-between py-3">
+      <div>
+        <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled</label>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled_hint</p>
+      </div>
+      <toggle data-type="composite" name="mileage.expiry_enabled" value="{{_local.form?.mileage?.expiry_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+    </div>
+    <div data-if="{{_local.form?.mileage?.expiry_enabled ?? true}}" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days</label>
+      <div class="flex items-center gap-2">
+        <input type="number" name="mileage.expiry_days" value="{{_local.form?.mileage?.expiry_days ?? 365}}" min="{{_local?.form?._meta?.limits?.expiry_days_min ?? 1}}" class="input w-28 text-center" disabled="{{_computed.isReadOnly}}"/>
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days_suffix|count={{_local.form?.mileage?.expiry_days ?? 365}}</span>
+      </div>
+      <span data-if="{{_local.errors?.['mileage.expiry_days']}}" class="text-red-500 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}</span>
+    </div>
+  </div>
+</partial>

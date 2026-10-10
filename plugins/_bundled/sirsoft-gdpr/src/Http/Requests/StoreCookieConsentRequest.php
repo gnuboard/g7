@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
+use Plugins\Sirsoft\Gdpr\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
 
 /**
@@ -18,6 +19,8 @@ use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
  */
 class StoreCookieConsentRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * StoreCookieConsentRequest 생성자
      *

@@ -1,0 +1,72 @@
+<!-- 장바구니 화면 — 회원·비회원 모두 쓴다. 비회원 장바구니는 `_global.cartKey` 로 식별하므로
+     헤더에 그 키를 실어 보낸다(로그인 토큰이 없어도 자기 장바구니를 찾는 경로). -->
+<layout name="shop/cart" version="1.0.0" extends="_user_base">
+  <!-- 담긴 상품과 결제 예정 금액을 함께 받는다. 금액은 서버가 계산하므로(쿠폰·배송비·과세 분해)
+       선택 항목이 바뀔 때마다 다시 받아야 한다 — 선택 id 목록을 실어야 해서 GET 이 아니라 POST 다. -->
+  <data-source id="cartItems" label_key="$t:editor.data_source.cartItems" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/query" method="POST" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <headers X-Cart-Key="{{_global.cartKey}}"/>
+    <params selected_ids="{{_local.selectedItems?.length > 0 ? _local.selectedItems : undefined}}"/>
+    <init-local>
+      <field name="selectedItems" value="item_ids"/>
+    </init-local>
+    <fallback>
+      <field name="data">
+        <field name="items" :value="[]"/>
+        <field name="item_ids" :value="[]"/>
+        <field name="item_count" :value="0"/>
+        <field name="calculation" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="selectedItems" :value="[]"/>
+    <field name="allSelected" :value="true"/>
+    <field name="isCalculating" :value="false"/>
+    <field name="showTaxDetails" :value="false"/>
+    <field name="optionModal">
+      <field name="visible" :value="false"/>
+      <field name="targetItem" :value="null"/>
+    </field>
+    <field name="deleteModal">
+      <field name="visible" :value="false"/>
+      <field name="targetIds" :value="[]"/>
+    </field>
+    <field name="unavailableModal">
+      <field name="visible" :value="false"/>
+      <field name="items" :value="[]"/>
+      <field name="hasStockIssue" :value="false"/>
+    </field>
+    <field name="optionProduct" :value="null"/>
+    <field name="matchedOption" :value="null"/>
+    <field name="isOrdering" :value="false"/>
+  </init-local>
+  <permissions/>
+  <init>
+    <!-- cartKey 초기화 (data_sources headers에서 사용) -->
+    <action handler="initCartKey"/>
+  </init>
+  <slot name="content">
+    <container data-type="layout" class="py-8">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <icon name="shopping-cart" class="text-2xl"/>
+        <span>$t:shop.cart.title</span>
+      </h1>
+      <grid data-type="layout" :cols="3" :gap="6">
+        <responsive on="portable" :cols="1"/>
+        <div class="col-span-2 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
+          <responsive on="portable" class="col-span-1"/>
+          <include src="partials/shop/_cart_list.g7.html"/>
+        </div>
+        <div class="col-span-1">
+          <include src="partials/shop/_cart_summary.g7.html"/>
+        </div>
+      </grid>
+    </container>
+  </slot>
+  <!-- 선택 삭제·개별 삭제가 함께 부르는 확인 창. 지울 대상은 `_local.deleteModal.targetIds` 로 넘어온다 -->
+  <modal src="partials/shop/_modal_cart_delete_confirm.g7.html"/>
+  <!-- 담은 뒤 옵션을 바꾸는 창 — 색상/사이즈를 고르면 같은 상품의 다른 옵션 항목으로 교체한다 -->
+  <modal src="partials/shop/_modal_cart_option_change.g7.html"/>
+  <!-- 주문하기를 눌렀을 때 품절·판매중지 항목이 섞여 있으면 진행을 멈추고 그 목록을 보여 준다 -->
+  <modal src="partials/shop/_modal_cart_unavailable.g7.html"/>
+</layout>

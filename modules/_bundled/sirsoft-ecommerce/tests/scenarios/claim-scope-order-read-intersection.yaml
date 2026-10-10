@@ -1,0 +1,50 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   표면(surface) 축은 한 판정 지점의 출입구 목록이다 — 결함 조합(주문 조회 「본인만」 × 클레임 「전체」)은
+#   다섯 표면을 모두 따로 세우고, 회귀 조합(둘 다 전체 · 클레임 본인만 · 주문 조회 권한 없음)은 같은
+#   판정 지점을 공유하므로 대표 표면 하나씩만 세운다. 표면별 회귀는 ValidateP3ClaimScopeTest 가 이미 덮는다.
+#   effects 축은 면제하지 않는다.
+# 시나리오 매니페스트 — 클레임 판정의 주문 조회 범위 결합 (EC-667)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+feature: claim_scope_order_read_intersection
+
+description: |
+  관리자 클레임(교환·반품·환불·취소 신청서) 판정이 그 라우트의 클레임 권한 범위와 운영자의
+  **주문 조회 범위의 교집합**으로 이뤄진다. 주문 조회를 「본인만」 으로 묶은 운영자는 클레임 권한이
+  「전체」 여도 남의 주문 신청서를 목록·상세·전이·일괄·주문 연계 라우트 어디서도 다루지 못한다.
+
+  핵심 동작:
+    - 목록·건수·일괄 가드는 저장소가, 상세·전이·주문 연계 라우트는 스코프 가드가 같은 교집합을 건다.
+    - 더 좁은 쪽이 이긴다 — 클레임 「본인만」 은 주문 조회 「전체」 아래에서도 그대로 좁힌다.
+    - 주문 조회 권한이 없는 클레임 전담 운영자는 클레임 권한 범위만으로 판정한다(보유하지 않은
+      권한은 범위 진술이 아니다).
+
+axes:
+  order_read_scope:
+    - self
+    - all
+    - none
+  claim_scope:
+    - all
+    - self
+  surface:
+    - list
+    - detail
+    - transition
+    - bulk
+    - order_linked
+
+effects:
+  - claim_list_is_bounded_by_order_read_scope
+  - claim_detail_is_bounded_by_order_read_scope
+  - claim_actions_are_bounded_by_order_read_scope
+  - claim_bulk_actions_are_bounded_by_order_read_scope
+  - order_linked_claim_routes_are_bounded_by_order_read_scope
+  - unscoped_operator_keeps_full_claim_access
+  - claim_self_scope_still_narrows_under_wider_order_read
+  - claim_only_operator_is_judged_by_claim_scope_alone
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ClaimScopeOrderReadIntersectionTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

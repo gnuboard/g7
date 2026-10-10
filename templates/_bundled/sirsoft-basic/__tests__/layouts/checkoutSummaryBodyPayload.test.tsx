@@ -20,6 +20,8 @@ import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
 import checkoutSummaryJson from '../../layouts/partials/shop/_checkout_summary.json';
 import checkoutPaymentJson from '../../layouts/partials/shop/_checkout_payment.json';
 import checkoutJson from '../../layouts/shop/checkout.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { evaluateComputedDefinitions } from '@core/template-engine/helpers/ComputedEvaluator';
 
 /** 객체 트리에서 조건을 만족하는 첫 노드를 깊이우선 탐색 */
 function findNode(node: any, predicate: (n: any) => boolean): any {
@@ -78,6 +80,12 @@ function expectedLegacy(ctx: any): Record<string, any> {
         : null,
     expected_total_amount: checkoutData?.data?.calculation?.summary?.final_amount ?? 0,
     save_shipping_address: _local?.saveShippingAddress ?? false,
+    // 고른 배송지를 이번에 쓴 주소로 갱신할지 — 주소를 실제로 손댔을 때만(shippingAddressDirty)
+    // 서버에 id 를 넘긴다. 손대지 않았으면 null 이라 서버는 아무 것도 덮어쓰지 않는다.
+    save_shipping_address_id:
+      _computed?.shippingAddressDirty && (_local?.updateSelectedAddress ?? true)
+        ? _local?.selectedAddressId
+        : null,
     guest_lookup_password: _global?.currentUser?.uuid ? null : (_local?.guestLookupPassword ?? ''),
     guest_lookup_password_confirmation: _global?.currentUser?.uuid
       ? null
@@ -120,10 +128,12 @@ const baseCtx = (over: Record<string, any> = {}) => ({
 });
 
 describe('주문 생성 body — 확장 병합 칸 계약', () => {
+  /** @effects checkout_body_is_single_expression */
   it('주문 생성 POST apiCall 노드가 존재해야 한다', () => {
     expect(orderCall, '주문 생성 POST apiCall 노드').toBeDefined();
   });
 
+  /** @effects checkout_body_is_single_expression */
   it('body 는 통짜 표현식이어야 한다 (확장 칸 spread 를 담기 위함)', () => {
     expect(typeof orderCall.params.body).toBe('string');
     expect(orderCall.params.body).toContain('checkoutExtraPayload');
@@ -163,17 +173,20 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
     ];
 
     for (const [name, ctx] of cases) {
+      /** @effects checkout_body_legacy_keys_unchanged */
       it(`[${name}] 통짜 평가 결과가 전환 전 산출값과 같다`, () => {
         expect(evalBody(ctx)).toEqual(expectedLegacy(ctx));
       });
     }
 
+    /** @effects checkout_body_legacy_keys_unchanged */
     it('expected_total_amount 는 숫자형을 보존한다 (문자열 보간 금지)', () => {
       expect(typeof evalBody(baseCtx()).expected_total_amount).toBe('number');
     });
   });
 
   describe('확장 병합 칸 (checkoutExtraPayload)', () => {
+    /** @effects checkout_body_empty_extra_payload_is_noop */
     it('모듈 비활성(칸 미주입) 시 payload 가 전환 전과 키·값 모두 동일하다', () => {
       const ctx = baseCtx();
       const body = evalBody(ctx);
@@ -181,6 +194,7 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       expect(body).toEqual(expectedLegacy(ctx));
     });
 
+    /** @effects checkout_body_extra_payload_merged */
     it('칸에 기입한 키가 payload 에 편입되고 기존 키는 불변이다', () => {
       const ctx = baseCtx();
       (ctx._local as Record<string, any>).checkoutExtraPayload = {
@@ -201,6 +215,7 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       }
     });
 
+    /** @effects checkout_extra_payload_can_override_keys */
     it('확장 칸은 기존 키를 덮어쓸 수 없어야 한다 — spread 가 뒤에 오므로 덮어쓰기가 가능함을 명시 고정', () => {
       const ctx = baseCtx();
       (ctx._local as Record<string, any>).checkoutExtraPayload = { payment_method: 'HIJACKED' };
@@ -211,10 +226,12 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
   });
 
   describe('환불계좌 (템플릿 직접 소유 — 확장 칸 미경유)', () => {
+    /** @effects checkout_refund_bank_empty_allowed */
     it('미입력 시 refund_bank 는 null 이다', () => {
       expect(evalBody(baseCtx()).refund_bank).toBeNull();
     });
 
+    /** @effects checkout_refund_bank_persisted */
     it('입력 시 3필드가 그대로 실린다', () => {
       const ctx = baseCtx({
         _local: {
@@ -236,12 +253,13 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
   // 확장 슬롯(현금영수증)과 환불계좌 블록은 결제수단 조건부로 언마운트되지만 _local 값은 남는다.
   // 무통장에서 입력 → 카드로 전환 시 그 값이 그대로 주문 생성 POST 에 실렸다.
   describe('결제수단 전환 — 이전 수단 소유 상태 초기화', () => {
+    /** @effects checkout_state_reset_on_payment_method_change */
     it('결제수단 선택 액션이 확장 칸과 환불계좌를 함께 비운다', () => {
       const methodSelect = findNode(
         checkoutPaymentJson,
         (n: any) =>
           Array.isArray(n?.actions) &&
-          n.actions.some(
+          actionsOf(n).some(
             (a: any) =>
               a?.type === 'click' &&
               JSON.stringify(a).includes('_local.paymentMethod'),
@@ -249,19 +267,35 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       );
       expect(methodSelect, '결제수단 선택 액션 노드를 찾지 못했다').toBeDefined();
 
-      const clickAction = methodSelect.actions.find((a: any) => a?.type === 'click');
-      const inner = clickAction?.params?.actions ?? [];
+      const clickAction = actionsOf(methodSelect).find((a: any) => a?.type === 'click');
+      // sequence 의 자식 목록은 두 자리 중 하나에 온다 — 엔진이 그렇게 읽으므로
+      // (`ActionDispatcher`: `action.actions || action.params?.actions`) 굽기도 한쪽으로만 낸다.
+      // 한 자리만 보면 굽기 관례가 바뀌는 순간 이 단언이 조용히 빈 배열을 검사하게 된다.
+      const inner = clickAction?.actions ?? clickAction?.params?.actions ?? [];
       const targets = inner.map((a: any) => a?.params?.target);
 
       // 결제수단 자체는 설정하고
       expect(targets).toContain('_local.paymentMethod');
-      // 이전 수단이 소유하던 상태는 비운다
-      expect(targets).toContain('_local.checkoutExtraPayload');
+      // 이전 수단이 소유하던 상태는 비운다.
+      // 확장 칸은 객체라 기본(깊은) 병합으로 `{}` 를 넣으면 기존 키가 하나도 지워지지 않는다 —
+      // 현금영수증 신청값이 카드 주문 본문에 그대로 실리고, 무통장으로 돌아오면 신청이 켜진 채 보였다.
+      // 최상위 키를 통째로 바꾸는 shallow(또는 replace) 병합으로 비워야 한다.
+      const payloadReset = inner.find(
+        (a: any) =>
+          a?.params?.target === '_local.checkoutExtraPayload' ||
+          (a?.params?.target === '_local' && 'checkoutExtraPayload' in (a?.params ?? {})),
+      );
+      expect(payloadReset, '확장 칸(checkoutExtraPayload)을 비우는 액션이 없다').toBeDefined();
+      expect(['shallow', 'replace']).toContain(payloadReset.params.merge);
+      if (payloadReset.params.target === '_local') {
+        expect(payloadReset.params.checkoutExtraPayload).toEqual({});
+      }
       expect(targets).toContain('_local.refundBankCode');
       expect(targets).toContain('_local.refundBankAccount');
       expect(targets).toContain('_local.refundBankHolder');
     });
 
+    /** @effects checkout_state_reset_on_payment_method_change */
     it('초기화된 상태로 조립한 payload 에는 이전 수단의 값이 남지 않는다', () => {
       // 무통장에서 현금영수증·환불계좌를 입력한 뒤 카드로 전환된 직후의 _local 상태
       const ctx = baseCtx({
@@ -292,6 +326,7 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
   // 로 번역해 전송한다. toss_* 선택값 자체는 _local.paymentMethod 에 남아 SDK 호출 시 참조된다.
   // ─────────────────────────────────────────────────────────────
   describe('플러그인 결제수단 → 코어 결제수단 전송 (#454)', () => {
+    /** @effects checkout_body_sends_core_payment_method */
     it('body 의 payment_method 는 _computed.selectedCorePaymentMethod 를 사용한다', () => {
       const ctx = baseCtx({
         _computed: {
@@ -304,6 +339,7 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       expect(evalBody(ctx).payment_method).toBe('vbank');
     });
 
+    /** @effects non_mapped_method_falls_back_to_raw_id */
     it('코어 매핑이 없는 결제수단은 raw id 를 그대로 전송한다 (dbank·KG 무영향)', () => {
       const ctx = baseCtx({
         _computed: {
@@ -315,6 +351,7 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       expect(evalBody(ctx).payment_method).toBe('dbank');
     });
 
+    /** @effects checkout_body_sends_core_payment_method */
     it('dbank 분기(계좌 정보)는 코어 값 기준으로 판정된다', () => {
       const ctx = baseCtx({
         _computed: {
@@ -330,6 +367,7 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       });
     });
 
+    /** @effects checkout_body_sends_core_payment_method */
     it('토스 결제수단 선택 시 dbank 분기는 null (계좌 정보 미포함)', () => {
       const ctx = baseCtx({
         _computed: {
@@ -345,8 +383,9 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
   // selectedCorePaymentMethod computed 자체를 checkout.json 원문에서 평가한다.
   // body 테스트는 이 값을 주입받아 검증하므로, computed 가 실제로 카탈로그의
   // core_payment_method 를 해석하는지는 여기서 고정한다.
+  // 결제수단 계산값은 앞선 계산값(selectablePaymentMethods → selectedPaymentMethod)을 참조하므로
+  // 엔진의 정의 순서 평가(evaluateComputedDefinitions)로 전체를 돌려 결과를 본다.
   describe('selectedCorePaymentMethod computed (checkout.json 원문 평가)', () => {
-    const coreExpr: string = (checkoutJson as any).computed.selectedCorePaymentMethod;
 
     /** 모듈이 병합 시 보존하는 결제수단 카탈로그 (core_payment_method 포함) */
     const catalogCtx = (selected?: string) => ({
@@ -368,8 +407,10 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
     });
 
     const evalCore = (ctx: Record<string, any>) =>
-      engine.evaluateExpression(coreExpr.slice(2, -2), ctx);
+      evaluateComputedDefinitions((checkoutJson as any).computed, { _global: {}, ...ctx }, engine, { onError: 'undefined' })
+        .selectedCorePaymentMethod;
 
+    /** @effects enabled_methods_exposed_with_core_mapping */
     it.each([
       ['toss_virtual_account', 'vbank'],
       ['toss_transfer', 'bank'],
@@ -378,18 +419,22 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
       expect(evalCore(catalogCtx(selected))).toBe(expected);
     });
 
+    /** @effects non_mapped_method_falls_back_to_raw_id */
     it('dbank(코어 매핑 미선언)는 raw id 그대로', () => {
       expect(evalCore(catalogCtx('dbank'))).toBe('dbank');
     });
 
+    /** @effects non_mapped_method_falls_back_to_raw_id */
     it('KG 결제수단(코어 매핑 미선언)은 raw id 그대로 — 인터셉터 방식 무영향', () => {
       expect(evalCore(catalogCtx('kginicis_japan_paypay'))).toBe('kginicis_japan_paypay');
     });
 
+    /** @effects enabled_methods_exposed_with_core_mapping */
     it('미선택 시 첫 활성 결제수단으로 폴백한다', () => {
       expect(evalCore(catalogCtx())).toBe('dbank');
     });
 
+    /** @effects enabled_methods_exposed_with_core_mapping */
     it('카탈로그가 비어도 dbank 로 폴백한다 (초기 진입)', () => {
       expect(evalCore({ _local: {}, paymentSettings: undefined })).toBe('dbank');
     });

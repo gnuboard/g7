@@ -1,0 +1,172 @@
+<!-- 언어팩 한 벌의 상세 창. 목록 카드의 메뉴에서 열며, **목록과 다른 데이터소스**를 쓴다 —
+  매니페스트·호환 제약·변경 이력은 목록 응답에 실리지 않아 열 때 따로 받는다. 그래서 값이
+  오기 전 잠깐 「불러오는 중」이 뜨는 갈래가 정상으로 있다.
+  네 구획으로 나뉜다: 기본 정보 · 호환(코어와 대상 확장의 버전 제약, 어긋나면 경고 띠) ·
+  출처(어디서 왔고 언제 깔렸는가) · 변경 이력. 코어에 내장된 팩이면 맨 위에 그 사실을 먼저 알린다. -->
+<partial description="언어팩 상세 정보 모달 — 모듈 detail 모달 패턴(섹션별 구조) 적용" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_detail_modal">
+  <modal data-type="composite" data-ref="language_pack_detail_modal" title="$t:admin.language_packs.modal.detail.title" size="medium">
+    <div class="flex flex-col max-h-[70vh]">
+      <div class="flex-1 overflow-y-auto min-h-0 pr-2">
+        <div data-if="{{!language_pack_detail?.data}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:admin.language_packs.modal.detail.loading</div>
+        <div data-if="{{language_pack_detail?.data}}" class="row-stack">
+          <div data-ref="built_in_notice" data-if="{{language_pack_detail?.data?.source_type === 'built_in'}}" class="alert-info">
+            <icon name="fas fa-info-circle" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <p class="text-sm font-medium text-info-soft">$t:admin.language_packs.modal.detail.built_in_title</p>
+              <p class="text-info-soft mt-1">$t:admin.language_packs.modal.detail.built_in_description</p>
+            </div>
+          </div>
+          <div data-ref="basic_info_section">
+            <div class="flex-center gap-2 mb-4">
+              <icon name="fas fa-cog" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.basic_info</span>
+            </div>
+            <div class="grid-2col">
+            <div data-ref="lp_detail_icon" class="col-span-2 flex items-center gap-3 mb-4">
+              <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                <!-- 글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지된다.
+                     깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 언어팩까지 전부
+                     아이콘을 잃으므로(다른 상세 창과 같은 결함) 식별자 목록으로 든다. -->
+                <icon name="fas fa-language" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+                <img data-if="{{language_pack_detail?.data?.icon_url && !(_local.detailIconBroken ?? []).includes(language_pack_detail?.data?.identifier)}}" src="{{language_pack_detail?.data?.icon_url}}" alt="$t:extensions.icon.alt|name={{language_pack_detail?.data?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
+                  <on event="onError">
+                    <!-- 이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가
+                         다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다. -->
+                    <set-state target="local" detailIconBroken="{{[...(_local.detailIconBroken ?? []), language_pack_detail?.data?.identifier]}}"/>
+                  </on>
+                </img>
+                <span data-if="{{language_pack_detail?.data?.icon_source !== 'manifest'}}" class="absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800" aria-label="$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}">{{language_pack_detail?.data?.locale}}</span>
+              </div>
+              <div class="min-w-0">
+                <p class="text-primary font-semibold truncate">{{language_pack_detail?.data?.name ?? ''}}</p>
+                <code class="text-label-subtle text-xs">{{language_pack_detail?.data?.identifier ?? ''}}</code>
+              </div>
+            </div>
+              <div data-if="{{language_pack_detail?.data?.name}}" class="col-span-2">
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.name</span>
+                <p class="text-primary font-medium">{{language_pack_detail?.data?.name}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.identifier</span>
+                <p class="font-mono text-heading break-all">{{language_pack_detail?.data?.identifier}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.version</span>
+                <p class="text-primary font-medium">v{{language_pack_detail?.data?.version}}{{language_pack_detail?.data?.has_update ? ' → v' + language_pack_detail?.data?.source_meta?.latest_version : ''}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.locale</span>
+                <p class="text-primary font-medium">{{language_pack_detail?.data?.locale}} · {{language_pack_detail?.data?.locale_native_name}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.scope</span>
+                <p class="text-primary font-medium uppercase">{{language_pack_detail?.data?.scope}}{{language_pack_detail?.data?.target_identifier ? ' / ' + language_pack_detail?.data?.target_identifier : ''}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.vendor</span>
+                <p class="text-primary font-medium">{{language_pack_detail?.data?.vendor}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.license</span>
+                <p class="text-primary font-medium">{{language_pack_detail?.data?.license ?? '—'}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.text_direction</span>
+                <p class="text-primary font-medium uppercase">{{language_pack_detail?.data?.text_direction ?? 'ltr'}}</p>
+              </div>
+              <div class="col-span-2">
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.description</span>
+                <p class="text-body">{{language_pack_detail?.data?.description ?? '—'}}</p>
+              </div>
+              <div class="col-span-2">
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.status</span>
+                <div class="flex-center gap-2 mt-1">
+                  <span data-if="{{language_pack_detail?.data?.status === 'active'}}" class="text-success-soft px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900">$t:admin.language_packs.status.active</span>
+                  <span data-if="{{language_pack_detail?.data?.status === 'installed'}}" class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:admin.language_packs.status.installed</span>
+                  <span data-if="{{language_pack_detail?.data?.status === 'inactive'}}" class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:admin.language_packs.status.inactive</span>
+                  <span data-if="{{language_pack_detail?.data?.status === 'error'}}" class="text-danger-soft px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900">$t:admin.language_packs.status.error</span>
+                  <span data-if="{{language_pack_detail?.data?.is_protected === true}}" class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">$t:admin.language_packs.modal.detail.protected</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="compatibility_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="fas fa-link" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.compatibility</span>
+            </div>
+            <div class="flex-center gap-2 text-sm mb-2">
+              <span class="text-gray-700 dark:text-gray-300">$t:admin.language_packs.modal.detail.core_version_constraint</span>
+              <code class="text-info-soft px-2 py-0.5 font-mono bg-blue-50 dark:bg-blue-900/30 rounded">{{language_pack_detail?.data?.manifest?.g7_version ?? '—'}}</code>
+            </div>
+            <div data-if="{{language_pack_detail?.data?.target_version_constraint}}" class="flex-center gap-2 text-sm mb-2">
+              <span class="text-gray-700 dark:text-gray-300">$t:admin.language_packs.modal.detail.target_version_constraint</span>
+              <code class="text-info-soft px-2 py-0.5 font-mono bg-blue-50 dark:bg-blue-900/30 rounded">{{language_pack_detail?.data?.target_version_constraint}}</code>
+              <span data-if="{{language_pack_detail?.data?.target_version_mismatch}}" class="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded">$t:admin.language_packs.modal.detail.mismatch</span>
+            </div>
+            <p class="text-label">{{language_pack_detail?.data?.validation_summary?.depends_on_core_locale === false ? '$t:admin.language_packs.modal.detail.depends_on_core_locale_no' : '$t:admin.language_packs.modal.detail.depends_on_core_locale_yes'}}</p>
+            <div data-if="{{language_pack_detail?.data?.target_version_mismatch}}" class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-warning-soft">$t:admin.language_packs.modal.detail.target_version_mismatch</div>
+          </div>
+          <div data-ref="source_section">
+            <div class="flex-center gap-2 mb-4">
+              <icon name="fas fa-folder-open" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.source</span>
+            </div>
+            <div class="grid-2col">
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.source_type</span>
+                <p class="text-primary font-mono text-sm uppercase">{{language_pack_detail?.data?.source_type}}</p>
+              </div>
+              <div>
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.installed_at</span>
+                <p class="text-primary text-sm">{{language_pack_detail?.data?.installed_at ?? '—'}}</p>
+              </div>
+              <div class="col-span-2">
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.source_url</span>
+                <p class="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{{language_pack_detail?.data?.source_url ?? '—'}}</p>
+              </div>
+              <div data-if="{{language_pack_detail?.data?.activated_at}}">
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.activated_at</span>
+                <p class="text-primary font-medium">{{language_pack_detail?.data?.activated_at}}</p>
+              </div>
+              <div data-if="{{language_pack_detail?.data?.github_url}}" class="col-span-2">
+                <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.github_url</span>
+                <p class="font-medium">
+                  <a href="{{language_pack_detail?.data?.github_url}}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline break-all">{{language_pack_detail?.data?.github_url}}</a>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div data-ref="changelog_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="fas fa-clock-rotate-left" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.changelog_title</span>
+            </div>
+            <p data-if="{{!language_pack_detail?.data?.changelog_entries || language_pack_detail?.data?.changelog_entries?.length === 0}}" class="text-label-subtle">$t:admin.language_packs.modal.detail.no_changelog</p>
+            <div data-if="{{language_pack_detail?.data?.changelog_entries &amp;&amp; language_pack_detail?.data?.changelog_entries?.length > 0}}" class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div data-each="entry, entryIdx in language_pack_detail?.data?.changelog_entries" class="pb-3 mb-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0">
+                <div class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">v{{entry.version}}{{entry.date ? ' (' + entry.date + ')' : ''}}</div>
+                <div data-each="category, catIdx in entry.categories" class="row-stack">
+                  <div>
+                    <span class="text-secondary text-xs font-medium">{{category.name}}</span>
+                    <div data-each="changeItem, itemIdx in category.items" class="ml-3 space-y-0.5">
+                      <div class="text-secondary text-xs">• {{changeItem}}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

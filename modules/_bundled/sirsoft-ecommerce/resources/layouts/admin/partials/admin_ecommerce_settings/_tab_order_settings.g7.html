@@ -1,0 +1,213 @@
+<!-- 쇼핑몰 설정 — 주문 설정 탭. 입금계좌 목록은 별도 조각(카드/표)이 맡고, 이 탭은 결제·주문
+  관련 값을 담는다. -->
+<partial description="e2e:allow 취소 가능 상태 선택지·기본값만 추가 — Vitest 레이아웃 테스트(adminEcommerceSettingsOrder 94건)와 PHPUnit ClaimSettingsStatusVocabularyTest 가 대체 커버. 쇼핑몰 설정 주문설정 탭 콘텐츠">
+  <div data-ref="tab_content_order_settings" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'order_settings'}}">
+    <div data-ref="default_pg_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.description</div>
+      <div data-if="{{(_local.form?.available_pg_providers ?? []).length === 0}}" class="flex-center gap-2 text-label-subtle">
+        <icon name="circle-info" class="text-sm"/>
+        <span>$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.not_installed</span>
+      </div>
+      <div data-if="{{(_local.form?.available_pg_providers ?? []).length > 0}}">
+        <select value="{{_local.form?.order_settings?.default_pg_provider ?? ''}}" class="w-64" options="{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}">
+          <on type="change">
+            <!-- 기본 PG. 선택지는 설치·활성화된 PG 플러그인이고, 하나도 없으면 이 선택칸 대신 미설치 안내만 뜬다. 비워 두면(`---`) null 로 담긴다. -->
+            <set-state target="local" form.order_settings.default_pg_provider="{{$event.target.value || null}}" :hasChanges="true"/>
+          </on>
+        </select>
+      </div>
+    </div>
+    <!-- 현금영수증 설정 (W-5 / #454). 발급 프로바이더는 결제 PG 와 독립 선택한다(KG 로 결제하면서 영수증만 토스로 발급하는 구성 허용 — D5). 배송비 과세 방식은 3택(D3). 신설 블록이므로 responsive.portable 로 작성한다(§6-0). -->
+    <div data-ref="cash_receipt_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.description</div>
+      <!-- 프로바이더 Select + 배송비 과세 Select — 기본 2열, portable 1열 -->
+      <div class="grid grid-cols-2 gap-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4"/>
+        <div>
+          <label class="block text-sm font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_label</label>
+          <!-- 등록된 프로바이더가 0개면 안내만 노출한다 -->
+          <div data-if="{{(_local.form?.available_cash_receipt_providers ?? []).length === 0}}" class="flex-center gap-2 text-label-subtle">
+            <icon name="circle-info" class="text-sm"/>
+            <span>$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_not_installed</span>
+          </div>
+          <select data-ref="cash_receipt_provider_select" data-if="{{(_local.form?.available_cash_receipt_providers ?? []).length > 0}}" value="{{_local.form?.order_settings?.cash_receipt_provider ?? ''}}" class="w-full" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_none') }].concat((_local.form?.available_cash_receipt_providers ?? []).map(p => ({ value: p.id, label: $localized(p.name) ?? p.id })))}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 현금영수증 발급사 선택. 빈 값을 빈 문자열로 눌러 담는 것은 「선택 안 함」 과 미설정을 같은 값으로 모으기 위해서다 -->
+              <set-state target="local" form.order_settings.cash_receipt_provider="{{$event.target.value || ''}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <p class="text-xs text-secondary mt-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_help</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_label</label>
+          <!-- 배송비 과세 3정책 (D3) — 부가가치세법에 '배송비 50% 과세' 같은 일률 규정은 없다. 상점이 선택한다. -->
+          <select data-ref="shipping_fee_tax_policy_select" value="{{_local.form?.order_settings?.shipping_fee_tax_policy ?? 'proportional'}}" class="w-full" options="{{[{ value: 'proportional', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_proportional') }, { value: 'taxable', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_taxable') }, { value: 'follow_main_item', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_follow_main_item') }]}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" form.order_settings.shipping_fee_tax_policy="{{$event.target.value}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <p class="text-xs text-secondary mt-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_help</p>
+        </div>
+      </div>
+      <!-- 자진발급 토글 — 기본 OFF (D14). 의무발행 업종만 켠다. -->
+      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <label class="flex items-center gap-2">
+          <input data-ref="cash_receipt_self_issue_toggle" type="checkbox" name="order_settings.cash_receipt_self_issue" checked="{{_local.form?.order_settings?.cash_receipt_self_issue ?? false}}" disabled="{{_computed.isReadOnly}}" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+            <on type="change">
+              <!-- 자진발급 사용 여부. 구매자가 현금영수증을 신청하지 않은 무통장 주문을 국세청 지정번호로 자동 발급할지 정한다 -->
+              <set-state target="local" form.order_settings.cash_receipt_self_issue="{{$event.target.checked}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_label</span>
+        </label>
+        <p class="text-xs text-secondary mt-1 ml-6">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_help</p>
+        <p class="text-xs text-secondary mt-1 ml-6">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_help</p>
+        <a data-ref="cash_receipt_mandatory_industry_link" href="https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7796&amp;mi=2471" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 ml-6">
+          <span>$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_link</span>
+          <icon name="external-link" size="sm"/>
+        </a>
+      </div>
+    </div>
+    <div data-ref="payment_methods_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.description</div>
+      <!-- 결제수단 행 사이 간격과 목록 높이 상한은 이 감싸개가 맡는다. 두 조각의 뿌리는 sortable 노드라 자기 요소를 그리지 않고 항목을 곧바로 여기에 펼치므로, 그 노드에 준 클래스는 화면에 닿지 않는다. 결제수단은 플러그인이 붙을 때마다 늘어나므로 높이를 묶고 안에서 스크롤한다 — 끌어 옮기기(dnd-kit)는 스크롤 가능한 조상을 자동 스크롤한다. 좁은 화면 카드는 한 장이 여러 줄이라 고정 px 대신 화면 높이 비율로 묶는다. -->
+      <div data-ref="payment_methods_scroll" class="w-full stack-tight max-h-[500px] overflow-y-auto pr-1">
+        <responsive on="portable" class="w-full stack-tight max-h-[70vh] overflow-y-auto pr-1">
+          <include src="_payment_methods_cards.g7.html"/>
+        </responsive>
+        <include src="_payment_methods_list.g7.html"/>
+      </div>
+      <span data-if="{{_local.errors?.['order_settings.payment_methods']}}" class="form-error-xs mt-2 block">{{_local.errors?.['order_settings.payment_methods']?.[0] ?? ''}}</span>
+    </div>
+    <div data-ref="bank_accounts_card" class="admin-card">
+      <div class="flex-between mb-6">
+        <div>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.title</h3>
+          <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.description</div>
+        </div>
+        <div class="flex-center gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <open-modal target="bank_management_modal"/>
+            </on>
+            <icon name="building-columns" class="text-sm"/>
+            <span>$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.manage_banks</span>
+          </button>
+          <button type="button" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <!-- 입금계좌 추가. 배열 끝에 빈 줄을 붙이고, 첫 줄이면 대표로 표시한다 — 대표가 없는 상태를 만들지 않기 위해서다. -->
+              <set-state target="local" form.order_settings.bank_accounts="{{[...(_local.form?.order_settings?.bank_accounts ?? []), { bank_code: '', account_number: '', account_holder: '', is_active: true, is_default: false }]}}" :hasChanges="true"/>
+            </on>
+            <icon name="plus" class="text-sm"/>
+            <span>$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.add_account</span>
+          </button>
+        </div>
+      </div>
+      <div class="w-full">
+        <responsive on="portable">
+          <include src="_bank_accounts_cards.g7.html"/>
+        </responsive>
+        <include src="_bank_accounts_table.g7.html"/>
+      </div>
+      <span data-if="{{_local.errors?.['order_settings.bank_accounts']}}" class="form-error-xs mt-2 block">{{_local.errors?.['order_settings.bank_accounts']?.[0] ?? ''}}</span>
+    </div>
+    <div data-ref="auto_cancel_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.description</div>
+      <div class="row-stack">
+        <div class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_description</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_hint</p>
+          </div>
+          <toggle data-type="composite" name="order_settings.auto_cancel_expired" value="{{_local.form?.order_settings?.auto_cancel_expired}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <span data-if="{{_local.errors?.['order_settings.auto_cancel_expired']}}" class="form-error-xs">{{_local.errors?.['order_settings.auto_cancel_expired']?.[0] ?? ''}}</span>
+        <div data-if="{{_local.form?.order_settings?.auto_cancel_expired}}" class="flex-center gap-2 flex-wrap">
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_prefix</span>
+          <input type="number" name="order_settings.auto_cancel_days" value="{{_local.form?.order_settings?.auto_cancel_days ?? 3}}" min="{{_local?.form?._meta?.limits?.auto_cancel_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.auto_cancel_days_max ?? 30}}" step="1" class="{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_suffix</span>
+          <span data-if="{{_local.errors?.['order_settings.auto_cancel_days']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}</span>
+        </div>
+        <!-- 결제 미완료 주문 만료 기준(분) — 결제창까지 갔으나 결제가 성립하지 않은 주문을 정리하는 스케줄러가 읽는다. 자동취소 토글과 독립이므로 토글 하위에 두지 않는다. -->
+        <div data-ref="pending_order_expire_minutes_row" class="flex-center gap-2 flex-wrap">
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_prefix</span>
+          <input type="number" name="order_settings.pending_order_expire_minutes" value="{{_local.form?.order_settings?.pending_order_expire_minutes ?? 1440}}" min="{{_local?.form?._meta?.limits?.pending_order_expire_minutes_min ?? 0}}" max="{{_local?.form?._meta?.limits?.pending_order_expire_minutes_max ?? 20160}}" step="1" class="{{_local.errors?.['order_settings.pending_order_expire_minutes'] ? 'input input-error w-24' : 'input w-24'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_suffix</span>
+          <p class="form-hint w-full">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_hint</p>
+          <span data-if="{{_local.errors?.['order_settings.pending_order_expire_minutes']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.pending_order_expire_minutes']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="cancellable_statuses_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.description</div>
+      <div class="row-stack">
+        <div>
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.label</span>
+          <tag-input data-type="composite" name="order_settings.cancellable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder" value="{{_local.form?.order_settings?.cancellable_statuses ?? ['pending_order', 'pending_payment', 'payment_complete']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="pending_order" label="$t:sirsoft-ecommerce.enums.order_status.pending_order"/>
+              <item value="pending_payment" label="$t:sirsoft-ecommerce.enums.order_status.pending_payment"/>
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+              <item value="delivered" label="$t:sirsoft-ecommerce.enums.order_status.delivered"/>
+              <item value="confirmed" label="$t:sirsoft-ecommerce.enums.order_status.confirmed"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.hint</p>
+          <span data-if="{{_local.errors?.['order_settings.cancellable_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['order_settings.cancellable_statuses']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="confirmable_statuses_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.description</div>
+      <div class="row-stack">
+        <div>
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.label</span>
+          <tag-input data-type="composite" name="order_settings.confirmable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.placeholder" value="{{_local.form?.order_settings?.confirmable_statuses ?? ['shipping', 'delivered']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+              <item value="delivered" label="$t:sirsoft-ecommerce.enums.order_status.delivered"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.hint</p>
+          <span data-if="{{_local.errors?.['order_settings.confirmable_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['order_settings.confirmable_statuses']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="cart_expiry_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.description</div>
+      <div class="flex-center gap-2 flex-wrap">
+        <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.prefix</span>
+        <input type="number" name="order_settings.cart_expiry_days" value="{{_local.form?.order_settings?.cart_expiry_days ?? 30}}" min="{{_local?.form?._meta?.limits?.cart_expiry_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.cart_expiry_days_max ?? 365}}" step="1" class="{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
+        <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.suffix</span>
+        <span data-if="{{_local.errors?.['order_settings.cart_expiry_days']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.cart_expiry_days']?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <div data-ref="stock_management_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.description</div>
+      <div class="flex-between">
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_description</p>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_hint</p>
+        </div>
+        <toggle data-type="composite" name="order_settings.stock_restore_on_cancel" value="{{_local.form?.order_settings?.stock_restore_on_cancel}}" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <span data-if="{{_local.errors?.['order_settings.stock_restore_on_cancel']}}" class="form-error-xs mt-1">{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}</span>
+    </div>
+  </div>
+</partial>

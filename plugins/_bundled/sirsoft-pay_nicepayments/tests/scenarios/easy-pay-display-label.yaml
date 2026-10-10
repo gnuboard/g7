@@ -1,0 +1,24 @@
+feature: 간편결제 결제수단 표시 이름 (관리자 거래 조회·사용자 영수증)
+
+description: |
+  나이스페이 간편결제(네이버페이·카카오페이·PAYCO 등) 주문의 결제수단 이름은 「간편결제 이름 (기본
+  결제수단)」 형태로 보여야 한다. 관리자 거래 조회와 사용자 영수증 응답은 플러그인이 직접 이 이름을
+  싣는다.
+
+  관리자 주문 목록은 이커머스 주문 목록 응답의 결제수단 표시 이름(필터 훅으로 이 플러그인이 채운다)을
+  쓰므로, 종전의 주문 목록용 간편결제 표시 맵 경로(`admin/orders/easy-pay-display-map`)는 1.1.0 에서
+  제거했다. 제거된 경로가 더 이상 응답하지 않는지도 이 시나리오가 고정한다.
+
+# axis 의미:
+#   간편결제 표시 이름이 드러나는(또는 드러나던) 응답 표면.
+axes:
+  surface: [admin_order_list, admin_transaction_status, user_receipt]
+
+effects:
+  - removed_easy_pay_display_map_route_is_not_served     # 제거한 주문 목록용 표시 맵 경로 → 404
+  - transaction_status_includes_easy_pay_display_label   # 관리자 거래 조회 응답에 표시 이름
+  - user_receipt_includes_easy_pay_display_label         # 사용자 영수증 응답에 표시 이름
+  - response_uses_common_envelope                         # 사용자 영수증 응답이 공통 응답 형식(data)으로 온다
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/EasyPayDisplayControllerTest.php

@@ -33,7 +33,7 @@ const BLINDED_PARENT_ID = 170;
 const DELETED_PARENT_ID = 265;
 
 test.describe.skip('답글 폼 사전 차단 + 삭제 게시글 답변/첨부 (#413)', () => {
-  // @scenario parent_status=blinded access_path=form_meta viewer=regular
+  // @scenario parent_status=blinded, access_path=form_meta, viewer=regular
   // @effects form_meta_blocks_blinded_parent_and_hides_original
   test('블라인드 부모글 답글 폼 직접 진입 시 폼 미오픈 + 부모 원문 비노출', async ({ page }) => {
     await page.goto(`/board/${BOARD_SLUG}/write?parent_id=${BLINDED_PARENT_ID}`);
@@ -43,7 +43,7 @@ test.describe.skip('답글 폼 사전 차단 + 삭제 게시글 답변/첨부 (#
     await expect(page.locator('form input[name="title"]')).toHaveCount(0, { timeout: 10_000 });
   });
 
-  // @scenario parent_status=deleted access_path=form_data viewer=regular
+  // @scenario parent_status=deleted, access_path=form_data, viewer=regular
   // @effects form_data_blocks_deleted_parent_and_hides_original
   test('삭제 부모글 답글 폼 직접 진입 시 폼 미오픈', async ({ page }) => {
     await page.goto(`/board/${BOARD_SLUG}/write?parent_id=${DELETED_PARENT_ID}`);
@@ -52,7 +52,7 @@ test.describe.skip('답글 폼 사전 차단 + 삭제 게시글 답변/첨부 (#
     await expect(page.locator('form input[name="title"]')).toHaveCount(0, { timeout: 10_000 });
   });
 
-  // @scenario post_state=deleted viewer=manager
+  // @scenario post_state=deleted, viewer=manager
   // @effects reply_button_if_blocks_deleted_at
   test('관리자가 삭제 게시글 상세 진입 시 답변 버튼이 노출되지 않는다', async ({
     page,

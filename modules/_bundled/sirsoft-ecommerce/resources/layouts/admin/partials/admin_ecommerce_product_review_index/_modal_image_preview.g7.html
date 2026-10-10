@@ -1,0 +1,62 @@
+<!-- 리뷰에 첨부된 사진을 크게 보는 창. 사진만 띄우는 것이 아니라 위쪽에 작성자·별점·날짜·옵션·본문을
+  함께 보여 준다 — 사진만으로는 어떤 리뷰인지 알 수 없기 때문이다.
+  보여줄 리뷰와 지금 몇 번째 사진인지를 스스로 정하지 않고 여는 쪽이 `_global.reviewForModal` ·
+  `_global.reviewImageIndex` 에 담아 준다.
+  좌우 이동은 그 번호를 ±1 하는 것이 전부이고, 양 끝에서는 버튼이 잠긴다 — 범위를 넘으면 사진
+  경로가 비어 빈 상자가 뜬다.
+  옵션 배지에서 '기본: 기본' 조합만 걸러낸다 — 옵션이 없는 상품에 붙는 자리표시라 보여 줄 뜻이 없다. -->
+<partial>
+  <modal data-type="composite" data-ref="modal_image_preview" title="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title" width="90vw" :closeOnBackdropClick="true">
+    <div class="p-4">
+      <!-- 리뷰 정보 영역 -->
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <!-- 이름 + 별점 + 날짜 -->
+        <div class="flex-between">
+          <span class="text-primary font-medium text-sm">{{_global.reviewForModal?.userName ?? ''}}</span>
+          <div class="flex-center gap-2 shrink-0">
+            <!-- 별점 아이콘 -->
+            <div class="flex-center gap-0.5">
+              <span data-each="star in {{[1,2,3,4,5]}}">
+                <icon name="star" size="sm" class="{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400 dark:text-yellow-300' : 'text-gray-300 dark:text-gray-600'}}"/>
+              </span>
+            </div>
+            <span class="text-hint">{{_global.reviewForModal?.createdAt ?? ''}}</span>
+          </div>
+        </div>
+        <!-- 옵션 배지 (있을 때만) -->
+        <div data-if="{{(_global.reviewForModal?.optionValues ?? []).length > 0}}" class="flex flex-wrap gap-1">
+          <span data-each="opt in {{_global.reviewForModal?.optionValues ?? []}}">
+            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="text-secondary inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}</span>
+          </span>
+        </div>
+        <div>
+          <!-- 리뷰 내용 (2줄 말줄임) -->
+          <p class="text-body line-clamp-2">{{_global.reviewForModal?.content ?? ''}}</p>
+        </div>
+      </div>
+      <!-- 이미지 슬라이더 영역 -->
+      <div class="flex-center flex-col gap-3">
+        <!-- 이미지 + 좌우 버튼 -->
+        <div class="flex-center relative justify-center w-full px-16">
+          <img src="{{(_global.reviewForModal?.images ?? [])[Number(_global.reviewImageIndex)]?.download_url ?? ''}}" alt="" class="w-full max-w-full max-h-[500px] object-contain rounded-lg"/>
+          <button type="button" class="flex-center absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed" disabled="{{Number(_global.reviewImageIndex) <= 0}}">
+            <on type="click">
+              <!-- 이전 사진 — 번호를 하나 줄인다. 첫 장에서는 버튼이 잠기므로 음수로 내려가지 않는다. `Number()` 로 감싸는 것은 이 값이 글자로 들어올 수 있어 `'0' - 1` 이 아니라 숫자 뺄셈이 되게 하기 위해서다. -->
+              <set-state target="global" reviewImageIndex="{{Number(_global.reviewImageIndex) - 1}}"/>
+            </on>
+            ❮
+          </button>
+          <button type="button" class="flex-center absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed" disabled="{{Number(_global.reviewImageIndex) >= (_global.reviewForModal?.images?.length ?? 1) - 1}}">
+            <on type="click">
+              <!-- 다음 사진 — 마지막 장에서는 버튼이 잠긴다. 더하기에서 `Number()` 가 없으면 `'0' + 1` 이 `'01'` 이 되어 사진 경로가 깨진다. -->
+              <set-state target="global" reviewImageIndex="{{Number(_global.reviewImageIndex) + 1}}"/>
+            </on>
+            ❯
+          </button>
+        </div>
+        <!-- 이미지 카운터 (이미지 2장 이상일 때만) -->
+        <div data-if="{{(_global.reviewForModal?.images?.length ?? 0) > 1}}" class="text-label-subtle">{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}</div>
+      </div>
+    </div>
+  </modal>
+</partial>

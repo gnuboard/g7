@@ -1,0 +1,20 @@
+feature: admin_basic Modal — 창 위에 창이 열린 상태의 Esc
+
+description: |
+  Esc 는 맨 위 창 하나만 닫는다. 열린 모달마다 document keydown 리스너를 걸어 Esc 한 번에 열린 창이 전부 닫히던
+  결함(#736 S2 — engine-v1.77.1 이 인자 없는 onClose() 를 살리면서 드러남, 모듈 상세 위 라이선스 창 실측)을 잠근다.
+  맨 위 창이 Esc 를 막아 두면 아래 창도 닫히지 않는다.
+
+axes:
+  stack: [two_open]
+  top_escape: [enabled, disabled]
+
+effects:
+  - escape_closes_only_topmost
+  - escape_reaches_next_after_top_closes
+  - escape_disabled_top_shields_lower
+  - lower_rerender_keeps_order
+  - stacked_dialogs_label_with_own_title
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Modal.nestedEscape.test.tsx

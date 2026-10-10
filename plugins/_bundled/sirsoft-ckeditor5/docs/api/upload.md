@@ -48,7 +48,7 @@ Content-Type: application/octet-stream
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 표준 envelope(`success`/`message`/`data`)를 사용하지 않습니다. CKEditor5 SimpleUploadAdapter 규격상 성공 시 HTTP 201 + 최상위 `url` 키만 반환합니다 (`data` 래핑 없음)._
+_이 엔드포인트는 표준 envelope(`success`/`message`/`data`)를 사용하지 않습니다. 이 플러그인의 업로드 어댑터가 읽는 규격(CKEditor5 SimpleUploadAdapter 와 같은 모양)상 성공 시 HTTP 201 + 최상위 `url` 키만 반환합니다 (`data` 래핑 없음)._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -81,11 +81,11 @@ _이 엔드포인트는 표준 envelope(`success`/`message`/`data`)를 사용하
 
 **설명**
 
-CKEditor5 의 SimpleUploadAdapter 가 에디터에 드롭/붙여넣은 이미지를 업로드하는 관리자 엔드포인트다. 컨트롤러가 `AdminBaseController` 를 상속하므로 실제 인증은 `auth:sanctum` **에 더해 관리자(admin) 미들웨어**가 적용된다(생성기 표기는 `auth:sanctum` 만 노출).
+에디터에 드롭/붙여넣은 이미지를 이 플러그인의 업로드 어댑터(`resources/js/handlers/uploadAdapter.ts`)가 올리는 관리자 엔드포인트다. 어댑터는 코어 API 클라이언트(`G7Core.api.post(url, formData)`)로 보내므로 Bearer 부착과 401 처리(토큰 갱신·재로그인 유도)는 코어가 맡는다 — 어댑터가 로그인 토큰을 읽어 헤더를 만들지 않는다. 컨트롤러가 `AdminBaseController` 를 상속하므로 실제 인증은 `auth:sanctum` **에 더해 관리자(admin) 미들웨어**가 적용된다(생성기 표기는 `auth:sanctum` 만 노출).
 
-- **응답 형식이 표준 envelope 가 아니다.** SimpleUploadAdapter 규격상 성공 시 HTTP 201 + 최상위 `{"url": "..."}`, 실패 시 4xx/5xx + `{"error": {"message": "..."}}` 를 반환한다. `ResponseHelper` 를 쓰지 않으므로 `data`/`success` 필드가 없다.
-  이 규격은 우리 코드가 정한 것이 아니다 — 응답을 파싱하는 주체가 CDN 으로 로드되는 CKEditor5 43.3.1 의 `SimpleUploadAdapter`(`resources/js/handlers/initEditor.ts` 의 `editorConfig.simpleUpload`)이므로 파싱 규약을 바꿀 수 없다. 컨트롤러의 각 응답 지점에는 이 사유로 `audit:allow response-helper-bypass` 를 명시해 두었으니, envelope 로 감싸는 "수정" 을 하면 에디터의 이미지 업로드가 조용히 실패한다.
-- **요청 파라미터**: multipart body 의 `upload` 필드(이미지 파일 1개). 허용 MIME 은 `jpeg,jpg,png,gif,webp`, 최대 크기는 플러그인 설정 `imageMaxSizeMb`(기본 2MB) 로 동적 결정된다. 검증 실패도 CKEditor 규격(`{"error":{"message":...}}`, HTTP 422)으로 응답한다.
+- **응답 형식이 표준 envelope 가 아니다.** CKEditor 업로드 어댑터 규격(SimpleUploadAdapter 와 같은 모양)으로 성공 시 HTTP 201 + 최상위 `{"url": "..."}`, 실패 시 4xx/5xx + `{"error": {"message": "..."}}` 를 반환한다. `ResponseHelper` 를 쓰지 않으므로 `data`/`success` 필드가 없다.
+  응답을 읽는 쪽은 이 플러그인의 업로드 어댑터(`resources/js/handlers/uploadAdapter.ts`)다 — 최상위 `url`(또는 `urls.default`)을 이미지 주소로, 실패 응답의 `error.message` 를 에디터 알림 문구로 쓴다. 종전에 CDN 의 SimpleUploadAdapter 가 읽던 규격을 그대로 이어받았으므로, 응답을 envelope 로 감싸려면 어댑터의 해석도 함께 바꿔야 한다(한쪽만 바꾸면 에디터의 이미지 업로드가 조용히 실패한다). 컨트롤러의 각 응답 지점에는 이 사유로 `audit:allow response-helper-bypass` 를 명시해 두었다.
+- **요청 파라미터**: multipart body 의 `upload` 필드(이미지 파일 1개). 허용 MIME 은 `jpeg,jpg,png,gif,webp`, 최대 크기는 플러그인 설정 `imageMaxSizeMb`(기본 2MB) 로 동적 결정된다. 검증 실패도 CKEditor 규격(`{"error":{"message":...}}`, HTTP 422)으로 응답한다. 편집기 설정(`image.upload.types`)은 같은 형식 목록(`UPLOAD_IMAGE_TYPES`, `uploadAdapter.ts`)을 써서 파일 선택 창 accept 와 끌어 놓기 필터가 이 검증과 어긋나지 않는다 — 한쪽 목록을 바꾸면 다른 쪽도 함께 바꾼다.
 - **인가**: 업로드 권한은 서버측 라우트 게이트(`auth:sanctum` + `admin`)만으로 판정한다. 클라이언트가 검사 대상 권한명을 지정하던 방식(query 파라미터 `permission`)은 제거되었다.
 - 업로드 성공 시 반환하는 `url` 은 기본적으로 공개 서빙 엔드포인트(`GET /images/{hash}`)의 절대 URL 이다. 단, 공개 자산 디스크(플러그인 설정 `public_asset_disk` > 코어 전역 `drivers.public_asset_disk`)가 직접 URL 을 지원하는 디스크(public / URL 이 설정된 s3 등)로 지정되어 있으면 스트리밍 경로 대신 그 디스크의 직접 URL(CDN)이 반환된다. 디스크 미설정('none' 포함)·URL 미지원 디스크·`core.storage.filter_url` 훅 차단 시에는 기존 스트리밍 경로로 폴백한다.
 

@@ -1,0 +1,19 @@
+feature: 주문 배송지 변경 핸들러 — 실패·식별자 부재 방어
+
+description: |
+  마이페이지·비회원 주문 상세의 배송지 변경 창에서 적용을 누르면 단일 핸들러(changeShippingAddress)가
+  요청을 보낸다. 성공 흐름(회원/비회원 endpoint·본문 분기)은 코어 시나리오(member-order-change-address)가
+  소유하고, 이 매니페스트는 그 밖의 두 갈래를 소유한다.
+    - 서버가 거부하면(검증 422·도메인 422 등) 서버 안내를 오류 토스트로 보여 주고, 제출 중 표시를 되돌리며
+      창은 닫지 않아 사용자가 고쳐서 다시 적용할 수 있다.
+    - 회원 주문 식별자도 비회원 토큰도 없으면 보낼 곳이 없으므로 요청하지 않는다.
+
+axes:
+  request_state: [api_error, missing_order_identity]
+
+effects:
+  - change_address_handler_shows_server_message_and_restores_submitting_on_failure
+  - change_address_handler_skips_request_without_order_identity
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userChangeShippingAddressHandlers.test.ts

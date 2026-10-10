@@ -19,6 +19,11 @@ class BoardTypeManagementTest extends ModuleTestCase
 {
     protected User $adminUser;
 
+    /**
+     * 테스트 준비 — 게시판 유형 테이블을 확인하고 관리자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 게시판 유형 목록 조회 테스트
+     *
+     * @scenario operation=list
+     *
+     * @effects board_types_listed_in_id_order
+     *
+     * @return void 반환값 없음
      */
     public function test_can_list_board_types(): void
     {
@@ -67,6 +78,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 목록이 id 순으로 정렬되는지 테스트
+     *
+     * @scenario operation=list
+     *
+     * @effects board_types_listed_in_id_order
+     *
+     * @return void 반환값 없음
      */
     public function test_list_returns_sorted_by_id(): void
     {
@@ -98,6 +115,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 게시판 유형 생성 테스트
+     *
+     * @scenario operation=create
+     *
+     * @effects board_type_created_after_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_can_create_board_type(): void
     {
@@ -116,6 +139,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * slug 유효성 검증 테스트
+     *
+     * @scenario operation=create
+     *
+     * @effects board_type_created_after_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_create_validates_slug_format(): void
     {
@@ -132,6 +161,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 중복 slug 검증 테스트
+     *
+     * @scenario operation=create
+     *
+     * @effects board_type_created_after_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_create_validates_unique_slug(): void
     {
@@ -151,6 +186,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * name.ko 필수 검증 테스트
+     *
+     * @scenario operation=create
+     *
+     * @effects board_type_created_after_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_create_validates_name_ko_required(): void
     {
@@ -166,6 +207,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 게시판 유형 수정 테스트
+     *
+     * @scenario operation=update
+     *
+     * @effects board_type_updated_or_not_found
+     *
+     * @return void 반환값 없음
      */
     public function test_can_update_board_type(): void
     {
@@ -185,6 +232,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 존재하지 않는 유형 수정 시 404 테스트
+     *
+     * @scenario operation=update
+     *
+     * @effects board_type_updated_or_not_found
+     *
+     * @return void 반환값 없음
      */
     public function test_update_nonexistent_type_returns_404(): void
     {
@@ -198,6 +251,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 게시판 유형 삭제 테스트
+     *
+     * @scenario operation=delete
+     *
+     * @effects unused_board_type_deleted_and_protected_types_refused
+     *
+     * @return void 반환값 없음
      */
     public function test_can_delete_unused_board_type(): void
     {
@@ -215,6 +274,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 사용 중인 유형 삭제 실패 테스트
+     *
+     * @scenario operation=delete
+     *
+     * @effects unused_board_type_deleted_and_protected_types_refused
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_delete_board_type_in_use(): void
     {
@@ -234,6 +299,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 기본값으로 설정된 유형 삭제 실패 테스트
+     *
+     * @scenario operation=delete
+     *
+     * @effects unused_board_type_deleted_and_protected_types_refused
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_delete_default_board_type(): void
     {
@@ -269,6 +340,8 @@ class BoardTypeManagementTest extends ModuleTestCase
      * @scenario error_class=domain
      *
      * @effects board_type_delete_domain_exception_returns_422_with_resolved_message
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_in_use_response_message_is_resolved_key_not_exception_text(): void
     {
@@ -284,7 +357,8 @@ class BoardTypeManagementTest extends ModuleTestCase
 
         $response->assertStatus(422);
 
-        $expected = __('sirsoft-board::messages.board_type.delete_in_use', ['count' => 1]);
+        // 영어 문구는 `단수|복수` 꼴이라 수로 고른 문장과 비교한다 (2026-10-08 결정: 1이면 단수).
+        $expected = trans_choice('sirsoft-board::messages.board_type.delete_in_use', 1);
         $this->assertSame($expected, $response->json('message'));
         // 키 문자열 자체가 노출되면(해석 실패) 그것도 결함이다
         $this->assertStringNotContainsString('sirsoft-board::', (string) $response->json('message'));
@@ -296,6 +370,8 @@ class BoardTypeManagementTest extends ModuleTestCase
      * @scenario error_class=infrastructure
      *
      * @effects board_type_delete_infrastructure_exception_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_infrastructure_exception_returns_500(): void
     {
@@ -319,6 +395,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 존재하지 않는 유형 삭제 시 404 테스트
+     *
+     * @scenario operation=delete
+     *
+     * @effects unused_board_type_deleted_and_protected_types_refused
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_nonexistent_type_returns_404(): void
     {
@@ -330,6 +412,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * 비인증 사용자 접근 차단 테스트
+     *
+     * @scenario operation=access
+     *
+     * @effects unauthenticated_access_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_access(): void
     {
@@ -340,6 +428,12 @@ class BoardTypeManagementTest extends ModuleTestCase
 
     /**
      * getFormData에 board_types가 포함되는지 테스트
+     *
+     * @scenario operation=form_data
+     *
+     * @effects board_form_data_includes_board_types
+     *
+     * @return void 반환값 없음
      */
     public function test_board_form_data_includes_board_types(): void
     {

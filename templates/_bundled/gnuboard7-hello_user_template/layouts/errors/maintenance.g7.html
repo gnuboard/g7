@@ -1,0 +1,12 @@
+<!-- 사용자 점검 안내 화면 — 점검 모드가 켜졌을 때 대신 뜬다 -->
+<layout name="errors/maintenance" version="1.0.0" extends="_user_base">
+  <meta title="$t:error.maintenance.title" description="$t:error.maintenance.description"/>
+  <slot name="content">
+    <div class="flex-center min-h-[50vh] justify-center">
+      <div class="text-center px-4">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-3">$t:error.maintenance.title</h1>
+        <span class="block text-gray-600 dark:text-gray-300">$t:error.maintenance.description</span>
+      </div>
+    </div>
+  </slot>
+</layout>

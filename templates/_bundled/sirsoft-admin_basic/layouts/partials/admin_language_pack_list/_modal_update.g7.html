@@ -1,0 +1,52 @@
+<!-- 언어팩을 새 판본으로 올리기 전 되묻는 창. 지금 판본과 올라갈 판본은 목록에서 미리 담아 준
+  값을 그대로 보여 준다(창이 서버를 다시 부르지 않는다).
+  안내 문구가 짚는 것은 하나다 — **손으로 고친 번역이 어떻게 되는가**. 그 사정 때문에 새 판본이
+  있어도 자동으로 올리지 않고 이 확인을 거친다. -->
+<partial editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_update_modal" description="언어팩 업데이트 확인 모달 — 모듈/플러그인 update 모달과 동일 수준. 로딩 스피너, reloadExtensions 후속 호출 포함.">
+  <modal data-type="composite" data-ref="language_pack_update_modal" title="$t:admin.language_packs.modal.update.title" size="sm">
+    <div class="py-2 space-y-3">
+      <p class="text-body flex items-center gap-2"><span data-ref="lp_update_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_local.updateIconUrl}}" src="{{_local.updateIconUrl}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_local.updateIconUrl}}" name="fas fa-language" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.language_packs.modal.update.body|current={{_local.updateCurrent}}|latest={{_local.updateLatest}}</span></p>
+      <div class="text-secondary rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-xs">
+        <div class="flex-start gap-2">
+          <icon name="fas fa-info-circle" size="sm" class="mt-0.5"/>
+          <span>$t:admin.language_packs.modal.update.user_overrides_notice</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 mt-6">
+      <button type="button" disabled="{{_global.isLanguagePackUpdating}}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+        <on event="onClick">
+          <close-modal target="language_pack_update_modal"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" disabled="{{_global.isLanguagePackUpdating}}" class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+        <on event="onClick">
+          <!-- 올린 뒤 목록을 다시 받고 확장을 새로 읽어 바뀐 문구가 곧바로 화면에 나오게 한다. 실패해도 창은 열린 채라 다시 시도할 수 있다. -->
+          <sequence>
+            <set-state target="global" :isLanguagePackUpdating="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/{{_local.updateId}}/update" method="POST">
+              <success>
+                <set-state target="global" :isLanguagePackUpdating="false"/>
+                <toast type="success" message="$t:admin.language_packs.messages.update_success"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+                <reload-extensions/>
+                <close-modal target="language_pack_update_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isLanguagePackUpdating="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.update_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{!_global.isLanguagePackUpdating}}" name="fas fa-arrow-up" size="sm"/>
+        <icon data-if="{{_global.isLanguagePackUpdating}}" name="fas fa-spinner" class="animate-spin" size="sm"/>
+        <span>{{_global.isLanguagePackUpdating ? '$t:admin.language_packs.updating' : '$t:admin.language_packs.actions.update_now'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

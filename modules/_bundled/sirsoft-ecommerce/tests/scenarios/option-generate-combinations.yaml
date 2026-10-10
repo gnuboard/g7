@@ -1,0 +1,13 @@
+feature: 상품 옵션 조합 생성
+
+description: |
+  상품 폼 [옵션 생성] 처리기(generateOptions)의 조합 전개·이름 채움·가격·재고 규칙. 7.1.0 출시 점검 D3-1: 지원 언어 가짜를 코어에 없는 G7Core.config 대신 코어 공개 API locale.supported() 모양으로 교체.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21]
+
+effects:
+  - option_generate_combinations
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/optionHandlers.generateOptions.test.ts

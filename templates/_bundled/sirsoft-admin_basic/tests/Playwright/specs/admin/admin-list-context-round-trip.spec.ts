@@ -12,7 +12,7 @@
  *
  * @scenario admin-list-context-round-trip
  * @axes leg=enter leg=cancel leg=tab_switch
- * @effects list_return_preserves_query tab_switch_resets_query
+ * @effects list_return_preserves_query, tab_switch_resets_query
  */
 import { test, expect, authenticatePage } from '../../fixtures/admin-template-auth';
 

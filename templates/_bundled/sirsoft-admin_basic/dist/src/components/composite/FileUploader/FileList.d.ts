@@ -34,6 +34,11 @@ export interface FileListProps {
     onPrimaryChange?: (id: number | string | null) => void;
     /** 비활성화 여부 */
     disabled?: boolean;
+    /**
+     * 업로더 크기(드롭존과 같은 값). 표 한 칸용 `xs` 는 칸 폭이 좁아 화면 폭 기준 격자(최대 5열)를 쓰면
+     * 썸네일이 짜부라지므로 두 칸 격자를 쓰고, 첨부 개수와 한도 안내를 줄을 나눠 세운다.
+     */
+    size?: 'md' | 'sm' | 'xs';
 }
 export declare const FileList: React.FC<FileListProps>;
 export default FileList;

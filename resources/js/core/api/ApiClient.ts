@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosR
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
+import { isSameOriginRequestUrl } from '../support/navPolicy';
 import type { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 
 const logger = createLogger('ApiClient');
@@ -147,6 +148,22 @@ class ApiClient {
   }
 
   /**
+   * 요청 대상이 현재 문서와 같은 출처인지 판정합니다.
+   *
+   * 확장이 `fetch` 로 직접 요청하면서 `getToken()` 을 실을 때, 대상이 레이아웃 prop·응답 본문처럼
+   * 바깥에서 정해지는 값이면 먼저 이 판정을 거친다 — 교차 출처 대상에 토큰을 실으면 레이아웃 편집
+   * 권한만으로 관리자 토큰을 외부로 보낼 수 있다(KVE-2026-2350). 판정은 apiCall 과 같은
+   * `navPolicy.isSameOriginRequestUrl`(fetch 와 같은 URL 파서)이다.
+   *
+   * @param url 요청 대상 (절대·상대 모두)
+   * @returns 같은 출처면 true (문자열이 아니거나 파싱할 수 없으면 false)
+   * @since engine-v1.73.0
+   */
+  isSameOriginUrl(url: unknown): boolean {
+    return isSameOriginRequestUrl(url);
+  }
+
+  /**
    * 토큰 삭제
    */
   removeToken(): void {
@@ -232,8 +249,14 @@ class ApiClient {
         ];
         const shouldSkipUnauthorized = skipUnauthorizedPatterns.some(pattern => requestUrl.includes(pattern));
 
-        // 401 Unauthorized 처리
-        if (error.response?.status === 401 && !originalRequest?._retry && !shouldSkipUnauthorized) {
+        // 401 Unauthorized 처리 — 동일 출처 요청만. 교차 출처 서버의 401 은 우리 세션 상태가 아니며,
+        // 갱신한 토큰을 헤더에 직접 붙여 그 외부 주소로 재시도하게 된다(KVE-2026-2350).
+        if (
+          error.response?.status === 401
+          && !originalRequest?._retry
+          && !shouldSkipUnauthorized
+          && !this.isCrossOriginRequest(requestUrl)
+        ) {
           originalRequest!._retry = true;
 
           // AuthManager를 통한 토큰 갱신 시도
@@ -274,7 +297,12 @@ class ApiClient {
         // 직접 호출 경로(입금확인/주문취소 등 모듈 JS 핸들러)는 이 인터셉터를 거치지 않아 모듈마다
         // 428 분기를 수동 추가해야 했고 누락 위험이 있었다(취소 핸들러 미노출 회귀). 여기서 중앙
         // 처리하면 axios 를 쓰는 모든 호출이 본인인증 모달 → verify → 원 요청 재실행을 자동 수행한다.
-        if (IdentityGuardInterceptor.isIdentityRequired(error.response?.status, error.response?.data)) {
+        // 교차 출처 응답의 428 은 따르지 않는다 — launcher 가 응답의 challenge_start_url 로 토큰을 실어
+        // 보내므로 외부 서버가 428 을 흉내 내면 토큰을 받아 간다(KVE-2026-2350). 토큰 첨부와 같은 출처 판정.
+        if (
+          !this.isCrossOriginRequest(originalRequest?.url)
+          && IdentityGuardInterceptor.isIdentityRequired(error.response?.status, error.response?.data)
+        ) {
           this.completeDevToolsRequest(originalRequest, error);
 
           // 원 요청 헤더(Authorization 포함)/body 를 재실행에 그대로 재사용 — 누락 시 백엔드가

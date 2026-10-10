@@ -15,6 +15,7 @@
     "earn_trigger_delivered": "배송완료",
     "earn_delay_prefix": "후",
     "earn_delay_suffix": "일 경과 시 적립",
+    "earn_delay_days": "적립 지연 일수",
     "earn_trigger_hint": "기본=구매확정 / 배송완료 선택 가능"
   },
   "currency": {
@@ -37,6 +38,10 @@
     "duplicate_currency_error": "이미 등록된 통화입니다.",
     "max_use_fixed_suffix": "원",
     "earn_rounding": "적립 절사",
+    "earn_rounding_unit_label": "적립 절사 단위",
+    "earn_rounding_method_label": "적립 절사 방식",
+    "earn_rounding_unit_of": "{{currency}} 적립 절사 단위",
+    "earn_rounding_method_of": "{{currency}} 적립 절사 방식",
     "earn_rounding_hint": "적립 포인트 산출·안분 시 적용",
     "earn_rounding_units": {
       "1": "1점",

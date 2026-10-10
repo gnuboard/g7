@@ -1,0 +1,9 @@
+feature: 비회원 결제취소 기록의 주문 소유권 검증
+description: 기존 보안 회귀 테스트의 인증 입력과 결과를 추적한다. PHPUnit 그룹 메타데이터 전환에 동반해 누락된 시나리오 소유 관계를 복구한다.
+axes:
+  authorization: [missing_token, invalid_token, other_order_token, valid_token, member_owner, member_other, unknown_order]
+effects:
+  - rejected_payment_unchanged
+  - authorized_payment_cancelled
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/GuestCancelPaymentAuthTest.php

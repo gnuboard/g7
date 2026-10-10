@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 프리뷰 샘플 51 · 엔드포인트 샘플 7 · 페이지 상태 17 · 액션 레시피 1
+> 단일 파일 · 프리뷰 샘플 67 · 엔드포인트 샘플 7 · 페이지 상태 92 · 액션 레시피 1
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -31,10 +31,10 @@
 <!-- @generated:editor-spec-blocks START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 블록 | 역할 | 항목 수 | 출처 |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 51 | `editor-spec.json (인라인)` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 67 | `editor-spec.json (인라인)` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 7 | `editor-spec.json (인라인)` |
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 12 | `editor-spec.json (인라인)` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 17 | `editor-spec.json (인라인)` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 92 | `editor-spec.json (인라인)` |
 | `actionRecipes` | 친화 명칭 → 액션 JSON 레시피 | 1 | `editor-spec.json (인라인)` |
 | `actionChipCandidates` | 동작 데이터 칩 컨텍스트 후보 | 1 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
@@ -72,9 +72,9 @@ _이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 �
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 51 | `transactions` · `products` · `product` · `categories` · `orders` · `order` · `reviews` · `brands` · `carriers` · `active_carriers` · `coupons` · `coupon` … 외 39개 |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 67 | `wishlists` · `carts` · `inquiries` · `products` · `product` · `categories` · `orders` · `order` · `reviews` · `brands` · `carriers` · `active_carriers` … 외 55개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 7 | `/api/modules/sirsoft-ecommerce/products*` · `/api/modules/sirsoft-ecommerce/cart*` · `/api/modules/sirsoft-ecommerce/checkout*` · `/api/modules/sirsoft-ecommerce/wishlist*` · `/api/modules/sirsoft-ecommerce/user/orders*` · `/api/modules/sirsoft-ecommerce/user/addresses*` · `/api/modules/sirsoft-ecommerce/user/inquiries*` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 17 | `/*?/products/:product_code` · `/*?/products` · `/*?/cart` · `/*?/checkout` · `/*?/orders/:id/complete` · `/*?/reorder/:id` · `*/admin/ecommerce/products/:itemCode/edit` · `*/admin/ecommerce/promotion-coupons/:id/edit` · `*/admin/ecommerce/shipping-policies/:id/edit` · `*/admin/ecommerce/settings` · `*/admin/ecommerce/mileage-deposit-settings` · `/*?/guest/orders` … 외 5개 |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 92 | `/*?/products/:product_code` · `/*?/products` · `/*?/cart` · `/*?/checkout` · `/*?/orders/:id/complete` · `/*?/reorder/:id` · `*/admin/ecommerce/products/:itemCode/edit` · `*/admin/ecommerce/promotion-coupons/:id/edit` · `*/admin/ecommerce/shipping-policies/:id/edit` · `*/admin/ecommerce/settings` · `/*?/guest/orders` · `*/admin/ecommerce/mileage-transactions` … 외 80개 |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->

@@ -1,0 +1,45 @@
+feature: 게시판-게시글 사이트맵 생명주기 동기화 (KVE-2026-2133)
+
+description: |
+  부모(게시판)와 자식(게시글)의 사이트맵 색인 생명주기가 분리돼, 게시판을 비활성화·삭제해도
+  게시글 URL 이 sitemap_urls 에 남아 Auto→Incremental 재생성이 공개 사이트맵에 계속 내보냈다.
+
+  - 게시판 삭제: board.posts.before_force_delete(청크 ID) 로 게시글 색인을, board.after_delete 로
+    게시판 색인을 걷어낸다(둘 다 sync — 삭제 트랜잭션과 원자적).
+  - 게시판 비활성화: 그 게시판 게시글 색인을 모두 제거(삭제글 포함 전체 ID 청크 순회).
+  - 재활성화(비활성→활성 전환): 공개 게시글만 재색인. 활성 상태가 그대로인 수정은 게시글 색인 불변.
+    재색인은 1,000건 묶음(SitemapIndexer::indexResources — 필터 훅은 글마다, 저장은 묶음 삭제 1회·삽입 1회)
+    — 글마다 색인하면 공개 글 수만 건 게시판에서 큐 작업 시간 제한(60초)을 넘긴다(27,000건 255초 → 3초).
+  - 게시글 훅은 부모 게시판이 존재하고 활성일 때만 색인 — 대기 중이던 잡이 사라진 게시판의
+    글을 되살리지 않는다.
+  - 배치 제거 인프라: SitemapUrlRepository::removeManyForResource / SitemapIndexer::deindexResources.
+  - 배치 색인 인프라: SitemapUrlRepository::replaceManyForResources / SitemapIndexer::indexResources.
+  - 증분 저장소 집합은 전체 재생성 기여자(BoardSitemapContributor) 결과와 같아야 한다.
+
+axes:
+  lifecycle: [post_hook, deactivate, reactivate, update_same_state, delete]
+
+effects:
+  - public_post_is_indexed
+  - secret_post_is_not_indexed
+  - blinded_post_is_deindexed
+  # 실제 블라인드·복구는 after_blind·after_restore 를 발화한다 — 그 훅으로 색인과 검색엔진용 화면 캐시를 맞춘다(2026-10-07 실측 K4-D3)
+  - blind_and_restore_hooks_sync_index_and_seo_cache
+  - deleted_post_is_deindexed
+  - board_row_follows_active_state
+  - post_detail_toggle_off_deindexes
+  - deactivated_board_posts_are_deindexed
+  - other_board_index_is_untouched
+  - reactivated_board_reindexes_public_posts_only
+  - board_info_update_does_not_mass_reindex_posts
+  - deleted_board_and_posts_are_deindexed
+  - post_hook_does_not_reindex_under_inactive_or_missing_board
+  - incremental_store_matches_full_contributor
+  - batch_deindex_removes_only_given_ids
+  - batch_index_replaces_rows_and_keeps_per_resource_filter
+  - reactivation_reindexes_in_batches
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Seo/BoardSitemapIndexTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Seo/BoardSitemapLifecycleTest.php
+  - tests/Feature/Seo/SitemapBatchDeindexTest.php

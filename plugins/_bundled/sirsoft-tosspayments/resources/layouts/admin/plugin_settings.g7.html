@@ -1,0 +1,318 @@
+<!-- 토스페이먼츠 결제 연동 설정 화면. 결제창을 하나로 띄우는 통합 모드와 주문서에서 결제수단을 직접 고르게 하는 모드를 여기서 가른다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description"/>
+  <!-- 저장된 플러그인 설정을 폼 초기값으로 싣는다. refetchOnMount 라 저장하고 돌아와도 서버 값이 다시 실린다 -->
+  <data-source id="settings" label_key="$t:sirsoft-tosspayments.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <!-- 가상계좌 입금통보 웹훅 URL — 토스 개발자센터에 그대로 붙여 넣는 값이라 사이트 주소까지 붙은 전체 URL 을 서버에서 받아 보여 준다 -->
+  <data-source id="webhook_info" label_key="$t:sirsoft-tosspayments.editor.data_source.webhook_info" type="api" endpoint="/api/plugins/sirsoft-tosspayments/admin/webhook-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="webhookInfo"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="pay-tosspayments-tone-warning">$t:sirsoft-tosspayments.plugin_read_only</span>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="text-error-soft">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-6">
+          <div data-ref="field_test_mode" class="flex-between">
+            <div>
+              <label class="form-label">$t:sirsoft-tosspayments.settings.test_mode</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.test_mode_hint</p>
+            </div>
+            <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="test_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-tosspayments.settings.section_test_keys</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_test_client_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-tosspayments.settings.test_client_key</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.test_client_key_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="test_client_key" placeholder="test_ck_..." class="focus:border-transparent font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_test_secret_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-tosspayments.settings.test_secret_key</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.test_secret_key_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="password" name="test_secret_key" placeholder="test_sk_..." class="focus:border-transparent font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-tosspayments.settings.section_live_keys</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_live_client_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-tosspayments.settings.live_client_key</label>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="live_client_key" placeholder="live_ck_..." class="focus:border-transparent font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_live_secret_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-tosspayments.settings.live_secret_key</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.live_secret_key_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="password" name="live_secret_key" placeholder="live_sk_..." class="focus:border-transparent font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="redirect_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-tosspayments.settings.section_redirect</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_redirect_success_url" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-tosspayments.settings.redirect_success_url</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.redirect_success_url_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-tosspayments.settings.redirect_fail_url</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.redirect_fail_url_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="payment_methods_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-tosspayments.settings.section_payment_methods</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_order_sheet_mode" class="flex-between">
+            <div>
+              <label class="form-label">$t:sirsoft-tosspayments.settings.order_sheet_mode</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.order_sheet_mode_hint</p>
+            </div>
+            <toggle data-type="composite" name="order_sheet_mode" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+          <div data-ref="enabled_methods_group" data-if="{{_local.form?.order_sheet_mode}}" class="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <label class="form-label">$t:sirsoft-tosspayments.settings.enabled_methods</label>
+            <p class="form-hint">$t:sirsoft-tosspayments.settings.enabled_methods_hint</p>
+            <div data-ref="method_checkbox_grid" class="grid grid-cols-3 gap-3">
+              <responsive on="portable" class="grid grid-cols-1 gap-2"/>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 카드. 자동바인딩을 끄고 checked 와 hasChanges 를 손으로 다루는 것은 저장값이 null 일 수 있어서다 — 자동바인딩은 boolean 이 아닌 값을 빈 문자열로 보내고 서버가 그것을 null 로 저장해 다시 켤 수 없게 고착시킨다 -->
+                <checkbox name="method_card" :autoBinding="false" checked="{{!!_local.form?.method_card}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_card="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_card</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 가상계좌. 켜면 아래 가상계좌 구역의 입금기한·자동 현금영수증 설정이 실제로 쓰인다 -->
+                <checkbox name="method_virtual_account" :autoBinding="false" checked="{{!!_local.form?.method_virtual_account}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_virtual_account="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_virtual_account</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 계좌이체. 에스크로를 쓰는 상점이면 이 수단과 가상계좌에만 구매안전서비스가 붙는다 -->
+                <checkbox name="method_transfer" :autoBinding="false" checked="{{!!_local.form?.method_transfer}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_transfer="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_transfer</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 휴대폰 소액결제. 국내 전용이라 원화가 아닌 주문에서는 서버가 막는다 -->
+                <checkbox name="method_mobile_phone" :autoBinding="false" checked="{{!!_local.form?.method_mobile_phone}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_mobile_phone="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_mobile_phone</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 토스페이 -->
+                <checkbox name="method_tosspay" :autoBinding="false" checked="{{!!_local.form?.method_tosspay}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_tosspay="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_tosspay</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 카카오페이 -->
+                <checkbox name="method_kakaopay" :autoBinding="false" checked="{{!!_local.form?.method_kakaopay}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_kakaopay="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_kakaopay</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 네이버페이 -->
+                <checkbox name="method_naverpay" :autoBinding="false" checked="{{!!_local.form?.method_naverpay}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_naverpay="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_naverpay</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 페이코 -->
+                <checkbox name="method_payco" :autoBinding="false" checked="{{!!_local.form?.method_payco}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_payco="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_payco</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 삼성페이 -->
+                <checkbox name="method_samsungpay" :autoBinding="false" checked="{{!!_local.form?.method_samsungpay}}" disabled="{{_computed.isPluginReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" form.method_samsungpay="{{$event.target.checked}}" :hasChanges="true"/>
+                  </on>
+                </checkbox>
+                <span>$t:sirsoft-tosspayments.settings.method_samsungpay</span>
+              </label>
+            </div>
+            <p class="form-hint">$t:sirsoft-tosspayments.errors.non_krw_method</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="virtual_account_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-tosspayments.settings.section_virtual_account</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_vbank_valid_hours">
+            <label class="form-label">$t:sirsoft-tosspayments.settings.vbank_valid_hours</label>
+            <input type="number" name="vbank_valid_hours" :min="1" :max="2160" class="w-32" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p class="form-hint">$t:sirsoft-tosspayments.settings.vbank_valid_hours_hint</p>
+          </div>
+          <div data-ref="field_vbank_cash_receipt_type">
+            <label class="form-label">$t:sirsoft-tosspayments.settings.vbank_cash_receipt_type</label>
+            <select name="vbank_cash_receipt_type" disabled="{{_computed.isPluginReadOnly}}">
+              <options>
+                <option value="">$t:sirsoft-tosspayments.settings.vbank_cash_receipt_none</option>
+                <option value="소득공제">$t:sirsoft-tosspayments.settings.vbank_cash_receipt_income</option>
+                <option value="지출증빙">$t:sirsoft-tosspayments.settings.vbank_cash_receipt_expense</option>
+              </options>
+            </select>
+            <p class="form-hint">$t:sirsoft-tosspayments.settings.vbank_cash_receipt_type_hint</p>
+          </div>
+          <div data-ref="field_use_escrow">
+            <label class="form-label">$t:sirsoft-tosspayments.settings.use_escrow</label>
+            <select name="use_escrow" disabled="{{_computed.isPluginReadOnly}}">
+              <options>
+                <option value="off">$t:sirsoft-tosspayments.settings.use_escrow_off</option>
+                <option value="on">$t:sirsoft-tosspayments.settings.use_escrow_on</option>
+                <option value="buyer_choice">$t:sirsoft-tosspayments.settings.use_escrow_buyer_choice</option>
+              </options>
+            </select>
+            <p class="form-hint">$t:sirsoft-tosspayments.settings.use_escrow_hint</p>
+            <div data-ref="escrow_operation_notice" data-if="{{_local.form?.use_escrow !== 'off'}}" class="mt-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 space-y-1">
+              <p class="text-sm text-amber-800 dark:text-amber-200">$t:sirsoft-tosspayments.settings.escrow_no_partial_cancel_notice</p>
+              <p class="text-sm text-amber-800 dark:text-amber-200">
+                <span>$t:sirsoft-tosspayments.settings.escrow_shipping_info_notice</span>
+                <a href="https://app.tosspayments.com/" target="_blank" rel="noopener noreferrer" class="ml-1 underline font-medium pay-tosspayments-link-warning">$t:sirsoft-tosspayments.settings.escrow_shipping_info_link</a>
+              </p>
+            </div>
+          </div>
+          <div data-ref="field_webhook_url" class="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-2">
+            <label class="form-label">$t:sirsoft-tosspayments.settings.webhook_url_label</label>
+            <div class="flex items-center gap-2">
+              <responsive on="portable" class="flex flex-col items-stretch gap-2"/>
+              <div class="flex-1 overflow-x-auto font-mono text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 whitespace-nowrap">{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}</div>
+              <button data-ref="webhook_copy_button" type="button" class="btn btn-secondary btn-sm flex-shrink-0">
+                <responsive on="portable" type="button" class="btn btn-secondary btn-sm w-full"/>
+                <on type="click">
+                  <!-- 웹훅 주소는 운영자가 토스 상점관리자에 직접 등록해야 입금통보가 들어온다. 그래서 보여 주기만 하지 않고 복사까지 시켜 준다 -->
+                  <action handler="sirsoft-tosspayments.copyToClipboard" text="{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}">
+                    <success>
+                      <toast type="success" message="$t:sirsoft-tosspayments.settings.webhook_url_copied"/>
+                    </success>
+                  </action>
+                </on>
+                <span>$t:sirsoft-tosspayments.settings.webhook_url_copy</span>
+              </button>
+            </div>
+            <p class="form-hint">$t:sirsoft-tosspayments.settings.webhook_url_hint</p>
+          </div>
+          <div data-ref="field_webhook_secret_verify" class="flex-between pt-2">
+            <div>
+              <label class="form-label">$t:sirsoft-tosspayments.settings.webhook_secret_verify</label>
+              <p class="form-hint">$t:sirsoft-tosspayments.settings.webhook_secret_verify_hint</p>
+            </div>
+            <toggle data-type="composite" name="webhook_secret_verify" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 저장. 직전 오류를 먼저 지워야 이번 시도의 결과만 화면에 남는다. 성공 후 설정을 다시 불러오는 것은 서버가 비밀키를 마스크해 돌려주기 때문이다 — 다시 싣지 않으면 화면의 폼 값과 저장값이 어긋난 채 다음 저장이 나간다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

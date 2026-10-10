@@ -1,0 +1,37 @@
+<!-- 답글을 쓸 때만 뜨는 원글 요약. 「원글이 있는가」를 두 곳에서 함께 본다 — 폼 데이터의 `parent_id` 와 URL 의 `parent_id`(새로 답글을 여는 순간에는 폼에 아직 값이 없다). 실제로 보여줄 내용은 `form_meta` 가 준다 -->
+<partial description="Post Form - Parent Post Information (답글 작성 시에만 표시)">
+  <div data-ref="parent_post_card" data-if="{{(form_data?.data?.parent_id || query?.parent_id) &amp;&amp; form_meta?.data?.parent_post?.id}}" class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6">
+    <div class="flex-center gap-2 mb-3">
+      <icon name="reply" class="text-base text-blue-600 dark:text-blue-400"/>
+      <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.posts.form.reply_to</span>
+      <span data-if="{{form_meta?.data?.parent_post?.is_notice}}" class="text-danger-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900">$t:sirsoft-board.admin.posts.notice</span>
+      <span data-if="{{form_meta?.data?.parent_post?.is_secret}}" class="text-warning-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900">$t:sirsoft-board.admin.posts.secret</span>
+    </div>
+    <div class="flex-center gap-2 mb-2">
+      <h4 class="section-heading-md">{{form_meta?.data?.parent_post?.title}}</h4>
+      <a href="/admin/board/{{route.slug}}/{{form_meta?.data?.parent_post?.id}}" title="$t:sirsoft-board.admin.posts.form.view_original" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+        <icon name="arrow-up-right-from-square" class="text-sm"/>
+      </a>
+    </div>
+    <div class="flex-center gap-2 text-tertiary mb-3">
+      <span>{{form_meta?.data?.parent_post?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
+      <span>·</span>
+      <span>{{form_meta?.data?.parent_post?.created_at}}</span>
+    </div>
+    <div data-if="{{form_meta?.data?.parent_post?.content}}" class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-3">
+      <extension-point name="html_content" content="{{form_meta?.data?.parent_post?.content}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2">
+        <default>
+          <html-content data-type="composite" content="{{form_meta?.data?.parent_post?.content}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2"/>
+        </default>
+      </extension-point>
+      <button data-if="{{(form_meta?.data?.parent_post?.content?.length ?? 0) > 150}}" type="button" class="flex-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors gap-1">
+        <on type="click">
+          <!-- 원글 본문을 세 줄에서 전문으로 펼친다 — 답글을 쓰는 화면이라 원글은 참고용이고, 버튼은 원글이 150자를 넘을 때만 나온다 -->
+          <set-state target="local" parentPostExpanded="{{!_local.parentPostExpanded}}"/>
+        </on>
+        <span>{{_local.parentPostExpanded ? '$t:sirsoft-board.admin.posts.form.hide_content' : '$t:sirsoft-board.admin.posts.form.show_full_content'}}</span>
+        <icon name="{{_local.parentPostExpanded ? 'chevron-up' : 'chevron-down'}}" class="text-xs"/>
+      </button>
+    </div>
+  </div>
+</partial>

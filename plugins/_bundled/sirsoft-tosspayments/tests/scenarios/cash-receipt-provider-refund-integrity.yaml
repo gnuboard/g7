@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: S5 현금영수증 프로바이더·환불 정합성 명세 SSoT. 11축 pairwise 13조합을 테스트 docblock @scenario 로 나열하는 것은 거짓 매핑이 된다 — 축(발급 프로바이더 / 환불 스코프 / 결제수단 / 에스크로)이 서로 다른 테스트 클래스에 격리 검증되어 한 메서드가 11축 전부를 재현하지 않는다(S4 toss-payment-methods-vbank-escrow · KG security-callback-defense 선례 동일). effects 27건은 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며(미매핑 0건, 실측 확인), 그것이 이 기능의 실질 커버리지다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: S5 현금영수증 프로바이더·환불 정합성 명세 SSoT. 11축 pairwise 13조합을 테스트 docblock @scenario 로 나열하는 것은 거짓 매핑이 된다 — 축(발급 프로바이더 / 환불 스코프 / 결제수단 / 에스크로)이 서로 다른 테스트 클래스에 격리 검증되어 한 메서드가 11축 전부를 재현하지 않는다(S4 toss-payment-methods-vbank-escrow · KG security-callback-defense 선례 동일). effects 27건은 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며(미매핑 0건, 실측 확인), 그것이 이 기능의 실질 커버리지다.
 # 시나리오 매니페스트 — 현금영수증 프로바이더(토스·KG) · 환불 정합성 (S5)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 계획서 §12-5 / §13-3
 
@@ -19,6 +19,8 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
   # 공용 발급/취소/재발급 서비스 (금액 변동 → 전액취소 후 재발급)
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptServiceTest.php
+  # 실 PG 왕복 E2E — 발급 응답 매핑·금액 변동 시 전액취소 후 재발급을 관리자 화면에서 끝까지 밟는다
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/cash-receipt-lifecycle.spec.ts
   # 활동 로그 실패가 결제 콜백을 죽이지 않는지 (본 세션 코어 결함 수정)
   - tests/Unit/ActivityLog/ResolvesActivityLogTypeTest.php
   # 레거시 KG 전용 발행 경로가 되살아나지 않는지 (이중 발행 경로 회귀 차단)
@@ -93,19 +95,37 @@ effects:
   - cancel_delegated_as_full_cancel_without_amount
   - cancel_uses_issue_tid_as_receipt_key
   - amount_change_triggers_cancel_then_reissue
+  # 환불 리스너의 진입 계약 — 무엇을 받아 언제 자기 일로 삼는가
+  # 훅 이름·타입(filter)·메서드·우선순위가 선언대로여야 코어가 이 리스너를 부른다.
+  - refund_listener_subscribes_to_the_payment_refund_filter_at_its_declared_priority
+  # PG provider 가 자기 것이 아니면 기본값을 그대로 돌려주고 API 를 부르지 않는다.
+  # 플러그인 식별자(`sirsoft-tosspayments`)는 provider ID(`tosspayments`)가 아니다 — 둘을
+  # 혼동하면 자기 결제까지 전부 스킵되어 환불이 조용히 아무 일도 하지 않는다.
+  - refund_skips_when_the_payment_belongs_to_another_pg_provider
+  - refund_matches_the_provider_id_not_the_plugin_identifier
+  # paymentKey 가 없으면 API 왕복 없이 MISSING_PAYMENT_KEY 로 끝낸다.
+  - refund_without_a_payment_key_fails_before_the_api_call
+  # PG 가 4xx 로 거절하면 PG_API_ERROR 로 실패를 돌려준다 (예외를 던지지 않는다).
+  - refund_api_error_returns_a_failure_result_with_the_pg_error_code
   # 환불 정합성 (R1/R2/R3)
   - full_refund_omits_cancel_amount
   - partial_refund_sends_cancel_amount
   - remaining_refund_after_partial_stays_partial
   - refund_sends_apportioned_tax_free_amount
+  - refund_tax_free_never_exceeds_approved_total   # S1-D14 순차 부분취소 누적 면세분 상한·장부 갱신
   - vbank_refund_sends_refund_receive_account
   - vbank_refund_without_account_fails_before_api_call
+  # 가상계좌가 아닌 결제는 환불계좌 없이도 정상 취소된다 (요구 범위가 번지지 않는다)
+  - non_vbank_refund_omits_the_refund_receive_account
   # 에스크로 (E4)
   - escrow_partial_refund_blocked_with_zero_api_calls
   - escrow_full_refund_allowed
   - escrow_blocking_uses_payment_snapshot_not_current_setting
   # 멱등키
   - cancel_request_carries_idempotency_key_from_refund_record
+  - cancel_idempotency_key_changes_with_amount_and_refund_account   # 금액·환불계좌가 다르면 다른 키 (#747 P-D2)
+  - refund_result_marks_handled_only_for_own_payment                # 자기 결제만 handled=true (#747 P-D6)
+  - partial_cancel_support_follows_toss_constraints                 # 에스크로·달 넘긴 휴대폰은 부분취소 불가 (#747 P-D7)
   - cancel_without_refund_record_still_succeeds
   # 코어 훅 계약
   - refund_hook_passes_order_refund_record

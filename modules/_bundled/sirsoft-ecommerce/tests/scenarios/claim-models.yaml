@@ -1,0 +1,67 @@
+feature: claim_models_unit
+
+description: |
+  클레임 모델(교환·반품 헤더와 상품 행, 환불 출처 확장, 다형 첨부 이미지, 다형 클레임 결제,
+  배송정책 회수지)의 관계·캐스팅·판정 헬퍼·유니크 제약을 실제 DB 로 고정하는 Unit 테스트의
+  시나리오 소유 매니페스트.
+
+  핵심 동작:
+    - 교환·반품 신청서는 주문에 속하고, 상태·귀책·청구 방식은 Enum 으로 캐스팅된다.
+    - 추가결제는 결제형 청구 방식에서만 요구된다(환불 차감은 환불 실행 때 상계한다).
+    - 비회원 판정은 신청자 컬럼이 아니라 주문의 주인이 정한다.
+    - 환불 출처는 명시 해석기로 풀고, `direct` 는 오류 없이 null 이다. 옛 취소 연결 컬럼도 유지된다.
+    - 첨부 이미지·클레임 결제의 다형 유형 값은 FQCN 이 아닌 짧은 클레임 유형이다.
+    - 회수지는 배송정책·유형당 한 행이다.
+
+axes:
+  model:
+    - exchange
+    - exchange_option
+    - return
+    - refund
+    - claim_image
+    - claim_payment
+    - claim_address
+
+effects:
+  - exchange_can_be_created_and_belongs_to_order                    # 교환 신청서 저장·주문 관계
+  - exchange_casts_enums_and_json_columns                           # 교환 Enum·JSON 컬럼 캐스팅
+  - exchange_charge_method_is_nullable_for_zero_charge              # 청구액 0 교환은 청구 방식 null 허용
+  - exchange_requires_additional_payment_only_for_payment_methods   # 결제형 청구 방식만 추가결제 요구
+  - exchange_status_helpers_delegate_to_enum                        # 철회 가능·종결 판정의 Enum 위임
+  - exchange_guest_request_is_detected_by_the_order_owner           # 비회원 판정은 주문 주인 기준
+  - exchange_claim_type_is_exchange                                 # 교환의 클레임 유형
+  - order_has_many_exchanges                                        # 주문 → 교환 다건 관계
+  - exchange_option_belongs_to_exchange_and_order_option            # 교환 상품 행의 소속 관계
+  - exchange_option_price_difference_sign_drives_charge_or_refund   # 차액 부호로 청구/환불 판정
+  - exchange_option_partial_quantity_detection                      # 부분 수량 교환 판정
+  - exchange_option_status_is_cast_to_exchange_status_enum          # 교환 상품 행 상태 캐스팅
+  - return_can_be_created_and_belongs_to_order                      # 반품 신청서 저장·주문 관계
+  - return_options_are_related_and_carry_subtotal                   # 반품 상품 행 관계·소계
+  - return_links_to_refund_request_when_completed                   # 반품 상품 행 → 환불신청서 연결
+  - order_has_many_returns                                          # 주문 → 반품 다건 관계
+  - refund_source_type_is_cast_and_resolves_source_record           # 환불 출처 유형 캐스팅·해석
+  - refund_source_direct_resolves_to_null_without_error             # direct 출처는 null 로 해석
+  - refund_source_resolves_return_and_exchange                      # 반품·교환 출처 해석
+  - refund_legacy_cancel_link_is_preserved_alongside_source         # 옛 취소 연결 컬럼 병행 유지
+  - claim_image_generates_hash_on_create                            # 첨부 이미지 생성 시 해시 부여
+  - claim_image_morphs_to_exchange_and_return                       # 첨부 이미지 다형 관계
+  - claim_image_stores_short_claim_type_not_fqcn                    # 다형 유형 값은 짧은 클레임 유형
+  - claim_owner_loads_images_in_sort_order                          # 신청서 첨부 이미지 정렬 로드
+  - claim_image_scopes_filter_by_type_and_order                     # 첨부 이미지 스코프
+  - claim_payment_totals_pg_and_points                              # 클레임 결제 합계(PG + 마일리지)
+  - claim_payment_paid_state_flags                                  # 수납·환불 가능 판정
+  - claim_payment_morphs_to_exchange_and_return                     # 클레임 결제 다형 관계
+  - claim_payment_number_is_unique                                  # 클레임 결제 번호 유니크
+  - claim_payment_status_scope_filters                              # 클레임 결제 상태 스코프
+  - order_has_many_claim_payments                                   # 주문 → 클레임 결제 다건 관계
+  - claim_address_is_unique_per_policy_and_type                     # 정책·유형당 회수지 유니크
+  - claim_address_allows_one_per_claim_type                         # 유형별 회수지 한 행씩 허용
+  - claim_address_snapshot_carries_delivery_fields                  # 회수지 스냅샷 필드
+  - claim_address_type_is_cast_to_claim_type_enum                   # 회수지 유형 캐스팅
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/ClaimModelsTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

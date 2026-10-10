@@ -14,6 +14,7 @@
 5. [다국어 파일 분할 ($partial)](#다국어-파일-분할-partial-v150)
 6. [컴포넌트 다국어 처리](#컴포넌트-다국어-처리)
 7. [JavaScript에서 G7Core.t() 사용](#javascript에서-g7coret-사용)
+8. [정본 화면을 복제할 때의 라벨 키](#정본-화면을-복제할-때의-라벨-키)
 
 ---
 
@@ -35,12 +36,24 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 기존에는 이를 처리하기 위해 복잡한 표현식이 필요했습니다:
 
+```html
+<div>{{typeof _global.selectedModule.name === 'string' ? _global.selectedModule.name : _global.selectedModule.name[$locale]}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 기존 방식 (129자)
 "text": "{{typeof _global.selectedModule.name === 'string' ? _global.selectedModule.name : _global.selectedModule.name[$locale]}}"
 ```
 
 ### $localized() 사용법
+
+```html
+<div>{{$localized(_global.selectedModule.name)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 새 방식 (45자)
@@ -70,6 +83,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **기본 사용**:
 
+```html
+<p>{{$localized(_global.selectedModule.name)}}</p>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -80,6 +99,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **번역 파라미터와 함께 사용**:
 
+```html
+<div>$t:admin.modules.modals.install_confirm|name={{$localized(_global.selectedModule.name)}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "$t:admin.modules.modals.install_confirm|name={{$localized(_global.selectedModule.name)}}"
@@ -88,6 +113,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **문자열 연결**:
 
+```html
+<div>{{$localized(_global.selectedModule.description) + ' (v' + _global.selectedModule.version + ')'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "{{$localized(_global.selectedModule.description) + ' (v' + _global.selectedModule.version + ')'}}"
@@ -95,6 +126,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 ```
 
 **iteration 컨텍스트에서 사용**:
+
+```html
+<li data-each="menu in _global.selectedModule.admin_menus">{{$localized(menu.name)}}</li>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -110,6 +147,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 
 **iteration + 문자열 연결**:
 
+```html
+<span data-each="perm in _global.selectedModule.permissions">{{$localized(perm.name) + ' (' + perm.identifier + ')'}}</span>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -123,6 +166,12 @@ API에서 다국어 필드가 문자열 또는 객체로 반환될 수 있습니
 ```
 
 ### Optional Chaining과 함께 사용
+
+```html
+<div>{{$localized(_global.selectedModule?.name) || '-'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -162,6 +211,8 @@ $localized()는 API 응답의 다국어 객체 처리용
 | `$t:key\|param=value` | 파라미터 전달 | `$t:products.total\|count=10` |
 | `$t:moduleIdentifier.key` | 모듈 다국어 키 | `$t:sirsoft-sample.admin.title` |
 
+> **인자는 `$t:key|param=` 으로만 넘긴다.** 식 안의 `{{$t('key', { count: n })}}` 는 문법 오류 없이 평가되지만, `$t()` 헬퍼는 **키 하나만 받고 인자 객체를 버린다** — 화면에 `{{count}}` 자리표시자가 그대로 보인다. 인자가 필요하면 `$t:key|count={{n}}` 으로 쓰고(인자 값 안의 파이프도 된다: `|at={{row.at | datetime}}`), 반복 안에서 반복 변수를 넘기면 `$t:defer:key|…` 를 쓴다. `$t('key')` 처럼 인자 없는 호출은 식 안에서 그대로 쓸 수 있다.
+
 #### 모듈 식별자와 하이픈 파싱 규칙 (engine-v1.28.1+)
 
 `$t:` 키에서 모듈 식별자는 **별도의 네임스페이스 분리 로직이 아닌, 번역 딕셔너리의 중첩 키 조회**로 처리됩니다.
@@ -181,6 +232,12 @@ $localized()는 API 응답의 다국어 객체 처리용
 
 ### 예시
 
+```html
+<div title="$t:dashboard.title" subtitle="$t:dashboard.subtitle" total="$t:products.total_count|count={{products.total}}">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -193,6 +250,12 @@ $localized()는 API 응답의 다국어 객체 처리용
 
 ### 파라미터 치환
 
+```html
+<div>$t:products.total_count|count={{products.total}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "text": "$t:products.total_count|count={{products.total}}"
@@ -202,9 +265,47 @@ $localized()는 API 응답의 다국어 객체 처리용
 // 결과: "총 15개의 상품"
 ```
 
+### 수에 따른 단수·복수 (engine-v1.78.7+)
+
+영어처럼 수에 따라 낱말 꼴이 바뀌는 언어는 **`count` 인자**로 문구를 고른다. 레이아웃·컴포넌트는 바꾸지 않고 사전에 변형 키만 더한다.
+
+| 사전 키 | 쓰이는 때 |
+| --- | --- |
+| `키` (기본 키) | 복수 범주가 `other` 일 때, 그리고 변형 키가 없을 때 — **기본 키는 언제나 other(일반 복수) 꼴로 쓴다** |
+| `키_one` · `키_two` · `키_few` · `키_many` · `키_zero` | 그 로케일의 CLDR 복수 범주(`Intl.PluralRules`)가 그 이름일 때 |
+
+```json
+// lang/partial/en/board.json
+{
+  "post_count": "{{count}} posts",
+  "post_count_one": "{{count}} post"
+}
+```
+
+```html
+<!-- en: 1 → "1 post", 0·2 → "0 posts"·"2 posts" / ko·ja: 범주가 other 뿐이라 기본 키 그대로 -->
+<span>$t:board.post_count|count={{board.posts_count}}</span>
+```
+
+규칙:
+
+- 인자 이름은 `count` 하나다. `{{total}}`·`{{days}}` 처럼 다른 이름의 수로는 고르지 않는다 — 고르려면 같은 값을 `count` 로도 넘긴다.
+- `count` 가 숫자 표기(`1`·`-2`·`1.5`)일 때만 고른다. 빈 값·천 단위 구분 기호가 든 값(`1,000`)·글자는 기본 키를 쓴다.
+- 범주는 **그 문구를 꺼낸 사전의 로케일**로 구한다. 현재 로케일 사전에 기본 키가 있으면 그 사전에서만 고르고(변형이 없으면 그 사전의 기본 키), 기본 키가 없어 폴백 로케일(en)로 넘어가면 en 범주로 다시 고른다.
+- `키_other` 는 찾지 않는다(기본 키가 other 꼴). 변형 키만 있고 기본 키가 없으면 그 사전에 키가 없는 것으로 본다.
+- `G7Core.t('board.post_count', { count: 1 })`·`useTranslation().t(...)` 도 같은 규칙을 탄다.
+- 봇(SEO) 화면의 서버 평가기도 같은 규칙으로 고른다 — intl 확장이 있으면 ICU 복수 규칙, 없으면 ko·ja·zh 등은 other, 나머지는 정수 1·-1 이면 one(그 밖 범주는 근사하지 않는다).
+- 범주가 other 뿐인 언어(ko·ja)는 변형 키를 둘 필요가 없다.
+
 ### 파라미터 값에 중첩 $t: 사용 (engine-v1.25.0+)
 
 파라미터 값 자체가 다른 번역 키를 참조해야 할 때, `$t:` 토큰을 파라미터 값으로 사용할 수 있습니다.
+
+```html
+<div>$t:order.status_message|status=$t:enums.order_status.completed</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -227,6 +328,12 @@ $localized()는 API 응답의 다국어 객체 처리용
 #### 다중 파라미터 혼합
 
 `$t:` 중첩 파라미터와 일반 파라미터를 함께 사용할 수 있습니다:
+
+```html
+<div>$t:coupon.status_change|count={{selectedItems.length}}|status=$t:enums.coupon_status.stopped</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -263,6 +370,18 @@ CardGrid, DataGrid 등 **반복 렌더링 컴포넌트**의 `cellChildren` 내�
 | `$t:defer:key` | 지연 번역 | renderItemChildren (iteration 컨텍스트 포함) |
 
 ### 사용 예시
+
+```html
+<card-grid>
+  <prop name="cellChildren">
+    <item type="basic" name="Span" text="$t:defer:admin.modules.vendor|vendor={{row.vendor}}"/>
+    <item type="basic" name="Span" if="{{row.dependencies &amp;&amp; row.dependencies.length > 0}}" text="$t:defer:admin.modules.dependencies|deps={{row.dependencies.join(', ')}}"/>
+    <item type="basic" name="Span" if="{{!row.dependencies || row.dependencies.length === 0}}" text="$t:admin.modules.no_dependencies"/>
+  </prop>
+</card-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -365,14 +484,18 @@ $t:defer:는 renderItemChildren 내부에서만 처리됨
 
 ### 레이아웃에서 모듈 다국어 사용
 
+```html
+<h1 data-ref="page-title">$t:sirsoft-sample.admin.index.title</h1>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "page-title",
   "type": "basic",
   "name": "H1",
-  "props": {
-    "text": "$t:sirsoft-sample.admin.index.title"
-  }
+  "text": "$t:sirsoft-sample.admin.index.title"
 }
 ```
 
@@ -745,6 +868,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
 
 ### 레이아웃 JSON 작성 패턴
 
+```html
+<user-profile data-ref="user_profile" user="{{current_user.data}}" profileText="$t:admin.profile_settings" logoutText="$t:admin.logout"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "user_profile",
@@ -754,12 +883,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
     "user": "{{current_user.data}}",
     "profileText": "$t:admin.profile_settings",  // 다국어 키
     "logoutText": "$t:admin.logout"              // 다국어 키
-  },
-  "data_binding": {
-    "user": "current_user.data"
   }
 }
 ```
+
+> 데이터는 위처럼 props 표현식(`"{{current_user.data}}"`)으로 바인딩한다. 별도의 `data_binding` 매핑 키는 **사어(死語)** 로, 렌더러가 읽지 않고 마크업 태그로도 승격되지 않는다 ([layout-json.md](layout-json.md) 최상위 속성 표).
 
 ### 다국어 파일 구조
 
@@ -841,6 +969,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 ```
 
 ### 레이아웃 JSON에서 사용
+
+```html
+<login-form data-ref="login_form" emailLabel="$t:auth.login.email" passwordLabel="$t:auth.login.password" submitButtonText="$t:auth.login.submit" processingText="$t:auth.login.processing" emailPlaceholder="$t:auth.login.email_placeholder" passwordPlaceholder="$t:auth.login.password_placeholder" forgotPasswordText="$t:auth.login.forgot_password"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -955,23 +1089,39 @@ await G7Core.locale.change('en');
 
 ### 예시
 
+```html
+<span>{{raw:post.title}}</span>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
   "name": "Span",
-  "props": {
-    "text": "{{raw:post.title}}"
-  }
+  "text": "{{raw:post.title}}"
 }
 ```
 
 ### 파이프와 함께 사용
+
+```html
+<div>{{raw:post.title | truncate:50}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 "text": "{{raw:post.title | truncate:50}}"
 ```
 
 ### 복잡한 표현식
+
+```html
+<div>{{raw:post.title ?? '제목 없음'}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 "text": "{{raw:post.title ?? '제목 없음'}}"
@@ -980,6 +1130,12 @@ await G7Core.locale.change('en');
 ### 혼합 보간
 
 일반 번역 토큰과 raw 바인딩을 같은 문자열에서 함께 사용할 수 있습니다:
+
+```html
+<div>{{raw:post.title}} - $t:common.by {{post.author}}</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 "text": "{{raw:post.title}} - $t:common.by {{post.author}}"
@@ -998,6 +1154,33 @@ await G7Core.locale.change('en');
 - `raw:`는 `resolveTranslationsDeep`의 `$t:` 번역만 건너뜁니다
 - 표현식 내부의 `$t()` 함수 호출에는 영향 없습니다
 - 핸들러 결과(`resultTo`)에 사용하면 의도된 `$t:` 번역도 건너뛰므로 주의
+
+---
+
+## 정본 화면을 복제할 때의 라벨 키
+
+한 화면의 행 마크업을 다른 화면에 그대로 옮겨 그리는 경우가 있다 — 주문 상세의 결제 정보를
+클레임 상세에서도 같은 모양으로 보여 주는 식이다. 이때 **라벨 키까지 정본의 것을 읽는다.**
+같은 값을 그리면서 키만 새로 지으면 두 문제가 한꺼번에 생긴다.
+
+- 같은 값이 두 화면에서 **다른 말**로 불린다 ("과세 금액" ↔ "과세금액"). 값이 같으므로
+  오류도 경고도 로그도 남지 않고, 두 화면을 나란히 놓고 보기 전에는 드러나지 않는다.
+- 나중에 정본의 문구가 바뀌어도 **사본만 옛 문구로 남는다**. 사본의 키는 정본과 아무 관계가
+  없으므로 정본을 고치는 사람이 사본의 존재를 알 방법이 없다.
+
+```json
+// ❌ 행 마크업만 복제하고 라벨 키는 새로 만든다
+{ "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.claim.detail.payment.taxable_amount" }
+
+// ✅ 정본의 키를 그대로 읽는다
+{ "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount" }
+```
+
+사본이 자기 키를 갖는 것은 **정본에 없는 문구**뿐이다 (그 화면에만 있는 안내 문장 등).
+
+이 규율은 사본 쪽 회귀 테스트로 고정한다 — 사본 레이아웃이 참조하는 `$t:` 키 집합에서
+정본 레이아웃의 키 집합과 사본 고유 키를 뺀 나머지가 비어 있는지 단언한다. 목록을 코드에
+적어 두지 말고 **정본 파일을 읽어** 만들어야, 정본이 키를 바꿀 때 그 테스트가 함께 움직인다.
 
 ---
 

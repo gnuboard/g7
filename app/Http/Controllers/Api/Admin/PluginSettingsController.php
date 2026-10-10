@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Extension\PluginManager;
+use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\UpdatePluginSettingsRequest;
 use App\Services\DriverRegistryService;
@@ -60,6 +61,12 @@ class PluginSettingsController extends AdminBaseController
      * 일치시킵니다 (ecommerce 모듈 설정 응답의 동명 키와 동형 계약).
      * 저장 시에는 스키마 기반 검증 whitelist 가 이 키를 걸러 설정에 남지 않습니다.
      *
+     * 저장값이 카탈로그에 없으면(그 디스크를 등록하던 확장이 꺼진 경우) 실제 동작인
+     * 스트리밍(`none`)으로 바꿔 싣고, 사라진 디스크 이름을 `public_asset_disk_unavailable`
+     * 로 알립니다. 저장값을 그대로 실으면 화면의 선택 칸이 어떤 선택지와도 맞지 않은 채
+     * 보이고, 폼 전체를 보내는 저장이 매번 카탈로그 검증(422)에 막힙니다. 런타임도 이미
+     * 고아 디스크를 스트리밍으로 폴백하므로(PublicAssetDisk::resolve) 표시가 동작과 같아집니다.
+     *
      * @param  string  $identifier  플러그인 식별자
      * @param  array<string, mixed>  $settings  응답에 실을 설정
      * @return array<string, mixed> 카탈로그가 부착된 설정
@@ -72,8 +79,14 @@ class PluginSettingsController extends AdminBaseController
             return $settings;
         }
 
-        $settings['available_public_asset_disks'] = app(DriverRegistryService::class)
-            ->getAvailableDrivers('public_asset');
+        $catalog = app(DriverRegistryService::class)->getAvailableDrivers('public_asset');
+        $settings['available_public_asset_disks'] = $catalog;
+
+        $stored = $settings['public_asset_disk'] ?? '';
+        if (is_string($stored) && $stored !== '' && ! in_array($stored, array_column($catalog, 'id'), true)) {
+            $settings['public_asset_disk'] = 'none';
+            $settings['public_asset_disk_unavailable'] = $stored;
+        }
 
         return $settings;
     }
@@ -94,8 +107,29 @@ class PluginSettingsController extends AdminBaseController
 
         return $this->success(
             'common.success',
-            $this->withPublicAssetCatalog($identifier, $this->maskSensitive($identifier, $settings))
+            $this->withAbilities(
+                $this->withPublicAssetCatalog($identifier, $this->maskSensitive($identifier, $settings))
+            )
         );
+    }
+
+    /**
+     * 응답 설정에 화면이 읽기 전용 여부를 정할 권한 값(abilities)을 싣는다.
+     *
+     * 설정 화면은 조회 권한(core.plugins.read)으로 열리지만 저장은 core.plugins.update 가
+     * 필요하다. 이 값이 없으면 화면이 쓰기 권한을 알 수 없어 읽기만 가진 운영자에게도
+     * 입력·저장이 살아 있다. 판정 식별자는 저장 라우트의 permission 미들웨어와 같다.
+     *
+     * @param  array<string, mixed>  $settings  응답에 실을 설정
+     * @return array<string, mixed> abilities 가 붙은 설정
+     */
+    private function withAbilities(array $settings): array
+    {
+        $settings['abilities'] = [
+            'can_update' => PermissionHelper::check('core.plugins.update', request()->user()),
+        ];
+
+        return $settings;
     }
 
     /**
@@ -113,6 +147,10 @@ class PluginSettingsController extends AdminBaseController
         // 그대로 설정 파일에 병합되는 경로로만 동작했다 (mass-assignment).
         $settings = $request->validated();
 
+        // 화면은 조회 응답을 폼에 담아 그대로 되돌려 보내므로 abilities 가 섞여 온다.
+        // 권한 값은 요청마다 서버가 계산하는 것이라 설정으로 저장하지 않는다.
+        unset($settings['abilities']);
+
         $result = $this->pluginSettingsService->save($identifier, $settings, $failureReason);
 
         if (! $result) {
@@ -125,9 +163,11 @@ class PluginSettingsController extends AdminBaseController
         // 누락 시 저장 직후 선택지가 비어 보인다 (ecommerce 저장 응답과 동형)
         return $this->success(
             'plugins.settings.updated',
-            $this->withPublicAssetCatalog(
-                $identifier,
-                $this->maskSensitive($identifier, $this->pluginSettingsService->get($identifier) ?? [])
+            $this->withAbilities(
+                $this->withPublicAssetCatalog(
+                    $identifier,
+                    $this->maskSensitive($identifier, $this->pluginSettingsService->get($identifier) ?? [])
+                )
             )
         );
     }

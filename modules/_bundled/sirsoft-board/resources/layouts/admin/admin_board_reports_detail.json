@@ -1,30 +1,11 @@
 {
+    "comment": "신고 한 건의 상세. 본문은 조각 셋(현재 상태 배너 · 신고 내용 · 처리 이력)이고, 상태 전환은 다섯 갈래(대기·검토·기각·정지·삭제)를 모달 하나가 겸한다 — 어느 갈래인지는 `_global.actionType` 이 들고 있어 제목·문구·버튼색·보낼 값이 그 하나에서 갈린다",
     "version": "1.0.0",
     "layout_name": "admin_board_reports_detail",
-    "permissions": [
-        "sirsoft-board.reports.view"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-board.admin.reports.detail.page_title",
         "description": "$t:sirsoft-board.admin.reports.detail.page_description"
-    },
-    "state": {
-        "_local": {
-            "reporters_page": 1,
-            "reporters_loading": false
-        },
-        "_global": {
-            "actionReason": "",
-            "isSaving": false,
-            "actionType": ""
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "report_detail",
-            "reporters_list"
-        ]
     },
     "data_sources": [
         {
@@ -49,7 +30,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "신고 본문·대상 글·현재 상태. 없는 신고(404)와 권한 없음(403) 둘 다 화면 자리에 오류 페이지를 세운다 — 이 화면은 신고 하나가 전부라 부분만 비워 둘 수 없다"
         },
         {
             "id": "reporters_list",
@@ -63,24 +45,45 @@
             "params": {
                 "page": "{{_local.reporters_page}}",
                 "per_page": 10
-            }
+            },
+            "comment": "같은 대상을 신고한 사람들 — 한 신고에 여럿이 붙을 수 있어 따로 페이지를 넘긴다. `progressive` 라 본문이 먼저 뜨고 이 목록만 늦게 채워진다"
         }
     ],
+    "initLocal": {
+        "_local": {
+            "reporters_page": 1,
+            "reporters_loading": false
+        },
+        "_global": {
+            "actionReason": "",
+            "isSaving": false,
+            "actionType": ""
+        }
+    },
+    "permissions": [
+        "sirsoft-board.reports.view"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "report_detail",
+            "reporters_list"
+        ]
+    },
     "slots": {
         "content": [
             {
                 "id": "report_detail_wrapper",
                 "type": "basic",
                 "name": "Div",
-                "props": {
-                    "className": "admin-page-content-fluid"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
                             "className": "admin-page-content-fluid-compact"
                         }
                     }
+                },
+                "props": {
+                    "className": "admin-page-content-fluid"
                 },
                 "children": [
                     {
@@ -96,11 +99,9 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "같은 신고로 다시 들어가 본문·신고자 목록을 새로 읽는다 — 신고자 페이지도 함께 1 로 돌아간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -110,13 +111,19 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh",
+                                    "className": "btn-icon"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrows-rotate",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -125,11 +132,9 @@
                                 "id": "back_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "flex-center gap-2 btn btn-secondary"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "신고 목록으로. 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -139,13 +144,16 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrow-left",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -172,9 +180,7 @@
     },
     "modals": [
         {
-            "meta": {
-                "editor_label": "$t:sirsoft-board.admin.reports.modals.status_action_editor_label"
-            },
+            "comment": "상태 전환 확인 — 다섯 갈래를 겸한다. 「기각」이면서 대상이 이미 가려져 있으면 그 글이 다시 공개된다는 것을 별도 문구로 먼저 알린다(기각은 되돌리는 동작이라 눈에 안 띄게 노출이 일어날 수 있다)",
             "id": "status_action_modal",
             "type": "composite",
             "name": "Modal",
@@ -211,7 +217,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "eye",
-                                        "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"
+                                        "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0"
                                     }
                                 },
                                 {
@@ -235,14 +241,9 @@
                         {
                             "type": "basic",
                             "name": "Textarea",
-                            "props": {
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
-                                "rows": 4,
-                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
-                                "value": "{{_global.actionReason || ''}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "처리 사유를 전역에 담는다 — 아래 확인 버튼이 이 값을 `process_note` 로 보내고, 처리 이력 카드에 그대로 남는다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -250,7 +251,13 @@
                                         "actionReason": "{{$event.target.value}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
+                                "rows": 4,
+                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
+                                "value": "{{_global.actionReason || ''}}"
+                            }
                         }
                     ]
                 },
@@ -264,16 +271,13 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isSaving}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 },
                                 {
+                                    "comment": "닫으면서 적어 둔 사유도 비운다 — 남겨 두면 다음에 다른 갈래로 열었을 때 앞선 사유가 그대로 실려 나간다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -282,6 +286,10 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isSaving}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -293,12 +301,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
-                                "disabled": "{{_global.isSaving}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "확인 ①  저장 중 표시를 켜 두 번 눌리는 것을 막는다(취소 버튼도 같은 값으로 함께 잠긴다)",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -307,10 +312,11 @@
                                     }
                                 },
                                 {
+                                    "comment": "확인 ②  고른 갈래를 상태 값으로 풀어 보낸다. 성공 뒤 화면에 머무는 대신 같은 주소로 다시 들어가는 이유는 상태·이력·배너가 한꺼번에 달라지기 때문이다",
                                     "type": "click",
                                     "handler": "apiCall",
-                                    "auth_required": true,
                                     "target": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/status",
+                                    "auth_required": true,
                                     "params": {
                                         "method": "PATCH",
                                         "body": {
@@ -364,6 +370,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
+                                "disabled": "{{_global.isSaving}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -374,7 +384,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.reports.modals.status_action_editor_label"
+            }
         }
     ]
 }

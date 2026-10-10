@@ -1,0 +1,17 @@
+# e2e:allow 화면 변경 없음 — 실패 시 기존 오류 토스트가 나오고 상태가 그대로 남는다(서버 기능 테스트가 잰다).
+feature: 반려·철회와 추가결제 환급은 한 트랜잭션 (S6 · D2) — #747 C6
+
+description: |
+  종결 전이를 먼저 커밋한 뒤 트랜잭션 밖에서 환급을 불러, PG 가 환급을 거절하면 신청서는 반려·철회로 굳고 결제 건은
+  PAID 로 남아 다시 시도할 길이 없었다.
+
+    - 관리자 전이(헤더·상품 행)·대리 철회·회원 철회를 종결 전이 + 환급 한 트랜잭션으로 묶는다. 환급이 마지막 단계다.
+
+axes:
+  refund_result: [declined, accepted]
+
+effects:
+  - terminate_rolls_back_when_charge_refund_fails
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/TerminateRollsBackOnChargeRefundFailureTest.php

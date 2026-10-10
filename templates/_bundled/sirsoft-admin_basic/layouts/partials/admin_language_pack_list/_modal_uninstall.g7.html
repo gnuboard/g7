@@ -1,0 +1,64 @@
+<!-- 언어팩을 지우기 전 되묻는 창. 지우면 그 언어로 손봐 둔 문구까지 함께 사라져 되돌릴 수 없다.
+  **코어 팩일 때만** 딸린 확장 팩까지 함께 지울지 고르는 칸이 나온다 — 확장 팩은 대개 코어 팩의
+  언어 위에 얹히므로, 코어만 지우면 남은 쪽이 기댈 데 없는 상태로 남는다. -->
+<partial description="언어팩 제거 확인 모달 — 모듈/플러그인 uninstall 모달과 동일 수준. 위험 경고 박스, 로딩 스피너, reloadExtensions 후속 호출 포함." editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_uninstall_modal">
+  <modal data-type="composite" data-ref="language_pack_uninstall_modal" title="$t:admin.language_packs.modal.uninstall.title" size="sm">
+    <div class="py-2 space-y-3">
+      <p class="text-body flex items-center gap-2"><span data-ref="lp_uninstall_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_local.uninstallIconUrl}}" src="{{_local.uninstallIconUrl}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_local.uninstallIconUrl}}" name="fas fa-language" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.language_packs.modal.uninstall.body|scope={{_local.uninstallScope}}|target={{_local.uninstallTarget ?? '—'}}|locale={{_local.uninstallLocale}}</span></p>
+      <div class="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-danger-soft">
+        <div class="flex-start gap-2">
+          <icon name="fas fa-triangle-exclamation" size="sm" class="mt-0.5"/>
+          <span>$t:admin.language_packs.modal.uninstall.warning</span>
+        </div>
+      </div>
+      <div data-if="{{_local.uninstallScope === 'core'}}" class="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm">
+        <label class="flex-center gap-2 text-warning-soft cursor-pointer">
+          <input type="checkbox" checked="{{_local.uninstallCascade === true}}" disabled="{{_global.isLanguagePackUninstalling}}" class="h-4 w-4 text-indigo-600 rounded disabled:opacity-50">
+            <on event="onChange">
+              <!-- 딸린 확장 팩까지 함께 지울지. 기본은 꺼짐이라 아무것도 안 만지면 코어 팩만 지운다. -->
+              <set-state target="local" uninstallCascade="{{$event.target.checked}}"/>
+            </on>
+          </input>
+          <span>$t:admin.language_packs.modal.uninstall.cascade_label</span>
+        </label>
+        <p class="mt-1 text-warning-soft">$t:admin.language_packs.modal.uninstall.cascade_hint</p>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 mt-6">
+      <button type="button" disabled="{{_global.isLanguagePackUninstalling}}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+        <on event="onClick">
+          <close-modal target="language_pack_uninstall_modal"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" disabled="{{_global.isLanguagePackUninstalling}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+        <on event="onClick">
+          <!-- 지운 뒤 목록을 다시 받고 확장을 새로 읽는다 — 없어진 언어 자원을 계속 물고 있으면 화면 문구가 빈 채로 남는다. 함께 지울지 여부는 본문에 실어 보낸다. -->
+          <sequence>
+            <set-state target="global" :isLanguagePackUninstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/{{_local.uninstallId}}" method="DELETE">
+              <success>
+                <set-state target="global" :isLanguagePackUninstalling="false"/>
+                <toast type="success" message="$t:admin.language_packs.messages.uninstall_success"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+                <reload-extensions/>
+                <close-modal target="language_pack_uninstall_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isLanguagePackUninstalling="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.uninstall_failed'}}"/>
+              </fail>
+              <body cascade="{{_local.uninstallCascade === true}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{!_global.isLanguagePackUninstalling}}" name="fas fa-trash" size="sm"/>
+        <icon data-if="{{_global.isLanguagePackUninstalling}}" name="fas fa-spinner" class="animate-spin" size="sm"/>
+        <span>{{_global.isLanguagePackUninstalling ? '$t:admin.language_packs.uninstalling' : '$t:admin.language_packs.actions.uninstall'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

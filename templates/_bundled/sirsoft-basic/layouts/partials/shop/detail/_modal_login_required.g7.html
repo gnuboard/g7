@@ -1,0 +1,30 @@
+<!-- 회원만 되는 동작(쿠폰 받기·찜하기·문의 작성)을 비회원이 눌렀을 때 뜨는 안내 창. 곧바로 로그인으로
+     보내지 않고 한 번 알리는 이유는 상품을 보던 흐름이 예고 없이 끊기지 않게 하기 위해서다. -->
+<partial description="로그인 필요 안내 모달 - 비로그인 사용자가 쿠폰 다운로드 시도 시" editor_label="$t:user.modal_label.shop_detail.login_required_modal">
+  <modal data-type="composite" data-ref="login_required_modal" title="$t:shop.coupon_download.login_required_title" size="sm">
+    <div class="text-center py-4">
+      <icon name="user" class="text-3xl text-gray-400 dark:text-gray-500 mb-3"/>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">$t:shop.coupon_download.login_required_message</p>
+      <div class="flex justify-center gap-3">
+        <button type="button" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
+          <on type="click">
+            <!-- 로그인으로 — 보고 있던 상품 주소를 `redirect` 로 실어 보내 로그인 후 제자리로 돌아오게 한다 -->
+            <sequence>
+              <close-modal/>
+              <navigate path="/login">
+                <query redirect="{{location.pathname}}"/>
+              </navigate>
+            </sequence>
+          </on>
+          $t:shop.coupon_download.go_login
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

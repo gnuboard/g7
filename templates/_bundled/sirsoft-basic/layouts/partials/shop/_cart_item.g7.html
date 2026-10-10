@@ -1,0 +1,154 @@
+<!-- 장바구니의 한 줄. 값 대부분은 `item` 이 그대로 갖고 있지만 **배송정책과 배송비만은 예외**로,
+     `cartItems.data.calculation` 에서 같은 옵션 id 를 찾아 읽는다 — 배송비는 한 줄만 봐서는 정할 수 없고
+     장바구니 전체 조합으로 서버가 계산하기 때문이다. -->
+<partial description="장바구니 개별 상품 아이템">
+  <div data-testid="cart-item" class="flex gap-4 p-4">
+    <!-- 체크박스 -->
+    <div class="flex items-center">
+      <checkbox name="cart_item_{{item.id}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
+        <on type="change">
+          <!-- 선택을 바꾸면 합계가 달라지므로 전용 핸들러가 선택 목록을 갱신하고 금액을 다시 받는다 -->
+          <action handler="toggleCartItemSelection" itemId="{{item.id}}" selectedItems="{{_local.selectedItems}}"/>
+        </on>
+      </checkbox>
+    </div>
+    <!-- 상품 이미지 (새 창으로 열기) -->
+    <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="flex-shrink-0">
+      <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+        <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
+        <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+          <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+        </div>
+      </div>
+    </a>
+    <!-- 상품 정보 -->
+    <div class="flex-1 min-w-0">
+      <!-- 상품명 (새 창으로 열기) -->
+      <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="block w-full text-left no-underline">
+        <h3 class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">{{item.product.name}}</h3>
+      </a>
+      <!-- 상품 옵션 값 (옵션이 있을 때만 표시) -->
+      <p data-if="{{item.product_option &amp;&amp; Object.keys(item.product_option.option_values_localized ?? {}).length > 0}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}</p>
+      <!-- 선택된 추가옵션 (그룹명: 선택지명 +추가금) — 옵션 라인 바로 아래 -->
+      <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="mt-1 space-y-0.5">
+        <p data-testid="cart-item-additional-option" class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+      </div>
+      <!-- 배송정책 및 배송비 -->
+      <div data-if="{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy}}" class="flex items-center gap-2 mt-1">
+        <icon name="truck" size="xs" class="text-gray-400 dark:text-gray-500"/>
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500">/</span>
+        <!-- 단독 구매 시 배송비 > 0 -->
+        <span data-if="{{(cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300">{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount_formatted ?? ''}}</span>
+        <!-- 단독 구매 시 무료배송 -->
+        <span data-if="{{(cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-600 dark:text-green-400">$t:shop.checkout.free_shipping</span>
+      </div>
+      <div class="mt-1">
+        <!-- 정가 취소선 + 할인율 (할인 있을 때만, U4) -->
+        <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" class="flex items-center gap-2">
+          <!-- 정가 취소선 - 주 통화 -->
+          <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
+          <!-- 할인율 칩 -->
+          <span class="text-xs font-bold text-red-500">{{item.product_option?.discount_rate}}%</span>
+        </div>
+        <!-- 정가 취소선 - 보조 통화들 (할인 있을 때, 선택 통화 제외) -->
+        <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" data-each="currency in {{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
+          <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{currency[1]?.formatted}}</span>
+        </div>
+        <!-- 주 통화 -->
+        <div class="text-sm font-medium text-gray-900 dark:text-white">{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.selling_price_formatted ?? ''}}</div>
+        <!-- 보조 통화들 (선택된 통화 제외) -->
+        <div data-each="currency in {{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <quantity-selector data-type="composite" value="{{item.quantity}}" :min="1" max="{{item.product_option?.stock_quantity ?? 999}}" size="sm">
+          <on type="change" event="onChange">
+            <!-- 수량을 바꾸면 응답이 장바구니 전체(금액 계산 포함)를 다시 실어 오므로 데이터소스를 통째로
+                 갈아끼운다 — 따로 refetch 를 걸지 않는 이유다. 선택 목록을 함께 보내야 서버가 같은 기준으로 계산한다 -->
+            <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart/{{item.id}}/quantity" method="PATCH">
+              <success>
+                <update-data-source dataSourceId="cartItems" data="{{response}}"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body quantity="{{$args[0]}}" selected_ids="{{_local.selectedItems}}"/>
+              <field name="headers">
+                <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+              </field>
+            </api-call>
+          </on>
+        </quantity-selector>
+        <!-- 판매중지 표시 — 상품 판매 상태 외에 서버의 구매 가능 여부(available)도 본다: 담은 옵션이 판매 중지됐거나 전시 중지된 상품은 판매 중이어도 살 수 없다 -->
+        <span data-if="{{item.product.sales_status !== 'on_sale' || item.available === false}}" class="text-sm font-medium text-red-600 dark:text-red-400">$t:shop.cart.not_on_sale</span>
+        <!-- 재고부족 표시 (판매중이지만 재고 부족) -->
+        <span data-if="{{item.product.sales_status === 'on_sale' &amp;&amp; item.quantity > (item.product_option?.stock_quantity ?? 0)}}" class="text-sm font-medium text-red-600 dark:text-red-400">$t:shop.cart.insufficient_stock</span>
+        <!-- 배송 불가 표시 (선택 배송국가로 배송 불가 — D1 layer 1) -->
+        <span data-if="{{item.is_shippable_to_selected_country === false}}" class="text-sm font-medium text-red-600 dark:text-red-400">$t:shop.shippability.not_shippable</span>
+        <!-- 옵션 변경 버튼 -->
+        <button data-if="{{item.product_option}}" data-testid="cart-change-option" class="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer" title="$t:shop.cart.change_option" aria-label="$t:shop.cart.change_option">
+          <on type="click">
+            <!-- 초기 상태 설정 (모달은 아직 열지 않음) -->
+            <set-state target="local" selectedQuantity="{{item.quantity}}" :selectedOptions="{}" :optionProduct="null" :matchedOption="null" additionalSelections="{{Object.fromEntries((item.additional_options ?? []).map(a => [a.additional_option_id, a.value_id]))}}" additionalCustomTexts="{{Object.fromEntries((item.additional_options ?? []).filter(a => (a.custom_text ?? '') !== '').map(a => [a.additional_option_id, a.custom_text]))}}">
+              <field name="optionModal">
+                <field name="visible" :value="false"/>
+                <field name="targetItem">
+                  <field name="id" value="{{item.id}}"/>
+                  <field name="product_id" value="{{item.product_id}}"/>
+                  <field name="product_option_id" value="{{item.product_option_id}}"/>
+                  <field name="thumbnail" value="{{item.product.thumbnail_url}}"/>
+                  <field name="product_name" value="{{item.product.name}}"/>
+                  <field name="option_name" value="{{item.product_option.option_name}}"/>
+                  <field name="option_values" value="{{item.product_option.option_values}}"/>
+                  <field name="unit_price_formatted" value="{{item.product_option?.selling_price_formatted}}"/>
+                  <field name="multi_currency_selling_price" value="{{item.product_option?.multi_currency_selling_price}}"/>
+                  <field name="quantity" value="{{item.quantity}}"/>
+                  <field name="stock" value="{{item.product_option?.stock_quantity ?? 999}}"/>
+                </field>
+              </field>
+            </set-state>
+            <!-- 상품 옵션 정보 조회 후 모달 열기 -->
+            <api-call target="/api/modules/sirsoft-ecommerce/products/{{item.product?.product_code ?? item.product_id}}" auth_mode="optional">
+              <success>
+                <set-state target="local" optionProduct="{{response.data}}"/>
+                <!-- 현재 옵션 초기값 설정 - 핸들러가 결과 반환 -->
+                <action handler="initCartOptionSelection" currentOptionValues="{{item.product_option?.option_values_localized ?? {}}}" optionGroups="{{response.data.option_groups ?? []}}" options="{{response.data.options ?? []}}"/>
+                <!-- 핸들러 반환값($prev)으로 상태 설정 -->
+                <set-state target="local" selectedOptions="{{$prev.selectedOptions}}" matchedOption="{{$prev.matchedOption}}"/>
+                <!-- API 응답 후 모달 열기 (optionProduct가 설정된 후) -->
+                <open-modal target="cart_option_change_modal"/>
+              </success>
+            </api-call>
+          </on>
+          <icon name="settings" size="md"/>
+        </button>
+        <!-- 삭제 버튼 -->
+        <button type="button" aria-label="$t:shop.cart.delete_item" class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer">
+          <on type="click">
+            <set-state target="local">
+              <field name="deleteModal">
+                <field name="visible" :value="true"/>
+                <field name="targetIds">
+                  <item>{{item.id}}</item>
+                </field>
+              </field>
+            </set-state>
+            <open-modal target="cart_delete_confirm_modal"/>
+          </on>
+          <icon name="trash-can" size="md"/>
+        </button>
+      </div>
+    </div>
+    <!-- 소계 -->
+    <div class="flex flex-col items-end justify-center">
+      <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.cart.subtotal</span>
+      <div class="font-bold text-gray-900 dark:text-white">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
+      <!-- 보조 통화들 -->
+      <div data-each="currency in {{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+      </div>
+    </div>
+  </div>
+</partial>

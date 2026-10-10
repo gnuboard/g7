@@ -1,0 +1,50 @@
+<!-- e2e:allow 2026-09-21 회원 배송지 화면 전면 재작성 — Playwright spec 대신 **작성자가 직접 브라우저로 관통 실측**했다(로그인 → 회원 2명 다중선택 → 28건→10건 → 「이 회원으로 검색」 10건→5건, 콘솔 오류 0). 전용 시드(저장 배송지를 가진 회원 다수 + manage 권한 운영자)가 필요해 기존 admin spec 의 시드로는 세울 수 없고, 그 시드 신설은 별도 과제다. 구조 회귀는 레이아웃 계약 테스트 18건이 막는다.
+
+  회원 배송지 목록 — 선택 삭제 확인 창. 고른 행 ID 는 표가 `_global.bulkSelectedItems` 에 옮겨
+  담아 둔 것을 읽는다. 건수를 본문에 싣는 것은 「몇 건을 지우는지」 가 이 창이 묻는 전부이기
+  때문이다 — 목록으로 되돌아가 세어 보게 하지 않는다.
+  일괄 삭제는 한 요청으로 보내고 활동 로그도 한 번만 남긴다(건마다 남기면 100건 삭제가 100줄이다). -->
+<partial description="User Address - Bulk Delete Confirm Modal">
+  <modal data-type="composite" data-ref="modal_addresses_bulk_delete" data-testid="admin-addresses-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.title" size="sm">
+    <div>
+      <div>
+        <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.message|count={{(_global.bulkSelectedItems || []).length}}</p>
+        <p class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.warning</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-testid="admin-addresses-bulk-delete-confirm" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkDeleting}}">
+        <on type="click">
+          <!-- 여러 건을 한 요청으로 보낸다 — 응답이 늦는 사이 두 번 눌리면 같은 ID 가 겹쳐 들어가므로
+               버튼을 먼저 잠근다. 성공하면 선택을 비운 뒤 목록을 다시 받는다 -->
+          <sequence>
+            <set-state target="global" :isBulkDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/user-addresses/bulk" method="DELETE">
+              <success>
+                <set-state target="global" :isBulkDeleting="false" :bulkSelectedItems="[]"/>
+                <set-state target="local" :selectedItems="[]"/>
+                <refetch-data-source dataSourceId="addresses"/>
+                <toast type="success" message="{{result.message}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isBulkDeleting="false" errorMessage="{{error.message}}"/>
+                <close-modal/>
+                <open-modal target="modal_addresses_error"/>
+              </fail>
+              <body ids="{{_global.bulkSelectedItems}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isBulkDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isBulkDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

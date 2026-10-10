@@ -144,8 +144,48 @@ class ChangelogParser
         $currentEntry = null;
         $currentCategoryIndex = -1;
 
+        // 이어 쓴 줄을 붙일 항목의 위치(현재 카테고리 items 의 인덱스). 항목 밖이면 null.
+        $openItemIndex = null;
+        // 바로 앞 줄이 빈 줄이었는지 — 빈 줄 뒤에는 들여쓴 줄만 같은 항목으로 본다.
+        $afterBlank = false;
+        // 코드 블록 안인지, 그 코드 블록이 항목 안에서 열렸는지.
+        $inFence = false;
+        $fenceInItem = false;
+
         foreach ($lines as $line) {
+            $line = rtrim($line, "\r");
             $trimmedLine = trim($line);
+            $indented = $trimmedLine !== '' && preg_match('/^\s/', $line) === 1;
+
+            // ``` 코드 블록 — 항목 안(들여쓴 울타리)이면 내용을 항목에 이어 붙이고, 항목 밖이면 통째로 건너뛴다.
+            // 코드 블록 안의 `- `·`##` 줄을 항목·버전으로 잘못 읽지 않게 하는 것이 목적이다.
+            if (str_starts_with($trimmedLine, '```')) {
+                if (! $inFence) {
+                    $inFence = true;
+                    $fenceInItem = $openItemIndex !== null && ($indented || ! $afterBlank);
+                    if (! $fenceInItem) {
+                        $openItemIndex = null;
+                    }
+                } else {
+                    $inFence = false;
+                }
+                $afterBlank = false;
+
+                continue;
+            }
+            if ($inFence) {
+                if ($fenceInItem && $trimmedLine !== '') {
+                    static::appendToItem($currentEntry, $currentCategoryIndex, $openItemIndex, $trimmedLine);
+                }
+
+                continue;
+            }
+
+            if ($trimmedLine === '') {
+                $afterBlank = true;
+
+                continue;
+            }
 
             // ## [버전] - 날짜 패턴 (프리릴리스 지원: 7.0.0-alpha.1 등)
             if (preg_match('/^##\s+\[?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*)?)\]?\s*(?:-\s*(.+))?$/', $trimmedLine, $matches)) {
@@ -159,6 +199,8 @@ class ChangelogParser
                     'categories' => [],
                 ];
                 $currentCategoryIndex = -1;
+                $openItemIndex = null;
+                $afterBlank = false;
 
                 continue;
             }
@@ -172,18 +214,40 @@ class ChangelogParser
                     ];
                     $currentCategoryIndex = count($currentEntry['categories']) - 1;
                 }
+                $openItemIndex = null;
+                $afterBlank = false;
 
                 continue;
             }
 
-            // - 항목 패턴
+            // 그 밖의 제목(#, ##, ####…)은 항목을 끝낸다 — 앞 항목 글에 붙이지 않는다.
+            if (preg_match('/^#{1,6}\s/', $trimmedLine)) {
+                $openItemIndex = null;
+                $afterBlank = false;
+
+                continue;
+            }
+
+            // - 항목 패턴 (들여쓴 중첩 항목도 따로 한 항목으로 둔다)
             if (preg_match('/^-\s+(.+)$/', $trimmedLine, $matches)) {
+                $openItemIndex = null;
                 if ($currentEntry !== null && $currentCategoryIndex >= 0) {
                     $currentEntry['categories'][$currentCategoryIndex]['items'][] = trim($matches[1]);
+                    $openItemIndex = count($currentEntry['categories'][$currentCategoryIndex]['items']) - 1;
                 }
+                $afterBlank = false;
 
                 continue;
             }
+
+            // 이어 쓴 줄 — 항목 바로 밑 줄(들여쓰기 무관), 또는 빈 줄 뒤라도 들여쓴 줄이면 같은 항목의 다음 문단이다.
+            // 빈 줄 뒤 들여쓰지 않은 문단은 항목 밖 안내문이라 항목을 끝낸다.
+            if ($openItemIndex !== null && (! $afterBlank || $indented)) {
+                static::appendToItem($currentEntry, $currentCategoryIndex, $openItemIndex, $trimmedLine);
+            } else {
+                $openItemIndex = null;
+            }
+            $afterBlank = false;
         }
 
         // 마지막 엔트리 추가
@@ -192,5 +256,24 @@ class ChangelogParser
         }
 
         return $entries;
+    }
+
+    /**
+     * 열린 항목 뒤에 이어 쓴 줄을 공백 하나로 붙입니다.
+     *
+     * @param  array|null  $currentEntry  현재 버전 엔트리 (참조)
+     * @param  int  $categoryIndex  현재 카테고리 인덱스
+     * @param  int|null  $itemIndex  이어 붙일 항목 인덱스
+     * @param  string  $text  앞뒤 공백을 뺀 줄
+     * @return void 반환값 없음
+     */
+    private static function appendToItem(?array &$currentEntry, int $categoryIndex, ?int $itemIndex, string $text): void
+    {
+        if ($currentEntry === null || $categoryIndex < 0 || $itemIndex === null) {
+            return;
+        }
+
+        $item = &$currentEntry['categories'][$categoryIndex]['items'][$itemIndex];
+        $item = $item === '' ? $text : $item.' '.$text;
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Module;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\RestrictsHiddenExtensionsToSuperAdmin;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -15,6 +17,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class IndexModuleRequest extends FormRequest
 {
+    use RestrictsHiddenExtensionsToSuperAdmin;
+
     /**
      * 검색 가능한 필드 목록
      */
@@ -27,6 +31,8 @@ class IndexModuleRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool 항상 true (권한은 라우트 미들웨어가 판정)
      */
     public function authorize(): bool
     {
@@ -36,7 +42,7 @@ class IndexModuleRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

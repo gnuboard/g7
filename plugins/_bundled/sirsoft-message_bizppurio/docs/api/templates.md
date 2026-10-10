@@ -10,7 +10,7 @@
 1. 이 문서는 Templates 엔드포인트 레퍼런스입니다 (readiness 1건은 실측 @generated, 라이프사이클 13건은 코드 사양 기반 수기 작성)
 2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시 + 응답 필드 표 + 응답 예시(envelope)
 3. 알림 템플릿 라이프사이클: 등록(draft) → 검수 신청(requested) → 승인(approved) 후 발송 활성화 — 발송 판정은 DB 가 유일한 근거
-4. kapi(카카오 관리 API) 실패는 422 + errors.bizppurio_message(사유 원문)·errors.result_code / 상태 전이 위반도 422
+4. kapi(카카오 관리 API) 실패는 422 + errors.bizppurio_message(사유 원문)·errors.result_code / 서버 연결 실패는 연결 실패 안내 422 / 상태 전이 위반도 422
 5. 갱신: 코드 변경 후 이 문서를 수기 동기화 (라이프사이클 항목은 kapi 자격증명 없이 실측 불가)
 ```
 
@@ -96,9 +96,10 @@ HTTP/1.1 200
 | 상태코드 | 발생 조건 | 응답 형태 |
 | --- | --- | --- |
 | 422 (kapi 실패) | 카카오 관리 API 호출이 실패한 경우 | `errors.bizppurio_message` 에 카카오가 준 실패 사유 원문, `errors.result_code` 에 결과 코드 (관리자 전용 면 — 조치 근거 제공) |
+| 422 (연결 실패) | 비즈뿌리오 서버에 닿지 못한 경우(타임아웃·DNS·프록시) | `messages.error.connection_failed` 안내, errors 없음. 행 상태는 바뀌지 않는다 |
 | 422 (상태 전이 위반) | 현재 상태에서 허용되지 않는 액션인 경우 | 위반 사유 메시지 (예: "현재 상태(requested)에서는 알림톡 내용을 수정할 수 없습니다. …") |
 | 422 (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 | `error.errors` 에 필드별 메시지 |
-| 404 | `{id}` 에 해당하는 템플릿이 없는 경우 | `messages.not_found` |
+| 404 | `{id}` 에 해당하는 템플릿이 없는 경우 | `messages.template.not_found`(「알림 템플릿을 찾을 수 없습니다.」) |
 | 401 / 403 | 토큰 없음·만료 / 요구 권한 없음 | 표준 |
 
 kapi 실패 422 응답 예시:
@@ -178,7 +179,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "알림 템플릿을 불러왔습니다.",
     "data": {
         "templates": [
             {
@@ -268,7 +269,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "알림 템플릿을 불러왔습니다.",
     "data": {
         "templates": {
             "order_completed": {
@@ -299,7 +300,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.view`)이 없는 경우 |
 
-**설명**
+**설명** 응답 `data.abilities.can_manage_messaging` 은 알림 템플릿 편집 창의 비즈뿌리오 섹션 잠금 근거입니다(7.1.0).
 
 알림 설정 3면(코어/게시판/이커머스)의 행 하단 UI 가 소비하는 `notification_type` 키 요약 맵이다.
 행 수는 알림 정의 수에 묶인 설정성 데이터라 페이지네이션 없이 전량 내려준다.
@@ -353,7 +354,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "알림 템플릿을 불러왔습니다.",
     "data": {
         "template": {
             "id": 3,
@@ -427,6 +428,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | sms_only | body | boolean | 아니오 | — | SMS 단독 발송 여부 |
 | is_active | body | boolean | 아니오 | — | 발송 활성 여부 |
 | content | body | object | 아니오 | nullable | 카카오 등록 페이로드 (아래 매트릭스). SMS 단독 알림은 content 없이 생성 가능 — 검수 신청 시점에 존재를 재검한다 |
+| draft | body | boolean | 아니오 | — | `true` 면 임시 저장 — 아래 매트릭스의 **필수 조건(필수·조건부 필수·아이템 최소 개수·링크 종류별 필수 칸)만 걷어 내고** 형식·길이 제약은 그대로 건다. 걷어 낸 필수값은 검수 신청(`POST /{id}/request`)이 저장된 content 에 전체 매트릭스를 걸어 422 로 알린다(본문에 draft 를 실어도 완화되지 않는다) |
 
 **content 검증 매트릭스** (`content` 를 보냈을 때만 적용. 서버가 선택 유형과 무관한 필드·빈 값을 검증 전에 제거(prune)하므로 화면은 폼 상태 전체를 그대로 보내도 된다)
 
@@ -684,7 +686,7 @@ Content-Type: application/json
 Authorization: Bearer {YOUR_TOKEN}
 
 {
-    "comment": "변수 예시: #{name}=홍길동, #{order_number}=20260823-0001"
+    "comment": "변수 예시: #{name}=홍길동, #{order_number}=20260823-1043226571"
 }
 ```
 
@@ -955,6 +957,12 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- | --- | --- | --- |
 | image | body (multipart) | file | 예 | jpg/jpeg/png · ≤500KB · 가로 ≥500px · 가로:세로 = 2:1 | 이미지형(IMAGE) 템플릿용 이미지 파일 |
 
+상한 500KB·가로 500px 은 **kapi 고정 제약**이며 운영자 설정으로 바뀌지 않습니다 — 설정 축을
+열면 "설정을 올리면 더 큰 파일이 된다" 는 거짓 여지가 생깁니다. 두 값은
+`BizppurioTemplateImageRequest::MAX_KILOBYTES` · `MIN_WIDTH` 공개 상수 하나에서 나오고, 화면
+두 곳(플러그인 설정 · 알림 템플릿 폼 슬롯)의 안내 문구가 같은 값을 인용합니다. 드리프트
+테스트가 세 자리(서버 상수 · 두 화면)를 함께 잠급니다.
+
 **요청 예시**
 
 ```http
@@ -1032,7 +1040,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
 | kakao_deleted | boolean | 카카오측 템플릿도 함께 삭제했는지 여부 |
-| kakao_skip_reason | string\|null | 카카오측 미삭제 사유: `not_registered`(카카오 등록 전) / `state_not_deletable`(삭제 가능 상태 아님) / kapi 삭제 실패 시 카카오 사유 원문. 삭제했으면 null |
+| kakao_skip_reason | string\|null | 카카오측 미삭제 사유: `not_registered`(카카오 등록 전) / `state_not_deletable`(삭제 가능 상태 아님) / kapi 삭제 실패 시 카카오 사유 원문 / 서버에 닿지 못했으면 연결 실패 안내 문장(`messages.error.connection_failed` 의 번역). 삭제했으면 null |
 
 **응답 예시**
 
@@ -1061,4 +1069,5 @@ DB 행은 항상 삭제한다. 카카오측 템플릿은 삭제 가능 상태일
 등록(REG)/반려(REJ) 상태에서만 허용되므로, 우리 상태가 `draft`/`rejected` 면 kapi 삭제를 시도하고,
 그 외 상태(또는 kapi 삭제 실패)면 카카오측은 그대로 두고 DB 행만 삭제한다. 어느 쪽이든 응답의
 `kakao_deleted`·`kakao_skip_reason` 으로 결과를 명시해 운영자가 알 수 있게 한다(kapi 실패가 있어도
-이 엔드포인트는 422 가 아닌 200 으로 완료된다).
+이 엔드포인트는 422 가 아닌 200 으로 완료된다). 비즈뿌리오 서버에 닿지 못한 경우도 같다 — `kakao_skip_reason` 에
+연결 실패 안내 문장(`messages.error.connection_failed` 키의 번역)을 적는다.

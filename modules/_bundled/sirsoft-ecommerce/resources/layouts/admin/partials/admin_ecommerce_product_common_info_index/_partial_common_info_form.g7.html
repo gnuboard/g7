@@ -1,0 +1,93 @@
+<!-- 공통정보 등록·편집 폼 시안. 짝인 `_partial_common_info_detail` 과 마찬가지로 **어느 레이아웃도
+  끼워 넣지 않는다** — 실제로 쓰이는 폼은 `_panel_form` 이다.
+  데이터소스·API 호출이 없고 저장 버튼에도 액션이 없다. 본문 모드 전환(텍스트/HTML)과 언어 탭만
+  지역 상태로 돌며, 그 키들도 실제 화면이 쓰는 것과 다르다. -->
+<partial description="Common Info Add/Edit Form Partial">
+  <div data-ref="common_info_form" class="admin-card">
+    <div data-ref="form_card_header" class="flex-between mb-6">
+      <h3 class="card-title">{{_local.viewMode === 'edit' ? '$t:sirsoft-ecommerce.admin.common_info.form.title_edit' : '$t:sirsoft-ecommerce.admin.common_info.form.title_add'}}</h3>
+      <div class="flex-center gap-2">
+        <button type="button" class="btn btn-secondary">
+          <on type="click">
+            <!-- 취소 — 등록 모드로 되돌리고 선택을 비운다. 옆 저장 버튼에는 액션이 없다(시안). -->
+            <set-state target="_local" viewMode="add" :selectedCommonInfoId="null"/>
+          </on>
+          $t:sirsoft-ecommerce.common.cancel
+        </button>
+        <button type="button" class="btn btn-primary">$t:sirsoft-ecommerce.common.save</button>
+      </div>
+    </div>
+    <div data-ref="form_content">
+      <div data-ref="field_name" class="mb-6">
+        <label class="form-label">
+          <span>$t:sirsoft-ecommerce.admin.common_info.form.name</span>
+          <span class="text-required">*</span>
+        </label>
+        <input type="text" name="common_info_name" class="input" placeholder="$t:sirsoft-ecommerce.admin.common_info.form.name_placeholder"/>
+      </div>
+      <div data-ref="field_settings" class="grid-2col mb-6">
+        <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="text-xs text-secondary mb-2">$t:sirsoft-ecommerce.admin.common_info.form.set_default</div>
+          <div class="flex-center gap-2">
+            <input type="checkbox" name="is_default" class="checkbox">
+              <on type="click">
+                <open-modal target="modal_set_default_confirm"/>
+              </on>
+            </input>
+            <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.common_info.form.set_default</span>
+          </div>
+        </div>
+        <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="text-xs text-secondary mb-2">$t:sirsoft-ecommerce.admin.common_info.form.is_active</div>
+          <div class="flex-between">
+            <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.common_info.form.active_label</span>
+            <div class="toggle active">
+              <div class="toggle-track"/>
+              <div class="toggle-handle"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr data-ref="divider" class="border-gray-200 dark:border-gray-700 mb-6"/>
+      <div data-ref="section_content">
+        <div class="text-sm font-medium text-primary mb-4">$t:sirsoft-ecommerce.admin.common_info.form.content_section</div>
+        <div data-ref="content_language_toolbar" class="flex-between mb-4">
+          <div class="flex-center gap-2">
+            <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
+            <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+              <on type="click">
+                <!-- 언어 탭 — 아래 입력칸들이 언어별로 갈려 있지 않아 탭을 바꿔도 같은 칸을 편집한다(시안). -->
+                <set-state target="_local" activeLanguageTab="{{loc}}"/>
+              </on>
+              {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+            </button>
+          </div>
+        </div>
+        <div data-ref="content_mode_toolbar" class="flex-between mb-4">
+          <div class="tabs">
+            <button type="button" class="{{_local.contentMode === 'text' ? 'tab active' : 'tab'}}">
+              <on type="click">
+                <open-modal target="modal_content_mode_change"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.common_info.form.mode_text
+            </button>
+            <button type="button" class="{{_local.contentMode === 'html' ? 'tab active' : 'tab'}}">
+              <on type="click">
+                <!-- HTML 모드 — 곧바로 바꾼다. 반대 방향(텍스트로 되돌리기)만 확인 창을 거치는 것은 서식이 사라지기 때문이다. -->
+                <set-state target="_local" contentMode="html"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.common_info.form.mode_html
+            </button>
+          </div>
+          <button type="button" class="btn btn-ghost text-sm">
+            <icon name="eye" class="text-base mr-1"/>
+            <span>$t:sirsoft-ecommerce.admin.common_info.form.preview</span>
+          </button>
+        </div>
+        <div data-ref="content_editor">
+          <textarea name="content" class="input w-full h-64 resize-none" placeholder="{{_local.contentMode === 'html' ? '$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html' : '$t:sirsoft-ecommerce.admin.common_info.form.placeholder_text'}}"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

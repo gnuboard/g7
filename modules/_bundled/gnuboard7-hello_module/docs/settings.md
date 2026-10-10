@@ -15,7 +15,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 않았습니다.
 
 설정 스키마와 설정 화면 레이아웃의 예시는 함께 제공되는 `gnuboard7-hello_plugin` 에 있습니다 —
-`getSettingsSchema()` 선언과 `resources/layouts/admin/plugin_settings.json` 이 짝을 이루는
+`getSettingsSchema()` 선언과 `resources/layouts/admin/plugin_settings.g7.html` 이 짝을 이루는
 형태입니다.
 <!-- @intent END -->
 
@@ -93,8 +93,8 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `gnuboard7-hello_plugin` | 플러그인 | `>=0.1.0` |
-| `gnuboard7-hello_user_template` | 템플릿 | `>=0.1.0` |
+| `gnuboard7-hello_plugin` | 플러그인 | `>=0.2.0` |
+| `gnuboard7-hello_user_template` | 템플릿 | `>=0.2.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

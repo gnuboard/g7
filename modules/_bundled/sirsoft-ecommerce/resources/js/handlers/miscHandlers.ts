@@ -6,6 +6,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { addCalendarDays, calendarDateIn, formatCalendarDate, resolveAccountTimezone } from '../utils/timezoneDate';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:Misc')) ?? {
@@ -458,94 +459,6 @@ export function removeLabelPeriodHandler(
 }
 
 /**
- * 처리로그 정렬을 변경합니다.
- *
- * @param action 액션 객체 (params.sort 필요: 'latest' | 'oldest')
- * @param _context 액션 컨텍스트
- */
-export function updateActivityLogSortHandler(
-    action: ActionWithParams,
-    _context: ActionContext
-): void {
-    const params = action.params || {};
-    const sort = params.sort as 'latest' | 'oldest';
-
-    if (!sort) {
-        logger.warn('[updateActivityLogSort] Missing sort param');
-        return;
-    }
-
-    const G7Core = (window as any).G7Core;
-    if (!G7Core?.state) {
-        logger.warn('[updateActivityLogSort] G7Core.state API is not available');
-        return;
-    }
-
-    const state = G7Core.state.getLocal() || {};
-
-    G7Core.state.setLocal({
-        ui: {
-            ...state.ui,
-            activityLogSort: sort,
-        },
-    });
-
-    // 데이터소스 새로고침
-    G7Core.datasources?.refresh?.('activity_logs', {
-        params: {
-            sort: sort === 'latest' ? 'desc' : 'asc',
-            per_page: state.ui?.activityLogPerPage ?? 10,
-        },
-    });
-
-    logger.log(`[updateActivityLogSort] Updated sort to ${sort}`);
-}
-
-/**
- * 처리로그 페이지당 항목 수를 변경합니다.
- *
- * @param action 액션 객체 (params.perPage 필요: 10 | 20 | 50)
- * @param _context 액션 컨텍스트
- */
-export function updateActivityLogPerPageHandler(
-    action: ActionWithParams,
-    _context: ActionContext
-): void {
-    const params = action.params || {};
-    const perPage = params.perPage as 10 | 20 | 50;
-
-    if (!perPage) {
-        logger.warn('[updateActivityLogPerPage] Missing perPage param');
-        return;
-    }
-
-    const G7Core = (window as any).G7Core;
-    if (!G7Core?.state) {
-        logger.warn('[updateActivityLogPerPage] G7Core.state API is not available');
-        return;
-    }
-
-    const state = G7Core.state.getLocal() || {};
-
-    G7Core.state.setLocal({
-        ui: {
-            ...state.ui,
-            activityLogPerPage: perPage,
-        },
-    });
-
-    // 데이터소스 새로고침
-    G7Core.datasources?.refresh?.('activity_logs', {
-        params: {
-            sort: state.ui?.activityLogSort === 'oldest' ? 'asc' : 'desc',
-            per_page: perPage,
-        },
-    });
-
-    logger.log(`[updateActivityLogPerPage] Updated perPage to ${perPage}`);
-}
-
-/**
  * 기본 배송정책을 자동 설정합니다.
  *
  * - init_actions에서 호출 (생성 모드, condition: !route.itemCode)
@@ -681,36 +594,21 @@ export function setLabelDatePresetHandler(
         return;
     }
 
-    const today = new Date();
-    const formatDate = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    const startDate = formatDate(today);
+    // 시작일은 계정 시간대(회원 → 사이트 기본)의 오늘 — 관리자 화면은 그 관리자의 시간대로 날짜를 보인다.
+    const today = calendarDateIn(new Date(), resolveAccountTimezone());
+    const startDate = formatCalendarDate(today);
     let endDate: string | null = null;
 
     switch (preset) {
-        case '7d': {
-            const end = new Date(today);
-            end.setDate(end.getDate() + 7);
-            endDate = formatDate(end);
+        case '7d':
+            endDate = addCalendarDays(today, 7);
             break;
-        }
-        case '14d': {
-            const end = new Date(today);
-            end.setDate(end.getDate() + 14);
-            endDate = formatDate(end);
+        case '14d':
+            endDate = addCalendarDays(today, 14);
             break;
-        }
-        case '30d': {
-            const end = new Date(today);
-            end.setDate(end.getDate() + 30);
-            endDate = formatDate(end);
+        case '30d':
+            endDate = addCalendarDays(today, 30);
             break;
-        }
         case 'permanent':
             endDate = null;
             break;

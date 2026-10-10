@@ -1,0 +1,19 @@
+feature: 확장 관리 창은 성공 뒤 대상 선택을 비우기 전에 먼저 닫힌다
+
+description: |
+  모듈·플러그인·템플릿 관리 창(설치·업데이트·삭제·레이아웃 갱신·템플릿 끄기·강제 켜기)의 성공 처리가 대상
+  (`selectedModule`·`selectedPlugin`·`selectedTemplate`)을 먼저 비우고 목록·메뉴·확장 번들을 다시 받은 뒤에야
+  창을 닫았다. 그 사이 열린 창이 빈 대상으로 다시 그려져 「"{{name}}"을(를) 설치하시겠습니까?」처럼 자리표시가
+  보였다(Q-G2 Hello 모듈 설치 실측). 창을 먼저 닫고 대상을 비운다. 언어팩 관리의 번들 언어팩 설치 창
+  (`selectedBundledLanguagePack`)도 같은 순서였다(validate q2).
+
+axes:
+  case:
+    - close_modal_before_clearing_selection
+    - population_not_empty
+
+effects:
+  - extension_modal_closes_before_selection_cleared
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-modal-close-before-clear.test.tsx

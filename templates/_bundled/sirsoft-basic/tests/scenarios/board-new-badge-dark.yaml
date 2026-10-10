@@ -1,0 +1,16 @@
+feature: 게시판 새글(N) 배지가 다크 모드에서 전용 색을 쓴다
+
+description: |
+  7.1.0 은 게시글 보기의 새글 배지를 다크 전용 색(red-600)으로 바로잡으며 「목록·갤러리 화면과 마찬가지로」라고
+  적었지만, 목록(기본형·카드형·갤러리형)·인기글·홈 위젯의 배지는 밝은 화면과 같은 red-500 이거나 다크 클래스가
+  없었다(7.1.0 실측 K4-D6, 주 세션 관측 O-N5: 목록 다크 배지 14개 배경이 라이트와 같음).
+  모든 새글 배지가 상세와 같은 다크 전용 색을 쓴다.
+
+axes:
+  surface: [list_and_widgets]
+
+effects:
+  - new_badge_uses_dark_specific_color
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-new-badge-dark.test.ts

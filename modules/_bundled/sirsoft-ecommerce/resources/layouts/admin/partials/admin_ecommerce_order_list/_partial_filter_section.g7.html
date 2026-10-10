@@ -1,0 +1,1063 @@
+<!-- 주문 목록 — 검색 필터 영역. 구조가 두 겹이라 처음 보면 헷갈리는 자리가 셋 있다.
+
+  ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의
+     `data-slot` 이 "기본 필터" 와 "상세 필터" 중 어디로 갈지를 그때그때 정한다. 그래서 필터를
+     보이고 숨겨도 행이 사라졌다 다시 만들어지지 않고 자리만 옮긴다.
+  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저(localStorage)에 남긴다.
+     저장은 필터 표시 선택기(`filter-visibility-selector`)가 맡는다 — 자기 `id` 와 로그인 사용자로
+     키(`g7_filters_{id}_{사용자}`)를 만들고, `visibleFilters` 가 바뀔 때마다 스스로 저장한다.
+     그래서 편집모드 체크박스는 상태만 바꾼다.
+  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**. 조건을 query 로 실어야
+     재진입·뒤로가기·주소 공유에서 같은 목록이 서기 때문이고, 그래서 프리셋을 누르면
+     `_local.filter` 를 채우는 것과 `navigate` 로 query 를 갈아 끼우는 것이 함께 일어난다. -->
+<partial description="Order List - Filter Section with Slot System (v2)">
+  <div data-ref="filter_card" data-key="filter" class="admin-card">
+    <!-- 필터 표시/숨김 컨트롤 -->
+    <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_ecommerce_order_filters" visibleFilters="{{_local.visibleFilters}}">
+      <prop name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>date</item>
+        <item>orderStatus</item>
+        <item>claim</item>
+      </prop>
+      <on type="change" event="onFilterVisibilityChange">
+        <set-state target="_local" visibleFilters="{{$args[0]}}"/>
+      </on>
+    </filter-visibility-selector>
+    <!-- 슬롯 등록 영역 - 모든 필터 행 정의 (hidden) -->
+    <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
+      <!-- F-010 ~ F-019 일자 필터 -->
+      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-002 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"/>
+          </on>
+        </input>
+        <!-- F-010 -->
+        <span data-ref="f_010_date_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.date</span>
+        <!-- F-011 -->
+        <select data-ref="f_011_date_type_select" name="dateType" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date_type_select" class="w-28" value="{{_local.filter.dateType || 'ordered_at'}}">
+          <options>
+            <option value="ordered_at">$t:sirsoft-ecommerce.admin.order.filter.date_type.order_date</option>
+            <option value="paid_at">$t:sirsoft-ecommerce.admin.order.filter.date_type.payment_date</option>
+            <option value="shipped_at">$t:sirsoft-ecommerce.admin.order.filter.date_type.shipping_date</option>
+          </options>
+          <on type="change">
+            <set-state target="_local" filter.dateType="{{$event.target.value}}" filter.dateBasis=""/>
+          </on>
+        </select>
+        <div class="flex-center gap-2">
+          <!-- F-012 -->
+          <input data-ref="f_012_start_date" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.start_date" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick="" filter.dateBasis=""/>
+            </on>
+          </input>
+          <span class="text-secondary">~</span>
+          <!-- F-013 -->
+          <input data-ref="f_013_end_date" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.end_date" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick="" filter.dateBasis=""/>
+            </on>
+          </input>
+        </div>
+        <div class="flex-center gap-1">
+          <!-- F-014 -->
+          <button data-ref="f_014_quick_today" type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.filter.date_quick.today
+          </button>
+          <!-- F-015 -->
+          <button data-ref="f_015_quick_week" type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.filter.date_quick.week
+          </button>
+          <!-- F-016 -->
+          <button data-ref="f_016_quick_month" type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.filter.date_quick.1_month
+          </button>
+          <!-- F-017 -->
+          <button data-ref="f_017_quick_3months" type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.filter.date_quick.3_months
+          </button>
+          <!-- F-018 -->
+          <button data-ref="f_018_quick_6months" type="button" class="{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="6months"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.filter.date_quick.6_months
+          </button>
+          <!-- F-019 -->
+          <button data-ref="f_019_quick_1year" type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.setDateRange" preset="1year"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.filter.date_quick.1_year
+          </button>
+        </div>
+        <!-- 대시보드 「오늘」 배지로 연 목록(date_basis=site)은 배지와 같은 사이트 표준시의 하루로 걸러져 있다. 목록의 시각은 보는 사람의
+          시간대로 그려지므로, 계정 시간대가 사이트와 다르면 행 날짜가 고른 날짜와 달라 보인다 — 그 까닭과 되돌리는 법을 알린다 -->
+        <p data-ref="date_site_basis_notice" data-if="{{query.date_basis === 'site'}}" class="text-xs text-tertiary">$t:sirsoft-ecommerce.admin.order.filter.site_day_notice|timezone={{_global.settings?.general?.timezone ?? ''}}</p>
+      </div>
+      <!-- F-020 ~ F-030 주문상태 필터 -->
+      <div data-ref="orderStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-003 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderStatus')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('orderStatus') ? (_local.visibleFilters || []).filter(f => f !== 'orderStatus') : [...(_local.visibleFilters || []), 'orderStatus']}}"/>
+          </on>
+        </input>
+        <!-- F-020 -->
+        <span data-ref="f_020_order_status_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.order_status</span>
+        <div class="flex-center flex-wrap gap-2">
+          <!-- F-021 -->
+          <chip-checkbox data-type="composite" data-ref="f_021_status_pending_order" value="pending_order" checked="{{(_local.filter.orderStatus || []).includes('pending_order')}}" icon="clock" label="$t:sirsoft-ecommerce.admin.order.status.waiting" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="pending_order"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-022 -->
+          <chip-checkbox data-type="composite" data-ref="f_022_status_pending_payment" value="pending_payment" checked="{{(_local.filter.orderStatus || []).includes('pending_payment')}}" icon="clock" label="$t:sirsoft-ecommerce.admin.order.status.payment_pending" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="pending_payment"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-023 -->
+          <chip-checkbox data-type="composite" data-ref="f_023_status_payment_complete" value="payment_complete" checked="{{(_local.filter.orderStatus || []).includes('payment_complete')}}" icon="check" label="$t:sirsoft-ecommerce.admin.order.status.payment_complete" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="payment_complete"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-024 -->
+          <chip-checkbox data-type="composite" data-ref="f_024_status_shipping_hold" value="shipping_hold" checked="{{(_local.filter.orderStatus || []).includes('shipping_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.admin.order.status.shipping_hold" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="shipping_hold"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-025 -->
+          <chip-checkbox data-type="composite" data-ref="f_025_status_preparing" value="preparing" checked="{{(_local.filter.orderStatus || []).includes('preparing')}}" icon="box" label="$t:sirsoft-ecommerce.admin.order.status.preparing" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="preparing"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-026 -->
+          <chip-checkbox data-type="composite" data-ref="f_026_status_shipping_ready" value="shipping_ready" checked="{{(_local.filter.orderStatus || []).includes('shipping_ready')}}" icon="box" label="$t:sirsoft-ecommerce.admin.order.status.shipping_ready" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="shipping_ready"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-027 -->
+          <chip-checkbox data-type="composite" data-ref="f_027_status_shipping" value="shipping" checked="{{(_local.filter.orderStatus || []).includes('shipping')}}" icon="truck" label="$t:sirsoft-ecommerce.admin.order.status.shipping" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="shipping"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-028 -->
+          <chip-checkbox data-type="composite" data-ref="f_028_status_delivered" value="delivered" checked="{{(_local.filter.orderStatus || []).includes('delivered')}}" icon="check" label="$t:sirsoft-ecommerce.admin.order.status.delivered" variant="green">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="delivered"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-029 -->
+          <chip-checkbox data-type="composite" data-ref="f_029_status_cancelled" value="cancelled" checked="{{(_local.filter.orderStatus || []).includes('cancelled')}}" icon="x" label="$t:sirsoft-ecommerce.admin.order.status.cancelled" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="cancelled"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-029b 반품완료 — 전량 반품을 마친 주문은 주문 상태가 반품완료가 된다. 칩이 없으면 그 주문만 골라 볼 수 없고 배송완료 필터에서도 빠진다. -->
+          <chip-checkbox data-type="composite" data-ref="f_029b_status_returned" value="returned" checked="{{(_local.filter.orderStatus || []).includes('returned')}}" icon="box-archive" label="$t:sirsoft-ecommerce.admin.order.status.returned" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="returned"/>
+            </on>
+          </chip-checkbox>
+          <!-- F-030 -->
+          <chip-checkbox data-type="composite" data-ref="f_030_status_confirmed" value="confirmed" checked="{{(_local.filter.orderStatus || []).includes('confirmed')}}" icon="thumbs-up" label="$t:sirsoft-ecommerce.admin.order.status.confirmed" variant="blue">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="confirmed"/>
+            </on>
+          </chip-checkbox>
+        </div>
+      </div>
+      <!-- F-080 ~ F-084 배송방법 필터 -->
+      <div data-ref="deliveryMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('deliveryMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-005 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('deliveryMethod')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('deliveryMethod') ? (_local.visibleFilters || []).filter(f => f !== 'deliveryMethod') : [...(_local.visibleFilters || []), 'deliveryMethod']}}"/>
+          </on>
+        </input>
+        <!-- F-080 -->
+        <span data-ref="f_080_delivery_method_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.delivery_method</span>
+        <div class="flex-center flex-wrap gap-4">
+          <!-- F-081 배송유형 동적 체크박스 -->
+          <label data-each="option in _computed.shippingTypeOptions" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.deliveryMethods || []).includes(option.value)}}">
+              <on type="change">
+                <!-- 배송유형 선택지는 쇼핑몰 설정에서 오므로 개수가 고정이 아니다 — 그래서 체크박스마다 키를 두지 않고 배열에 값을 넣고 빼는 공용 핸들러를 쓴다. -->
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.deliveryMethods" value="{{option.value}}"/>
+              </on>
+            </input>
+            <span>{{option.label}}</span>
+          </label>
+        </div>
+      </div>
+      <!-- F-090 ~ F-096 결제수단 필터 -->
+      <div data-ref="paymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('paymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-006 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('paymentMethod')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('paymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'paymentMethod') : [...(_local.visibleFilters || []), 'paymentMethod']}}"/>
+          </on>
+        </input>
+        <!-- F-090 -->
+        <span data-ref="f_090_payment_method_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.payment_method</span>
+        <div class="flex-center flex-wrap gap-4">
+          <!-- F-091 동적 결제수단 체크박스 -->
+          <label data-each="method in _computed.availablePaymentMethods" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.paymentMethods || []).includes(method.id)}}">
+              <on type="change">
+                <!-- 결제수단은 활성화된 것만 내려오므로 목록이 설치마다 다르다. 값에 이름이 아니라 id 를 담는 이유는 이름이 언어에 따라 바뀌기 때문이다. -->
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.paymentMethods" value="{{method.id}}"/>
+              </on>
+            </input>
+            <span>{{method.name}}</span>
+          </label>
+        </div>
+      </div>
+      <!-- F-100 ~ F-105 상품카테고리 필터 -->
+      <div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-007 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"/>
+          </on>
+        </input>
+        <!-- F-100 -->
+        <span data-ref="f_100_category_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.category</span>
+        <div class="flex-center flex-wrap gap-2">
+          <!-- F-101 -->
+          <select data-ref="f_101_category_1" name="category1" value="{{_local.filter.category1}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category1Options ?? []}}">
+            <on type="change">
+              <set-state target="_local" filter.category1="{{$event.target.value}}" filter.category2="" filter.category3="" filter.category4=""/>
+            </on>
+          </select>
+          <!-- F-102 -->
+          <select data-ref="f_102_category_2" data-if="{{_local.filter.category1}}" name="category2" value="{{_local.filter.category2}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category2Options ?? []}}">
+            <on type="change">
+              <set-state target="_local" filter.category2="{{$event.target.value}}" filter.category3="" filter.category4=""/>
+            </on>
+          </select>
+          <!-- F-103 -->
+          <select data-ref="f_103_category_3" data-if="{{_local.filter.category2}}" name="category3" value="{{_local.filter.category3}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category3Options ?? []}}">
+            <on type="change">
+              <set-state target="_local" filter.category3="{{$event.target.value}}" filter.category4=""/>
+            </on>
+          </select>
+          <!-- F-104 -->
+          <select data-ref="f_104_category_4" data-if="{{_local.filter.category3}}" name="category4" value="{{_local.filter.category4}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category4Options ?? []}}">
+            <on type="change">
+              <set-state target="_local" filter.category4="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <!-- F-110 ~ F-114 구매금액 필터 -->
+      <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-008 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('price')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"/>
+          </on>
+        </input>
+        <!-- F-110 -->
+        <span data-ref="f_110_price_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.price</span>
+        <div class="flex-center gap-2">
+          <!-- F-111 -->
+          <input data-ref="f_111_min_price" type="number" min="0" step="100" name="minPrice" value="{{_local.filter.minPrice}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.min_price" class="input w-32 text-right">
+            <on type="change">
+              <set-state target="_local" filter.minPrice="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <!-- F-112 -->
+          <span data-ref="f_112_price_separator" class="text-secondary">~</span>
+          <!-- F-113 -->
+          <input data-ref="f_113_max_price" type="number" min="0" step="100" name="maxPrice" value="{{_local.filter.maxPrice}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.max_price" class="input w-32 text-right">
+            <on type="change">
+              <set-state target="_local" filter.maxPrice="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <!-- F-114 -->
+          <select data-ref="f_114_currency_select" name="currency" aria-label="$t:sirsoft-ecommerce.admin.order.filter.currency_select" class="w-20" value="{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{((_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))) ?? []}}"/>
+        </div>
+      </div>
+      <!-- F-120 ~ F-126 배송국가 필터 -->
+      <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-009 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"/>
+          </on>
+        </input>
+        <!-- F-120 -->
+        <span data-ref="f_120_country_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.country</span>
+        <div class="flex-center flex-wrap gap-4">
+          <!-- F-121 동적 국가 체크박스 -->
+          <label data-each="country in _computed.availableCountries" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.countries || []).includes(country.code)}}">
+              <on type="change">
+                <!-- 국가는 실제 주문이 들어온 곳만 내려온다(전체 국가 목록이 아니다) — 주문이 없는 나라는 여기 뜨지 않는다. 값은 국기 표시와 같은 ISO 코드다. -->
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.countries" value="{{country.code}}"/>
+              </on>
+            </input>
+            <span class="fi fi-{{country.code}} fis rounded"/>
+            <span>{{country.name}}</span>
+          </label>
+        </div>
+      </div>
+      <!-- F-130 ~ F-132 구매환경 필터 -->
+      <div data-ref="device_filter_row" data-slot="{{(_local.visibleFilters || []).includes('device') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-010 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('device')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('device') ? (_local.visibleFilters || []).filter(f => f !== 'device') : [...(_local.visibleFilters || []), 'device']}}"/>
+          </on>
+        </input>
+        <!-- F-130 -->
+        <span data-ref="f_130_device_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.device</span>
+        <div class="flex-center flex-wrap gap-4">
+          <!-- F-131 -->
+          <label data-ref="f_131_device_pc" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.devices || []).includes('pc')}}">
+              <on type="change">
+                <!-- 구매환경은 주문에 기록되는 값이 둘뿐이라 서버 목록 없이 손으로 적혀 있다. 둘 다 끄면 조건이 빠져 전 기기가 나온다 — 둘 다 켠 것과 결과가 같다. -->
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.devices" value="pc"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.admin.order.filter.device_options.pc</span>
+          </label>
+          <!-- F-132 -->
+          <label data-ref="f_132_device_mobile" class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.devices || []).includes('mobile')}}">
+              <on type="change">
+                <!-- 짝인 PC 와 같은 배열을 나눠 쓴다 — 개수가 늘 자리가 아니라서 위 동적 필터들과 달리 반복으로 세우지 않았다. -->
+                <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.devices" value="mobile"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.admin.order.filter.device_options.mobile</span>
+          </label>
+        </div>
+      </div>
+      <!-- F-140 ~ F-142 배송정책 필터 -->
+      <div data-ref="shippingPolicy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-011 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingPolicy')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"/>
+          </on>
+        </input>
+        <!-- F-140 -->
+        <span data-ref="f_140_shipping_policy_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.shipping_policy</span>
+        <!-- F-141 -->
+        <select data-ref="f_141_shipping_policy_select" name="shippingPolicy" class="!w-48" value="{{_local.filter.shippingPolicy || ''}}" options="{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}">
+          <on type="change">
+            <set-state target="_local" filter.shippingPolicy="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <!-- F-150 ~ F-153 배송비 필터 -->
+      <div data-ref="shippingFee_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingFee') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-012 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingFee')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('shippingFee') ? (_local.visibleFilters || []).filter(f => f !== 'shippingFee') : [...(_local.visibleFilters || []), 'shippingFee']}}"/>
+          </on>
+        </input>
+        <!-- F-150 -->
+        <span data-ref="f_150_shipping_fee_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.shipping_fee</span>
+        <div class="flex-center gap-2">
+          <!-- F-151 -->
+          <input data-ref="f_151_min_shipping_fee" type="number" min="0" step="100" name="minShippingFee" value="{{_local.filter.minShippingFee}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.min_shipping_fee" class="input w-32 text-right">
+            <on type="change">
+              <set-state target="_local" filter.minShippingFee="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <!-- F-152 -->
+          <span data-ref="f_152_shipping_fee_separator" class="text-secondary">~</span>
+          <!-- F-153 -->
+          <input data-ref="f_153_max_shipping_fee" type="number" min="0" step="100" name="maxShippingFee" value="{{_local.filter.maxShippingFee}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.max_shipping_fee" class="input w-32 text-right">
+            <on type="change">
+              <set-state target="_local" filter.maxShippingFee="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <!-- F-160 ~ F-162 주문자 필터 (회원 검색) -->
+      <div data-ref="orderer_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderer') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="13" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-013 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderer')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('orderer') ? (_local.visibleFilters || []).filter(f => f !== 'orderer') : [...(_local.visibleFilters || []), 'orderer']}}"/>
+          </on>
+        </input>
+        <!-- F-160 -->
+        <span data-ref="f_160_orderer_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.orderer</span>
+        <div class="flex-center gap-2 flex-1">
+          <!-- F-161 -->
+          <searchable-dropdown data-type="composite" data-ref="f_161_orderer_searchable_dropdown" options="{{_local.ordererSearchResults ?? []}}" value="{{_local.filter.ordererUuid || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.order.filter.orderer_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_initial" class="w-64">
+            <on event="onSearch">
+              <!-- 주문자 검색. 회원 수가 많아 선택지를 미리 받아 둘 수 없으므로 입력할 때마다 코어
+                회원 검색 API 를 친다(300ms 로 묶는다). 응답을 그대로 쓰지 않고 `{value,label,description}`
+                으로 접는 이유는 드롭다운이 그 세 키만 읽기 때문이고, 실패하면 이전 결과를 남기지
+                않고 비운다 — 남기면 방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다.
+                검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다. -->
+              <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
+                <success>
+                  <set-state target="local" ordererSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :ordererSearchResults="[]"/>
+                </fail>
+                <query keyword="{{$args[0]}}"/>
+              </api-call>
+            </on>
+            <on type="change" event="onChange">
+              <!-- 고른 주문자는 이름이 아니라 uuid 로 담는다 — 동명이인이 있고, 회원이 이름을 바꿔도 저장해 둔 프리셋이 계속 같은 사람을 가리켜야 한다. -->
+              <set-state target="local" filter.ordererUuid="{{$args[0]}}"/>
+            </on>
+          </searchable-dropdown>
+          <!-- F-162 -->
+          <button data-ref="f_162_orderer_clear_button" data-if="{{!!_local.filter.ordererUuid}}" type="button" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:common.remove">
+            <on type="click">
+              <set-state target="local" filter.ordererUuid="" :ordererSearchResults="[]"/>
+            </on>
+            <icon name="xmark" class="text-base"/>
+          </button>
+        </div>
+      </div>
+      <!-- F-170 ~ F-171 회원 구분 필터 (회원/비회원) -->
+      <div data-ref="member_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('memberType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="14" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-014 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('memberType')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('memberType') ? (_local.visibleFilters || []).filter(f => f !== 'memberType') : [...(_local.visibleFilters || []), 'memberType']}}"/>
+          </on>
+        </input>
+        <!-- F-170 -->
+        <span data-ref="f_170_member_type_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.member_type</span>
+        <!-- F-171 -->
+        <select data-ref="f_171_member_type_select" name="memberType" class="w-32" value="{{_local.filter.memberType || ''}}">
+          <options>
+            <option value="">$t:sirsoft-ecommerce.admin.order.filter.member_type_option.all</option>
+            <option value="member">$t:sirsoft-ecommerce.admin.order.filter.member_type_option.member</option>
+            <option value="guest">$t:sirsoft-ecommerce.admin.order.filter.member_type_option.guest</option>
+          </options>
+          <on type="change">
+            <set-state target="_local" filter.memberType="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <!-- F-200 ~ F-2xx 클레임 기준 필터 (D22) — 이 주문에 접수된 클레임의 유무·유형별 상태·귀책·신청일로 주문을 거른다 -->
+      <div data-ref="claim_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claim') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="15" class="filter-row items-start">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- E-003 편집모드 체크박스 -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2 mt-1' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claim')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claim') ? (_local.visibleFilters || []).filter(f => f !== 'claim') : [...(_local.visibleFilters || []), 'claim']}}"/>
+          </on>
+        </input>
+        <div data-ref="claim_filter_block" class="flex flex-col gap-2 w-full">
+          <div data-ref="claim_filter_block_header" class="flex-center flex-wrap gap-2">
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.filter.claim.block_title</span>
+            <span class="form-hint">$t:sirsoft-ecommerce.admin.order.filter.claim.block_hint</span>
+    </div>
+          <div class="filter-row w-full">
+            <responsive on="portable" class="filter-row flex-col items-start w-full"/>
+            <span data-ref="f_203_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.presence</span>
+            <div class="flex-center flex-wrap gap-2">
+              <!-- 유무는 서버가 한 값만 받으므로 세 칩이 라디오처럼 하나만 켜지고, 켜진 칩을 다시 누르면 조건이 빠진다. 「없음」에 아래 상태·귀책·신청일을 더하면 조건 전체가 뒤집혀 그런 클레임이 없는 주문이 걸린다. -->
+              <chip-checkbox data-type="composite" data-ref="f_200_claimPresence_none" value="none" checked="{{_local.filter.claimPresence === 'none'}}" label="$t:sirsoft-ecommerce.admin.order.filter.claim.presence_none" variant="gray">
+                <on type="change">
+                  <set-state target="_local" filter.claimPresence="{{_local.filter.claimPresence === 'none' ? '' : 'none'}}"/>
+                </on>
+              </chip-checkbox>
+              <!-- 완료·반려·철회로 이미 끝난 클레임만 있는 주문도 걸린다 — 유형을 가리지 않고 클레임이 한 번이라도 접수된 주문 전체다. -->
+              <chip-checkbox data-type="composite" data-ref="f_201_claimPresence_any" value="any" checked="{{_local.filter.claimPresence === 'any'}}" label="$t:sirsoft-ecommerce.admin.order.filter.claim.presence_any" variant="blue">
+                <on type="change">
+                  <set-state target="_local" filter.claimPresence="{{_local.filter.claimPresence === 'any' ? '' : 'any'}}"/>
+                </on>
+              </chip-checkbox>
+              <!-- 완료·반려·철회에 이르지 않은 클레임이 있는 주문만 남겨, 아직 처리가 끝나지 않은 주문을 추릴 때 쓴다. 취소는 완료 전(신청 상태)인 건만 진행 중으로 친다. -->
+              <chip-checkbox data-type="composite" data-ref="f_202_claimPresence_active" value="active" checked="{{_local.filter.claimPresence === 'active'}}" label="$t:sirsoft-ecommerce.admin.order.filter.claim.presence_active" variant="orange">
+                <on type="change">
+                  <set-state target="_local" filter.claimPresence="{{_local.filter.claimPresence === 'active' ? '' : 'active'}}"/>
+                </on>
+              </chip-checkbox>
+            </div>
+          </div>
+          <div class="filter-row w-full">
+            <responsive on="portable" class="filter-row flex-col items-start w-full"/>
+            <span data-ref="f_218_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.exchange</span>
+            <div class="flex-center flex-wrap gap-2">
+              <!-- 교환이 접수돼 운영자 검토를 기다리는 첫 단계다. 신청 때 결제하는 방식으로 배송비·차액이 청구되면 접수 직후 결제대기로 넘어간다. -->
+              <chip-checkbox data-type="composite" data-ref="f_204_claimExchangeStatuses_requested" value="requested" checked="{{(_local.filter.claimExchangeStatuses || []).includes('requested')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.requested" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="requested"/>
+                </on>
+              </chip-checkbox>
+              <!-- 교환 배송비나 옵션 차액을 고객이 더 내야 하는데 아직 다 들어오지 않은 건 — 일부만 결제돼 잔액이 남아도 여기 머문다. -->
+              <chip-checkbox data-type="composite" data-ref="f_205_claimExchangeStatuses_payment_pending" value="payment_pending" checked="{{(_local.filter.claimExchangeStatuses || []).includes('payment_pending')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.payment_pending" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="payment_pending"/>
+                </on>
+              </chip-checkbox>
+              <!-- 추가 결제가 다 들어왔지만 승인으로 넘어가지 못한 건 — 신청 때 결제한 건의 자동 승인이 꺼져 있거나 재고 부족 등으로 승인이 막히면 여기 남아 운영자가 직접 승인한다. -->
+              <chip-checkbox data-type="composite" data-ref="f_206_claimExchangeStatuses_paid" value="paid" checked="{{(_local.filter.claimExchangeStatuses || []).includes('paid')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.paid" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="paid"/>
+                </on>
+              </chip-checkbox>
+              <!-- 교환을 받아들여 회수 준비로 넘어가기 직전의 건. 여기서부터는 신청자 철회도 운영자 반려도 불가능하고 회수 단계로만 나아간다. -->
+              <chip-checkbox data-type="composite" data-ref="f_207_claimExchangeStatuses_approved" value="approved" checked="{{(_local.filter.claimExchangeStatuses || []).includes('approved')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.approved" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="approved"/>
+                </on>
+              </chip-checkbox>
+              <!-- 결정을 미뤄 둔 건 — 보류에서는 곧바로 회수로 가지 못하고 승인·반려·철회 중 하나로 풀려야 한다. -->
+              <chip-checkbox data-type="composite" data-ref="f_208_claimExchangeStatuses_on_hold" value="on_hold" checked="{{(_local.filter.claimExchangeStatuses || []).includes('on_hold')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.on_hold" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="on_hold"/>
+                </on>
+              </chip-checkbox>
+              <!-- 운영자가 교환을 거절해 종결된 건. 종결 상태라 「진행 중만」과 함께 켜면 이 칩으로는 아무것도 걸리지 않는다. -->
+              <chip-checkbox data-type="composite" data-ref="f_209_claimExchangeStatuses_rejected" value="rejected" checked="{{(_local.filter.claimExchangeStatuses || []).includes('rejected')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.rejected" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="rejected"/>
+                </on>
+              </chip-checkbox>
+              <!-- 승인된 교환에서 고객이 가진 원래 상품을 거둬 올 채비를 하는 단계다. 회수 송장을 넣는 순간 회수중으로 넘어가므로, 여기 머문 건은 대개 회수 송장이 아직 없는 건이다. -->
+              <chip-checkbox data-type="composite" data-ref="f_210_claimExchangeStatuses_collection_ready" value="collection_ready" checked="{{(_local.filter.claimExchangeStatuses || []).includes('collection_ready')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.collection_ready" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="collection_ready"/>
+                </on>
+              </chip-checkbox>
+              <!-- 원래 상품이 고객에게서 판매자 쪽으로 돌아오는 중인 건. 도착하면 회수도착을 거쳐 새 상품 발송 준비로 넘어간다. -->
+              <chip-checkbox data-type="composite" data-ref="f_211_claimExchangeStatuses_collecting" value="collecting" checked="{{(_local.filter.claimExchangeStatuses || []).includes('collecting')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.collecting" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="collecting"/>
+                </on>
+              </chip-checkbox>
+              <!-- 거둬 온 원래 상품이 도착해 새 상품을 보낼 차례인 건이다. 필터가 보는 신청서 상태는 살아 있는 신청 상품이 모두 같은 단계에 이르러야 옮겨지므로(반품도 같다), 일부 상품만 도착한 신청서는 이전 단계 칩에 남는다. -->
+              <chip-checkbox data-type="composite" data-ref="f_212_claimExchangeStatuses_collected" value="collected" checked="{{(_local.filter.claimExchangeStatuses || []).includes('collected')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.collected" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="collected"/>
+                </on>
+              </chip-checkbox>
+              <!-- 교환해 줄 새 상품을 보낼 준비를 하는 건. 발송 송장을 넣으면 곧바로 발송중으로 넘어가며, 재발송 세 단계(준비중·발송중·도착)는 교환에만 있다. -->
+              <chip-checkbox data-type="composite" data-ref="f_213_claimExchangeStatuses_redelivery_ready" value="redelivery_ready" checked="{{(_local.filter.claimExchangeStatuses || []).includes('redelivery_ready')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivery_ready" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="redelivery_ready"/>
+                </on>
+              </chip-checkbox>
+              <!-- 새 상품이 고객에게 가는 중인 건 — 발송이 시작되는 순간 교환 상품이 주문에 새 상품 줄로 붙는다. 세부 교환 단계는 클레임 신청서에만 기록돼 주문상태 필터로는 가를 수 없다. -->
+              <chip-checkbox data-type="composite" data-ref="f_214_claimExchangeStatuses_redelivering" value="redelivering" checked="{{(_local.filter.claimExchangeStatuses || []).includes('redelivering')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivering" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="redelivering"/>
+                </on>
+              </chip-checkbox>
+              <!-- 새 상품이 고객에게 도착한 건 — 남은 것은 운영자의 교환완료 처리뿐이라 완료를 빠뜨린 건을 찾을 때 쓴다. -->
+              <chip-checkbox data-type="composite" data-ref="f_215_claimExchangeStatuses_redelivered" value="redelivered" checked="{{(_local.filter.claimExchangeStatuses || []).includes('redelivered')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivered" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="redelivered"/>
+                </on>
+              </chip-checkbox>
+              <!-- 교환이 끝난 건. 새 상품이 더 싼 교환이면 차액 환불신청서가 완료 때 또는 그 뒤에 따로 접수되므로, 교환완료라도 환불 줄 칩에는 아직 안 걸릴 수 있다. -->
+              <chip-checkbox data-type="composite" data-ref="f_216_claimExchangeStatuses_completed" value="completed" checked="{{(_local.filter.claimExchangeStatuses || []).includes('completed')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.completed" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="completed"/>
+                </on>
+              </chip-checkbox>
+              <!-- 신청자가 스스로 교환을 거둬 종결된 건 — 운영자가 지정할 수 없는 상태라, 운영자가 거절한 반려와 갈라 볼 수 있다. -->
+              <chip-checkbox data-type="composite" data-ref="f_217_claimExchangeStatuses_withdrawn" value="withdrawn" checked="{{(_local.filter.claimExchangeStatuses || []).includes('withdrawn')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.withdrawn" variant="blue">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimExchangeStatuses" value="withdrawn"/>
+                </on>
+              </chip-checkbox>
+            </div>
+          </div>
+          <div class="filter-row w-full">
+            <responsive on="portable" class="filter-row flex-col items-start w-full"/>
+            <span data-ref="f_230_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.return</span>
+            <div class="flex-center flex-wrap gap-2">
+              <!-- 반품이 접수돼 운영자 검토를 기다리는 첫 단계다. 반품은 교환과 달리 새 상품을 보내지 않아 회수도착 다음이 곧바로 완료다. -->
+              <chip-checkbox data-type="composite" data-ref="f_219_claimReturnStatuses_requested" value="requested" checked="{{(_local.filter.claimReturnStatuses || []).includes('requested')}}" label="$t:sirsoft-ecommerce.enums.return_status.requested" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="requested"/>
+                </on>
+              </chip-checkbox>
+              <!-- 반품 배송비를 환불액에서 빼지 않고 따로 받는 경우에만 거치는 단계 — 그 결제가 아직 끝나지 않은 건이다. -->
+              <chip-checkbox data-type="composite" data-ref="f_220_claimReturnStatuses_payment_pending" value="payment_pending" checked="{{(_local.filter.claimReturnStatuses || []).includes('payment_pending')}}" label="$t:sirsoft-ecommerce.enums.return_status.payment_pending" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="payment_pending"/>
+                </on>
+              </chip-checkbox>
+              <!-- 반품 배송비 수납이 끝난 건. 승인하면서 청구한 건은 결제가 끝나는 즉시 승인으로 넘어가므로, 여기 머무는 것은 대개 신청 때 결제한 건이다. -->
+              <chip-checkbox data-type="composite" data-ref="f_221_claimReturnStatuses_paid" value="paid" checked="{{(_local.filter.claimReturnStatuses || []).includes('paid')}}" label="$t:sirsoft-ecommerce.enums.return_status.paid" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="paid"/>
+                </on>
+              </chip-checkbox>
+              <!-- 반품을 받아들여 회수를 시작할 건. 환불은 승인 때가 아니라 반품완료 처리 때(또는 그 뒤에) 환불신청서로 따로 접수된다. -->
+              <chip-checkbox data-type="composite" data-ref="f_222_claimReturnStatuses_approved" value="approved" checked="{{(_local.filter.claimReturnStatuses || []).includes('approved')}}" label="$t:sirsoft-ecommerce.enums.return_status.approved" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="approved"/>
+                </on>
+              </chip-checkbox>
+              <!-- 반품 판단을 미뤄 둔 건. 보류 중에도 신청자는 철회할 수 있다. -->
+              <chip-checkbox data-type="composite" data-ref="f_223_claimReturnStatuses_on_hold" value="on_hold" checked="{{(_local.filter.claimReturnStatuses || []).includes('on_hold')}}" label="$t:sirsoft-ecommerce.enums.return_status.on_hold" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="on_hold"/>
+                </on>
+              </chip-checkbox>
+              <!-- 운영자가 반품을 거절해 종결된 건 — 반려는 승인 전에만 가능해 회수가 시작된 반품은 여기 오지 않는다. -->
+              <chip-checkbox data-type="composite" data-ref="f_224_claimReturnStatuses_rejected" value="rejected" checked="{{(_local.filter.claimReturnStatuses || []).includes('rejected')}}" label="$t:sirsoft-ecommerce.enums.return_status.rejected" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="rejected"/>
+                </on>
+              </chip-checkbox>
+              <!-- 승인된 반품 상품을 고객에게서 거둬 올 채비를 하는 단계다. 교환에도 같은 이름의 단계가 있지만 이 칩은 반품 신청서만 보므로, 둘 다 보려면 위 교환 줄의 칩도 함께 켠다. -->
+              <chip-checkbox data-type="composite" data-ref="f_225_claimReturnStatuses_collection_ready" value="collection_ready" checked="{{(_local.filter.claimReturnStatuses || []).includes('collection_ready')}}" label="$t:sirsoft-ecommerce.enums.return_status.collection_ready" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="collection_ready"/>
+                </on>
+              </chip-checkbox>
+              <!-- 반품 상품이 판매자 쪽으로 돌아오는 중인 건 — 회수 송장이 입력되면 회수준비중에서 자동으로 이 단계가 된다. -->
+              <chip-checkbox data-type="composite" data-ref="f_226_claimReturnStatuses_collecting" value="collecting" checked="{{(_local.filter.claimReturnStatuses || []).includes('collecting')}}" label="$t:sirsoft-ecommerce.enums.return_status.collecting" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="collecting"/>
+                </on>
+              </chip-checkbox>
+              <!-- 돌려받은 상품이 도착해 반품완료 처리만 남은 건 — 완료 때 운영자가 재고 복구 여부와 환불신청서 접수 여부를 고른다. -->
+              <chip-checkbox data-type="composite" data-ref="f_227_claimReturnStatuses_collected" value="collected" checked="{{(_local.filter.claimReturnStatuses || []).includes('collected')}}" label="$t:sirsoft-ecommerce.enums.return_status.collected" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="collected"/>
+                </on>
+              </chip-checkbox>
+              <!-- 반품이 끝난 건. 환불신청서는 완료 때 접수하지 않고 미뤄 둘 수 있어, 반품완료 주문이 환불 줄 칩에는 아직 안 걸릴 수 있다. -->
+              <chip-checkbox data-type="composite" data-ref="f_228_claimReturnStatuses_completed" value="completed" checked="{{(_local.filter.claimReturnStatuses || []).includes('completed')}}" label="$t:sirsoft-ecommerce.enums.return_status.completed" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="completed"/>
+                </on>
+              </chip-checkbox>
+              <!-- 신청자가 반품을 거둬 종결된 건 — 추가 결제를 이미 했다면 철회와 함께 전액 환급된다. -->
+              <chip-checkbox data-type="composite" data-ref="f_229_claimReturnStatuses_withdrawn" value="withdrawn" checked="{{(_local.filter.claimReturnStatuses || []).includes('withdrawn')}}" label="$t:sirsoft-ecommerce.enums.return_status.withdrawn" variant="orange">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimReturnStatuses" value="withdrawn"/>
+                </on>
+              </chip-checkbox>
+            </div>
+          </div>
+          <div class="filter-row w-full">
+            <responsive on="portable" class="filter-row flex-col items-start w-full"/>
+            <span data-ref="f_238_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.refund</span>
+            <div class="flex-center flex-wrap gap-2">
+              <!-- 환불 신청이 접수돼 운영자 승인을 기다리는 건. 출처를 가리지 않아 취소에서 생긴 환불신청서도 함께 걸린다. -->
+              <chip-checkbox data-type="composite" data-ref="f_231_claimRefundStatuses_requested" value="requested" checked="{{(_local.filter.claimRefundStatuses || []).includes('requested')}}" label="$t:sirsoft-ecommerce.enums.refund_status.requested" variant="yellow">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimRefundStatuses" value="requested"/>
+                </on>
+              </chip-checkbox>
+              <!-- 승인됐지만 돈은 아직 나가지 않은 건 — 다음은 환불 실행으로, 처리중을 거치거나 곧바로 완료된다. -->
+              <chip-checkbox data-type="composite" data-ref="f_232_claimRefundStatuses_approved" value="approved" checked="{{(_local.filter.claimRefundStatuses || []).includes('approved')}}" label="$t:sirsoft-ecommerce.enums.refund_status.approved" variant="yellow">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimRefundStatuses" value="approved"/>
+                </on>
+              </chip-checkbox>
+              <!-- PG 에 환불을 요청하는 동안의 내부 단계다. PG 왕복이 도중에 끊기면 이 상태에 멈춰 남으므로, 멈춘 환불을 찾을 때 쓴다. -->
+              <chip-checkbox data-type="composite" data-ref="f_233_claimRefundStatuses_processing" value="processing" checked="{{(_local.filter.claimRefundStatuses || []).includes('processing')}}" label="$t:sirsoft-ecommerce.enums.refund_status.processing" variant="yellow">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimRefundStatuses" value="processing"/>
+                </on>
+              </chip-checkbox>
+              <!-- 환불을 멈춰 둔 건 — 신청 직후뿐 아니라 승인·처리중에서도 보류로 올 수 있어, 실행 도중 멈춘 건도 섞여 있다. -->
+              <chip-checkbox data-type="composite" data-ref="f_234_claimRefundStatuses_on_hold" value="on_hold" checked="{{(_local.filter.claimRefundStatuses || []).includes('on_hold')}}" label="$t:sirsoft-ecommerce.enums.refund_status.on_hold" variant="yellow">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimRefundStatuses" value="on_hold"/>
+                </on>
+              </chip-checkbox>
+              <!-- 환불 실행을 거쳐 돈이 실제로 돌아간 건. 이 상태는 실행 절차만 만들 수 있어 운영자가 상태 변경으로 지정하지 못한다. -->
+              <chip-checkbox data-type="composite" data-ref="f_235_claimRefundStatuses_completed" value="completed" checked="{{(_local.filter.claimRefundStatuses || []).includes('completed')}}" label="$t:sirsoft-ecommerce.enums.refund_status.completed" variant="yellow">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimRefundStatuses" value="completed"/>
+                </on>
+              </chip-checkbox>
+              <!-- 운영자가 환불을 거절해 종결된 건 — 반려는 신청·보류 상태에서만 가능해, 승인된 환불은 보류를 거쳐야 여기 온다. -->
+              <chip-checkbox data-type="composite" data-ref="f_236_claimRefundStatuses_rejected" value="rejected" checked="{{(_local.filter.claimRefundStatuses || []).includes('rejected')}}" label="$t:sirsoft-ecommerce.enums.refund_status.rejected" variant="yellow">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimRefundStatuses" value="rejected"/>
+                </on>
+              </chip-checkbox>
+              <!-- 신청자가 환불 신청을 거둔 건. 환불 철회는 신청·보류 상태에서만 열려 있다. -->
+              <chip-checkbox data-type="composite" data-ref="f_237_claimRefundStatuses_withdrawn" value="withdrawn" checked="{{(_local.filter.claimRefundStatuses || []).includes('withdrawn')}}" label="$t:sirsoft-ecommerce.enums.refund_status.withdrawn" variant="yellow">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimRefundStatuses" value="withdrawn"/>
+                </on>
+              </chip-checkbox>
+            </div>
+          </div>
+          <div class="filter-row w-full">
+            <responsive on="portable" class="filter-row flex-col items-start w-full"/>
+            <span data-ref="f_241_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.cancel</span>
+            <div class="flex-center flex-wrap gap-2">
+              <!-- 나눠 취소하다 마지막에 남은 수량을 모두 취소한 건도 전체취소로 기록돼, 한 주문이 부분·전체 두 칩에 함께 걸릴 수 있다. 취소는 상태가 신청·완료 둘뿐이라 이 줄만 상태 대신 유형으로 가른다. -->
+              <chip-checkbox data-type="composite" data-ref="f_239_claimCancelTypes_full" value="full" checked="{{(_local.filter.claimCancelTypes || []).includes('full')}}" label="$t:sirsoft-ecommerce.enums.cancel_type.full" variant="gray">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimCancelTypes" value="full"/>
+                </on>
+              </chip-checkbox>
+              <!-- 주문 상품 일부만 취소한 건. 취소 기록에는 귀책이 없어 귀책 칩을 켜면 이 줄은 무시되고, 취소 칩만 고른 채 귀책을 켜면 0건이 된다(유무가 「없음」이면 전건). -->
+              <chip-checkbox data-type="composite" data-ref="f_240_claimCancelTypes_partial" value="partial" checked="{{(_local.filter.claimCancelTypes || []).includes('partial')}}" label="$t:sirsoft-ecommerce.enums.cancel_type.partial" variant="gray">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimCancelTypes" value="partial"/>
+                </on>
+              </chip-checkbox>
+            </div>
+          </div>
+          <div class="filter-row w-full">
+            <responsive on="portable" class="filter-row flex-col items-start w-full"/>
+            <span data-ref="f_245_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.fault</span>
+            <div class="flex-center flex-wrap gap-2">
+              <!-- 단순 변심·사이즈·옵션 착오처럼 고객 사정으로 접수된 클레임이다(기본 사유 기준). 교환·반품 배송비가 자동으로 산정돼 고객에게 청구되는 것은 이 귀책뿐이다. -->
+              <chip-checkbox data-type="composite" data-ref="f_242_claimFaultTypes_customer" value="customer" checked="{{(_local.filter.claimFaultTypes || []).includes('customer')}}" label="$t:sirsoft-ecommerce.enums.claim_reason_fault_type.customer" variant="green">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimFaultTypes" value="customer"/>
+                </on>
+              </chip-checkbox>
+              <!-- 상품 불량·오배송·정보 상이·배송 지연처럼 판매자 책임으로 접수된 클레임이다(기본 사유 기준). 귀책·상태·신청일은 한 클레임이 모두 만족해야 해서, 판매자 귀책 건과 기간 안 접수 건이 서로 다른 클레임이면 그 주문은 걸리지 않는다. -->
+              <chip-checkbox data-type="composite" data-ref="f_243_claimFaultTypes_seller" value="seller" checked="{{(_local.filter.claimFaultTypes || []).includes('seller')}}" label="$t:sirsoft-ecommerce.enums.claim_reason_fault_type.seller" variant="green">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimFaultTypes" value="seller"/>
+                </on>
+              </chip-checkbox>
+              <!-- 배송 중 파손처럼 택배사 책임으로 접수된 클레임이다 — 기본 사유로는 교환·반품에만 있다. 귀책은 신청 사유에 딸린 값이라 사유가 바뀌면 함께 바뀐다. -->
+              <chip-checkbox data-type="composite" data-ref="f_244_claimFaultTypes_carrier" value="carrier" checked="{{(_local.filter.claimFaultTypes || []).includes('carrier')}}" label="$t:sirsoft-ecommerce.enums.claim_reason_fault_type.carrier" variant="green">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimFaultTypes" value="carrier"/>
+                </on>
+              </chip-checkbox>
+            </div>
+          </div>
+          <div class="filter-row w-full">
+            <responsive on="portable" class="filter-row flex-col items-start w-full"/>
+            <span data-ref="f_260_claim_requested_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
+            <div class="flex-center gap-2 flex-wrap">
+              <!-- 일자 필터(주문·결제·배송일)와 달리 클레임이 접수된 날로 거른다 — 위 상태·귀책을 만족하는 바로 그 클레임이 이 기간에 접수됐어야 걸린다. 한쪽만 채우면 그쪽 경계만 적용된다. -->
+              <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}" data-ref="f_261_claim_requested_from" type="date" class="input w-40" value="{{_local.filter.claimRequestedFrom ?? ''}}">
+                <on type="change">
+                  <set-state target="_local" filter.claimRequestedFrom="{{$event.target.value}}"/>
+                </on>
+              </input>
+              <span data-ref="f_262_claim_requested_separator" class="text-tertiary">~</span>
+              <!-- 종료일은 그날 하루 끝까지 포함한다. 시작일보다 앞선 날을 넣으면 검색 이동과 목록 데이터소스가 두 날짜를 바꿔 보낸다 — 그대로 보내면 서버 검증(`after_or_equal`)이 422 를 내고 목록 전체가 오류 화면이 되며, 그 구간이 URL 에 남아 새로고침으로도 빠져나올 수 없다. -->
+              <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}" data-ref="f_263_claim_requested_to" type="date" class="input w-40" value="{{_local.filter.claimRequestedTo ?? ''}}">
+                <on type="change">
+                  <set-state target="_local" filter.claimRequestedTo="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 프리셋 영역 - 데이터소스 기반 동적 표시 -->
+    <div data-ref="preset_row" class="flex-center flex-wrap gap-3 mb-4">
+      <div class="flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+        <on type="click">
+          <open-modal target="modal_preset_manage"/>
+        </on>
+        <icon name="sliders" class="text-base"/>
+        <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.order.preset.label</span>
+      </div>
+      <!-- 프리셋 버튼. 누르면 저장된 조건 세트를 통째로 갈아끼운다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이라 병합하지 않는다 -->
+      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
+        <on type="click">
+          <set-state target="_local" merge="shallow">
+            <field name="filter">
+              <field name="selectedPreset" value="{{preset.id}}"/>
+              <field name="searchField" value="{{preset.conditions?.searchField || 'all'}}"/>
+              <field name="searchKeyword" value="{{preset.conditions?.searchKeyword || ''}}"/>
+              <field name="dateType" value="{{preset.conditions?.dateType || 'order_date'}}"/>
+              <field name="startDate" value="{{preset.conditions?.startDate || ''}}"/>
+              <field name="endDate" value="{{preset.conditions?.endDate || ''}}"/>
+              <field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/>
+              <field name="dateBasis" value=""/>
+              <field name="orderStatus" value="{{preset.conditions?.orderStatus || []}}"/>
+              <field name="deliveryMethods" value="{{preset.conditions?.deliveryMethods || []}}"/>
+              <field name="paymentMethods" value="{{preset.conditions?.paymentMethods || []}}"/>
+              <field name="category1" value="{{preset.conditions?.category1 || ''}}"/>
+              <field name="category2" value="{{preset.conditions?.category2 || ''}}"/>
+              <field name="category3" value="{{preset.conditions?.category3 || ''}}"/>
+              <field name="category4" value="{{preset.conditions?.category4 || ''}}"/>
+              <field name="minPrice" value="{{preset.conditions?.minPrice || ''}}"/>
+              <field name="maxPrice" value="{{preset.conditions?.maxPrice || ''}}"/>
+              <field name="countries" value="{{preset.conditions?.countries || []}}"/>
+              <field name="devices" value="{{preset.conditions?.devices || []}}"/>
+              <field name="shippingPolicy" value="{{preset.conditions?.shippingPolicy || ''}}"/>
+              <field name="minShippingFee" value="{{preset.conditions?.minShippingFee || ''}}"/>
+              <field name="maxShippingFee" value="{{preset.conditions?.maxShippingFee || ''}}"/>
+              <field name="ordererUuid" value="{{preset.conditions?.ordererUuid || ''}}"/>
+              <field name="memberType" value="{{preset.conditions?.memberType || ''}}"/>
+              <field name="claimPresence" value="{{preset.conditions?.claimPresence || ''}}"/>
+              <field name="claimExchangeStatuses" value="{{preset.conditions?.claimExchangeStatuses || []}}"/>
+              <field name="claimReturnStatuses" value="{{preset.conditions?.claimReturnStatuses || []}}"/>
+              <field name="claimRefundStatuses" value="{{preset.conditions?.claimRefundStatuses || []}}"/>
+              <field name="claimCancelTypes" value="{{preset.conditions?.claimCancelTypes || []}}"/>
+              <field name="claimFaultTypes" value="{{preset.conditions?.claimFaultTypes || []}}"/>
+              <field name="claimRequestedFrom" value="{{preset.conditions?.claimRequestedFrom || ''}}"/>
+              <field name="claimRequestedTo" value="{{preset.conditions?.claimRequestedTo || ''}}"/>
+            </field>
+          </set-state>
+          <!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건(회원구분 등 여기 열거되지 않은 필터)이 화면에 보이지 않는 채로 남는다. -->
+          <navigate path="/admin/ecommerce/orders" :replace="true" :mergeQuery="false" transition_overlay_target="order_datagrid__body">
+            <query :page="1" preset_id="{{preset.id}}" search_field="{{(preset.conditions?.searchField || 'all') !== 'all' ? preset.conditions?.searchField : null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" date_type="{{(preset.conditions?.dateType || 'order_date') !== 'order_date' ? preset.conditions?.dateType : null}}" start_date="{{preset.conditions?.startDate || null}}" end_date="{{preset.conditions?.endDate || null}}" order_status[]="{{(preset.conditions?.orderStatus || []).length > 0 ? preset.conditions?.orderStatus : null}}" shipping_type[]="{{(preset.conditions?.deliveryMethods || []).length > 0 ? preset.conditions?.deliveryMethods : null}}" payment_method[]="{{(preset.conditions?.paymentMethods || []).length > 0 ? preset.conditions?.paymentMethods : null}}" category1="{{preset.conditions?.category1 || null}}" category2="{{preset.conditions?.category2 || null}}" category3="{{preset.conditions?.category3 || null}}" category4="{{preset.conditions?.category4 || null}}" min_amount="{{preset.conditions?.minPrice || null}}" max_amount="{{preset.conditions?.maxPrice || null}}" country_codes[]="{{(preset.conditions?.countries || []).length > 0 ? preset.conditions?.countries : null}}" order_device[]="{{(preset.conditions?.devices || []).length > 0 ? preset.conditions?.devices : null}}" shipping_policy_id="{{preset.conditions?.shippingPolicy || null}}" min_shipping_amount="{{preset.conditions?.minShippingFee || null}}" max_shipping_amount="{{preset.conditions?.maxShippingFee || null}}" orderer_uuid="{{preset.conditions?.ordererUuid || null}}" member_type="{{preset.conditions?.memberType || null}}" claim_presence="{{preset.conditions?.claimPresence || null}}" claim_exchange_statuses[]="{{(preset.conditions?.claimExchangeStatuses || []).length > 0 ? preset.conditions?.claimExchangeStatuses : null}}" claim_return_statuses[]="{{(preset.conditions?.claimReturnStatuses || []).length > 0 ? preset.conditions?.claimReturnStatuses : null}}" claim_refund_statuses[]="{{(preset.conditions?.claimRefundStatuses || []).length > 0 ? preset.conditions?.claimRefundStatuses : null}}" claim_cancel_types[]="{{(preset.conditions?.claimCancelTypes || []).length > 0 ? preset.conditions?.claimCancelTypes : null}}" claim_fault_types[]="{{(preset.conditions?.claimFaultTypes || []).length > 0 ? preset.conditions?.claimFaultTypes : null}}" claim_requested_from="{{preset.conditions?.claimRequestedFrom || null}}" claim_requested_to="{{preset.conditions?.claimRequestedTo || null}}"/>
+          </navigate>
+          <toast type="info" message="$t:sirsoft-ecommerce.admin.order.preset.applied|name={{preset.name}}"/>
+        </on>
+        {{preset.name}}
+      </div>
+    </div>
+    <!-- 검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 빼면 md:flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (#408 시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원). -->
+    <div data-ref="search_row_wrapper" class="flex flex-col md:flex-row md:items-center gap-3">
+      <!-- F-001, F-002 검색 필드 + 검색어 입력 -->
+      <div data-ref="search_row_line1" class="flex-1 flex-center gap-2">
+        <!-- F-001 -->
+        <select data-ref="f_001_search_field_select" name="searchField" class="w-80 shrink-0" value="{{_local.filter.searchField}}">
+          <responsive on="portable" class="w-24 shrink-0"/>
+          <options>
+            <option value="all">$t:sirsoft-ecommerce.admin.order.search.field.all</option>
+            <option value="order_number">$t:sirsoft-ecommerce.admin.order.search.field.order_number</option>
+            <option value="orderer_name">$t:sirsoft-ecommerce.admin.order.search.field.orderer_name</option>
+            <option value="product_name">$t:sirsoft-ecommerce.admin.order.search.field.product_name</option>
+            <option value="receiver_name">$t:sirsoft-ecommerce.admin.order.search.field.receiver_name</option>
+            <option value="phone">$t:sirsoft-ecommerce.admin.order.search.field.phone</option>
+            <option value="email">$t:sirsoft-ecommerce.admin.order.search.field.email</option>
+          </options>
+          <on type="change">
+            <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <!-- F-002 — 최소 너비는 `min-w-[280px]` 로 적는다. `min-w-64` 는 관리자 템플릿 빌드 CSS(dist/css/components.css)에 셀렉터가 없어(생성된 것은 `!min-w-64` 뿐) 아무 효과가 없었다. 좁은 화면에서는 최소 너비를 풀고 셀렉트도 줄인다 — 둘이 한 줄에 서면 375px 폭을 넘는다. -->
+        <div data-ref="f_002_search_keyword_input" class="flex-1 min-w-[280px] relative">
+          <responsive on="portable" class="flex-1 min-w-0 relative"/>
+          <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.search.placeholder" class="input w-full pr-10" value="{{_local.filter.searchKeyword}}">
+            <on type="change">
+              <!-- 타이핑은 300ms 묶어서 담기만 한다 — 글자마다 조회하면 목록 API 를 계속 친다. 실제 조회는 Enter 나 검색 버튼이다. -->
+              <set-state :debounce="300" target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <!-- Enter 는 묶지 않고 즉시 담은 뒤 검색을 부른다 — 위 묶음이 아직 안 끝났으면 방금 친 글자가 빠진 채 조회될 자리다. -->
+              <sequence>
+                <set-state target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+                <action-ref name="searchOrders"/>
+              </sequence>
+            </on>
+          </input>
+          <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+        </div>
+      </div>
+      <!-- F-003, F-004 컬럼 선택 + 상세검색 버튼 -->
+      <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
+        <responsive on="portable" class="flex-center gap-2 w-full"/>
+        <!-- F-003. props.id 는 유지한다 — 이 id 가 저장 키(g7_columns_{id}_{uuid})를 만들고, 그것이 없으면 컬럼 선택이 저장되지 않아 새로고침마다 초기화된다(#8b36c8488 이 그 버그를 고치며 도입). 아래 onColumnVisibilityChange 는 사람이 누른 순간 말고도 마운트 복원·동적 컬럼 자동 포함으로 발화한다. 지금은 그 액션이 주소를 쓰지 않고 setState 하나뿐이라 출처를 가릴 이유가 없다 -->
+        <column-selector data-type="composite" data-ref="f_003_column_selector" id="admin_order_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.order.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+          <prop name="columns">
+            <item field="ordered_at" header="$t:sirsoft-ecommerce.admin.order.column.order_date" :required="true"/>
+            <item field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" :required="true"/>
+            <item field="product" header="$t:sirsoft-ecommerce.admin.order.column.product"/>
+            <item field="order_amount" header="$t:sirsoft-ecommerce.admin.order.column.order_amount" :required="true"/>
+            <item field="order_status" header="$t:sirsoft-ecommerce.admin.order.column.order_status" :required="true"/>
+            <item field="orderer" header="$t:sirsoft-ecommerce.admin.order.column.orderer"/>
+            <item field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method"/>
+            <item field="delivery_method" header="$t:sirsoft-ecommerce.admin.order.column.delivery_method"/>
+            <item field="country" header="$t:sirsoft-ecommerce.admin.order.column.country"/>
+            <item field="device" header="$t:sirsoft-ecommerce.admin.order.column.device"/>
+            <item field="claim" header="$t:sirsoft-ecommerce.admin.order.column.claim"/>
+          </prop>
+          <prop name="defaultColumns">
+            <item>ordered_at</item>
+            <item>order_number</item>
+            <item>product</item>
+            <item>order_amount</item>
+            <item>order_status</item>
+            <item>orderer</item>
+            <item>payment_method</item>
+            <item>delivery_method</item>
+            <item>country</item>
+            <item>device</item>
+            <item>claim</item>
+          </prop>
+          <on type="change" event="onColumnVisibilityChange">
+            <!-- 컬럼 표시는 이 상태 하나가 정본이다. 종전에는 여기서 주소에도 with_claim_summary 를 써서 서버에 클레임 요약을 요청했는데, 표시(브라우저 저장값)와 값 수신(주소)이 서로 다른 근거를 갖게 되어 어긋났다 — 컬럼을 한 번 켠 운영자의 다음 진입에서 컬럼은 보이는데 전 행이 "-" 가 됐다. 서버가 요약을 항상 싣도록 바꿔(OrderRepository) 근거를 하나로 되돌렸으므로, 이 콜백은 표시 상태만 옮긴다. 발화 출처($args[1].source)를 가릴 이유도 함께 사라졌다 — 복원이든 사용자 토글이든 결과가 같기 때문이다. -->
+            <set-state target="_local" visibleColumns="{{$args[0]}}"/>
+          </on>
+        </column-selector>
+        <!-- F-004 상세검색 토글 -->
+        <button data-ref="f_004_detail_search_button" type="button" class="{{_local.showDetailFilter ? 'btn btn-primary' : 'btn btn-outline'}}">
+          <on type="click">
+            <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
+          </on>
+          <icon name="filter" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.order.search.detail_search</span>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <!-- 기본 필터 영역 - SlotContainer로 렌더링 -->
+    <div data-ref="basic_filter_section" class="flex flex-col p-4">
+      <slot-container data-type="composite" data-ref="basic_filters_slot" slotId="basic_filters" class="filter-grid"/>
+    </div>
+    <!-- 상세 필터 영역 - showDetailFilter 시 표시 -->
+    <div data-ref="detail_filter_wrapper" data-if="{{_local.showDetailFilter}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 mx-4">
+      <span class="text-body font-medium mb-2 block">$t:sirsoft-ecommerce.admin.order.filter.detail_title</span>
+      <slot-container data-type="composite" data-ref="detail_filters_slot" slotId="detail_filters" class="filter-grid"/>
+    </div>
+    <!-- 필터 액션 버튼 영역 -->
+    <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+      <div data-ref="filter_actions_row1" class="contents">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <!-- 좌측: 검색편집 버튼 래퍼 (flex-1) -->
+        <div data-ref="edit_search_button_wrapper" class="flex-1">
+          <responsive on="portable" class="hidden"/>
+          <!-- F-140 검색 편집 버튼 -->
+          <button data-ref="f_140_edit_search_button" type="button" class="{{_local.isEditMode ? 'btn btn-primary' : 'btn btn-outline'}}">
+            <on type="click">
+              <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+            </on>
+            <icon name="sliders" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
+          </button>
+        </div>
+        <!-- 중앙: 검색/초기화/프리셋 버튼 그룹 (flex-1 justify-center) -->
+        <div class="flex-center flex-1 justify-center gap-2">
+          <responsive on="portable" class="contents"/>
+          <!-- F-141 검색 버튼 -->
+          <button data-ref="f_141_search_button" type="button" class="btn btn-primary">
+            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <on type="click">
+              <action-ref name="searchOrders"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.action.search
+          </button>
+          <!-- F-142 초기화 버튼 -->
+          <button data-ref="f_142_reset_button" type="button" class="btn btn-outline">
+            <responsive on="portable" class="btn btn-outline flex-1"/>
+            <on type="click">
+              <set-state target="_local" merge="shallow" :ordererSearchResults="[]">
+                <field name="filter">
+                  <field name="selectedPreset" value=""/>
+                  <field name="searchField" value="all"/>
+                  <field name="searchKeyword" value=""/>
+                  <field name="dateType" value="ordered_at"/>
+                  <field name="startDate" value=""/>
+                  <field name="endDate" value=""/>
+                  <field name="dateQuick" value=""/>
+                  <field name="dateBasis" value=""/>
+                  <field name="orderStatus" :value="[]"/>
+                  <field name="deliveryMethods" :value="[]"/>
+                  <field name="paymentMethods" :value="[]"/>
+                  <field name="category1" value=""/>
+                  <field name="category2" value=""/>
+                  <field name="category3" value=""/>
+                  <field name="category4" value=""/>
+                  <field name="minPrice" value=""/>
+                  <field name="maxPrice" value=""/>
+                  <field name="countries" :value="[]"/>
+                  <field name="devices" :value="[]"/>
+                  <field name="ordererUuid" value=""/>
+                  <field name="claimPresence" value=""/>
+                  <field name="claimExchangeStatuses" :value="[]"/>
+                  <field name="claimReturnStatuses" :value="[]"/>
+                  <field name="claimRefundStatuses" :value="[]"/>
+                  <field name="claimCancelTypes" :value="[]"/>
+                  <field name="claimFaultTypes" :value="[]"/>
+                  <field name="claimRequestedFrom" value=""/>
+                  <field name="claimRequestedTo" value=""/>
+                </field>
+              </set-state>
+              <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+              <navigate path="/admin/ecommerce/orders" :mergeQuery="false">
+                <query/>
+              </navigate>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.action.reset
+          </button>
+          <!-- F-143 프리셋 저장 버튼 -->
+          <button data-ref="f_143_preset_button" type="button" class="btn btn-outline">
+            <responsive on="portable" class="hidden"/>
+            <on type="click">
+              <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+              <open-modal target="modal_preset_save"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.preset.save_title
+          </button>
+        </div>
+        <!-- 우측: 스페이서 (flex-1) -->
+        <div class="flex-1">
+          <responsive on="portable" class="hidden"/>
+        </div>
+      </div>
+      <!-- 모바일용 2번째 행 (검색편집 + 프리셋 저장) -->
+      <div data-ref="filter_actions_row2_mobile" class="hidden">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <button data-ref="edit_search_button_mobile" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex-1' : 'btn btn-outline flex-1'}}">
+          <on type="click">
+            <!-- 검색편집을 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 다시 꺼내려면 그것이 보여야 하기 때문이고, 끌 때는 펼침 상태를 그대로 둔다. -->
+            <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+          </on>
+          <icon name="sliders" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
+        </button>
+        <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <!-- 좁은 화면용 짝 버튼(위 F-143 은 넓은 화면에서만 보인다). 프리셋 저장 창은 별도 컨텍스트라 이 필터의 `_local` 을 보지 못하므로 지금 조건을 통째로 `_global` 에 옮겨 담고 연다. -->
+            <sequence>
+              <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+              <open-modal target="modal_preset_save"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.order.preset.save_title
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

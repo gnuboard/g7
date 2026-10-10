@@ -1,6 +1,7 @@
 import { default as templateMetadata } from '../template.json';
 export * from './components/basic';
 export * from './components/composite';
+export * from './components/shared';
 export * from './components/layout';
 export * from './config/monaco.config';
 /**

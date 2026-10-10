@@ -1,12 +1,16 @@
 <?php
 
 return [
+    'annual_notice' => ['privacy_policy_link_label' => 'Privacy policy', 'target_columns' => ['name' => 'Name', 'email' => 'Email', 'joined_at' => 'Joined on'], 'attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'manual_run_label' => 'Send annual privacy notice', 'queued_count' => ':count recipient queued|:count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
+    'consent_provider' => [
+        'label' => 'Cookie consent banner (sirsoft-gdpr)',
+    ],
     'consent' => [
         'granted' => 'Consent has been saved.',
         'granted_again' => 'Consent has been renewed.',
         'rejected_saved' => 'Continuing without consent. Optional items will not be used.',
         'revoked' => 'Consent has been revoked.',
-        'renew_all_success' => '{renewed} active consent item(s) renewed to the new policy version.',
+        'renew_all_success' => ':renewed active consent item renewed to the new policy version.|:renewed active consent items renewed to the new policy version.',
         'granting' => 'Granting...',
         'revoking' => 'Revoking...',
         'renewing' => 'Renewing...',
@@ -45,7 +49,7 @@ return [
         'description' => 'Operators control the cookie consent banner and the MyPage privacy card.',
         'section' => [
             'operator' => 'Operator / Privacy Policy',
-            'operator_desc' => 'Register the operator name, data storage location, and privacy policy page slug displayed in the cookie banner and policy page. (GDPR Art.13 transparency obligation)',
+            'operator_desc' => 'Register the operator name, data storage location, and privacy policy address displayed in the cookie banner and policy page. (GDPR Art.13 transparency obligation)',
             'cookie_banner' => 'Cookie Consent Banner',
             'cookie_banner_desc' => 'Configure visibility, position, categories, and policy version of the cookie consent banner — all in one place.',
             'cookie_banner_settings' => 'Banner Display Settings',
@@ -66,15 +70,44 @@ return [
             'visible' => 'Visible',
             'hidden' => 'Hidden',
         ],
+        // Labels for array-item validation messages (otherwise raw keys leak).
+        'attributes' => [
+            'cookie_category_key' => 'cookie category key',
+            'cookie_category_label' => 'cookie category name',
+            'cookie_category_description' => 'cookie category description',
+            'blocked_domain' => 'blocked domain',
+            'necessary_storage_item' => 'strictly necessary storage item',
+        ],
         'fields' => [
+            // Labels used for the :attribute placeholder in validation messages. Without them
+            // Laravel prints the raw key ("annual notice.batch size field …").
+            'annual_notice' => [
+                'label' => 'Annual privacy notice',
+            ],
+            'annual_notice_enabled' => [
+                'label' => 'Automatic notice',
+            ],
+            'annual_notice_channels' => [
+                'label' => 'Delivery channels',
+                'required_when_enabled' => 'Select at least one delivery channel to turn on automatic notices.',
+            ],
+            'annual_notice_batch_size' => [
+                'label' => 'Recipients per run',
+                'required_when_enabled' => 'Enter the recipients per run to turn on automatic notices.',
+            ],
+            'annual_notice_introduction' => [
+                'label' => 'Notice introduction',
+                'label_with_language' => ':label (:language)',
+            ],
             'cookie_policy_version' => [
                 'label' => 'Policy Version',
                 'hint' => "Managed automatically by the system — operators do not enter values directly.\n• Adding/removing categories, category semantic changes, privacy policy page changes → new version auto-published + all members re-consent\n• Domain add/remove, label changes, etc. → no publication",
             ],
-            'privacy_policy_slug' => [
-                'label' => 'Privacy Policy Page Slug',
-                'hint' => 'Slug of the privacy policy page registered in the Page plugin. If empty, the policy link in the cookie banner is hidden.',
-                'placeholder' => 'e.g., privacy-policy',
+            'privacy_policy_url' => [
+                'label' => 'Privacy Policy Address',
+                'hint' => 'Enter where your privacy policy is published. For a page on this site, use a path starting with / (e.g., /page/privacy); for another site, use a full address starting with https://. If empty, the policy link in the cookie banner is hidden.',
+                'placeholder' => 'e.g., /page/privacy or https://example.com/privacy',
+                'invalid' => 'The :attribute must be a site path starting with / or an address starting with https://.',
             ],
             'legal_entity_name' => [
                 'label' => 'Legal Entity / Operator Name',
@@ -168,9 +201,9 @@ return [
             ],
             'snapshot_modal' => [
                 'title' => 'Policy version v:version snapshot',
-                'description' => 'Full snapshot of settings at publication time — categories, privacy policy slug, blocked domains. Used by DPO as evidence in consent disputes.',
+                'description' => 'Full snapshot of settings at publication time — categories, privacy policy address, blocked domains. Used by DPO as evidence in consent disputes.',
                 'section_categories' => 'Cookie categories',
-                'section_privacy_policy' => 'Privacy policy slug',
+                'section_privacy_policy' => 'Privacy policy address',
                 'section_blocked_domains' => 'Blocked domain catalog',
                 'category_required_badge' => 'Required',
                 'no_categories' => 'No categories registered.',
@@ -178,7 +211,8 @@ return [
                 'view_button' => 'View v:version snapshot',
                 'close' => 'Close',
                 'open_policy_page' => 'Open policy page',
-                'no_policy_slug' => 'No privacy policy page registered.',
+                'no_policy_url' => 'No privacy policy address registered.',
+                'legacy_slug_note' => 'Recorded in the previous format (page slug ":slug"). Showing the address the link pointed to at the time.',
             ],
             'not_found' => 'Policy version not found.',
         ],
@@ -300,5 +334,34 @@ return [
         'preferences_description' => 'You can grant or revoke each category individually. Required categories cannot be turned off.',
         'category_required_badge' => 'Required',
         'view_policy_label' => 'View updated policy',
+    ],
+    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
+    'notification_variables' => [
+        'common' => [
+            'recipient_name' => 'Recipient name',
+            'app_name' => 'Site name',
+            'introduction' => 'Operator introduction',
+            'collection_summary' => 'Summary of collected items',
+            'purpose' => 'Purpose of use',
+            'retention' => 'Retention period',
+            'privacy_policy_url' => 'Privacy policy URL',
+            'privacy_policy_link' => 'Privacy policy link line (empty if there is no address)',
+            'notice_sections' => 'Processing details contributed by extensions',
+        ],
+    ],
+    'validation' => [
+        // Fallback messages for rules a request does not word per field (ProvidesFallbackRuleMessages trait).
+        'fallback' => [
+            'in' => 'The selected :attribute is invalid.',
+            'not_in' => 'The selected :attribute cannot be used.',
+            'enum' => 'The selected :attribute is invalid.',
+            'exists' => 'The selected :attribute does not exist.',
+            'unique' => 'The :attribute has already been taken.',
+            'required_if' => 'The :attribute field is required when :other is :value.',
+            'required_with' => 'The :attribute field is required when :values is set.',
+            'required_without' => 'The :attribute field is required when :values is not set.',
+            'same' => 'The :attribute must match :other.',
+            'different' => 'The :attribute must be different from :other.',
+        ],
     ],
 ];

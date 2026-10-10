@@ -1,0 +1,111 @@
+feature: admin_claim_direct_request
+
+description: |
+  관리자 직권 접수 (#599 후속 §3-11 · D5~D8) 와 같은 종류 결함 S13~S15
+
+  운영자가 주문 상세에서 고객을 대신해 교환·반품·취소·환불을 접수한다. 고객 창구와 갈리는 지점은
+  넷이다.
+
+  ① **게이트는 물리 게이트 하나다**(D5). 신청 기간·신청 가능 상태·취소 가능 상태 설정은 고객 축이다 —
+     운영자는 물건이 고객에게 갔으면 교환·반품을, 아직 안 보냈으면 취소·환불을 받는다. 반대쪽은
+     거절한다. 수량 잠금은 그대로다.
+
+  ② **청구는 사유로 자동 계산하고 운영자가 고친다**(D7). 판매자 귀책(고객 화면 비노출) 사유도 고를 수
+     있고, 배송비를 직접 입력하거나 「무료」(배송비 0, 청구 방식 없음)로 접수한다.
+
+  ③ **접수와 승인은 다른 사실이다**(D6). 「접수와 함께 승인」 이 기본이고, 끄면 신청 상태로 남는다.
+
+  ④ **판매자 접수는 고객이 거두거나 고칠 수 없다**(D8). 운영자는 고객 요청으로 대신 철회할 수 있고(S14),
+     신청 사유를 고칠 수 있다(S15). 완료 때 놓친 재고 복구는 뒤늦게 할 수 있고 두 번 되지 않는다(S13).
+
+# axis 의미:
+#   claim_type — 직권 접수 유형. `cancel_refund` 는 종전 관리자 [주문취소] 를 흡수한 환불신청서 접수다.
+#   gate_side  — 주문 상품이 물리 게이트의 어느 쪽인가. `shipped` 는 배송중·배송완료·구매확정,
+#                `not_shipped` 는 결제완료·배송보류·상품준비중 등 아직 보내지 않은 상태.
+axes:
+  claim_type: [exchange, return, cancel_refund]
+  gate_side: [shipped, not_shipped]
+
+effects:
+  - admin_return_is_accepted_after_the_request_period
+  - admin_request_is_approved_with_the_request_by_default
+  - admin_exchange_keeps_the_requested_status_and_overridden_fee
+  - admin_free_charge_zeroes_the_fee_in_preview_and_request
+  - admin_physical_gate_rejects_the_wrong_side
+  - admin_cancel_refund_ignores_the_cancellable_status_setting
+  - admin_request_requires_the_claims_create_permission
+  - admin_requested_claim_is_not_withdrawable_by_the_customer
+  - admin_withdraws_on_behalf_with_a_required_reason
+  - admin_updates_the_request_reason_to_a_seller_fault_reason
+  - admin_restores_stock_later_once
+  - admin_claim_list_filters_by_request_source
+  # 운영자 축이 풀지 않는 것 · 승인이 따로 막히는 자리 (계획 검증 §7-1 보강)
+  - admin_request_follows_the_quantity_lock
+  - legacy_cancel_quantity_lock_reason_is_one_plural_form
+  - admin_blocked_approval_keeps_the_request_and_reports_the_reason
+  - admin_approval_with_an_unpaid_charge_goes_to_payment_pending
+  - admin_request_rejects_an_option_of_another_order
+  # 접수 창 핸들러 (adminClaimRequestHandlers) — 요청 URL·본문·debounce·늦은 응답 폐기는 화면에 보이지 않는다
+  - admin_request_modal_requires_a_selection
+  - admin_request_modal_seeds_rows_and_redelivery_from_the_order
+  - admin_request_modal_seeds_the_international_redelivery_address # 해외 주문 재발송지 첫 채움 (S2-D8)
+  - admin_exchange_request_loads_active_option_choices
+  - admin_exchange_option_lookup_failure_keeps_the_modal
+  - admin_request_preview_is_debounced_after_input
+  - admin_request_preview_skips_without_reason
+  - admin_request_preview_fee_follows_the_server_until_edited
+  - admin_request_edited_fee_is_sent_as_override
+  - admin_request_free_charge_omits_the_fee_override
+  - admin_request_redelivery_zipcode_reschedules_preview
+  - admin_request_preview_failure_shows_inline_error
+  - admin_request_server_error_shows_localized_message   # 5xx 본문(「Server Error」) 대신 번역된 폴백 문구 (S1-D9)
+  - admin_request_close_cancels_pending_preview
+  - admin_request_stale_preview_response_is_discarded
+  - admin_request_row_quantity_is_clamped
+  - admin_request_submit_requires_reason
+  - admin_request_submit_blocks_duplicate
+  - admin_request_submit_posts_to_type_endpoint
+  - admin_request_submit_omits_approval_without_permission
+  - admin_return_request_carries_refund_priority_and_prefilled_bank
+  - admin_request_preview_amounts_are_formatted_in_order_currency
+  - admin_request_submit_opens_new_claim_and_refetches_order
+  - admin_request_approval_skipped_warns_with_reason
+  - admin_request_submit_failure_reports_once_and_unlocks
+  - admin_cancel_refund_posts_to_cancel_refund_endpoint
+  # 판매자 접수 건의 고객 쪽 계약 (D8 — AdminRequestedClaimCustomerTest)
+  - admin_requested_claim_rejects_member_withdraw_and_update
+  - admin_requested_claim_rejects_guest_withdraw_and_update
+  - admin_requested_claim_resource_reports_origin_and_closes_buyer_gates
+  - admin_requested_claim_notification_carries_the_origin_notice
+  # 뒤늦은 처리 S13~S15 (ClaimAdminActionsTest)
+  - admin_restore_stock_increments_stock_once
+  - admin_restore_stock_skips_unreturned_rows
+  - admin_after_actions_require_update_status_permission
+  - admin_withdraw_on_behalf_refunds_the_paid_charge_and_records_the_actor
+  - admin_withdraw_on_behalf_follows_the_customer_withdraw_gate
+  - admin_withdraw_on_behalf_notifies_the_customer
+  - customer_self_withdraw_sends_no_customer_withdraw_notification
+  - admin_update_request_recalculates_the_fee_on_reason_change
+  - admin_update_request_is_limited_to_editable_stages
+  - admin_update_request_logs_before_and_after_with_the_operator_flag
+  - admin_update_request_without_a_change_logs_nothing
+  - admin_detail_names_the_filing_and_withdrawing_operator
+  # 완료 후 환불 미접수 발견성 D9 (ClaimPendingRefundTest)
+  - pending_refund_surfaces_a_completed_return_until_filed
+  - pending_refund_surfaces_a_lower_priced_exchange_until_filed
+  - pending_refund_ignores_zero_refund_claims
+  - pending_refund_filter_is_limited_to_exchange_and_return
+  - pending_refund_instance_and_query_agree  # 판정 한 곳(모델) — 인스턴스·목록 센 값·쿼리가 모든 상태에서 같다 (2026-09-26)
+  # 상세 배너 구조 (Vitest — adminClaimItemTracking)
+  - pending_refund_banner_reads_the_detail_envelope
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminClaimRequestTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/adminClaimRequestHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/AdminRequestedClaimCustomerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimAdminActionsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimPendingRefundTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimItemTracking.test.ts
+
+validation:
+  audit_rule: test-scenario-coverage

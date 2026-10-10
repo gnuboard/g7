@@ -1,149 +1,151 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "알림 전체 삭제 확인 모달",
-    "editor_label": "$t:admin.modal_label.notification_delete_all_confirm_modal"
-  },
-  "id": "notification_delete_all_confirm_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.notifications_delete_all_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-gray-700 dark:text-gray-300"
-      },
-      "text": "$t:admin.notifications_delete_all_confirm"
+    "comment": "상단 알림 서랍에서 「전체 삭제」를 눌렀을 때 되묻는 창. 읽은 것만이 아니라 목록에 있는\n  알림 전부를 지우고 되돌릴 수 없으므로 한 번 확인한다. 서랍이 열려 있는 상태에서만 닿는\n  자리라 이 조각은 관리자 베이스 레이아웃에 심겨 있다.",
+    "meta": {
+        "is_partial": true,
+        "description": "알림 전체 삭제 확인 모달",
+        "editor_label": "$t:admin.modal_label.notification_delete_all_confirm_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "notification_delete_all_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.notifications_delete_all_title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isDeletingAllNotifications}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal",
-              "target": "notification_delete_all_confirm_modal"
-            }
-          ],
-          "text": "$t:common.cancel"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:admin.notifications_delete_all_confirm"
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isDeletingAllNotifications}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isDeletingAllNotifications": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "notification_delete_all_confirm_modal"
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isDeletingAllNotifications}}",
+                        "type": "button"
+                    },
+                    "text": "$t:common.cancel"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/notifications/all",
-                  "params": {
-                    "method": "DELETE"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDeletingAllNotifications": false,
-                        "notificationsCurrentPage": 1,
-                        "notificationsHasMore": null,
-                        "notificationsLoadingMore": false
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "지운 뒤 서랍의 더보기 상태(현재 쪽·다음 쪽 유무·더 받는 중)를 처음으로 되돌린다 —\n            비어 버린 목록에 대고 다음 쪽을 계속 요청하는 것을 막는다. 종 아이콘의 안 읽음\n            숫자는 목록과 별개 출처라 따로 다시 받는다. 실패하면 창을 닫지 않아 다시 시도할 수 있다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isDeletingAllNotifications": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/notifications/all",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeletingAllNotifications": false,
+                                                "notificationsCurrentPage": 1,
+                                                "notificationsHasMore": null,
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.notifications_delete_all_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notification_unread_count"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "notification_delete_all_confirm_modal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeletingAllNotifications": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? $t:admin.notifications_delete_all_failed}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isDeletingAllNotifications}}",
+                        "type": "button"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.notifications_delete_all_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "notifications"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "notification_unread_count"
-                      }
-                    },
-                    {
-                      "handler": "closeModal",
-                      "target": "notification_delete_all_confirm_modal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDeletingAllNotifications": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message ?? $t:admin.notifications_delete_all_failed}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isDeletingAllNotifications}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isDeletingAllNotifications ? $t:common.deleting : $t:common.delete}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isDeletingAllNotifications}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isDeletingAllNotifications ? $t:common.deleting : $t:common.delete}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

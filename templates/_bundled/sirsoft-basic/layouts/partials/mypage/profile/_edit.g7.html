@@ -1,0 +1,395 @@
+<!-- 내 정보 수정 폼 본체. 값은 `user` 소스가 `initLocal` 로 채운 폼 상태에서 오고, 검증 오류는
+     서버가 돌려준 것을 그대로 칸마다 보여 준다. -->
+<partial _e2e_allow="e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)" description="마이페이지 프로필 Edit 모드 (시안 기반 카드 분리 레이아웃)">
+  <div data-if="{{_local?.isPasswordVerified}}" class="space-y-6">
+    <blur-until-loaded sources="user"/>
+    <responsive on="portable" class="space-y-4"/>
+    <!-- 계정 상태 안내 — 보기 화면과 같은 자리·같은 양식이다(요구사항 2026-09-21). 수정 화면에만
+         없으면, 차단·탈퇴 상태라 저장이 거절되는 사람이 그 이유를 이 화면에서 알 수 없다 —
+         보기 화면으로 되돌아 나가야 비로소 읽게 된다. -->
+    <div data-if="{{user.data?.status === 'inactive'}}" class="flex items-center gap-3 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <icon name="circle-pause" size="lg" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+      <p class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.profile.status_inactive_notice</p>
+    </div>
+    <div data-if="{{user.data?.status === 'blocked'}}" class="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <icon name="ban" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <p class="text-sm text-red-800 dark:text-red-200">$t:mypage.profile.status_blocked_notice</p>
+    </div>
+    <div data-if="{{user.data?.status === 'withdrawn'}}" class="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+      <icon name="circle-xmark" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+      <div class="flex flex-col gap-1">
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">$t:mypage.profile.status_withdrawn_notice</p>
+        <p data-if="{{user.data?.withdrawn_at}}" class="text-xs text-yellow-600 dark:text-yellow-300">$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}</p>
+      </div>
+    </div>
+    <!-- 섹션 헤더 - 프로필 수정 + 취소/저장 버튼 (카드 외부) -->
+    <div class="flex items-center justify-between">
+      <responsive on="portable" class="flex flex-col gap-3"/>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <responsive on="portable" class="text-lg font-semibold text-gray-900 dark:text-white"/>
+        $t:mypage.profile.edit_title
+      </h2>
+      <!-- 버튼 그룹 -->
+      <div class="flex items-center gap-2">
+        <responsive on="portable" class="flex items-center gap-2 w-full"/>
+        <!-- 취소 버튼 -->
+        <button type="button" class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <responsive on="portable" class="inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+          <on type="click">
+            <navigate path="/mypage/profile"/>
+          </on>
+          <icon name="x" size="sm"/>
+          <span>$t:common.cancel</span>
+        </button>
+        <!-- 저장 버튼 -->
+        <button type="submit" form="profileEditForm" disabled="{{_local.isSavingProfile}}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <responsive on="portable" class="inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"/>
+          <icon data-if="{{_local.isSavingProfile}}" name="spinner" size="sm" class="animate-spin"/>
+          <icon data-if="{{!_local.isSavingProfile}}" name="save" size="sm"/>
+          <span>$t:common.save</span>
+        </button>
+      </div>
+    </div>
+    <!-- 전체 에러 메시지 박스 -->
+    <div data-if="{{_local.profileErrors &amp;&amp; Object.keys(_local.profileErrors).length > 0}}" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <div class="flex items-start gap-3">
+        <icon name="circle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div class="flex-1">
+          <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">$t:common.validation_error_title</h4>
+          <ul data-each="message in Object.entries(_local.profileErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
+            <li class="text-sm text-red-700 dark:text-red-300">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <!-- Form 래퍼 - 모든 카드를 감싸는 폼 -->
+    <form data-key="profileEditForm" id="profileEditForm" class="space-y-6">
+      <responsive on="portable" class="space-y-4"/>
+      <on type="submit">
+        <set-state target="local" :isSavingProfile="true" :profileErrors="null"/>
+        <api-call :auth_required="true" target="/api/me" method="PUT" body="{{_local?.profileEditForm}}">
+          <success>
+            <!-- 결제 통화·배송국가는 위 회원정보 저장 요청에 함께 실려 이커머스가 코어 훅으로 저장했다. 여기서는
+                 화면 전역 선호값만 맞춘다 — 헤더 셀렉터·가격 표시가 새로고침 없이 바뀐 값을 따르게 하기 위해서다.
+                 이커머스가 없으면 폼에 두 칸이 없어 아무것도 하지 않는다. -->
+            <set-state if="{{_local?.profileEditForm?.ecommerce_preferred_currency}}" target="global" preferredCurrency="{{_local.profileEditForm.ecommerce_preferred_currency}}"/>
+            <set-state if="{{_local?.profileEditForm?.ecommerce_preferred_shipping_country}}" target="global" preferredShippingCountry="{{_local.profileEditForm.ecommerce_preferred_shipping_country}}"/>
+            <set-state target="local" :isSavingProfile="false" :profileErrors="null"/>
+            <refetch-data-source dataSourceId="user"/>
+            <refetch-data-source dataSourceId="current_user"/>
+            <toast type="success" message="$t:mypage.profile.updated"/>
+            <navigate path="/mypage/profile"/>
+          </success>
+          <fail>
+            <set-state target="local" :isSavingProfile="false" profileErrors="{{error.errors ?? {message: error.message}}}"/>
+            <toast type="error" message="{{error.message}}"/>
+          </fail>
+        </api-call>
+      </on>
+      <!-- 프로필 카드 - 아바타 + 기본 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_basic</h3>
+        <div class="space-y-4">
+          <!-- 아바타 — 보기 화면과 **같은 업로더**를 같은 자리에 세운다. 종전에는 사진을 바꾸려면
+               「수정하기」 를 눌러 들어온 화면에서 되돌아 나가 보기 화면에서 눌러야 했다(요구사항
+               2026-09-21). 이 컴포넌트는 폼 본문과 무관하게 자기 엔드포인트로 즉시 올리므로
+               아래 [저장] 을 누르지 않아도 반영되고, 성공하면 두 데이터소스를 다시 부른다. -->
+          <div data-ref="profile_edit_avatar" class="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <responsive on="portable" class="flex flex-col items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700"/>
+            <avatar-uploader data-type="composite" src="{{user.data?.avatar}}" fallbackText="{{user.data?.name?.charAt(0) ?? 'U'}}" size="xl" :showDeleteButton="true" :confirmDelete="true">
+              <responsive on="portable" size="lg"/>
+              <prop name="uploadSuccessActions">
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="user"/>
+                  </field>
+                </item>
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="current_user"/>
+                  </field>
+                </item>
+              </prop>
+              <prop name="deleteSuccessActions">
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="user"/>
+                  </field>
+                </item>
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="current_user"/>
+                  </field>
+                </item>
+              </prop>
+            </avatar-uploader>
+            <!-- 상태 배지 · 가입일 · 마지막 로그인 · 탈퇴일시 — **시스템이 적는 기록**이라 읽기
+                 전용이다. 그래도 보기 화면과 같은 자리에 세우는 것은, 보기에서 본 「휴면」 이나
+                 가입일을 수정 화면에서 찾지 못하면 「고칠 수 있는데 칸이 없는 것」 인지
+                 「원래 고칠 수 없는 것」 인지 화면이 말해 주지 않기 때문이다. -->
+            <div class="flex-1 space-y-2">
+              <responsive on="portable" class="w-full space-y-2 text-center"/>
+              <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
+              <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+                <responsive on="portable" class="flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400"/>
+                <div>
+                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.joined_at</span>
+                  <span class="ml-2 text-purple-600 dark:text-purple-400 font-mono">{{user.data?.created_at ?? '-'}}</span>
+                </div>
+                <div>
+                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.last_login</span>
+                  <span class="ml-2 text-purple-600 dark:text-purple-400" title="{{user.data?.last_login_at ?? ''}}">{{user.data?.last_login_human ?? '-'}}</span>
+                </div>
+                <div data-if="{{user.data?.status === 'withdrawn' &amp;&amp; user.data?.withdrawn_at}}">
+                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.withdrawn_at</span>
+                  <span class="ml-2 text-red-600 dark:text-red-400 font-mono">{{user.data?.withdrawn_at}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 이메일 (읽기 전용) -->
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.email</label>
+            <div class="relative">
+              <input type="email" value="{{user.data?.email}}" :readOnly="true" class="w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"/>
+              <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <icon name="lock" size="sm" class="text-gray-400 dark:text-gray-500"/>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.email_readonly_hint</p>
+          </div>
+          <!-- 이름 / 닉네임 (2단 레이아웃) -->
+          <div class="grid grid-cols-2 gap-4">
+            <responsive on="portable" class="grid grid-cols-1 gap-3"/>
+            <!-- 이름 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span>$t:mypage.profile.name</span>
+                <span class="text-red-500 ml-0.5">*</span>
+              </label>
+              <input type="text" name="name" value="{{user.data?.name ?? ''}}" placeholder="$t:mypage.profile.name_placeholder" :required="true" class="{{_local.profileErrors?.name ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
+              <p data-if="{{_local.profileErrors?.name}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.name?.[0] ?? ''}}</p>
+            </div>
+            <!-- 닉네임 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.nickname</label>
+              <input type="text" name="nickname" value="{{user.data?.nickname ?? ''}}" placeholder="$t:mypage.profile.nickname_placeholder" class="{{_local.profileErrors?.nickname ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
+              <p data-if="{{_local.profileErrors?.nickname}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.nickname?.[0] ?? ''}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 2컬럼 카드 - 연락처 정보 / 위치 정보 -->
+      <div class="grid grid-cols-2 gap-6">
+        <responsive on="portable" class="grid grid-cols-1 gap-4"/>
+        <!-- 연락처 정보 카드 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.contact_info</h3>
+          <div class="space-y-4">
+            <!-- 휴대폰번호 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.mobile</label>
+              <input type="tel" name="mobile" value="{{user.data?.mobile ?? ''}}" placeholder="$t:mypage.profile.mobile_placeholder" class="{{_local.profileErrors?.mobile ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
+              <p data-if="{{_local.profileErrors?.mobile}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.mobile?.[0] ?? ''}}</p>
+            </div>
+            <!-- 전화번호 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.phone</label>
+              <input type="tel" name="phone" value="{{user.data?.phone ?? ''}}" placeholder="$t:mypage.profile.phone_placeholder" class="{{_local.profileErrors?.phone ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
+              <p data-if="{{_local.profileErrors?.phone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.phone?.[0] ?? ''}}</p>
+            </div>
+            <!-- 홈페이지 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.homepage</label>
+              <input type="url" name="homepage" value="{{user.data?.homepage ?? ''}}" placeholder="$t:mypage.profile.homepage_placeholder" class="{{_local.profileErrors?.homepage ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
+              <p data-if="{{_local.profileErrors?.homepage}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.homepage?.[0] ?? ''}}</p>
+            </div>
+          </div>
+        </div>
+        <!-- 위치 정보 카드 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.location_info</h3>
+          <div class="space-y-4">
+            <!-- 국가 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.country</label>
+              <select name="country" value="{{user.data?.country ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.country_placeholder'), value: '' }].concat((_defines?.countryList ?? []).map(c => ({ value: c.code, label: $t('countries.' + c.code) })))}}"/>
+              <p data-if="{{_local.profileErrors?.country}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.country?.[0] ?? ''}}</p>
+            </div>
+            <!-- 언어 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.language</label>
+              <select name="language" value="{{user.data?.language ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.language_placeholder'), value: '' }].concat((_global.appConfig?.supportedLocales ?? []).map(l => ({ value: l, label: $t('languages.' + l) })))}}"/>
+              <p data-if="{{_local.profileErrors?.language}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.language?.[0] ?? ''}}</p>
+            </div>
+            <!-- 시간대 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.timezone</label>
+              <select name="timezone" value="{{user.data?.timezone ?? ''}}" class="w-full" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}"/>
+              <p data-if="{{_local.profileErrors?.timezone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.timezone?.[0] ?? ''}}</p>
+            </div>
+            <!-- 주소 -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.address</label>
+              <!-- 우편번호 + 주소 검색 버튼 -->
+              <div class="flex gap-2">
+                <input type="text" name="zipcode" value="{{user.data?.zipcode ?? ''}}" placeholder="$t:mypage.profile.zipcode_placeholder" class="{{_local.profileErrors?.zipcode ? 'w-28 px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="true"/>
+                <extension-point name="address_search_slot" data-ref="profile_address_search_slot">
+                  <prop name="readOnlyFields">
+                    <item>zipcode</item>
+                    <item>address</item>
+                  </prop>
+                  <prop name="targetFields">
+                    <field name="zipcode" value="profileEditForm.zipcode"/>
+                    <field name="address" value="profileEditForm.address"/>
+                    <field name="region" value="profileEditForm.region"/>
+                    <field name="city" value="profileEditForm.city"/>
+                  </prop>
+                </extension-point>
+              </div>
+              <!-- 기본 주소 -->
+              <input type="text" name="address" value="{{user.data?.address ?? ''}}" placeholder="$t:mypage.profile.address_placeholder" class="{{_local.profileErrors?.address ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="true"/>
+              <!-- 상세 주소 -->
+              <input type="text" name="address_detail" value="{{user.data?.address_detail ?? ''}}" placeholder="$t:mypage.profile.address_detail_placeholder" class="{{_local.profileErrors?.address_detail ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
+              <p data-if="{{_local.profileErrors?.zipcode || _local.profileErrors?.address || _local.profileErrors?.address_detail}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.zipcode?.[0] ?? _local.profileErrors?.address?.[0] ?? _local.profileErrors?.address_detail?.[0] ?? ''}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 서명 및 자기소개 카드 -->
+      <div data-ref="profile_bio_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_signature_bio</h3>
+        <div class="space-y-4">
+          <!-- 서명 -->
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.signature</label>
+            <textarea name="signature" :rows="3" value="{{user.data?.signature ?? ''}}" placeholder="$t:mypage.profile.signature_placeholder" class="{{_local.profileErrors?.signature ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none'}}"/>
+            <p data-if="{{_local.profileErrors?.signature}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.signature?.[0] ?? ''}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.signature_hint</p>
+          </div>
+          <!-- 자기소개 -->
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.bio</label>
+            <textarea name="bio" :rows="5" value="{{user.data?.bio ?? ''}}" placeholder="$t:mypage.profile.bio_placeholder" class="{{_local.profileErrors?.bio ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none'}}"/>
+            <p data-if="{{_local.profileErrors?.bio}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.bio?.[0] ?? ''}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.bio_hint</p>
+          </div>
+        </div>
+      </div>
+      <!-- 게시판 알림 설정 카드 (sirsoft-board 모듈 설치 시 표시) -->
+      <div data-if="{{user.data?.notify_comment !== undefined}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+          <responsive on="portable" class="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+          <div class="flex items-center gap-2">
+            <icon name="bell" size="md" class="text-gray-600 dark:text-gray-400"/>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.notification_settings.title</h3>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <responsive on="portable" class="grid grid-cols-1 gap-3"/>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_post_complete" checked="{{!!_local.profileEditForm?.notify_post_complete}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_post_complete="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
+            <div>
+              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_complete</span>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_complete_desc</span>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_post_reply" checked="{{!!_local.profileEditForm?.notify_post_reply}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_post_reply="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
+            <div>
+              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_reply</span>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_reply_desc</span>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_comment" checked="{{!!_local.profileEditForm?.notify_comment}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_comment="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
+            <div>
+              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.comment</span>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.comment_desc</span>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_reply_comment" checked="{{!!_local.profileEditForm?.notify_reply_comment}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_reply_comment="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
+            <div>
+              <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.reply_comment</span>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.reply_comment_desc</span>
+            </div>
+          </label>
+        </div>
+      </div>
+      <!-- 결제 통화 카드 (A3·A5·D9 — 이커머스 설치 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장(PUT /api/me) 한 번에 함께 저장되고, 잘못된 값이면 그 요청의 검증 오류가 이 칸 아래에 뜬다. 게이트=이커머스 모듈 설치(_global.modules) — 코어 노출값이라 user 리소스 병합 타이밍과 무관하게 안정적 -->
+      <div data-if="{{_global.modules?.['sirsoft-ecommerce'] !== undefined}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+          <icon name="coins" size="md" class="text-gray-600 dark:text-gray-400"/>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.currency_settings.title</h3>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.currency_settings.description</p>
+        <select name="ecommerce_preferred_currency" value="{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full sm:w-64"/>
+        <p data-if="{{_local.profileErrors?.ecommerce_preferred_currency}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.ecommerce_preferred_currency?.[0] ?? ''}}</p>
+      </div>
+      <!-- 배송국가 설정 카드 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장 요청에 함께 간다 — 별도 저장 호출이 없다. -->
+      <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+          <icon name="earth-asia" size="md" class="text-gray-600 dark:text-gray-400"/>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.shipping_country_settings.title</h3>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.shipping_country_settings.description</p>
+        <select name="ecommerce_preferred_shipping_country" value="{{user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full sm:w-64"/>
+        <!-- 저장된 국가가 지금 배송 불가면 콤보가 빈칸이 되므로, 그 국가가 적용되지 않는다는 것과 지금 적용 중인 국가를 알린다(다른 국가를 고르면 사라짐). -->
+        <p data-if="{{(_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) !== undefined &amp;&amp; (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) !== null &amp;&amp; !(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country))}}" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:mypage.shipping_country_settings.saved_not_applied|saved={{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country))?.name, 'sirsoft-ecommerce::settings.countries.' + ((_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) ?? '') + '.name') || (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country)}}|applied={{(_global.availableShippingCountries ?? []).find(c => c.code === _global.preferredShippingCountry)?.name ?? _global.preferredShippingCountry ?? ''}}</p>
+        <p data-if="{{_local.profileErrors?.ecommerce_preferred_shipping_country}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.ecommerce_preferred_shipping_country?.[0] ?? ''}}</p>
+      </div>
+      <!-- 하단 버튼 그룹 -->
+      <div class="flex justify-end gap-2">
+        <responsive on="portable" class="flex flex-col-reverse gap-2"/>
+        <!-- 취소 버튼 -->
+        <button type="button" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <responsive on="portable" type="button" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+          <on type="click">
+            <navigate path="/mypage/profile"/>
+          </on>
+          <icon name="x" size="md"/>
+          <span>$t:common.cancel</span>
+        </button>
+        <!-- 저장 버튼 -->
+        <button type="submit" disabled="{{_local.isSavingProfile}}" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <responsive on="portable" type="submit" disabled="{{_local.isSavingProfile}}" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-base font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"/>
+          <icon data-if="{{_local.isSavingProfile}}" name="spinner" size="md" class="animate-spin"/>
+          <icon data-if="{{!_local.isSavingProfile}}" name="save" size="md"/>
+          <span>$t:common.save</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</partial>

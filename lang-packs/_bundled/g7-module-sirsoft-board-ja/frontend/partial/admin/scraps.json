@@ -1,0 +1,67 @@
+{
+  "page_title": "スクラップ管理",
+  "page_description": "全会員がスクラップした投稿を閲覧して整理します。",
+  "search_placeholder": "検索語を入力",
+  "search": "検索",
+  "reset": "初期化",
+  "advanced_search": "詳細検索",
+  "selected_count": "{{count}}個選択されました",
+  "search_fields": {
+    "all": "すべて",
+    "post_title": "投稿のタイトル",
+    "post_content": "投稿の内容",
+    "board_name": "掲示板名",
+    "member": "会員(名前、メールアドレス)",
+    "author_name": "投稿者名"
+  },
+  "filters": {
+    "board_label": "掲示板",
+    "board_all": "全掲示板",
+    "scrapped_at_label": "スクラップ日",
+    "member_filter_notice": "特定の会員のスクラップのみ表示中",
+    "member_filter_clear": "会員フィルターを解除",
+    "date_quick_today": "本日",
+    "date_quick_3days": "3日",
+    "date_quick_week": "1週間",
+    "date_quick_month": "1ヶ月",
+    "date_quick_3months": "3ヶ月",
+    "date_quick_all": "すべて"
+  },
+  "columns": {
+    "scrapped_at": "スクラップ日",
+    "member": "会員",
+    "board_name": "掲示板",
+    "post_title": "投稿のタイトル",
+    "author_name": "投稿者",
+    "post_status": "ステータス"
+  },
+  "badges": {
+    "deleted_post": "削除された投稿",
+    "board_deleted": "掲示板が削除されました",
+    "scrap_off": "スクラップ機能がオフです",
+    "withdrawn": "退会"
+  },
+  "actions": {
+    "go_to_post": "投稿を表示",
+    "go_to_member": "会員情報",
+    "delete": "削除",
+    "bulk_delete": "選択削除"
+  },
+  "modals": {
+    "delete_title": "このスクラップを削除しますか?",
+    "delete_confirm": "会員のスクラップリストから削除されます。投稿自体は削除されません。",
+    "delete_editor_label": "スクラップ削除確認",
+    "bulk_delete_title": "選択したスクラップを削除しますか?",
+    "bulk_delete_confirm": "選択した{{count}}個のスクラップを削除しますか?会員のスクラップリストから削除されます。",
+    "bulk_delete_editor_label": "スクラップ選択削除確認",
+    "processing": "処理中..."
+  },
+  "pagination_info": "総{{total}}件中{{from}}-{{to}}",
+  "table_empty": "条件に合致するスクラップがありません。",
+  "refresh": "更新",
+  "total_count": "合計 {{count}}件",
+  "cell": {
+    "view_member": "会員情報を表示",
+    "search_member": "この会員で検索"
+  }
+}

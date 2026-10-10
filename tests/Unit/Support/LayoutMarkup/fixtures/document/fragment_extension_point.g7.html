@@ -1,0 +1,8 @@
+<extension extension-point="inquiry_board_setting" mode="replace" priority="100">
+  <data-source id="board_list" endpoint="/api/modules/sirsoft-board/admin/boards" method="GET" :auto_fetch="true" :auth_required="true">
+    <params>{"per_page": "200"}</params>
+  </data-source>
+  <div data-ref="inquiry_settings_panel" class="settings-card">
+    <span text="문의 게시판 설정"/>
+  </div>
+</extension>

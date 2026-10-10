@@ -31,6 +31,11 @@ class ExpressionEvaluator
      */
     private const RAW_PREFIX = 'raw:';
 
+    /**
+     * 평가기를 생성합니다.
+     *
+     * 파이프는 화면 쪽과 같은 이름·같은 순서로 풀어야 하므로 전용 레지스트리를 함께 만든다.
+     */
     public function __construct()
     {
         $this->pipeRegistry = new PipeRegistry;
@@ -50,6 +55,7 @@ class ExpressionEvaluator
      * 템플릿 번역 사전을 설정합니다.
      *
      * @param  array  $translations  번역 사전 (dot notation 접근 가능)
+     * @return void 없음
      */
     public function setTranslations(array $translations): void
     {
@@ -64,6 +70,7 @@ class ExpressionEvaluator
      * 와일드카드("*")를 통해 동적 접근 시 기본값을 반환할 수 있습니다.
      *
      * @param  array  $overrides  오버라이드 정의 (예: {"_local": {"collapsedReplies": {"*": false}}})
+     * @return void 없음
      */
     public function setSeoOverrides(array $overrides): void
     {
@@ -388,6 +395,7 @@ class ExpressionEvaluator
         if (! empty($this->translations)) {
             $translated = Arr::get($this->translations, $key);
             if ($translated !== null && is_string($translated)) {
+                $translated = $this->pluralVariant($key, $translated, $params);
                 // 파라미터 치환: :param 또는 {{param}} → value
                 // 템플릿 번역은 {{param}} 형식, Laravel 번역은 :param 형식
                 foreach ($params as $paramKey => $paramValue) {
@@ -411,6 +419,70 @@ class ExpressionEvaluator
         }
 
         return $translated;
+    }
+
+    /**
+     * `count` 인자의 수로 복수형 변형(`키_one` 등)을 고릅니다 — 브라우저 번역 엔진(engine-v1.78.7)과 같은 규칙.
+     *
+     * 현재 로케일의 CLDR 복수 범주(zero·one·two·few·many·other)를 구해 `키_{범주}` 가 사전에 있으면 그 문구를,
+     * 없거나 범주가 other 면 기본 키 문구를 쓴다. `count` 는 숫자 표기(`1`·`-2`·`1.5`)일 때만 수로 본다.
+     *
+     * @param  string  $key  기본 번역 키
+     * @param  string  $base  기본 키 문구
+     * @param  array<string, string>  $params  해석된 번역 인자
+     * @return string 고른 문구
+     */
+    private function pluralVariant(string $key, string $base, array $params): string
+    {
+        $raw = isset($params['count']) ? trim((string) $params['count']) : '';
+
+        if ($raw === '' || preg_match('/^-?\d+(\.\d+)?$/', $raw) !== 1) {
+            return $base;
+        }
+
+        $category = self::pluralCategory(app()->getLocale(), $raw + 0);
+
+        if ($category === 'other') {
+            return $base;
+        }
+
+        $variant = Arr::get($this->translations, $key.'_'.$category);
+
+        return is_string($variant) ? $variant : $base;
+    }
+
+    /**
+     * 로케일의 CLDR 복수 범주를 구합니다.
+     *
+     * intl 확장이 있으면 ICU 복수 규칙(`Intl.PluralRules` 와 같은 데이터)으로 구하고, 없으면 범주가 other 뿐인
+     * 언어(ko·ja·zh 등)는 other, 그 밖은 1 이면 one 으로 근사한다.
+     *
+     * @param  string  $locale  로케일
+     * @param  int|float  $count  수
+     * @return string 복수 범주
+     */
+    private static function pluralCategory(string $locale, int|float $count): string
+    {
+        if (class_exists(\MessageFormatter::class)) {
+            $category = \MessageFormatter::formatMessage(
+                $locale,
+                '{n, plural, zero{zero} one{one} two{two} few{few} many{many} other{other}}',
+                ['n' => $count],
+            );
+
+            if (is_string($category) && $category !== '') {
+                return $category;
+            }
+        }
+
+        $language = strtolower(explode('-', str_replace('_', '-', $locale))[0]);
+
+        if (in_array($language, ['ko', 'ja', 'zh', 'th', 'vi', 'id', 'ms', 'lo', 'my', 'km'], true)) {
+            return 'other';
+        }
+
+        // CLDR one 은 정수부 절대값 1(소수 없음) — Intl.PluralRules('en').select(-1) 도 one 이다.
+        return abs($count) == 1 && is_int($count) ? 'one' : 'other';
     }
 
     /**
@@ -2069,7 +2141,11 @@ class ExpressionEvaluator
             'parseFloat' => is_numeric($value) ? (float) $value : null,
             'isNaN' => ! is_numeric($value),
             'isFinite' => is_numeric($value) && is_finite((float) $value),
-            'encodeURIComponent' => is_string($value) ? rawurlencode($value) : '',
+            // 자바스크립트 `encodeURIComponent` 는 `!*'()` 를 남기는데 `rawurlencode` 는 인코딩한다 —
+            // 같은 식이 봇 화면에서만 다른 주소가 되지 않도록 그 다섯 글자를 되돌린다.
+            'encodeURIComponent' => is_string($value)
+                ? strtr(rawurlencode($value), ['%21' => '!', '%2A' => '*', '%27' => "'", '%28' => '(', '%29' => ')'])
+                : '',
             'decodeURIComponent' => is_string($value) ? rawurldecode($value) : '',
             '$t' => $this->evaluateTranslationFunction($argsStr, $context),
             '$localized' => $this->evaluateLocalizedFunction($value, $context),
@@ -2548,6 +2624,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.find 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return mixed 조건을 처음 만족한 값 (없으면 null)
      */
     private function arrayFind(array $values, array $callback, array $context): mixed
     {
@@ -2562,6 +2643,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.findIndex 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return int 조건을 처음 만족한 자리 (없으면 -1)
      */
     private function arrayFindIndex(array $values, array $callback, array $context): int
     {
@@ -2576,6 +2662,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.some 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return bool 하나라도 만족하면 true
      */
     private function arraySome(array $values, array $callback, array $context): bool
     {
@@ -2590,6 +2681,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.every 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return bool 모두 만족하면 true
      */
     private function arrayEvery(array $values, array $callback, array $context): bool
     {
@@ -2604,6 +2700,12 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.reduce 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  mixed  $initialValue  누적 시작값
+     * @param  array  $context  평가 컨텍스트
+     * @return mixed 누적 결과
      */
     private function arrayReduce(array $values, array $callback, mixed $initialValue, array $context): mixed
     {
@@ -2628,6 +2730,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.sort (콜백 비교) 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return array 정렬된 배열
      */
     private function arraySort(array $values, array $callback, array $context): array
     {

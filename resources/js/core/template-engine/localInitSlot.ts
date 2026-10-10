@@ -95,6 +95,7 @@ export function isLocalInitConsumed(slot: unknown): boolean {
  *
  * - `apply`: 이 payload 를 아직 아무도 적용하지 않았다 → 저장소 A·B 를 모두 갱신
  * - `prune`: 다른 인스턴스가 이미 적용했다 → **이 인스턴스의 저장소 A 에서 payload 키 공간만 제거**
+ *   (engine-v1.77.2: payload 가 변경 추적 폼의 데이터를 덮으면 `hasChanges` 도 함께 제거 — `shouldResetHasChanges`)
  * - `skip`: 이 인스턴스가 이미 처리했다 → 아무것도 하지 않음
  *
  * @since engine-v1.54.7
@@ -191,4 +192,88 @@ export function mergeLocalInitSlot(prev: unknown, next: unknown): unknown {
     }
 
     return merged;
+}
+
+/**
+ * 변경 추적 폼(`data-key` + `data-track-changes`)의 dataKey 첫 키 등록부 (키 → 마운트 수).
+ *
+ * `_localInit` 적용·정리는 `hasChanges`(폼 「변경 있음」)를 초기화한다. 그런데 폼과 무관한
+ * 데이터(예: 알림 목록의 페이지 정보만 싣는 `initLocal`)가 다시 들어올 때도 초기화하면, 폼의
+ * 편집값은 그대로인데 저장 버튼만 꺼진다. 그래서 들어온 payload 가 **변경 추적 폼의 데이터를
+ * 덮을 때만** 초기화하도록, 마운트된 폼의 dataKey 첫 키를 여기에 모은다.
+ *
+ * @since engine-v1.77.2
+ */
+const TRACKED_ROOTS_KEY = '__g7TrackChangesRoots';
+
+/**
+ * 등록부를 반환합니다 (window 전역 — 여러 번들 사본이 같은 등록부를 보게 한다).
+ *
+ * @returns dataKey 첫 키 → 마운트 수
+ */
+function getTrackedRoots(): Map<string, number> {
+    const w = typeof window !== 'undefined' ? (window as any) : (globalThis as any);
+    if (!(w[TRACKED_ROOTS_KEY] instanceof Map)) {
+        w[TRACKED_ROOTS_KEY] = new Map<string, number>();
+    }
+
+    return w[TRACKED_ROOTS_KEY];
+}
+
+/**
+ * 변경 추적 폼의 dataKey 를 등록합니다. 반환한 함수로 해제합니다(언마운트).
+ *
+ * `_global.`·`_isolated.` 로 시작하는 dataKey 는 `hasChanges` 를 `_local` 이 아닌 그 저장소에
+ * 쓰므로 등록하지 않는다.
+ *
+ * @param dataKey 폼의 dataKey (예: "form", "form.basic")
+ * @returns 등록 해제 함수
+ * @since engine-v1.77.2
+ */
+export function registerTrackChangesRoot(dataKey: string): () => void {
+    if (!dataKey || dataKey.startsWith('_global.') || dataKey.startsWith('_isolated.')) {
+        return () => {};
+    }
+
+    const root = dataKey.split('.')[0];
+    const roots = getTrackedRoots();
+    roots.set(root, (roots.get(root) ?? 0) + 1);
+
+    return () => {
+        const count = (roots.get(root) ?? 0) - 1;
+        if (count > 0) {
+            roots.set(root, count);
+        } else {
+            roots.delete(root);
+        }
+    };
+}
+
+/**
+ * 이번 `_localInit` payload 가 `hasChanges` 를 초기화해야 하는지 판정합니다.
+ *
+ * - 마운트된 변경 추적 폼이 없으면 종전대로 초기화한다(레이아웃이 `hasChanges` 를 직접
+ *   관리하는 화면의 기존 동작 보존).
+ * - 있으면 payload 의 최상위 키 중 하나가 그 폼의 dataKey 첫 키일 때만 초기화한다.
+ *
+ * @param payload `_localInit` 데이터 (`_forceLocalInit`·`_merge` 는 무시)
+ * @returns 초기화 여부
+ * @since engine-v1.77.2
+ */
+export function shouldResetHasChanges(payload: Record<string, unknown>): boolean {
+    const roots = getTrackedRoots();
+    if (roots.size === 0) {
+        return true;
+    }
+
+    return Object.keys(payload).some(key => roots.has(key));
+}
+
+/**
+ * 등록부를 비웁니다 (테스트 격리용).
+ *
+ * @since engine-v1.77.2
+ */
+export function resetTrackChangesRoots(): void {
+    getTrackedRoots().clear();
 }

@@ -251,7 +251,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 배송사를 등록합니다. `sirsoft-ecommerce.settings.update` 권한이 필요하며, `ShippingCarrierService::createCarrier()` 가 고유 코드(`code`), 다국어 배송사명(`name`), 유형(`type`, 국내/해외), 배송 추적 URL 템플릿, 활성여부, 정렬순서를 저장하고 201 로 생성된 배송사 리소스를 반환합니다. `tracking_url` 에는 `{tracking_number}` 치환자를 넣어 추적 링크를 구성합니다. 새 택배사/특송사를 시스템에 추가할 때 사용합니다.
+**설명** 관리자가 새 배송사를 등록합니다. `sirsoft-ecommerce.settings.update` 권한이 필요하며, `ShippingCarrierService::createCarrier()` 가 고유 코드(`code`), 다국어 배송사명(`name`), 유형(`type`, 국내/해외), 배송 추적 URL 템플릿, 활성여부, 정렬순서를 저장하고 201 로 생성된 배송사 리소스를 반환합니다. `tracking_url` 에는 `{tracking_number}` 치환자를 넣어 추적 링크를 구성합니다. 새 택배사/특송사를 시스템에 추가할 때 사용합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「배송사명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Carrier Name field is required.").
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/shipping-carriers/active
@@ -636,7 +636,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 기존 배송사 정보를 수정합니다. `sirsoft-ecommerce.settings.update` 권한이 필요하며, `ShippingCarrierService::updateCarrier()` 가 코드·다국어명·유형·추적 URL·활성여부·정렬순서 중 전달된 값을 갱신하고 수정된 리소스를 반환합니다(모든 body 필드는 선택적, 부분 수정 가능). 대상 배송사가 없거나 갱신에 실패하면 각각 404/400 을 반환합니다. 배송사의 추적 URL이나 표시명을 변경할 때 사용합니다.
+**설명** 관리자가 기존 배송사 정보를 수정합니다. `sirsoft-ecommerce.settings.update` 권한이 필요하며, `ShippingCarrierService::updateCarrier()` 가 코드·다국어명·유형·추적 URL·활성여부·정렬순서 중 전달된 값을 갱신하고 수정된 리소스를 반환합니다(모든 body 필드는 선택적, 부분 수정 가능). 대상 배송사가 없거나 갱신에 실패하면 각각 404/400 을 반환합니다. 배송사의 추적 URL이나 표시명을 변경할 때 사용합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「배송사명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Carrier Name field is required.").
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/shipping-carriers/{id}/toggle-status

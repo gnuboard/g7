@@ -3,6 +3,10 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources\Traits;
 
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
+use Modules\Sirsoft\Ecommerce\Support\EarnedPointsFormatter;
+
+// audit:allow api-doc-coverage 절사 결과의 되곱하기 잔차만 제거한다 — 응답 필드·타입·구조가
+// 그대로라 갱신할 API 레퍼런스 서술이 없다 (금액 값의 표현만 설정 단위에 맞게 정규화).
 
 /**
  * 다중 통화 가격 변환 Trait
@@ -227,7 +231,9 @@ trait HasMultiCurrencyPrices
             $unitValue = 1;
         }
 
-        $divided = $price / $unitValue;
+        // 음수 금액(차액·차감)은 절댓값에 같은 규칙을 적용한 뒤 부호를 되돌린다. floor(-342.3) = -343 처럼
+        // 0 에서 멀어지면 같은 금액이 양수 ¥342 · 음수 ¥-343 으로 한 단위 어긋난다.
+        $divided = abs($price) / $unitValue;
 
         $rounded = match ($method) {
             'ceil' => ceil($divided),
@@ -235,7 +241,34 @@ trait HasMultiCurrencyPrices
             default => round($divided),
         };
 
-        return $rounded * $unitValue;
+        // 단위를 도로 곱하는 마지막 단계에서 이진 부동소수 표현이 한 칸 어긋난다
+        // (4505 × 0.01 = 45.050000000000004). 절사 설정은 표시뿐 아니라 **저장되는 값**까지
+        // 지배하므로, 단위 자신이 가진 자릿수로 다듬어 결과가 실제로 그 단위의 배수가 되게 한다.
+        // 정수 단위(1·10·100)는 자릿수 0 이라 값이 그대로 통과한다.
+        $result = round($rounded * $unitValue, $this->roundingUnitScale($unitValue));
+
+        // 0.0 - 0.0 = +0.0 — 0 으로 깎인 음수가 응답에 「-0」 으로 실리지 않게 뺄셈으로 부호를 되돌린다.
+        return $price < 0 ? 0.0 - $result : $result;
+    }
+
+    /**
+     * 절사 단위가 가진 소수 자릿수를 구합니다.
+     *
+     * 단위 문자열의 형태(`0.01` · `1e-2`)에 기대지 않고 값에서 직접 센다.
+     *
+     * @param  float  $unit  절사 단위 (양수)
+     * @return int 소수 자릿수 (정수 단위면 0)
+     */
+    protected function roundingUnitScale(float $unit): int
+    {
+        $scale = 0;
+
+        while ($scale < 10 && abs($unit - round($unit)) > 1e-9) {
+            $unit *= 10;
+            $scale++;
+        }
+
+        return $scale;
     }
 
     /**
@@ -305,6 +338,27 @@ trait HasMultiCurrencyPrices
     }
 
     /**
+     * 적립 마일리지를 포인트 단위로 포맷팅합니다.
+     *
+     * 마일리지는 화폐가 아니라 포인트이므로 통화 기호를 붙이지 않습니다. 통화로 포맷하면
+     * 같은 값이 화면마다 갈립니다 — 장바구니·주문서는 `Summary::mileage_formatted` 가
+     * `710P` 로 내는데 주문완료·비회원 주문상세·관리자 주문목록은 `710원` 으로 나와,
+     * 구매자가 한 클릭 사이에 단위가 바뀌는 것을 봅니다(#599 세션A 실측 2026-09-21 ·
+     * 주문 20260921-1536333520 · 운영 결정 2026-09-22 「P 로 통일」).
+     *
+     * 표기 관례(천 단위 구분)는 `Summary` 와 같은 식을 쓰므로 두 경로가 같은 문자열을 냅니다.
+     * 단위 글자는 다국어 키(`messages.mileage.points_format`)가 정하고, 식은 서비스 층과 같은
+     * `EarnedPointsFormatter` 한 곳이다 — 신청 미리보기 스냅샷과 주문 응답이 같은 문자열을 낸다.
+     *
+     * @param  float|int|null  $points  적립 포인트 (null 은 0 으로 처리)
+     * @return string `710P` 형태의 포인트 표기
+     */
+    protected function formatEarnedPoints(float|int|null $points): string
+    {
+        return EarnedPointsFormatter::format($points);
+    }
+
+    /**
      * 주문 모델에서 스냅샷 기준 통화 코드를 추출합니다.
      *
      * `currency_snapshot.base_currency` (주문 시점 시스템 기본 통화)를 우선 사용하고,
@@ -351,6 +405,80 @@ trait HasMultiCurrencyPrices
 
         // 설정에 없는 통화는 기본값 2 반환
         return 2;
+    }
+
+    /**
+     * 저장된 다중 통화 금액들을 통화별로 더합니다.
+     *
+     * 화면의 보조 통화 줄은 바로 위 기준 통화 줄과 **같은 값의 다른 표기**여야 한다. 기준 줄이
+     * 두 금액의 합(예: 환불 총액 = 현금 + 마일리지)인데 보조 통화가 한쪽만 읽으면 두 줄이 서로
+     * 다른 금액이 되는데, 둘 다 정상 서식이라 어긋난 흔적이 응답에도 화면에도 남지 않는다.
+     * 그래서 합계는 화면이 아니라 여기서 만든다 — 화면이 두 맵을 더하면 그 규칙이 화면마다 갈린다.
+     *
+     * 환율을 다시 보지 않는다. 통화별로 더한 뒤 그 통화의 자릿수로 반올림한다.
+     *
+     * @param  array|null  ...$multiCurrencyAmounts  통화별 금액 맵들 (예: {'KRW': 10000, 'USD': 7.5})
+     * @return array<string, float|int>|null 통화별 합계 (모두 비면 null)
+     */
+    protected function sumMultiCurrency(?array ...$multiCurrencyAmounts): ?array
+    {
+        $sums = [];
+
+        foreach ($multiCurrencyAmounts as $map) {
+            if (empty($map)) {
+                continue;
+            }
+
+            foreach ($map as $code => $amount) {
+                if (! is_numeric($amount)) {
+                    continue;
+                }
+
+                $sums[$code] = ($sums[$code] ?? 0) + $amount;
+            }
+        }
+
+        if ($sums === []) {
+            return null;
+        }
+
+        $result = [];
+
+        foreach ($sums as $code => $amount) {
+            $result[$code] = $this->roundToCurrency($amount, (string) $code);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 저장된 다중 통화 단가에 수량을 곱해 소계 배열을 만듭니다.
+     *
+     * 환율을 다시 보지 않는다 — 거래 시점에 동결된 통화별 단가를 그대로 곱하므로 기준 통화
+     * 소계와 같은 근거 위에 선다. 통화별로 따로 곱한 뒤 그 통화의 자릿수로 반올림하는 것은
+     * 기준 통화 소계를 환산하는 방식과 다르다: 후자는 환산 오차가 수량만큼 증폭된다.
+     *
+     * @param  array|null  $multiCurrencyUnitPrices  통화별 단가 (예: {'KRW': 28000, 'USD': 23.8})
+     * @param  int  $quantity  수량
+     * @return array<string, float|int>|null 통화별 소계 (입력이 비면 null)
+     */
+    protected function multiplyMultiCurrency(?array $multiCurrencyUnitPrices, int $quantity): ?array
+    {
+        if (empty($multiCurrencyUnitPrices)) {
+            return null;
+        }
+
+        $result = [];
+
+        foreach ($multiCurrencyUnitPrices as $code => $amount) {
+            if (! is_numeric($amount)) {
+                continue;
+            }
+
+            $result[$code] = $this->roundToCurrency($amount * $quantity, (string) $code);
+        }
+
+        return $result === [] ? null : $result;
     }
 
     /**
@@ -443,6 +571,8 @@ trait HasMultiCurrencyPrices
      * 테스트 또는 설정 변경 시 캐시를 리셋해야 할 때 사용합니다.
      * 실제 보관소는 CurrencySettingsCache 단일 클래스이므로, 어느 사용 클래스에서
      * 호출하든 전체가 비워집니다.
+     *
+     * @return void 반환값 없음
      */
     public static function clearCurrencySettingsCache(): void
     {

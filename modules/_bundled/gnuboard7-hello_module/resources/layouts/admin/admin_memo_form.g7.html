@@ -1,0 +1,71 @@
+<!-- 관리자 메모 작성·수정 화면 — 한 장이 두 모드를 겸하며 route.id 유무가 모드를 가른다. -->
+<layout name="admin_memo_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"/>
+  <!-- 수정 모드에서만 기존 메모를 받아 폼 초기값으로 넣는다(initLocal=form). 생성 모드는 data-if 가 요청 자체를 걸러 낸다. -->
+  <data-source id="memoData" label_key="$t:gnuboard7-hello_module.editor.data_source.memoData" type="api" endpoint="/api/modules/gnuboard7-hello_module/admin/memos/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{route?.id}}" initLocal="form">
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 생성 모드의 등록 권한 — 목록 응답의 컬렉션 abilities(can_create)를 한 건만 받아 읽는다. 수정 모드는 memoData 의 can_update 를 본다 -->
+  <data-source id="memoCreateAbility" label_key="$t:gnuboard7-hello_module.editor.data_source.memoCreateAbility" type="api" endpoint="/api/modules/gnuboard7-hello_module/admin/memos" method="GET" :auto_fetch="true" :auth_required="true" if="{{!route?.id}}">
+    <params :per_page="1"/>
+    <fallback :data="null"/>
+  </data-source>
+  <computed name="isReadOnly">{{route?.id ? memoData?.data?.abilities?.can_update !== true : memoCreateAbility?.data?.abilities?.can_create !== true}}</computed>
+  <computed name="readOnlyNoticeVisible">{{route?.id ? (!!memoData?.data &amp;&amp; memoData?.data?.abilities?.can_update !== true) : (!!memoCreateAbility?.data &amp;&amp; memoCreateAbility?.data?.abilities?.can_create !== true)}}</computed>
+  <permissions>
+    <permission>gnuboard7-hello_module.memos.read</permission>
+  </permissions>
+  <init>
+    <!-- 생성 모드에서 폼 기본값 초기화 -->
+    <set-state if="{{!route?.id}}" target="local">
+      <field name="form">
+        <field name="title" value=""/>
+        <field name="content" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="memo_form_wrapper" class="admin-page-content">
+      <div data-ref="memo_form_card" data-key="form" class="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <p data-ref="memo_read_only_banner" data-if="{{_computed.readOnlyNoticeVisible}}" class="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-700 dark:text-amber-300">$t:gnuboard7-hello_module.admin.memos.form.read_only</p>
+        <h1 data-ref="memo_form_title" class="text-page-heading mb-6">{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}</h1>
+        <div data-ref="memo_field_title" class="mb-4">
+          <label class="form-label-block">$t:gnuboard7-hello_module.admin.memos.form.fields.title</label>
+          <input type="text" name="title" class="" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="memo_field_content" class="mb-6">
+          <label class="form-label-block">$t:gnuboard7-hello_module.admin.memos.form.fields.content</label>
+          <textarea name="content" :rows="6" class="" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="memo_form_actions" class="flex-center justify-end gap-2">
+          <button data-ref="memo_cancel_button" type="button" class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors">
+            <on type="click">
+              <!-- 취소하고 목록으로. 목록 상태를 그대로 넘겨 보던 페이지로 돌아간다 -->
+              <navigate path="/admin/memos" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <span>$t:gnuboard7-hello_module.admin.memos.form.actions.cancel</span>
+          </button>
+          <button data-ref="memo_save_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <!-- 저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다. -->
+              <api-call :auth_required="true" target="{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                <success>
+                  <toast type="success" message="{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"/>
+                  <navigate path="/admin/memos" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message ?? 'error'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <span>$t:gnuboard7-hello_module.admin.memos.form.actions.save</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

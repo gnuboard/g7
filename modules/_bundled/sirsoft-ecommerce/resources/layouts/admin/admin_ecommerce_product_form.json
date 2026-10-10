@@ -1,29 +1,11 @@
 {
+    "comment": "상품 등록·수정 (운영자) — 이 모듈에서 가장 큰 폼이다. 한 레이아웃이 세 진입을 겸한다:\n  신규(`route.itemCode` 없음) · 수정(`route.itemCode`) · 복사(`query.copy_id`).\n  기본정보부터 활동로그까지 열두 구획을 한 페이지에 이어 붙이고 탭은 스크롤 위치를 따라가며,\n  구획은 전부 `_local.form` 하나를 나눠 쓴다. 신규 진입은 아직 상품 id 가 없어 이미지 업로드를\n  임시키(`ui.imageTempKey`)로 묶어 두었다가 저장할 때 서버에서 상품에 붙인다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_form",
-    "permissions": [
-        "sirsoft-ecommerce.products.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}",
         "description": "{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"
-    },
-    "computed": {
-        "currencyColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}",
-        "shippingPolicyOptions": "{{((shipping_policies?.data?.data ?? []).some(p => p.id === product?.data?.shipping_policy_id) || !product?.data?.shipping_policy) ? (shipping_policies?.data?.data ?? []) : [...(shipping_policies?.data?.data ?? []), product.data.shipping_policy]}}",
-        "assignedPolicyInactive": "{{!!product?.data?.shipping_policy && product.data.shipping_policy.is_active === false}}"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "categories",
-            "brands",
-            "notice_templates",
-            "common_infos",
-            "product_labels",
-            "roles",
-            "activity_logs"
-        ]
     },
     "data_sources": [
         {
@@ -53,9 +35,27 @@
                 }
             },
             "errorCondition": {
-                "if": "{{response?.data?.abilities?.can_update !== true}}",
+                "if": "{{response?.data?.abilities?.can_update === false}}",
                 "errorCode": 403
-            }
+            },
+            "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌린다 — 목록을 거치지 않고 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다"
+        },
+        {
+            "id": "product_abilities",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.product_abilities",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/products",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "per_page": 10
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "등록·복사는 등록 권한(can_create)의 일인데 상품 응답(수정 진입)에는 그 키가 없고 등록 진입에는 응답 자체가 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다. 이 화면은 조회 권한이 있어야 열리므로 목록 조회가 막히지 않는다. 폼 전체의 읽기 전용 계산값(`isReadOnly`)이 수정 진입은 상품의 can_update, 등록·복사 진입은 이 응답의 can_create 를 보고, 구획의 입력·버튼·업로더·에디터·옵션 추가/삭제·드래그 손잡이가 모두 그 값 하나를 따른다. 응답이 아직 없으면(로딩 중·실패) 잠긴 쪽으로 시작한다."
         },
         {
             "id": "copy_source",
@@ -63,6 +63,11 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/products/{{query.copy_id}}/copy",
             "method": "GET",
+            "if": "{{!route.itemCode && !!query.copy_id}}",
+            "refetchOnMount": true,
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
             "params": {
                 "copy_images": "{{query.copy_images ?? '1'}}",
                 "copy_options": "{{query.copy_options ?? '1'}}",
@@ -76,12 +81,11 @@
                 "copy_seo": "{{query.copy_seo ?? '0'}}",
                 "copy_identification": "{{query.copy_identification ?? '1'}}"
             },
-            "if": "{{!route.itemCode && !!query.copy_id}}",
-            "initLocal": "form",
-            "refetchOnMount": true,
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "blocking"
+            "initLocal": {
+                "_merge": "replace",
+                "form": "{{data}}"
+            },
+            "comment": "복사 진입 전용 엔드포인트다 — 원본을 그대로 주는 것이 아니라 어느 구획을 가져올지(`copy_*`)를 서버가 받아 골라 담아 준다. 어떤 항목을 복사할지는 복사 창에서 정해 쿼리로 넘어온다(SEO 만 기본 제외 — 검색엔진에 같은 내용이 둘로 잡히기 때문)"
         },
         {
             "id": "categories",
@@ -95,14 +99,25 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "분류 선택 트리. 아래 선택지 소스들은 상품마다 달라지지 않아 5분간 캐시해 두고 재진입에서 다시 부르지 않는다"
         },
         {
             "id": "brands",
@@ -110,24 +125,35 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/brands",
             "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
             "params": {
                 "per_page": 100,
                 "is_active": true
             },
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "브랜드 선택지 — 사용 중인 것만 받는다"
         },
         {
             "id": "notice_templates",
@@ -145,14 +171,25 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "상품정보제공고시 템플릿 — 고시 구획에서 불러 쓴다. 쪽 나눔 없이 전량 받는 것은 고를 때 검색이 아니라 목록으로 훑기 때문이다"
         },
         {
             "id": "common_infos",
@@ -160,24 +197,35 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/product-common-infos",
             "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
             "params": {
                 "active_only": true,
                 "per_page": 100
             },
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "공통정보 선택지 — 여러 상품이 함께 쓰는 안내문을 골라 붙인다"
         },
         {
             "id": "shipping_policies",
@@ -195,14 +243,25 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "배송정책 선택지. 신규 진입에서 기본 정책을 미리 골라 두어야 해 blocking 이다. 사용 중인 것만 받으므로, 이미 붙어 있던 정책이 나중에 꺼지면 목록에서 사라진다 — 아래 computed 가 그 한 건을 도로 끼워 넣어 화면에서 조용히 빠지는 것을 막는다"
         },
         {
             "id": "product_labels",
@@ -216,14 +275,25 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "상품 라벨(신상품·베스트 등) 선택지 — 이 폼 안에서 만들고 지울 수도 있어 라벨 창이 바뀌면 다시 받는다"
         },
         {
             "id": "roles",
@@ -237,14 +307,25 @@
             "cache": {
                 "ttl": 600
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "열람 가능 등급 선택지 — 특정 회원 등급에게만 보이는 상품을 만들 때 쓴다. 코어가 가진 목록이라 갱신이 드물어 10분 캐시다"
         },
         {
             "id": "activity_logs",
@@ -259,10 +340,40 @@
                 "page": "{{_local.ui.logsPage ?? 1}}",
                 "per_page": "{{_local.ui.activityLogPerPage ?? 10}}",
                 "sort_order": "{{_local.ui.activityLogSort ?? 'desc'}}"
-            }
+            },
+            "comment": "활동로그 구획 전용(수정 진입에만 있다). 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다"
         }
     ],
+    "computed": {
+        "currencyColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}",
+        "shippingPolicyOptions": "{{((shipping_policies?.data?.data ?? []).some(p => p.id === product?.data?.shipping_policy_id) || !product?.data?.shipping_policy) ? (shipping_policies?.data?.data ?? []) : [...(shipping_policies?.data?.data ?? []), product.data.shipping_policy]}}",
+        "isReadOnly": "{{route.itemCode ? product?.data?.abilities?.can_update !== true : product_abilities?.data?.abilities?.can_create !== true}}",
+        "assignedPolicyInactive": "{{!!product?.data?.shipping_policy && product.data.shipping_policy.is_active === false}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.products.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "categories",
+            "brands",
+            "notice_templates",
+            "common_infos",
+            "product_labels",
+            "roles",
+            "activity_logs"
+        ]
+    },
     "init_actions": [
+        {
+            "comment": "생성 모드: 상품 수정 화면에서 SPA 로 넘어오면 같은 레이아웃이라 엔진이 `_local` 을 비우지 않아 직전 상품의 form(product_code·이름 등)이 아래 기본값 setState 에 깊은 병합으로 살아남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). 복사 진입(copy_id)은 copy_source 의 initLocal 이 init_actions 뒤에 병합되므로 영향 없음.",
+            "handler": "setState",
+            "if": "{{!route.itemCode}}",
+            "params": {
+                "target": "local",
+                "form": null
+            }
+        },
         {
             "handler": "setState",
             "params": {
@@ -272,21 +383,6 @@
                 "hasChanges": false,
                 "errors": null,
                 "isDataLoaded": false,
-                "form": {
-                    "options": [],
-                    "additional_options": [],
-                    "images": [],
-                    "category_ids": [],
-                    "label_assignments": [],
-                    "notice_items": [],
-                    "meta_keywords": [],
-                    "allowed_roles": [],
-                    "seo_sync_title": true,
-                    "seo_sync_description": true,
-                    "tax_status": "taxable",
-                    "sales_status": "on_sale",
-                    "display_status": "visible"
-                },
                 "ui": {
                     "optionInputs": [],
                     "activityLogExpanded": true,
@@ -345,6 +441,24 @@
                     "isSavingTemplate": false,
                     "imageTempKey": "{{$uuid()}}"
                 },
+                "optionGenerators": [],
+                "productOptionItems": [],
+                "selectedCategoryInfos": [],
+                "form": {
+                    "options": [],
+                    "additional_options": [],
+                    "images": [],
+                    "category_ids": [],
+                    "label_assignments": [],
+                    "notice_items": [],
+                    "meta_keywords": [],
+                    "allowed_roles": [],
+                    "seo_sync_title": true,
+                    "seo_sync_description": true,
+                    "tax_status": "taxable",
+                    "sales_status": "on_sale",
+                    "display_status": "visible"
+                },
                 "copyOptions": {
                     "images": true,
                     "options": true,
@@ -357,15 +471,21 @@
                     "shipping": true,
                     "seo": false,
                     "identification": true
-                },
-                "optionGenerators": [],
-                "productOptionItems": [],
-                "selectedCategoryInfos": []
+                }
             }
         },
         {
             "handler": "sirsoft-ecommerce.setDefaultShippingPolicy",
             "if": "{{!route.itemCode}}"
+        },
+        {
+            "comment": "수정·복사 진입: 위 기본값(true)대로 두면 기본이 아닌 정책을 쓰는 상품도 「기본 배송정책 사용」 이 켜진 채 선택지가 잠긴다. 저장된 정책이 기본 정책일 때만 켠다",
+            "handler": "setState",
+            "if": "{{!!route.itemCode || !!query?.copy_id}}",
+            "params": {
+                "target": "local",
+                "ui.useDefaultShippingPolicy": "{{(product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) == null ? true : (shipping_policies?.data?.data ?? shipping_policies?.data ?? []).some(p => p.id === (product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) && p.is_default === true)}}"
+            }
         }
     ],
     "slots": {
@@ -516,6 +636,9 @@
                         "id": "form_body_content",
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
                         "children": [
                             {
                                 "id": "validation_error",
@@ -558,12 +681,12 @@
                                                         "type": "basic",
                                                         "name": "Ul",
                                                         "if": "{{typeof _local.errors === 'object'}}",
-                                                        "props": {
-                                                            "className": "mt-2 list-disc list-inside space-y-1"
-                                                        },
                                                         "iteration": {
                                                             "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                             "item_var": "message"
+                                                        },
+                                                        "props": {
+                                                            "className": "mt-2 list-disc list-inside space-y-1"
                                                         },
                                                         "children": [
                                                             {
@@ -595,16 +718,16 @@
                                     {
                                         "type": "layout",
                                         "name": "Grid",
-                                        "props": {
-                                            "cols": 2,
-                                            "gap": 4
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
                                                     "cols": 1
                                                 }
                                             }
+                                        },
+                                        "props": {
+                                            "cols": 2,
+                                            "gap": 4
                                         },
                                         "children": [
                                             {
@@ -725,9 +848,6 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-start gap-4"
-                                                },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
@@ -735,28 +855,50 @@
                                                         }
                                                     }
                                                 },
+                                                "props": {
+                                                    "className": "flex-start gap-4"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Img",
+                                                        "if": "{{copy_source?.data?.thumbnail_url}}",
                                                         "props": {
-                                                            "src": "{{copy_source?.data?.thumbnail_url ?? '/images/placeholder.png'}}",
-                                                            "alt": "{{copy_source?.data?.name?.ko ?? copy_source?.data?.name}}",
+                                                            "src": "{{copy_source?.data?.thumbnail_url}}",
+                                                            "alt": "{{$localized(copy_source?.data?.name)}}",
                                                             "className": "w-16 h-16 object-cover rounded-lg flex-shrink-0"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "if": "{{!copy_source?.data?.thumbnail_url}}",
                                                         "props": {
-                                                            "className": "flex-1 min-w-0"
+                                                            "className": "flex-center w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0"
                                                         },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "image",
+                                                                    "className": "text-2xl text-gray-400 dark:text-gray-500"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
                                                         "responsive": {
                                                             "portable": {
                                                                 "props": {
                                                                     "className": "w-full text-center"
                                                                 }
                                                             }
+                                                        },
+                                                        "props": {
+                                                            "className": "flex-1 min-w-0"
                                                         },
                                                         "children": [
                                                             {
@@ -765,21 +907,22 @@
                                                                 "props": {
                                                                     "className": "text-primary font-medium truncate"
                                                                 },
-                                                                "text": "{{copy_source?.data?.name?.ko ?? copy_source?.data?.name ?? '-'}}"
+                                                                "text": "{{$localized(copy_source?.data?.name) || '-'}}"
                                                             },
                                                             {
+                                                                "comment": "원본 코드는 진입 주소의 copy_id 에서 — 복사 데이터의 product_code 는 새 상품용으로 미리 채번한 코드다",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
                                                                     "className": "text-label"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.product.fields.product_code: {{copy_source?.data?.product_code ?? '-'}}"
+                                                                "text": "$t:sirsoft-ecommerce.admin.product.fields.product_code: {{query.copy_id ?? '-'}}"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-sm font-medium text-primary-600 dark:text-primary-400"
+                                                                    "className": "text-sm font-medium text-blue-600 dark:text-blue-400"
                                                                 },
                                                                 "text": "{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}"
                                                             }
@@ -788,11 +931,6 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "A",
-                                                        "props": {
-                                                            "href": "{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}",
-                                                            "target": "_blank",
-                                                            "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0"
-                                                        },
                                                         "responsive": {
                                                             "portable": {
                                                                 "props": {
@@ -801,6 +939,11 @@
                                                                     "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"
                                                                 }
                                                             }
+                                                        },
+                                                        "props": {
+                                                            "href": "{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}",
+                                                            "target": "_blank",
+                                                            "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0"
                                                         },
                                                         "children": [
                                                             {
@@ -869,14 +1012,10 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "목록으로. 보던 목록 상태를 이고 간다",
                                         "id": "footer_list_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-outline"
-                                        },
-                                        "text": "$t:sirsoft-ecommerce.common.list",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -887,39 +1026,39 @@
                                                     "query": {}
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.common.list"
                                     },
                                     {
                                         "id": "footer_copy_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "if": "{{route.itemCode && product?.data?.abilities?.can_update === true}}",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-outline"
-                                        },
-                                        "text": "$t:sirsoft-ecommerce.common.copy",
+                                        "if": "{{route.itemCode && product_abilities?.data?.abilities?.can_create === true}}",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "openModal",
                                                 "target": "modal_copy_product"
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.common.copy"
                                     },
                                     {
                                         "id": "footer_delete_button",
                                         "type": "basic",
                                         "name": "Button",
                                         "if": "{{!!route.itemCode}}",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
-                                            "disabled": "{{product?.data?.abilities?.can_delete !== true}}"
-                                        },
-                                        "text": "$t:sirsoft-ecommerce.common.delete",
                                         "actions": [
                                             {
+                                                "comment": "삭제 — 곧바로 지우지 않고 먼저 서버에 삭제 가능 여부를 묻는다. 주문·장바구니에 걸린 상품은 지울 수 없고 그 사유와 걸린 자료를 확인 창에서 보여 줘야 하므로, 응답을 전역에 담아 둔 뒤 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다)",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -937,8 +1076,8 @@
                                                     },
                                                     {
                                                         "handler": "apiCall",
-                                                        "auth_required": true,
                                                         "target": "/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}/can-delete",
+                                                        "auth_required": true,
                                                         "params": {
                                                             "method": "GET"
                                                         },
@@ -967,15 +1106,106 @@
                                                     }
                                                 ]
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{product?.data?.abilities?.can_delete !== true}}"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.common.delete"
                                     },
                                     {
                                         "id": "footer_save_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "저장 — 보내기 전에 이미지 업로드부터 끝낸다. 업로드 구획이 아직 서버에 올리지 않은\n                파일을 들고 있을 수 있고, 그 결과 목록으로 폼의 이미지 항목을 갈아 끼운 뒤에야\n                상품 본문이 올바른 이미지를 가리키기 때문이다. 신규 저장은 방금 받은 id 로 수정\n                화면에 갈아타므로(이미지 임시키가 그때 상품에 묶인다) 목록으로 돌아가지 않는다.",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": true,
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "emitEvent",
+                                                        "params": {
+                                                            "event": "upload:product_images"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "if": "{{!!route.itemCode && Array.isArray(_local._eventResult?.data?.allFiles)}}",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.images": "{{_local._eventResult?.data?.allFiles ?? (_local.form?.images ?? [])}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "{{route.itemCode ? '/api/modules/sirsoft-ecommerce/admin/products/' + route.itemCode : '/api/modules/sirsoft-ecommerce/admin/products'}}",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "{{route.itemCode ? 'PUT' : 'POST'}}",
+                                                            "body": "{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {})}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "hasChanges": false,
+                                                                    "errors": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{route.itemCode ? '$t:sirsoft-ecommerce.messages.product_updated' : '$t:sirsoft-ecommerce.messages.product_created'}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "comment": "신규 저장 후 편집 화면으로 전환 — 같은 목록 클러스터 안의 이동이므로 목록 상태를 유지한다 (#75).",
+                                                                "handler": "navigate",
+                                                                "if": "{{!route.itemCode}}",
+                                                                "params": {
+                                                                    "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
-                                            "disabled": "{{_local.isSaving || (route.itemCode && product?.data?.abilities?.can_update !== true)}}",
+                                            "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
                                             "className": "flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
                                             "data-testid": "product-save"
                                         },
@@ -1001,100 +1231,11 @@
                                                 "if": "{{_local.isSaving}}",
                                                 "text": "$t:sirsoft-ecommerce.common.saving"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "sequence",
-                                                "params": {
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "isSaving": true,
-                                                                "errors": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "emitEvent",
-                                                            "params": {
-                                                                "event": "upload:product_images"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "setState",
-                                                            "if": "{{!!route.itemCode && Array.isArray(_local._eventResult?.data?.allFiles)}}",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "form.images": "{{_local._eventResult?.data?.allFiles ?? (_local.form?.images ?? [])}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "apiCall",
-                                                            "auth_required": true,
-                                                            "target": "{{route.itemCode ? '/api/modules/sirsoft-ecommerce/admin/products/' + route.itemCode : '/api/modules/sirsoft-ecommerce/admin/products'}}",
-                                                            "params": {
-                                                                "method": "{{route.itemCode ? 'PUT' : 'POST'}}",
-                                                                "body": "{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {})}}"
-                                                            },
-                                                            "onSuccess": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false,
-                                                                        "hasChanges": false,
-                                                                        "errors": null
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "success",
-                                                                        "message": "{{route.itemCode ? '$t:sirsoft-ecommerce.messages.product_updated' : '$t:sirsoft-ecommerce.messages.product_created'}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "comment": "신규 저장 후 편집 화면으로 전환 — 같은 목록 클러스터 안의 이동이므로 목록 상태를 유지한다 (#75).",
-                                                                    "handler": "navigate",
-                                                                    "if": "{{!route.itemCode}}",
-                                                                    "params": {
-                                                                        "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}",
-                                                                        "mergeQuery": true,
-                                                                        "query": {}
-                                                                    }
-                                                                }
-                                                            ],
-                                                            "onError": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false,
-                                                                        "errors": "{{error.errors}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "{{error.message}}"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            }
                                         ]
                                     }
                                 ]
                             }
-                        ],
-                        "props": {
-                            "className": "tab-content"
-                        }
+                        ]
                     }
                 ]
             }
@@ -1102,39 +1243,51 @@
     },
     "modals": [
         {
+            "comment": "언어 추가 — 상품명·설명을 어느 언어까지 입력할지 고른다",
             "partial": "partials/admin_ecommerce_product_form/_modal_add_language.json"
         },
         {
+            "comment": "라벨 만들기·고치기 — 상품 폼을 벗어나지 않고 라벨 자체를 관리한다",
             "partial": "partials/admin_ecommerce_product_form/_modal_label_form.json"
         },
         {
+            "comment": "라벨 삭제 확인 — 이 라벨을 쓰는 다른 상품에서도 함께 떨어진다",
             "partial": "partials/admin_ecommerce_product_form/_modal_label_delete_confirm.json"
         },
         {
+            "comment": "라벨 해제 확인 — 기간이 걸린 라벨을 끄면 그 설정이 사라지므로 되묻는다",
             "partial": "partials/admin_ecommerce_product_form/_modal_label_uncheck_confirm.json"
         },
         {
+            "comment": "상품 복사 — 어느 구획을 가져올지 고르고 복사 진입으로 넘어간다",
             "partial": "partials/admin_ecommerce_product_form/_modal_copy_product.json"
         },
         {
+            "comment": "옵션 재생성 확인 — 다시 만들면 기존 옵션에 넣어 둔 재고·가격이 사라진다",
             "partial": "partials/admin_ecommerce_product_form/_modal_confirm_regenerate.json"
         },
         {
+            "comment": "상품 삭제 확인 — 삭제 가능 여부와 걸려 있는 자료를 함께 보여 준다",
             "partial": "partials/admin_ecommerce_product_form/_modal_delete_confirm.json"
         },
         {
+            "comment": "추가옵션 비우기 확인",
             "partial": "partials/admin_ecommerce_product_form/_modal_additional_options_clear.json"
         },
         {
+            "comment": "고시 항목을 템플릿으로 저장 — 지금 입력한 내용을 다음 상품에서 불러 쓴다",
             "partial": "partials/admin_ecommerce_product_form/_modal_save_template.json"
         },
         {
+            "comment": "고시 항목 일괄 변경",
             "partial": "partials/admin_ecommerce_product_form/_modal_notice_bulk_change.json"
         },
         {
+            "comment": "고시 템플릿 적용 확인 — 지금 넣어 둔 고시 내용을 템플릿 값이 덮는다",
             "partial": "partials/admin_ecommerce_product_form/_modal_notice_template_confirm.json"
         },
         {
+            "comment": "검색 태그 다국어 입력",
             "partial": "partials/admin_ecommerce_product_form/_modal_multilingual_tag_edit.json"
         }
     ]

@@ -25,7 +25,7 @@ const PARENT_ID = 100;
 const PARENT_AUTHOR_NAME = '홍길동';
 
 test.describe.skip('관리자 답변 폼 — 부모글 작성자명 노출 (#413)', () => {
-  // @scenario viewer=manager parent_state=published render=author_name
+  // @scenario viewer=manager, parent_state=published, render=author_name
   // @effects reply_form_renders_parent_post_author_name
   test('답변 작성 폼의 원본 게시글 카드에 부모글 작성자명이 노출된다', async ({
     page,

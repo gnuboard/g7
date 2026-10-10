@@ -40,6 +40,12 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class ProductController extends AdminBaseController
 {
+    /**
+     * ProductController 생성자
+     *
+     * @param  ProductService  $productService  상품 서비스
+     * @param  ProductImageService  $productImageService  상품 이미지 서비스
+     */
     public function __construct(
         private ProductService $productService,
         private ProductImageService $productImageService
@@ -761,7 +767,7 @@ class ProductController extends AdminBaseController
                 'exceptions.product_image_limit_exceeded',
                 422,
                 null,
-                ['max' => $e->maxImages],
+                ['max' => $e->maxImages, 'count' => $e->maxImages],
                 'sirsoft-ecommerce'
             );
         } catch (AccessDeniedHttpException $e) {
@@ -898,6 +904,7 @@ class ProductController extends AdminBaseController
      * 파일 크기를 읽기 쉬운 형식으로 변환합니다.
      *
      * @param  int  $bytes  바이트 크기
+     * @return string 단위를 붙인 크기 문자열
      */
     private function formatFileSize(int $bytes): string
     {

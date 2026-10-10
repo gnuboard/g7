@@ -1,0 +1,88 @@
+<!-- 「기본값」 탭의 첨부 구획. 줄마다 값 하나와 그 왼쪽의 체크박스가 짝인데, 체크박스는 값을 끄는 것이 아니라 «이 항목을 일괄 적용에 실을지»를 고르는 자리다(`bulkApplyFields`). 값 자체는 폼 자동 바인딩이 `basic_defaults.*` 로 담는다 -->
+<partial description="게시판 설정 > 첨부파일 탭">
+  <div data-ref="attachment" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <section-layout data-type="layout" data-ref="section_attachment" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.attachment</h3>
+      <div class="row-stack">
+        <div data-ref="field_use_file_upload" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_file_upload')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「첨부 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다. 이 구획의 네 체크박스가 모두 같은 짜임이다 — 이미 들어 있으면 빼고 없으면 더한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_file_upload') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_file_upload') : [...(_local.bulkApplyFields ?? []), 'use_file_upload']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_file_upload</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_file_upload</p>
+              </div>
+            </label>
+            <toggle data-type="composite" name="basic_defaults.use_file_upload" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_max_file_size" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_file_size')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「파일 한 개의 최대 크기」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_file_size') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_size') : [...(_local.bulkApplyFields ?? []), 'max_file_size']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.max_file_size</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_file_size|min={{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}</p>
+              </div>
+            </label>
+            <div class="flex-shrink-0">
+              <input type="number" name="basic_defaults.max_file_size" min="{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}" class="{{(_local.errors?.['basic_defaults.max_file_size']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['basic_defaults.max_file_size']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_file_size']) ? _local.errors['basic_defaults.max_file_size'][0] : _local.errors?.['basic_defaults.max_file_size']) ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="field_max_file_count" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_file_count')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「한 글에 붙일 수 있는 파일 개수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_file_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_count') : [...(_local.bulkApplyFields ?? []), 'max_file_count']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.max_file_count</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_file_count|min={{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}</p>
+              </div>
+            </label>
+            <div class="flex-shrink-0">
+              <input type="number" name="basic_defaults.max_file_count" min="{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}" class="{{(_local.errors?.['basic_defaults.max_file_count']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['basic_defaults.max_file_count']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_file_count']) ? _local.errors['basic_defaults.max_file_count'][0] : _local.errors?.['basic_defaults.max_file_count']) ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="field_allowed_extensions" class="">
+          <div class="px-3 py-2">
+            <label class="flex-start gap-2 text-body font-medium cursor-pointer mb-2">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('allowed_extensions')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「올릴 수 있는 확장자 목록」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('allowed_extensions') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'allowed_extensions') : [...(_local.bulkApplyFields ?? []), 'allowed_extensions']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.allowed_extensions</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.allowed_extensions</p>
+              </div>
+            </label>
+            <tag-input data-type="composite" name="basic_defaults.allowed_extensions" placeholder="$t:sirsoft-board.admin.settings.fields.allowed_extensions_placeholder" :creatable="true" class="w-full" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+    </section-layout>
+  </div>
+</partial>

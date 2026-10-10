@@ -1,0 +1,51 @@
+<!-- 예약 작업을 본떠 하나 더 만드는 창. 비슷한 작업을 여러 개 두는 일이 잦아 처음부터 채우는 대신
+  기존 것을 복사하는 길을 뒀다.
+  베낀 것이 **곧바로 돌지는 않는다** — 이름과 켜짐 여부를 서버가 어떻게 정하는지는 아래 안내
+  문구가 알려 준다. 복사된 뒤에는 목록에서 찾아 고쳐 쓴다. -->
+<partial description="스케줄 복제 확인 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_duplicate_modal">
+  <modal data-type="composite" data-ref="schedule_duplicate_modal" title="$t:admin.schedules.modals.duplicate_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.schedules.modals.duplicate_confirm</p>
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2">
+      <div class="flex-center gap-2">
+        <span class="text-label-subtle">$t:admin.schedules.form.name:</span>
+        <span class="text-primary font-medium">{{_global.selectedSchedule?.name}}</span>
+      </div>
+      <div class="flex-center gap-2">
+        <span class="text-label-subtle">$t:admin.schedules.form.type:</span>
+        <span class="text-primary">{{_global.selectedSchedule?.type_label}}</span>
+      </div>
+    </div>
+    <p class="mt-4 text-label-subtle">$t:admin.schedules.modals.duplicate_note</p>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isDuplicating}}">
+        <on type="click">
+          <close-modal target="schedule_duplicate_modal"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDuplicating}}">
+        <on type="click">
+          <!-- 삭제 창과 달리 고른 작업을 비우지 않는다 — 베낀 뒤에도 원본이 목록에 그대로 있고, 이어서 실행이나 이력 창을 열 수 있다. -->
+          <sequence>
+            <set-state target="global" :isDuplicating="true"/>
+            <api-call :auth_required="true" target="/api/admin/schedules/{{_global.selectedSchedule?.id}}/duplicate" method="POST">
+              <success>
+                <set-state target="global" :isDuplicating="false"/>
+                <toast type="success" message="$t:admin.schedules.messages.duplicate_success"/>
+                <refetch-data-source dataSourceId="schedules"/>
+                <close-modal target="schedule_duplicate_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isDuplicating="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.duplicate_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDuplicating}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{!_global.isDuplicating}}" name="copy" class="text-base"/>
+        <span>{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.actions.duplicate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

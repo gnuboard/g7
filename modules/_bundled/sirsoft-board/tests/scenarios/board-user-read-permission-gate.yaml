@@ -1,0 +1,25 @@
+feature: 사용자 게시판 API 읽기 권한 게이트 — 댓글 노출·신고/스크랩/반응·관리자 진입 링크 (7.1.0 abilities 게이트 S2·S7·basic-board-user #4)
+
+description: |
+  - S2: 게시글 상세가 댓글 열람 권한(comments.read) 없이도 댓글 원문을 응답에 실었다(화면만 can_read_comments 로 가림).
+    전량·comment_page 두 경로 모두 권한이 없으면 댓글을 싣지 않는다.
+  - S7: 신고·스크랩·반응 엔드포인트가 로그인만 확인했다. 글 대상은 posts.read, 댓글 대상은 posts.read + comments.read 를 요구한다.
+  - #4: 관리자 진입 링크(can_access_admin)는 게시판 관리 권한에 더해 관리자 게시판 화면의 레이아웃 권한(boards.read)이 있어야 켜진다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/UserBoardReadPermissionGateTest.php
+
+axes:
+  case:
+    - detail_without_comments_read
+    - detail_with_comments_read
+    - post_actions_without_posts_read
+    - comment_actions_without_comments_read
+    - admin_link_without_boards_read
+
+effects:
+  - comments_not_exposed_without_read
+  - comments_exposed_with_read
+  - post_actions_require_posts_read
+  - comment_actions_require_comments_read
+  - admin_link_requires_admin_screen_permission

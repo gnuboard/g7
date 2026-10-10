@@ -26,7 +26,7 @@ const GALLERY_SLUG = 'gallery';
 const GALLERY_URL = `/board/${GALLERY_SLUG}`;
 
 test.describe.skip('갤러리형 목록 — 조회수 표시 토글 (#413)', () => {
-  // @scenario show_view_count=true board_type=gallery
+  // @scenario show_view_count=true, board_type=gallery
   // @effects gallery_shows_view_count_when_true
   test('조회수 표시 ON 이면 갤러리 목록에 조회수가 노출된다', async ({ page }) => {
     await page.goto(GALLERY_URL);
@@ -36,7 +36,7 @@ test.describe.skip('갤러리형 목록 — 조회수 표시 토글 (#413)', () 
     await expect(page.locator('[data-icon="eye"]').first()).toBeVisible({ timeout: 10_000 });
   });
 
-  // @scenario show_view_count=false board_type=gallery
+  // @scenario show_view_count=false, board_type=gallery
   // @effects gallery_hides_view_count_when_false, gallery_matches_basic_and_card_condition
   test('조회수 표시 OFF 로 저장하면 갤러리 목록에서 조회수가 사라진다', async ({
     page,

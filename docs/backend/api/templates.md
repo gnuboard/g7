@@ -59,8 +59,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type | string | `admin` | 템플릿 타입 (admin: 관리자용, user: 사용자용) |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 (다국어 JSON) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
 | dependencies_met | boolean | `true` | 의존하는 모듈/플러그인이 모두 설치·활성 상태로 충족되었는지 여부 (activate 선행 검사 파생) |
+| icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
+| icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.4` | 감지된 최신 배포 버전 |
@@ -203,8 +205,17 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+**업데이트가 있는 행에만 실리는 필드** — 실측 시점에 업데이트가 없으면 위 생성 표에 나타나지 않아 여기 따로 둔다(7.1.0).
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| is_compatible | boolean | `false` | (업데이트가 있는 행에만) 업데이트할 새 버전이 지금 코어와 호환되는지. 업데이트 창의 코어 호환 경고·「강제 업데이트」 체크가 읽는다. 업데이트가 없으면 키 자체가 없다 — 설치본 호환은 `core_compatible` |
+| required_core_version | string\|null | `>=7.2.0` | (업데이트가 있는 행에만) 새 버전이 요구하는 코어 버전 — 번들 출처면 _bundled 매니페스트, GitHub 출처면 설치된 매니페스트의 `g7_version`(원격 매니페스트는 받지 않는 추정) |
+| current_core_version | string | `7.1.0` | (업데이트가 있는 행에만) 현재 코어 버전 |
+
 **설명** 설치/미설치 템플릿을 모두 포함해 목록을 조회합니다(TemplateService::getPaginatedTemplates). `search`(이름·식별자·설명·벤더 OR 검색), `filters`(AND 조건), `status`, `type`, `include_hidden` 필터와 페이지네이션을 지원하며, 응답에는 현재 사용자의 install/activate/uninstall 수행 가능 여부(`abilities`)가 함께 담깁니다. `core.templates.read` 권한이 필요합니다.
 
+**목록 권한 값(7.1.0)** 응답 `abilities` 는 컬렉션 권한 맵(`can_install`·`can_activate`·`can_uninstall`)에 더해 카드 「언어팩 관리」 이동 가능 여부 `can_view_language_packs`(= `core.language_packs.read`)를 싣는다. 검색·필터 결과가 0건이어도 항상 싣는다. 템플릿은 `can_edit_layouts`(= `core.templates.layouts.edit`)도 싣는다.
 
 ### POST /api/admin/templates/activate
 <!-- @generated:start:api.admin.templates.activate -->
@@ -543,6 +554,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계에서 설치 실패한 동반 번들 언어팩 목록 (각 항목: identifier, reason). best-effort 이므로 실패해도 설치 자체는 성공 |
+| language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -596,8 +609,9 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 
 <!-- @generated:end -->
 
-**설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). `core.templates.install` 권한이 필요합니다.
+**설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). 설치 직후 템플릿은 비활성이라 그 템플릿 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 로 반환되고, 템플릿을 켤 때 함께 켜집니다. `core.templates.install` 권한이 필요합니다.
 
+**동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
 
 ### POST /api/admin/templates/install-from-file
 <!-- @generated:start:api.admin.templates.install-from-file -->
@@ -657,6 +671,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -767,6 +782,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -1007,6 +1023,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -1300,7 +1317,6 @@ _단건 응답: `data` 객체의 필드._
 | js | array | `["\/api\/templates\/assets\/sirsoft-admin_basic\/js\/comp…` | 프론트엔드 JS 에셋 목록 (manifest assets 파생) |
 | css | array | `["\/api\/admin\/templates\/sirsoft-admin_basic\/editor\/c…` | 프론트엔드 CSS 에셋 목록 (manifest assets 파생) |
 | manifest_present | boolean | `true` | manifest 파일 존재 여부 |
-| manifest_source | string | `active` | manifest 를 읽어온 출처 경로 (활성/_bundled 구분) |
 
 **응답 예시**
 
@@ -1322,8 +1338,7 @@ HTTP/1.1 200
         "css": [
             "/api/admin/templates/sirsoft-admin_basic/editor/component-styles"
         ],
-        "manifest_present": true,
-        "manifest_source": "active"
+        "manifest_present": true
     }
 }
 ```
@@ -1339,7 +1354,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 편집기 부팅용 자산 매니페스트(컴포넌트 IIFE JS / CSS URL)를 반환합니다. 비활성 템플릿도 편집할 수 있도록 활성 디렉토리 → `_bundled` 폴백으로 빌드 산출물을 탐색하며, 빌드가 없으면 빈 목록으로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 레이아웃 편집기 부팅용 자산 매니페스트(컴포넌트 IIFE JS / CSS URL)를 반환합니다. 비활성 템플릿도 편집할 수 있도록 활성 상태와 무관하게 빌드 산출물을 탐색하되 **설치본(`templates/{identifier}/dist/`)만** 봅니다. 설치본에 빌드가 없으면 배포 원본을 대신 쓰지 않고 `manifest_present=false`·빈 목록과 함께 재업데이트 안내 메시지를 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### GET /api/admin/templates/{identifier}/editor/broadcast-catalog
@@ -1584,7 +1599,7 @@ Content-Type: text/css; charset=UTF-8
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시 `@layer` 래퍼를 평탄화해 라이트/다크 프리뷰를 격리합니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시 `@layer` 래퍼를 평탄화해 라이트/다크 프리뷰를 격리합니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. CSS 와 치환 규칙(editor-spec)은 설치본만 읽으며, 설치본에 CSS 가 없으면 배포 원본을 대신 서빙하지 않고 빈 응답을 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 URI 가 `editor/components.css` 가 아니라 `editor/component-styles.css` 인 이유는 [자산 URL 이중 모드](README.md#자산-url-이중-모드) 때문입니다. 확장자를 뗀 형태(`editor/components`)가 `editor/components.json` 의 확장자 없는 형태와 충돌하므로 CSS 쪽 URI 를 분리했습니다. 확장자 없는 형태는 `editor/component-styles` 입니다.
 
@@ -1682,7 +1697,7 @@ _`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포�
 | --- | --- | --- | --- |
 | (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
 
-> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
+> 설치본(`templates/{identifier}/components.json`)에 파일이 없거나 JSON 이 깨져 있으면 배포 원본을 대신 읽지 않고 `404`(`templates.messages.installed_file_missing` — 템플릿을 다시 업데이트하라는 안내)다.
 
 **응답 예시**
 
@@ -1711,7 +1726,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 편집기용 components.json(컴포넌트 정의)을 서빙합니다. 비활성 템플릿도 편집 가능하도록 활성 디렉토리 → `_bundled` 폴백으로 파일을 읽어 반환합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 편집기용 components.json(컴포넌트 정의)을 서빙합니다. 비활성 템플릿도 편집 가능하도록 활성 상태와 무관하게 **설치본만** 읽어 반환합니다. 설치본에 파일이 없으면 배포 원본으로 대신하지 않고 재업데이트 안내와 함께 404 를 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### GET /api/admin/templates/{identifier}/editor/editor-spec
@@ -90033,7 +90048,7 @@ HTTP/1.1 200
                                 "type": "order_confirmed",
                                 "channel": "email",
                                 "recipient": "김영희",
-                                "subject": "주문 확인 (주문번호: 20260621-0001)",
+                                "subject": "주문 확인 (주문번호: 20260621-1043226571)",
                                 "status": "sent",
                                 "time": "1 hour ago",
                                 "timestamp": "2026-06-21T15:00:00+09:00"
@@ -92888,7 +92903,7 @@ HTTP/1.1 200
                             "author": "sirsoft",
                             "type": "admin",
                             "status": "active",
-                            "preview_image": "/images/placeholder.png",
+                            "preview_image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "changelog": [
                                 "1.0.0 최초 릴리스"
                             ],
@@ -93016,7 +93031,7 @@ HTTP/1.1 200
                             "name": "이서연",
                             "nickname": "서연",
                             "email": "seoyeon.lee@example.com",
-                            "avatar": "/images/placeholder.png",
+                            "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "language": "ko",
                             "language_label": "한국어",
                             "country": "KR",
@@ -93707,7 +93722,7 @@ _단건 응답: `data` 는 템플릿 `lang/{locale}.json` 의 내용을 그대�
 
 <!-- @generated:end -->
 
-**설명** 편집기용 다국어 데이터(lang/{locale}.json)를 서빙합니다. 활성 상태 검증 없이 활성 디렉토리 → `_bundled` 폴백으로 읽으며, 파일 부재 시 빈 객체로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 편집기용 다국어 데이터(lang/{locale}.json)를 서빙합니다. 활성 상태 검증 없이 **설치본만** 읽으며, 설치본에 해당 로케일 파일이 없으면 배포 원본을 대신 읽지 않고 빈 객체로 응답합니다(그 로케일을 제공하지 않는 템플릿의 정상 상태). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### GET /api/admin/templates/{identifier}/editor/permission-candidates
@@ -94045,7 +94060,7 @@ _`data` 는 템플릿 `routes.json` 에 모듈·플러그인 라우트를 병합
 | version | string | `1.0.0` | routes.json 스키마 버전 |
 | routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록. **`source` 태깅이 필수**다 — 편집기 라우트 트리가 `source.kind` 로 그룹핑하므로 태깅이 없으면 클라이언트가 라우트 트리 렌더에서 실패한다 |
 
-> 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하고 `_bundled` 폴백이 적용된다 (편집 대상이 활성일 필요가 없다).
+> 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하다 (편집 대상이 활성일 필요가 없다). routes.json 과 템플릿 레이아웃은 **설치본만** 읽으며, 설치본에 routes.json 이 없으면 배포 원본을 대신 읽지 않고 `404`(`templates.messages.installed_file_missing`)다.
 
 **응답 예시**
 
@@ -94082,7 +94097,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 편집기 라우트 트리용 routes.json을 서빙합니다. 각 라우트에 `source`(kind/identifier) 태깅과 모듈/플러그인 라우트 병합을 적용해(TemplateService::getEditorRoutesDataWithModules) 클라이언트가 출처별로 그룹핑할 수 있게 하며, 활성/비활성 무관 + `_bundled` 폴백으로 동작합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 편집기 라우트 트리용 routes.json을 서빙합니다. 각 라우트에 `source`(kind/identifier) 태깅과 모듈/플러그인 라우트 병합을 적용해(TemplateService::getEditorRoutesDataWithModules) 클라이언트가 출처별로 그룹핑할 수 있게 하며, 활성/비활성 무관으로 동작하되 설치본만 읽습니다(배포 원본 폴백 없음 — 설치본에 routes.json 이 없으면 재업데이트 안내와 함께 404). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### POST /api/admin/templates/{identifier}/editor/seo-bot-preview
@@ -94824,7 +94839,7 @@ HTTP/1.1 200
     "success": true,
     "message": "템플릿 정보를 성공적으로 가져왔습니다.",
     "data": {
-        "content": "프로그램 명칭 : 그누보드7용 Admin Basic 템플릿 (sirsoft-admin_basic)\n\n저작자 : (주)에스아이알소프트\n\n----- MIT 라이선스 (한국어 번역) --------------------------------------------------------\n\nMIT 라이선스\n\nCopyright (c) 2026 (주)에스아이알소프트\n\n이 소프트웨어와 관련 문서 파일(이하 \"소프트웨어\")의 복사본을 취득하는 모든 사람에게\n소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 배포, 서브라이선스 허여 및/또는\n판매할 수 있는 권리를 무상으로 부여합니다. 다만, 소프트웨어를 제공받은 사람은 다음\n조건을 따라야 합니다:\n\n위 저작권 고지와 본 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 포함되어야\n합니다.\n\n소프트웨어는 \"있는 그대로\" 제공되며, 명시적이든 묵시적이든 어떠한 종류의 보증도 하지\n않습니다. 여기에는 상품성, 특정 목적에의 적합성 및 비침해에 대한 보증이 포함되나 이에\n국한되지 않습니다. 어떠한 경우에도 저작자 또는 저작권자는 소프트웨어나 소프트웨어의\n사용 또는 기타 거래로 인해 발생하는 계약, 불법행위 또는 기타 청구, 손해 또는 기타\n책임에 대해 책임을 지지 않습니다.\n\n----- MIT License (English Original) --------------------------------------------------------\n\nThe MIT License (MIT)\n\nCopyright (c) 2026 SIRSOFT\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+        "content": "프로그램 명칭 : 그누보드7용 Admin Basic 템플릿 (sirsoft-admin_basic)\n\n작성자 : (주)에스아이알소프트\n\n----- MIT 라이선스 (한국어 번역) --------------------------------------------------------\n\nMIT 라이선스\n\nCopyright (c) 2026 (주)에스아이알소프트\n\n이 소프트웨어와 관련 문서 파일(이하 \"소프트웨어\")의 복사본을 취득하는 모든 사람에게\n소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 배포, 서브라이선스 허여 및/또는\n판매할 수 있는 권리를 무상으로 부여합니다. 다만, 소프트웨어를 제공받은 사람은 다음\n조건을 따라야 합니다:\n\n위 저작권 고지와 본 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 포함되어야\n합니다.\n\n소프트웨어는 \"있는 그대로\" 제공되며, 명시적이든 묵시적이든 어떠한 종류의 보증도 하지\n않습니다. 여기에는 상품성, 특정 목적에의 적합성 및 비침해에 대한 보증이 포함되나 이에\n국한되지 않습니다. 어떠한 경우에도 작성자 또는 저작권자는 소프트웨어나 소프트웨어의\n사용 또는 기타 거래로 인해 발생하는 계약, 불법행위 또는 기타 청구, 손해 또는 기타\n책임에 대해 책임을 지지 않습니다.\n\n----- MIT License (English Original) --------------------------------------------------------\n\nThe MIT License (MIT)\n\nCopyright (c) 2026 SIRSOFT\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
     }
 }
 ```
@@ -94963,6 +94978,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 
 **설명** 특정 템플릿의 상세 정보를 조회합니다(TemplateService::getTemplateInfo). 목록보다 상세한 필드(toDetailArray)와 함께 지원 언어팩 정보를 주입해 반환하며, 템플릿이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
+**권한 값(7.1.0)** 상세 응답에도 행 목록과 같은 `abilities` 가 실린다 — 상세 창이 목록 행을 담던 전역을 이 응답으로 덮어써도 권한 값이 남는다.
 
 ### GET /api/admin/templates/{templateName}/check-modified-layouts
 <!-- @generated:start:api.admin.templates.check-modified-layouts -->
@@ -95032,7 +95048,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 업데이트 전 사용자가 수정한 레이아웃이 있는지 확인합니다(TemplateService::checkModifiedLayouts). 업데이트 시 레이아웃 전략(overwrite/keep) 선택의 참고 자료로 사용합니다. `core.templates.read` 권한이 필요합니다.
+**설명** 업데이트 전 사용자가 수정한 레이아웃이 있는지 확인합니다(TemplateService::checkModifiedLayouts). 업데이트 시 레이아웃 전략(overwrite/keep) 선택의 참고 자료로 사용합니다. 목록 항목의 `kind` 는 `layout`(레이아웃·오버라이드) 또는 `extension`(확장 조각), 「수정됨」 판정은 원본과의 정규화 비교(키 순서·빈 map 차이 무시)입니다. `core.templates.read` 권한이 필요합니다.
 
 
 ### DELETE /api/admin/templates/{templateName}/custom-translations
@@ -95445,7 +95461,8 @@ _단건 응답: `data` 객체의 필드._
 | language_packs[].locale_native_name | string | `日本語` | 로케일 자국어 표기 |
 | language_packs[].locale_name | string | `일본어` | 로케일 이름 |
 | language_packs[].version | string | `1.0.0` | 언어팩 버전 |
-| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 템플릿용이면 null) |
+| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 템플릿용이면 null). 이미 설치·활성화되어 충족된 의존 확장의 언어팩도 null — 그 의존 확장은 함께 고를 항목이 아니므로 언어팩을 따로 고를 수 있다 |
+| language_packs[].target_identifier | string | `sirsoft-board` | 이 언어팩이 번역하는 확장 식별자(본 확장·의존 확장 모두) — 창의 「종속: …」 배지가 쓴다 |
 | language_packs[].available | boolean | `true` | 설치 후보 선택 가능 여부 |
 | language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 |
 
@@ -95505,6 +95522,7 @@ _단건 응답: `data` 객체의 필드._
 
 **설명** 템플릿 설치 cascade 프리뷰를 반환합니다. 의존 확장 목록과 동반 가능한 번들 언어팩을 미리 계산해(ExtensionInstallPreviewBuilder::build) 설치 확인 화면에서 사용합니다. `core.templates.install` 권한이 필요합니다.
 
+**항목별 권한(7.1.0)** `dependencies[]`·`language_packs[]` 의 각 항목에 `can_select`(불리언)가 실린다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지이며(판정은 설치 API 의 403 과 같다), false 면 `default_selected` 도 false 다.
 
 ### GET /api/admin/templates/{templateName}/layout-extensions
 <!-- @generated:start:api.admin.templates.layout-extensions.index -->
@@ -95630,6 +95648,7 @@ _목록 응답: `data` 는 출처(모듈/플러그인)별 그룹 배열입니다
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | extensionId | path | string | 예 | — | 대상 extension의 식별자 |
+| with_markup | query | boolean | 아니오 | `1` | 코드 편집기 HTML 탭용 — `content` 를 `.g7.html` 로 역변환한 `content_markup`·`markup_escapes`·`markup_warnings`·`markup_compile_error` 를 함께 싣는다 |
 
 **요청 예시**
 
@@ -95650,6 +95669,7 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionResource + `host_layouts
 | template_id | integer | `1` | 소속 템플릿 ID |
 | extension_type | string | `overlay` | 확장 방식 (`overlay` \| `extension_point`) |
 | target_name | string | `main` | 대상 레이아웃명 또는 확장점 이름 |
+| fragment_key | string\|null | `admin-user-currency-field` | 조각 식별자 (소스 파일 기본 이름) — 같은 대상에 조각이 둘일 때 행을 가른다 |
 | source_type | string | `module` | 출처 종류 (`module` \| `plugin` \| `template`) |
 | source_identifier | string | `sirsoft-ecommerce` | 출처 확장 식별자 |
 | source_label | string | `sirsoft-ecommerce` | 출처 표시명 (index 응답과 달리 라벨 미부착 시 식별자로 폴백) |
@@ -95731,7 +95751,8 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionResource + `host_layouts
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | extensionId | path | string | 예 | — | 대상 extension의 식별자 |
 | expected_lock_version | body | integer | 예 | min 0 | 낙관적 잠금 버전 (동시 편집 충돌 감지) |
-| content | body | array | 예 | — | 본문 내용 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식. `markup` 이면 `content` 는 `.g7.html` 문자열이고 서버가 검증 전에 프로덕션 컴파일해 JSON 으로 바꾼다 (기본 `json`) |
+| content | body | array | 예 | — | 본문 내용 (`format=markup` 이면 `.g7.html` 문자열) |
 | priority | body | integer | 아니오 | min 0, max 9999 | 우선순위 (작을수록 우선) |
 | content.priority | body | integer | 아니오 | min 0, max 9999 | 우선순위 (작을수록 우선) |
 | content.data_sources | body | array | 아니오 | — | API 데이터 소스 정의 배열 (id/endpoint/method) |
@@ -95850,6 +95871,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutExtensionResource)._
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | extensionId | path | string | 예 | — | 대상 extension의 식별자 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식 (`markup` 이면 `content` 는 `.g7.html` 문자열 — 검증 전 프로덕션 컴파일) |
 | content | body | array | 예 | — | 본문 내용 |
 | preview_layout | body | string | 아니오 | max 255 | 미리보기에 사용할 대표 레이아웃명 (extension_point 타입 시 필수, overlay 타입은 target_layout 자체가 대표라 생략 가능) |
 
@@ -95879,8 +95901,9 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | token | string | `9f2c1a4e8b7d…` | 미리보기 토큰 (임시 저장된 확장 content 를 식별) |
-| preview_url | string | `/preview/9f2c1a4e8b7d…` | 미리보기 페이지 경로 (새 탭으로 열어 확인) |
+| preview_url | string | `/preview/9f2c1a4e8b7d…` | 미리보기 페이지 경로 — 템플릿 종류의 화면 셸(관리자 템플릿 `/admin/preview/{token}`, 사용자 템플릿 `/preview/{token}`), 새 탭으로 열어 확인 |
 | expires_at | string | `2026-07-14T11:00:00+09:00` | 미리보기 만료 일시 (ISO 8601) |
+| markup_warnings | array | `[]` | `format=markup` 컴파일이 낸 lint 경고 `[{code,message,line,column}]` (JSON 본문이면 빈 배열) |
 
 **응답 예시**
 
@@ -95891,7 +95914,8 @@ _단건 응답: `data` 객체의 필드._
     "data": {
         "token": "9f2c1a4e8b7d3c5f",
         "preview_url": "/preview/9f2c1a4e8b7d3c5f",
-        "expires_at": "2026-07-14T11:00:00+09:00"
+        "expires_at": "2026-07-14T11:00:00+09:00",
+        "markup_warnings": []
     }
 }
 ```
@@ -95903,12 +95927,76 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 `extension_point` 타입인데 `preview_layout` 이 없는 경우 (대표 레이아웃 결정 불가) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 위반, `extension_point` 타입인데 `preview_layout` 이 없는 경우 (대표 레이아웃 결정 불가), 또는 `content` 가 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸린 경우 — `errors.content` 에 위반 메시지 |
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
 
 **설명** 편집 중인 레이아웃 확장 content를 임시 저장하고 대표 레이아웃에 적용한 미리보기 URL/토큰을 반환합니다. overlay 타입은 target_name이, extension_point 타입은 `preview_layout` 파라미터가 대표 레이아웃이 되며, 미지정 시 422를 반환합니다(LayoutPreviewService::createExtensionPreview). `core.templates.read` 권한이 필요합니다.
+
+
+### POST /api/admin/templates/{templateName}/layout-extensions/{extensionId}/markup-compile
+<!-- @generated:start:api.admin.templates.layout-extensions.markup-compile -->
+- **라우트명**: `api.admin.templates.layout-extensions.markup-compile`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutExtensionController@compileMarkup`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
+| extensionId | path | string | 예 | — | 대상 extension의 식별자 (소속 정보로 lint 문맥을 정한다) |
+| markup | body | string | 예 | — | 변환할 `.g7.html` 소스 (`<extension>` 문서) |
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/{templateName}/layout-extensions/{extensionId}/markup-compile HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "markup": "<extension target-layout=\"main\">\n  <inject target-id=\"root\" position=\"append_child\">\n    <div/>\n  </inject>\n</extension>\n"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| content | string | `"{\n    \"target_layout\": \"main\"\n}"` | 프로덕션 컴파일 산출 JSON (pretty-print 문자열) |
+| warnings | array | `[]` | lint 경고 `[{code,message,line,column}]` |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "content": "{\n    \"target_layout\": \"main\",\n    \"injections\": []\n}",
+        "warnings": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지와 함께, 첫 위반 값이 소스에 처음 적힌 자리를 `compile_error {code: "unsafe_content", message, line, column}`(최상위·`errors.compile_error` 양쪽, 자리를 못 찾으면 줄·칸 0)로 싣는다 |
+
+<!-- @generated:end -->
+
+**설명** 확장 조각의 HTML 탭 소스를 저장 없이 프로덕션 컴파일합니다. 레이아웃 쪽 `markup-compile` 과 대칭이며, 조각은 붙어 있는 템플릿의 `components.json` 으로 컴파일됩니다.
 
 
 ### GET /api/admin/templates/{templateName}/layout-extensions/{extensionId}/versions
@@ -96234,6 +96322,187 @@ Authorization: Bearer {YOUR_TOKEN}
 **설명** 특정 템플릿의 모든 레이아웃 목록을 조회합니다. 각 레이아웃에 이름 → 라우트 path 매핑을 부착해, 코드 편집기가 파일 선택 시 `?route=` URL 동기화나 위지윅에서 넘어온 라우트로 파일을 복원할 수 있게 합니다(LayoutService::getLayoutListByTemplateId). 응답에는 파일트리가 실제로 그리는 필드(이름·설명·라우트 path·크기·수정일시·업데이트 여부)만 담기고, **레이아웃 본문(`content`)과 파싱된 블록(`components`·`data_sources`·`metadata`)은 제외됩니다** — 목록은 페이지네이션 없이 템플릿의 전 레이아웃을 반환하므로 본문을 함께 실으면 편집기 진입만으로 모든 레이아웃 JSON 전문이 전송됩니다. 설명·크기는 조회 계층이 본문에서 파생값만 뽑아 넘기며 본문 자체는 응답에 남지 않습니다. 본문은 단건 조회(`GET /api/admin/templates/{template}/layouts/{layout}`)가 공급합니다. `core.templates.read` 권한이 필요합니다.
 
 
+### POST /api/admin/templates/{templateName}/layouts
+- **라우트명**: `api.admin.templates.layouts.store`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@store`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 **파일**(= `template_layouts` 행)을 새로 만듭니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
+| name | body | string | 예 | `^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-]+)*$`, 최대 255자 | 레이아웃 이름. 슬래시는 폴더 구분이며 확장자는 붙이지 않는다 |
+| content | body | string | 아니오 | `.g7.html` 마크업 | 본문. **비우면 서버가 최소 골격을 채운다** |
+
+이름은 **세그먼트 단위**로 판정합니다 — 빈 세그먼트·`.`·`..`·선행/후행 슬래시가 구조적으로
+불가능합니다. 문자열 포함 검사(`str_contains('..')`)는 정상 이름을 막으면서 인코딩된 탈출을
+놓치므로 쓰지 않습니다(`App\Rules\SafeCustomAssetPath` 와 같은 방식).
+
+`content` 를 비우면 **이름과 무관하게** 문서 골격이 들어갑니다. 이름의 `partials/`·선행 `_` 는
+편집기 트리에서 폴더를 만드는 문자열일 뿐이고, DB 행은 언제나 하나의 문서입니다 — `<partial>` 로
+만들면 산출이 노드라 저장 경로의 문서 규칙을 지날 수 없습니다.
+
+```html
+<layout name="{name}" version="1.0.0">
+  <div></div>
+</layout>
+```
+
+빈 문자열을 그대로 저장하지 않는 이유: 빈 본문은 컴파일 오류라 파일을 만들자마자 빨간 줄이 뜹니다.
+골격은 `<slot>` 을 쓰지 않습니다 — 슬롯은 상속 레이아웃이 부모의 자리를 채우는 문법이라 독립
+문서에 쓰면 `components` 가 비어 구조 검증에서 막힙니다.
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/sirsoft-admin_basic/layouts HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{ "name": "partials/admin_user_list/_modal_form" }
+```
+
+**응답**
+
+| 상태 | 조건 |
+| --- | --- |
+| 201 | 생성됨 — `data` 는 `LayoutResource` |
+| 422 | 이름 규칙 위반 (`errors.name`) · 중복 (`errors.reason = layouts.errors.name_taken`) · 마크업 컴파일 오류 (`errors.compile_error`) |
+| 403 | `core.templates.layouts.edit` 미보유 |
+| 404 | 템플릿 없음 |
+
+---
+
+### GET /api/admin/templates/{templateName}/layouts/search
+- **라우트명**: `api.admin.templates.layouts.search`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@search`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+파일명·본문에서 검색어를 찾습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 |
+| q | query | string | 예 | 2~200자 | 검색어 (대소문자 무시, 정규식 미지원) |
+| scope | query | string | 아니오 | `name` \| `content` \| `both` (기본 `both`) | 검색 범위 |
+| limit | query | int | 아니오 | 1~100 (기본 100) | 돌려줄 파일 수 상한 |
+
+**검색 대상은 역변환한 `.g7.html` 마크업입니다.** DB 에는 JSON 만 있지만 사용자가 편집기에서 보는
+것은 마크업이므로, 줄 번호가 편집기와 같은 좌표계여야 결과를 눌러 그 줄로 갈 수 있습니다.
+
+역변환은 비싸므로 `layout:markup:{id}:{lock_version}` 으로 캐시합니다. `lock_version` 이 키에
+들어가므로 **저장하면 그 파일만 자동으로 무효화**되고, 별도 무효화 훅이나 컬럼이 필요 없습니다.
+
+실측(2026-09-12 · `sirsoft-admin_basic` · 레이아웃 82 + 조각 30):
+
+| 조건 | 소요 |
+| --- | --- |
+| `scope=both` 첫 조회(캐시 비움) | 3,136 ms |
+| `scope=both` 캐시 후 | 92 ms |
+| `scope=name` | 14 ms |
+
+그래서 화면은 **파일명 검색을 서버에 맡기지 않습니다** — 트리가 144개 이름을 이미 들고 있어
+거르기·강조를 클라이언트에서 즉시 처리하고, 서버에는 `scope=content` 만 더 긴 debounce 로 보냅니다.
+
+상한: 파일 100건, 파일당 매치 20건, `preview` 200자.
+
+**응답 예시**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "key": "layout:partials/admin_user_list/_modal_form",
+      "kind": "layout",
+      "name": "partials/admin_user_list/_modal_form",
+      "name_matched": false,
+      "match_count": 3,
+      "lines": [{ "line": 42, "column": 11, "preview": "<input name=\"email\" …" }]
+    }
+  ]
+}
+```
+
+| 상태 | 조건 |
+| --- | --- |
+| 200 | 검색 결과 (0건이면 빈 배열) |
+| 422 | `q` 가 2자 미만·200자 초과 · `scope` 가 허용값 밖 |
+| 403 | `core.templates.read` 미보유 |
+
+---
+
+### PATCH /api/admin/templates/{templateName}/layouts/{name}/rename
+- **라우트명**: `api.admin.templates.layouts.rename`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@rename`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 이름을 바꿉니다(= 이동). **새 행을 만들지 않고** 같은 행의 `name` 을 갱신하므로
+판본 이력이 그대로 승계됩니다 — 복사 후 삭제로 구현하면 이력이 이름을 바꾼 지점에서 끊깁니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| name | path | string | 예 | 현재 이름 |
+| new_name | body | string | 예 | 새 이름 (생성과 같은 규칙) |
+| expected_lock_version | body | int | 예 | 받아 둔 `lock_version` — 낙관적 잠금 |
+
+`expected_lock_version` 을 의무화하는 이유: 이름변경은 본문의 `layout_name` 까지 함께 옮기므로
+내용을 건드리는 연산입니다. 다른 창에서 저장이 일어난 뒤 이름을 바꾸면 그 저장분을 못 본 채
+덮어쓰게 됩니다.
+
+**차단 조건**
+
+| 사유 | 상태 | `errors.reason` |
+| --- | --- | --- |
+| 모듈·플러그인이 제공한 원본 | 422 | `layouts.errors.rename_blocked_source_type` |
+| 다른 레이아웃이 `extends`·`partial` 로 참조 | 422 | `layouts.errors.rename_blocked_by_reference` |
+| 대상 이름이 이미 있음 | 409 | `layouts.errors.name_taken` |
+| 잠금 번호 불일치 | 409 | `exceptions.concurrent_modification` |
+
+참조가 걸린 경우 `errors.references` 에 `{name, kind, line}` 목록이 실립니다.
+**참조를 자동으로 고쳐 주지 않습니다** — 표현식 문자열까지 치환하면 되돌릴 수 없는 사고가 됩니다.
+
+---
+
+### DELETE /api/admin/templates/{templateName}/layouts/{name}
+- **라우트명**: `api.admin.templates.layouts.destroy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@destroy`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.layouts.edit`
+
+레이아웃 파일을 **soft delete** 합니다 — 행은 남고 조회에서만 빠지므로 오삭제를 되돌릴 수 있습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| name | path | string | 예 | 레이아웃 이름 |
+| confirm | query | bool | 조건부 | 라우트가 걸린 레이아웃을 지울 때 필요 |
+
+**차단 조건**
+
+| 사유 | 상태 | `errors.reason` |
+| --- | --- | --- |
+| 모듈·플러그인이 제공한 원본 | 422 | `layouts.errors.delete_blocked_source_type` |
+| 다른 레이아웃이 `extends`·`partial` 로 참조 | 422 | `layouts.errors.delete_blocked_by_reference` |
+| 라우트가 걸려 있고 `confirm` 없음 | 422 | `layouts.errors.delete_requires_confirmation` |
+
+라우트가 걸린 레이아웃은 **막지 않습니다** — 지우는 것이 정당한 경우가 있습니다. 다만 그 화면이
+곧바로 열리지 않게 된다는 사실을 모른 채 지나갈 수는 없게 한 단계를 더 둡니다.
+
+참조 사전 검사는 저장된 JSON 에서 **마지막 세그먼트**로 거릅니다. `json_encode` 기본 동작이
+슬래시를 `\/` 로 이스케이프하므로 경로 전체로 찾으면 언제나 빗나가 차단이 통째로 무력해집니다
+(실측으로 잡힌 결함). 값이 통째로 일치할 때만 참조로 세므로 `_modal_form` 이
+`_modal_form_extra` 를 참조로 오인하지 않습니다.
+
+---
+
 ### GET /api/admin/templates/{templateName}/layouts/{name}
 <!-- @generated:start:api.admin.templates.layouts.show -->
 - **라우트명**: `api.admin.templates.layouts.show`
@@ -96246,6 +96515,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | name | path | string | 예 | — | 대상의 이름/명칭 |
+| with_markup | query | boolean | 아니오 | `1` | 코드 편집기 HTML 탭용 — `content` 를 `.g7.html` 로 역변환한 `content_markup`·`markup_escapes`·`markup_warnings`·`markup_compile_error` 를 함께 싣는다. 생략 시 기본 응답 무변경 |
 
 **요청 예시**
 
@@ -96277,6 +96547,10 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | has_update | boolean | `false` | 템플릿 파일 대비 갱신 필요 여부 (현재 항상 false) |
 | lock_version | integer | `0` | 낙관적 잠금 버전 |
 | current_version | integer\|null | `null` | 현재 저장 버전 번호 (상세 응답에서는 null) |
+| content_markup | string | `"<layout name=\"main\" version=\"1.0.0\">\n  <div/>\n</layout>\n"` | (`with_markup=1`) content 를 역변환한 `.g7.html` 소스 — 코드 편집기 HTML 탭의 정본 |
+| markup_escapes | array | `[]` | (`with_markup=1`) 첫 급부 문법이 표현하지 못해 `<json>` 탈출구로 나간 키 목록 |
+| markup_warnings | array | `[{"code":"unregistered_handler","message":"…","line":12,"column":3}]` | (`with_markup=1`) 역변환 소스를 되컴파일했을 때의 lint 경고 (편집기 노란 마커). 편집 중인 템플릿의 컴포넌트 목록에 없는 컴포넌트가 저장본에 이미 있으면 `template_component_kept` 로 알리고 그 개수까지는 저장을 막지 않는다(새로 적은 목록 밖 컴포넌트는 `component_not_in_registry` 422) |
+| markup_compile_error | object\|null | `null` | (`with_markup=1`) 되컴파일이 거부되면 `{code,message,line,column}` — 이 행은 HTML 탭에서 고치기 전엔 저장이 막힌다. 템플릿 `components.json` 이 스키마를 어겨 역변환 자체가 안 되면 500 대신 200 + `content_markup` 빈 문자열 + 이 필드에 `manifest_*` 코드 |
 | created_at | string | `2026-07-14T10:00:00+09:00` | 생성 일시 |
 | updated_at | string | `2026-07-14T10:00:00+09:00` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true}` | 현재 사용자의 수행 가능 작업 맵 |
@@ -96339,7 +96613,8 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | name | path | string | 예 | — | 대상의 이름/명칭 |
 | expected_lock_version | body | integer | 예 | min 0 | 낙관적 잠금 버전 (동시 편집 충돌 감지) |
-| content | body | array | 예 | — | 본문 내용 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식. `markup` 이면 `content` 는 `.g7.html` 문자열이고 서버가 검증 전에 프로덕션 컴파일해 JSON 으로 바꾼다 (기본 `json`) |
+| content | body | array | 예 | — | 본문 내용 (`format=markup` 이면 `.g7.html` 문자열) |
 | content.version | body | string | 예 | — | 레이아웃 JSON 스키마 버전 (예: `1.0`) |
 | content.layout_name | body | string | 예 | max 255 | content.layout 이름 (식별자) |
 | content.extends | body | string | 아니오 | — | 상속할 베이스 레이아웃 이름 |
@@ -96611,6 +96886,10 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutResource)._
 
 **설명** 레이아웃 content를 수정합니다. `expected_lock_version` 기반 낙관적 잠금을 적용해 동시 수정 충돌 시 409(current/your version)를 반환합니다(LayoutService::updateLayout). `core.templates.layouts.edit` 권한이 필요합니다.
 
+**`content` 하위 키는 화이트리스트다.** 위 표의 `content` 는 배열 한 칸으로 요약되지만, 실제 검증은 `content.<키>` 단위 화이트리스트이고 **명시되지 않은 최상위 키는 저장 시 조용히 삭제된다**(Laravel `validated()` 의 동작). 레이아웃 JSON 에 새 최상위 키를 도입하면 이 엔드포인트의 규칙에 함께 넣어야 하며, 그러지 않으면 편집기로 저장한 순간 그 키가 사라진다. 현재 허용되는 최상위 키는 `version`·`layout_name`·`meta`·`metadata`·`comment`·`data_sources`·`init_actions`·`init_state`·`state`·`initLocal`·`initGlobal`·`initIsolated`·`global_state`·`computed`·`modals`·`named_actions`·`defines`·`errorHandling`·`globalHeaders`·`permissions`·`extends`·`slots`·`components`·`routes`·`endpoint`·`transition_overlay`·`actions`·`pageConfig`·`schema` 다.
+
+`comment`(문서 루트 주석)는 오랫동안 이 목록에 없어 편집기 저장이 조용히 떨궜다. 소스 `<layout>` 의 주석이 컴파일 산출의 루트 `comment` 로 남으므로 그 키를 보존해야 한다.
+
 
 ### POST /api/admin/templates/{templateName}/layouts/{name}/preview
 <!-- @generated:start:api.admin.templates.layouts.preview.store -->
@@ -96624,6 +96903,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutResource)._
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | name | path | string | 예 | — | 대상의 이름/명칭 |
+| format | body | string | 아니오 | `json`, `markup` | 본문 형식 (`markup` 이면 `content` 는 `.g7.html` 문자열 — 검증 전 프로덕션 컴파일) |
 | content | body | array | 예 | — | 본문 내용 |
 
 **요청 예시**
@@ -96649,8 +96929,9 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | token | string | `9f2c1a4e8b7d3c5f` | 미리보기 토큰 (임시 저장된 레이아웃 content 를 식별) |
-| preview_url | string | `/preview/9f2c1a4e8b7d3c5f` | 미리보기 페이지 경로 (새 탭으로 열어 확인) |
+| preview_url | string | `/preview/9f2c1a4e8b7d3c5f` | 미리보기 페이지 경로 — 템플릿 종류의 화면 셸(관리자 템플릿 `/admin/preview/{token}`, 사용자 템플릿 `/preview/{token}`), 새 탭으로 열어 확인 |
 | expires_at | string | `2026-07-14T11:00:00+09:00` | 미리보기 만료 일시 (ISO 8601) |
+| markup_warnings | array | `[]` | `format=markup` 컴파일이 낸 lint 경고 `[{code,message,line,column}]` (JSON 본문이면 빈 배열) |
 
 **응답 예시**
 
@@ -96661,7 +96942,8 @@ _단건 응답: `data` 객체의 필드._
     "data": {
         "token": "9f2c1a4e8b7d3c5f",
         "preview_url": "/preview/9f2c1a4e8b7d3c5f",
-        "expires_at": "2026-07-14T11:00:00+09:00"
+        "expires_at": "2026-07-14T11:00:00+09:00",
+        "markup_warnings": []
     }
 }
 ```
@@ -96673,12 +96955,76 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `content` 가 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸린 경우도 여기다(`errors.content` — `format=markup` 이면 위반 값이 적힌 소스 자리를 `compile_error {code: "unsafe_content", …}` 로 함께 싣는다). `format=markup` 컴파일 실패면 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 이 함께 실린다 |
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
 
 **설명** 편집 중인 레이아웃 content를 임시 저장하고 미리보기 URL/토큰을 반환합니다(LayoutPreviewService::createPreview). 토큰은 만료 시각을 함께 반환합니다. `core.templates.read` 권한이 필요합니다.
+
+
+### POST /api/admin/templates/{templateName}/layouts/{name}/markup-compile
+<!-- @generated:start:api.admin.templates.layouts.markup-compile -->
+- **라우트명**: `api.admin.templates.layouts.markup-compile`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\LayoutController@compileMarkup`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
+| name | path | string | 예 | — | 대상 레이아웃 이름 (소속 정보로 lint 문맥을 정한다) |
+| markup | body | string | 예 | — | 변환할 `.g7.html` 소스 |
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/{templateName}/layouts/{name}/markup-compile HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "markup": "<layout name=\"main\" version=\"1.0.0\">\n  <div/>\n</layout>\n"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| content | string | `"{\n    \"layout_name\": \"main\"\n}"` | 프로덕션 컴파일 산출 JSON (pretty-print 문자열) — 코드 편집기 JSON 읽기 전용 탭 본문 |
+| warnings | array | `[]` | lint 경고 `[{code,message,line,column}]` (컴파일을 막지 않는다) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "content": "{\n    \"layout_name\": \"main\",\n    \"version\": \"1.0.0\",\n    \"components\": [\n        {\n            \"type\": \"basic\",\n            \"name\": \"Div\"\n        }\n    ]\n}",
+        "warnings": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 대상 템플릿 또는 해당 이름의 레이아웃이 없는 경우 |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지와 함께, 첫 위반 값이 소스에 처음 적힌 자리를 `compile_error {code: "unsafe_content", message, line, column}`(최상위·`errors.compile_error` 양쪽, 자리를 못 찾으면 줄·칸 0)로 싣는다 |
+
+<!-- @generated:end -->
+
+**설명** 코드 편집기 HTML 탭의 소스를 저장 없이 프로덕션 컴파일합니다(LayoutMarkupService::toJson — 설치·저장과 같은 사슬). 타이핑이 멈춘 뒤 1초 유휴에 호출해 JSON 읽기 전용 탭을 갱신하며, 오류·경고는 편집기 마커로 표시됩니다. DB 를 건드리지 않으므로 `core.templates.read` 권한으로 충분합니다.
 
 
 ### GET /api/admin/templates/{templateName}/layouts/{name}/versions
@@ -97009,7 +97355,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
-| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 사용자 수정 레이아웃 유지) |
+| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.perform_update_validation_rules`).
@@ -97056,6 +97402,7 @@ _단건 응답: `data` 객체의 필드 (업데이트 후 TemplateResource)._
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 경우에는 리소스 대신 결과 요약(`success`, `from_version`, `to_version`, `message`)이 `data` 로 반환됩니다._
 
@@ -97107,11 +97454,12 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 업데이트 실패 (미설치, 다운그레이드 차단, 다운로드 실패, 코어 버전 비호환 등 — `errors.template_name` 에 번역된 사유) |
+| 409 | Conflict | 같은 템플릿의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) |
 | 500 | Server Error | 업데이트 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
 
-**설명** 설치된 템플릿을 최신 버전으로 업데이트합니다. `layout_strategy`(overwrite: 레이아웃 전면 교체 / keep: 사용자 수정 레이아웃 유지)로 레이아웃 처리 방식을 결정하며, `force`로 강제 진행할 수 있습니다(TemplateService::performVersionUpdate). `core.templates.install` 권한이 필요합니다. `keep` 을 지정하면 사용자가 수정한 레이아웃(원본 해시와 현재 내용이 다른 레이아웃)은 갱신 대상에서 제외되어 현재 내용이 그대로 유지되고, 나머지 레이아웃만 파일 기준으로 갱신됩니다. 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다.
+**설명** 설치된 템플릿을 최신 버전으로 업데이트합니다. `layout_strategy`(overwrite: 레이아웃 전면 교체 / keep: 운영자 수정본에 새 버전 3자 병합)로 레이아웃 처리 방식을 결정하며, `force`로 강제 진행할 수 있습니다(TemplateService::performVersionUpdate). `core.templates.install` 권한이 필요합니다. `keep` 을 지정하면 운영자가 수정한 레이아웃·확장 조각에 새 버전을 3자 병합합니다 — 고친 부분(조각·최상위 키·data_sources 항목 단위)은 운영자 것, 손대지 않은 부분은 새 버전이고, 같은 곳을 양쪽이 고쳤으면 운영자 것을 남깁니다. 운영자가 고치지 않은 레이아웃은 파일 기준으로 갱신됩니다. 보고할 행이 있으면 성공 메시지 뒤에 「레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.」 요약이 붙고, 응답 `data.layout_sync` 에 `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[{kind, template, name, verdict, applied, conflicts}]}` 가 실립니다(규칙: docs/extension/extension-update-system.md §10). 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `templates.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 템플릿의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
 
 
 ### GET /api/templates/assets/{identifier}
@@ -97165,7 +97513,7 @@ Content-Type: text/javascript
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 확장자 없는 자산 URL 모드의 템플릿 자산 서빙 엔드포인트입니다. 파일 경로를 `?file=` 쿼리로 받으며(경로에 확장자가 남지 않아 확장자를 가로채는 웹서버를 피한다), 그 밖의 동작은 `GET /api/templates/assets/{identifier}/{path}` 와 같습니다. AMD 로더(코드 편집기의 Monaco)는 쿼리가 있는 URL 의 모듈 id 에 `.js` 를 붙이지 않으므로, 요청한 파일이 없고 같은 이름의 `.js` 파일이 있으면 그 파일을 줍니다(`..` 가 든 경로는 보완하지 않음). 인증이 필요 없습니다.
 
 
 ### GET /api/templates/assets/{identifier}/{path}
@@ -97215,7 +97563,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 정적 자산 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. FormRequest에서 경로 보안 검증을 마친 뒤 파일을 조회하며(TemplateService::getAssetFilePath), ETag 및 장기 캐싱 헤더와 함께 반환합니다. 허용되지 않은 파일 유형은 403, 파일 부재 시 404입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 정적 자산 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. FormRequest에서 경로 보안 검증을 마친 뒤 파일을 조회하며(TemplateService::getAssetFilePath), ETag 및 장기 캐싱 헤더와 함께 반환합니다. 허용되지 않은 파일 유형은 403, 파일 부재 시 404입니다. 인증이 필요 없습니다. 요청한 파일이 없고 같은 이름의 `.js` 파일이 있으면 그 파일을 준다(AMD 모듈 id, `..` 가 든 경로 제외).
 
 
 ### GET /api/templates/{identifier}/components
@@ -97248,7 +97596,7 @@ _`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포�
 | --- | --- | --- | --- |
 | (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
 
-> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
+> 활성 템플릿의 설치본(`templates/{identifier}/components.json`)만 읽는다. 설치본에 파일이 없으면 `404`(`templates.errors.components_not_found`)다.
 
 **응답 예시**
 
@@ -97270,6 +97618,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -97338,6 +97687,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -97379,9 +97729,9 @@ _단건 응답: `data` 객체의 필드._
 | type | string | `admin` | 템플릿 타입 (admin: 관리자용, user: 사용자용) |
 | locales | array | `["ko","en"]` | 활성 로케일 코드 배열 |
 | author | object | `{"name":"sirsoft","email":"contact@sirsoft.com","url":"ht…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
-| release_date | string | `2026-05-15` | 배포일 |
+| release_date | string | `2026-10-10` | 배포일 |
 | g7_version | string | `>=7.0.0` | 요구하는 코어 최소 버전 (manifest requires.g7_version) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
 | assets | object | `{"css":["assets\/css\/main.css","assets\/css\/ui-system.c…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
 | components | object | `{"basic":["a","button","checkbox","div","form","h1","h2",…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
 | preview | object | `{"thumbnail":"preview\/thumbnail.png","screenshots":["pre…` | 미리보기 정보 객체 |
@@ -97424,8 +97774,8 @@ HTTP/1.1 200
             "email": "contact@sirsoft.com",
             "url": "https://sirsoft.com"
         },
-        "release_date": "2026-05-15",
-        "g7_version": ">=7.0.6",
+        "release_date": "2026-10-10",
+        "g7_version": ">=7.1.0",
         "dependencies": {
             "modules": [],
             "plugins": []
@@ -97556,6 +97906,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -97622,6 +97973,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -97686,6 +98038,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -185880,7 +186233,7 @@ HTTP/1.1 200
                                 "type": "order_confirmed",
                                 "channel": "email",
                                 "recipient": "김영희",
-                                "subject": "주문 확인 (주문번호: 20260621-0001)",
+                                "subject": "주문 확인 (주문번호: 20260621-1043226571)",
                                 "status": "sent",
                                 "time": "1 hour ago",
                                 "timestamp": "2026-06-21T15:00:00+09:00"
@@ -188735,7 +189088,7 @@ HTTP/1.1 200
                             "author": "sirsoft",
                             "type": "admin",
                             "status": "active",
-                            "preview_image": "/images/placeholder.png",
+                            "preview_image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "changelog": [
                                 "1.0.0 최초 릴리스"
                             ],
@@ -188863,7 +189216,7 @@ HTTP/1.1 200
                             "name": "이서연",
                             "nickname": "서연",
                             "email": "seoyeon.lee@example.com",
-                            "avatar": "/images/placeholder.png",
+                            "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "language": "ko",
                             "language_label": "한국어",
                             "country": "KR",
@@ -189492,6 +189845,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -189547,10 +189901,11 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | --- | --- | --- |
 | 404 | Not Found | 템플릿이 없거나, 그 템플릿이 해당 로케일을 지원하지 않거나, 언어 파일이 없는 경우 |
 | 500 | Server Error | 언어 파일 JSON 파싱 실패 (`유효하지 않은 JSON 형식입니다.`) 또는 알 수 없는 오류 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다.
 
 
 ### GET /api/templates/{identifier}/layout-attachments/{attachment}/file
@@ -189576,7 +189931,7 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 본문은 첨부 파일의 원본 바이트이며, 첨부의 MIME 타입(`Content-Type`), `ETag`, 캐싱 헤더(레이아웃 캐시 TTL — 기본 24시간)와 함께 인라인 스트림됩니다. 실패 시에만 JSON 에러 봉투를 반환합니다._
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 본문은 첨부 파일의 원본 바이트이며, 첨부의 MIME 타입(`Content-Type`), `ETag`, 캐싱 헤더(레이아웃 캐시 TTL — 기본 24시간)와 함께 스트림됩니다. 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 인라인이고 그 밖(SVG 포함)은 `Content-Disposition: attachment` + CSP sandbox 이며, 모든 응답에 `X-Content-Type-Options: nosniff` 가 붙습니다(KVE-2026-2366). 실패 시에만 JSON 에러 봉투를 반환합니다._
 
 **응답 예시**
 
@@ -189597,7 +189952,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 첨부 이미지 파일을 서빙하는 공개 엔드포인트입니다. 발행된 배경 이미지가 일반 방문자에게도 로드되어야 하므로 인증 없이 노출하며, 비공개 attachments 디스크의 파일을 캐싱 헤더와 함께 인라인 스트림합니다. 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404입니다. 인증이 필요 없습니다.
+**설명** 레이아웃 첨부 이미지 파일을 서빙하는 공개 엔드포인트입니다. 발행된 배경 이미지가 일반 방문자에게도 로드되어야 하므로 인증 없이 노출하며, 비공개 attachments 디스크의 파일을 캐싱 헤더와 함께 스트림합니다(래스터 이미지만 인라인, 그 밖은 다운로드 + nosniff). 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404입니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/routes
@@ -189713,6 +190068,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -189781,9 +190137,10 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다. 존재하지 않는 템플릿 등 오류 결과는 서버 캐시에 남기지 않습니다.
 
 

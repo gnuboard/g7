@@ -36,3 +36,22 @@ export const isCrossOriginAssetUrl = (url?: string | null): boolean => {
     return false;
   }
 };
+
+/**
+ * URL 을 인증 XHR(Blob) 없이 그대로 `<img src>`·링크로 써야 하는지 판정합니다.
+ *
+ * - 교차 출처 URL(공개 자산 디스크) — {@link isCrossOriginAssetUrl}
+ * - 문서 안에 이미 담긴 `data:`·`blob:` URL — 서버에 요청할 대상이 아니다. XHR 로 보내면
+ *   API 기본 주소가 앞에 붙어 `/api/data:image/…` 404 가 나고 그림이 비어 보인다
+ *   (레이아웃 편집기의 표본 그림이 이 꼴이다).
+ *
+ * @param url 판정할 URL
+ * @returns 직접 사용해야 하면 true
+ */
+export const isDirectAssetUrl = (url?: string | null): boolean => {
+  if (!url) {
+    return false;
+  }
+
+  return /^(data|blob):/i.test(url) || isCrossOriginAssetUrl(url);
+};

@@ -1,0 +1,25 @@
+feature: 비즈뿌리오 알림 템플릿 관리 탭의 검수 신청 실패 안내와 삭제 완료 안내
+
+description: |
+  플러그인 설정의 「알림 템플릿 관리」 탭은 작성 창(저장·저장 후 검수 신청)과 목록 행 버튼(검수 신청·삭제)으로
+  템플릿 라이프사이클을 다룬다. 서버는 검수 신청이 빠진 필수값으로 거절되면 `errors` 에 항목별 문구를 모두 싣고,
+  삭제는 카카오측을 지우지 못한 사유를 `kakao_skip_reason` 에 싣는다.
+
+  핵심 동작:
+    - 작성 창의 저장·신청 실패는 항목별 오류를 `bz_tpl_modal.errors` 에 담아 목록으로 그린다(코어 편집 창과 같은 규약).
+    - 목록 행의 [검수 신청] 실패 안내는 빠진 항목 문구를 모두 잇는다.
+    - 삭제 완료 안내는 `kakao_deleted`·`kakao_skip_reason` 으로 갈린다 — 카카오에 등록되지 않은 행, 상태 제약, 그 밖의
+      실패(카카오 사유·연결 실패)를 각각 다르게 알리고, 그 밖의 실패에는 서버가 준 사유를 그대로 붙인다.
+
+axes:
+  surface: [plugin_settings_modal, plugin_settings_row, plugin_settings_delete]
+
+exclusions: []
+
+effects:
+  - inspection_errors_listed_per_field
+  - delete_toast_follows_kakao_skip_reason
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/templateManageFeedback.test.ts
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/specs/admin/template-draft-feedback.spec.ts

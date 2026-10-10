@@ -1,0 +1,45 @@
+feature: checkout_exclusive_coupon_modal
+
+description: >
+  체크아웃에서 **배타적 쿠폰**(다른 쿠폰과 함께 쓸 수 없는 쿠폰)을 고르면 확인 모달을 띄우고,
+  확인하면 기존 선택을 풀고 새 쿠폰을 적용한다. 모달의 확인 버튼은 시퀀스 4단으로 동작한다 —
+  ① 선택한 쿠폰 ID 를 로컬 상태에 담고 ② 전역 대기값을 비우고 ③ 모달을 닫고
+  ④ `PUT /checkout` 으로 주문서를 갱신한다.
+
+  **④ 의 본문 필드명이 이 시나리오의 핵심이다.** 서버(`CheckoutController::update`)가 읽는
+  주문쿠폰 키는 `order_coupon_issue_id`(단수) 하나이고, 주문서 저장 구조
+  (`TempOrder::getPromotions()`)도 `item_coupons` · `order_coupon_issue_id` ·
+  `shipping_coupon_issue_id` 세 슬롯으로 나뉜다.
+
+  과거 이 테스트의 인라인 픽스처는 `coupon_issue_ids`(복수)를 보냈다. 그 필드는
+  `CheckoutRequest` 검증 규칙에는 있었으나 **최초 커밋부터 읽는 곳이 없어**(#599 세션1 실측 ·
+  git `72156e6f0` 시점의 컨트롤러도 단수형만 읽는다) 보낸 쪽은 **200 을 받고 할인만 조용히
+  빠졌다.** 단언이 `handler`·`endpoint`·`method` 만 확인해 픽스처가 실제 레이아웃
+  (`templates/_bundled/sirsoft-basic/layouts/shop/checkout.g7.html` · `templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_discount.g7.html`)과 다른 채로 계속 green 이었다.
+
+  실측(#599 세션1): 주문서에 `coupon_issue_ids:[193]` → 200 인데 쿠폰할인 0,
+  같은 주문서에 `order_coupon_issue_id:193` → 200 · 쿠폰할인 5,000(80,000 → 75,000).
+  규칙을 제거하고 픽스처를 정정한 뒤, **본문 필드명을 단언으로 잠갔다.**
+
+axes:
+  coupon_kind:
+    - exclusive        # 배타적 쿠폰 — 확인 모달 경유
+  user_choice:
+    - confirm          # 확인 → 기존 해제 + 새 쿠폰 적용
+    - cancel           # 취소 → 모달만 닫고 선택 유지
+
+effects:
+  - exclusive_coupon_opens_confirm_modal        # 배타적 쿠폰 선택 시 확인 모달 노출
+  - confirm_sets_selected_coupon_to_local_state # ① 로컬 상태에 선택 쿠폰 ID
+  - confirm_clears_pending_global_state         # ② 전역 대기값 해제
+  - confirm_closes_modal                        # ③ 모달 닫힘
+  - confirm_updates_checkout_via_put            # ④ PUT /checkout 호출
+  - checkout_body_uses_singular_order_coupon_key # ④ 본문 키가 order_coupon_issue_id (복수형 금지)
+  - success_refetches_checkout_data_source      # onSuccess 에서 checkoutData 재조회
+  - cancel_closes_modal_without_apply           # 취소는 적용 없이 닫기만
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/checkoutExclusiveCouponLayouts.test.tsx
+
+validation:
+  audit_rule: frontend-change-requires-e2e

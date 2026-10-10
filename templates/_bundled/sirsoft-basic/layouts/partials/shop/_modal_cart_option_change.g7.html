@@ -1,0 +1,182 @@
+<!-- 장바구니에 담은 뒤 옵션을 바꾸는 창. 실제로는 «고치기» 가 아니라 **다른 옵션 항목으로 갈아 담는
+     것**이라, 고른 조합이 이미 장바구니에 있으면 수량이 합쳐진다. -->
+<partial description="장바구니 상품 옵션 변경 모달" editor_label="$t:user.modal_label.shop.cart_option_change_modal">
+  <modal data-type="composite" data-ref="cart_option_change_modal" title="$t:shop.cart.option_modal.title" size="md">
+    <!-- 모달 내용 - 상품 정보 및 수량 변경 -->
+    <div class="p-4">
+      <!-- 전체 에러 메시지 박스 -->
+      <div data-if="{{$parent._local.optionErrors &amp;&amp; Object.keys($parent._local.optionErrors).length > 0}}" class="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div class="flex items-start gap-3">
+          <icon name="exclamation-circle" class="text-lg text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div class="flex-1">
+            <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">$t:common.validation_error_title</h4>
+            <ul data-each="message in {{Object.entries($parent._local.optionErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])}}" class="list-disc list-inside space-y-1">
+              <li class="text-sm text-red-700 dark:text-red-300">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- 상품 정보 -->
+      <div class="flex gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+          <img data-if="{{$parent._local.optionModal.targetItem?.thumbnail}}" src="{{$parent._local.optionModal.targetItem?.thumbnail}}" alt="{{$parent._local.optionModal.targetItem?.product_name}}" class="w-full h-full object-cover"/>
+          <div data-if="{{!$parent._local.optionModal.targetItem?.thumbnail}}" class="w-full h-full flex items-center justify-center">
+            <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="font-medium text-gray-900 dark:text-white truncate">{{$parent._local.optionModal.targetItem?.product_name}}</h4>
+          <p data-if="{{$parent._local.optionModal.targetItem?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$parent._local.optionModal.targetItem?.option_name_localized ?? $parent._local.optionModal.targetItem?.option_name?.ko ?? ''}}</p>
+          <div class="mt-2">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{$parent._local.optionModal.targetItem?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.optionModal.targetItem?.unit_price_formatted}}</p>
+            <!-- 보조 통화들 -->
+            <div data-each="currency in {{Object.entries($parent._local.optionModal.targetItem?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 옵션 선택 섹션 -->
+      <div data-if="{{$parent._local.optionProduct?.has_options &amp;&amp; $parent._local.optionProduct?.option_groups?.length > 0}}" class="space-y-3 mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.cart.option_modal.select_option</label>
+        <div data-each="group, groupIndex in {{$parent._local.optionProduct?.option_groups ?? []}}">
+          <div class="mb-3">
+            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{group.name_localized ?? group.name}}</label>
+            <select class="{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}" value="{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{groupIndex > 0 &amp;&amp; !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{(group.values_localized ?? group.values ?? []).map(v => ({ value: v, label: v }))}}">
+              <on type="change">
+                <!-- 옵션을 한 칸 고를 때마다 조합을 다시 찾는다. 방금 고른 값을 상태에서 읽지 않고 그 자리에서
+                     합쳐 넘기는 이유는, 바로 위 `set-state` 가 아직 반영되기 전이라 상태를 읽으면 한 박자 뒤진
+                     값이 잡히기 때문이다 -->
+                <sequence>
+                  <set-state target="$parent._local" :optionErrors="null"/>
+                  <set-state target="$parent._local" selectedOptions="{{Object.assign({}, $parent._local.selectedOptions ?? {}, { [group.name_localized]: $event.target.value })}}"/>
+                  <!-- 업데이트된 selectedOptions로 매칭 옵션 찾기 (stale state 방지) -->
+                  <action handler="findMatchingOption" selectedOptions="{{Object.assign({}, $parent._local.selectedOptions ?? {}, { [group.name_localized]: $event.target.value })}}" optionGroups="{{$parent._local.optionProduct?.option_groups ?? []}}" options="{{$parent._local.optionProduct?.options ?? []}}"/>
+                  <!-- 핸들러 반환값($prev)으로 matchedOption 상태 저장 -->
+                  <set-state target="$parent._local" matchedOption="{{$prev.matchedOption}}"/>
+                </sequence>
+              </on>
+            </select>
+            <!-- 옵션 필드 에러 메시지 -->
+            <p data-if="{{$parent._local.optionErrors?.product_option_id &amp;&amp; groupIndex === 0}}" class="text-sm text-red-600 dark:text-red-400 mt-1">{{Array.isArray($parent._local.optionErrors.product_option_id) ? $parent._local.optionErrors.product_option_id[0] : $parent._local.optionErrors.product_option_id}}</p>
+          </div>
+        </div>
+      </div>
+      <!-- === 추가옵션 재선택 섹션 === -->
+      <div data-if="{{$parent._local.optionProduct?.additional_options?.length > 0}}" class="space-y-3 mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.additional_options</label>
+        <div data-each="addGroup in {{$parent._local.optionProduct?.additional_options ?? []}}">
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+              <span>{{addGroup.name}}</span>
+              <span data-if="{{addGroup.is_required}}" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
+            </label>
+            <select data-testid="modal-add-option-{{addGroup.id}}" class="w-full" value="{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+              <on type="change">
+                <!-- 추가옵션을 비우면 그 그룹의 선택과 직접입력 글자를 함께 지운다 — 선택을 지웠는데 딸린
+                     문구만 남아 주문에 실려 가는 것을 막는다 -->
+                <set-state target="$parent._local" additionalSelections="{{$event.target.value === '' ? Object.fromEntries(Object.entries($parent._local.additionalSelections ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id))) : Object.assign({}, $parent._local.additionalSelections ?? {}, { [addGroup.id]: Number($event.target.value) })}}" additionalCustomTexts="{{Object.fromEntries(Object.entries($parent._local.additionalCustomTexts ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id)))}}"/>
+              </on>
+            </select>
+            <!-- 직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출. 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용 -->
+            <div data-if="{{(addGroup.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[addGroup.id]))?.allow_custom_text === true}}" class="mt-2">
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:shop.additional_option_custom_text_label</label>
+              <input type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{$parent._local.additionalCustomTexts?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" :maxLength="255">
+                <on type="input">
+                  <!-- 공백만 남으면 키 자체를 지운다 — 빈 문자열을 «입력했다» 로 저장하지 않기 위해서다 -->
+                  <set-state target="$parent._local" additionalCustomTexts="{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries($parent._local.additionalCustomTexts ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id))) : Object.assign({}, $parent._local.additionalCustomTexts ?? {}, { [addGroup.id]: $event.target.value })}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 선택된 옵션 정보 -->
+      <div data-if="{{$parent._local.matchedOption}}" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4">
+        <div class="flex justify-between items-start">
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{$parent._local.matchedOption?.option_name_localized ?? $parent._local.matchedOption?.option_name?.ko ?? ''}}</span>
+          <div class="text-right">
+            <div class="text-sm font-bold text-gray-900 dark:text-white">{{$parent._local.matchedOption?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.matchedOption?.selling_price_formatted ?? ''}}</div>
+            <!-- 보조 통화들 -->
+            <div data-each="currency in {{Object.entries($parent._local.matchedOption?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 추가옵션 추가금 합계 (선택된 추가금이 있을 때) -->
+        <div data-if="{{($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => sum + (((g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id]))?.price_adjustment) ?? 0), 0) > 0}}" class="flex justify-between items-center mt-2 pt-2 border-t border-blue-100 dark:border-blue-800 text-xs text-gray-600 dark:text-gray-300">
+          <span>$t:shop.additional_options_amount</span>
+          <!-- 추가금은 기본통화 기준 저장값이므로 서버가 준 표시통화 환산값을 우선 합산한다 (없으면 기본통화 값으로 폴백) -->
+          <span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => { const v = (g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id])); if (!v) return sum; return sum + (v.multi_currency_price_adjustment?.[code]?.price ?? v.price_adjustment ?? 0); }, 0); const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = cur?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? ($t('sirsoft-ecommerce.currency.krw_prefix') + n + $t('sirsoft-ecommerce.currency.krw_suffix')) : (s + n)); })()}}</span>
+        </div>
+        <div data-if="{{$parent._local.matchedOption?.stock_quantity <= 10}}" class="{{$parent._local.matchedOption?.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}">{{$parent._local.matchedOption?.stock_quantity &lt;= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + ($parent._local.matchedOption?.stock_quantity ?? 0)}}</div>
+        <div data-if="{{$parent._local.matchedOption?.stock_quantity > 10}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption?.stock_quantity ?? 0}}</div>
+      </div>
+      <!-- 수량 변경 -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.cart.option_modal.quantity</label>
+        <div class="{{$parent._local.optionErrors?.quantity ? 'ring-2 ring-red-500 rounded-lg' : ''}}">
+          <quantity-selector data-type="composite" value="{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity ?? 1}}" :min="1" max="{{$parent._local.matchedOption?.stock_quantity ?? $parent._local.optionModal.targetItem?.stock ?? 999}}" size="md">
+            <on event="onChange">
+              <!-- 수량을 손대면 지난 검증 오류 표시를 먼저 걷는다 — 고쳤는데도 빨간 테두리가 남는 것을 막는다 -->
+              <sequence>
+                <set-state target="$parent._local" :optionErrors="null"/>
+                <set-state target="$parent._local" selectedQuantity="{{$args[0]}}"/>
+              </sequence>
+            </on>
+          </quantity-selector>
+        </div>
+        <!-- 수량 필드 에러 메시지 -->
+        <p data-if="{{$parent._local.optionErrors?.quantity}}" class="text-sm text-red-600 dark:text-red-400 mt-1">{{Array.isArray($parent._local.optionErrors.quantity) ? $parent._local.optionErrors.quantity[0] : $parent._local.optionErrors.quantity}}</p>
+      </div>
+    </div>
+    <!-- 모달 푸터 -->
+    <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isUpdatingOption}}">
+        <on type="click">
+          <!-- 취소해도 오류 표시는 남으므로 걷어 낸 뒤 닫는다 — 다음에 열었을 때 지난 빨간 줄이 그대로 뜨지 않게 -->
+          <sequence>
+            <set-state target="$parent._local" :optionErrors="null"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        $t:common.cancel
+      </button>
+      <button type="button" data-testid="modal-apply" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isUpdatingOption || ($parent._local.optionProduct?.has_options &amp;&amp; !$parent._local.matchedOption)}}">
+        <on type="click">
+          <!-- 옵션 교체 확정. 진행 표시를 `_global` 에 두는 이유는 이 창과 뒤 장바구니 목록이 함께 잠겨야
+               하기 때문이다(창 안 `_local` 로는 뒤 화면이 그 사실을 모른다) -->
+          <sequence>
+            <set-state target="global" :isUpdatingOption="true"/>
+            <set-state target="$parent._local" :optionErrors="null"/>
+            <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart/{{$parent._local.optionModal.targetItem?.id}}/option" method="PUT">
+              <success>
+                <set-state target="global" :isUpdatingOption="false"/>
+                <set-state target="$parent._local" :selectedQuantity="null" :optionErrors="null">
+                  <field name="optionModal">
+                    <field name="visible" :value="false"/>
+                    <field name="targetItem" :value="null"/>
+                  </field>
+                </set-state>
+                <refetch-data-source dataSourceId="cartItems"/>
+                <toast type="success" message="$t:shop.cart.option_updated"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isUpdatingOption="false"/>
+                <!-- 도메인 거절(재고 부족·판매 중지 등)은 errors 에 code·message·unavailable_items(객체)·has_*(참거짓)를 함께 준다 — 통째로 펼치면 내부 코드와 객체가 목록에 그려지므로 사유 문장 하나만 담는다. 필드 검증 오류는 종전대로 -->
+                <set-state target="$parent._local" optionErrors="{{error.errors?.code ? { _general: error.errors.message ?? error.message } : (error.errors ?? { _general: error.message })}}"/>
+              </fail>
+              <body product_option_id="{{$parent._local.matchedOption?.id ?? $parent._local.optionModal.targetItem?.product_option_id}}" quantity="{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity}}" additional_option_selections="{{Object.entries($parent._local.additionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: $parent._local.additionalCustomTexts?.[Number(gid)] }))}}"/>
+              <field name="headers">
+                <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+              </field>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isUpdatingOption}}" name="spinner" :spin="true" size="sm"/>
+        <span>{{_global.isUpdatingOption ? '$t:common.processing' : '$t:shop.cart.option_modal.apply'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

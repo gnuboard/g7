@@ -1,320 +1,328 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "배송사 관리 - Mobile 카드 뷰"
-  },
-  "id": "carrier_cards_container",
-  "type": "basic",
-  "name": "Div",
-  "children": [
-    {
-      "id": "carrier_card_{{$cIdx}}",
-      "type": "basic",
-      "name": "Div",
-      "iteration": {
-        "source": "(_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))",
-        "item_var": "$carrier",
-        "index_var": "$cIdx"
-      },
-      "props": {
-        "className": "excel-card mb-3"
-      },
-      "children": [
+    "comment": "쇼핑몰 설정 — 택배사 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_carrier_section`)와\n  같은 배열을 편집한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).\n  \n  택배사는 주문의 송장 입력에서 고르는 선택지이자 배송조회 링크를 만드는 근거다 —\n  그래서 코드가 조회 주소 규칙과 이어져 있고 아무 값이나 넣으면 조회가 서지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "배송사 관리 - Mobile 카드 뷰"
+    },
+    "id": "carrier_cards_container",
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "excel-card-header"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 min-w-0"
-              },
-              "children": [
+            "id": "carrier_card_{{$cIdx}}",
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "(_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))",
+                "item_var": "$carrier",
+                "index_var": "$cIdx"
+            },
+            "props": {
+                "className": "excel-card mb-3"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "min-w-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "excel-card-title font-mono"
-                      },
-                      "text": "{{$carrier.code}}"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-header"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "text-tertiary truncate"
-                      },
-                      "text": "{{typeof $carrier.name === 'object' ? $localized($carrier.name) : ($carrier.name ?? '')}}"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "excel-card-title font-mono"
+                                            },
+                                            "text": "{{$carrier.code}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "text-tertiary truncate"
+                                            },
+                                            "text": "{{typeof $carrier.name === 'object' ? $localized($carrier.name) : ($carrier.name ?? '')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "actions": [
+                                        {
+                                            "comment": "사용 여부. 끄면 송장 입력의 선택지에서 빠지고, 이미 그 택배사로 발송된 주문의 조회는 그대로 산다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "checked": "{{$carrier.is_active ?? false}}",
+                                        "size": "sm",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "택배사 삭제. 사용 여부를 끄는 것과 달리 설정 자체가 사라진다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== $carrier._idx)}}",
+                                                "hasChanges": true
+                                            },
+                                            "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.confirm_delete"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "aria-label": "$t:common.delete"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "fa-solid fa-trash",
+                                                "className": "text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-body"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "택배사 코드. 배송조회 주소를 만드는 근거라 임의로 정하면 조회가 서지 않는다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, code: $event.target.value} : c)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{$carrier.code ?? ''}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
+                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error font-mono' : 'input font-mono'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "actions": [
+                                        {
+                                            "comment": "택배사 이름(언어별). 고객 화면에 그대로 보인다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{$carrier.name ?? {}}}",
+                                        "layout": "compact",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
+                                        "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "구분(국내/해외). 해외배송을 쓰지 않는 몰에서는 국내만 쓰인다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, type: $event.target.value} : c)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{$carrier.type ?? 'domestic'}}",
+                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'input-error w-full' : 'w-full'}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "options": [
+                                            {
+                                                "value": "domestic",
+                                                "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_domestic"
+                                            },
+                                            {
+                                                "value": "international",
+                                                "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_international"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "배송조회 URL 틀. 고객이 송장번호를 누르면 이 주소로 보낸다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, tracking_url: $event.target.value} : c)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{$carrier.tracking_url ?? ''}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
+                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 shrink-0"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "checked": "{{$carrier.is_active ?? false}}",
-                    "size": "sm",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.confirm_delete",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== $carrier._idx)}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "fa-solid fa-trash",
-                        "className": "text-sm"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "excel-card-body"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "value": "{{$carrier.code ?? ''}}",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
-                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error font-mono' : 'input font-mono'}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, code: $event.target.value} : c)}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name"
-                },
-                {
-                  "type": "composite",
-                  "name": "MultilingualInput",
-                  "props": {
-                    "value": "{{$carrier.name ?? {}}}",
-                    "layout": "compact",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
-                    "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type"
-                },
-                {
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "value": "{{$carrier.type ?? 'domestic'}}",
-                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'select-error w-full' : 'w-full'}}",
-                    "options": [
-                      {
-                        "value": "domestic",
-                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_domestic"
-                      },
-                      {
-                        "value": "international",
-                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_international"
-                      }
-                    ],
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, type: $event.target.value} : c)}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "value": "{{$carrier.tracking_url ?? ''}}",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
-                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error' : 'input'}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, tracking_url: $event.target.value} : c)}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

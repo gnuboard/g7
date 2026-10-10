@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Support\ExtensionStoragePath;
+use App\Support\SiteUrl;
 
 class RegisterPgProviderListener implements HookListenerInterface
 {
@@ -38,6 +39,7 @@ class RegisterPgProviderListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -127,9 +129,10 @@ class RegisterPgProviderListener implements HookListenerInterface
             'client_id' => $siteCd,
             'easy_pay_client_id' => $easyPayClientId,
             'sdk_url' => $sdkUrl,
+            // 보안: PG 로 보내는 결과 수신 주소(Ret_URL) — 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL.
             'callback_urls' => [
-                'callback' => '/plugins/sirsoft-pay_nhnkcp/payment/callback',
-                'close_report' => '/plugins/sirsoft-pay_nhnkcp/payment/close-report',
+                'callback' => SiteUrl::absolute('/plugins/sirsoft-pay_nhnkcp/payment/callback'),
+                'close_report' => SiteUrl::absolute('/plugins/sirsoft-pay_nhnkcp/payment/close-report'),
             ],
             'enabled_easy_pays' => $enabledEasyPays,
             'vbank_expire_days' => (int) ($settings['vbank_expire_days'] ?? 3),
@@ -138,6 +141,11 @@ class RegisterPgProviderListener implements HookListenerInterface
         ]);
     }
 
+    /**
+     * 쇼핑몰 주문 설정의 기본 PG 가 NHN KCP 인지 판정합니다.
+     *
+     * @return bool 주문 설정 파일의 default_pg_provider 가 nhnkcp 이면 true (파일이 없으면 false)
+     */
     private function isNhnKcpDefaultPg(): bool
     {
         $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
@@ -151,6 +159,11 @@ class RegisterPgProviderListener implements HookListenerInterface
         return ($data['default_pg_provider'] ?? '') === 'nhnkcp';
     }
 
+    /**
+     * NHN KCP 플러그인 설정을 읽습니다.
+     *
+     * @return array<string, mixed> 플러그인 설정
+     */
     private function getPluginSettings(): array
     {
         return plugin_settings(self::PLUGIN_IDENTIFIER);

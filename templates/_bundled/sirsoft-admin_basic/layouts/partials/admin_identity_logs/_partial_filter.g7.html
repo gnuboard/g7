@@ -1,0 +1,211 @@
+<!-- 본인인증 기록의 검색 조건 영역. 고른 값은 로컬 `filter` 에 쌓였다가 검색 버튼(또는 입력창
+  Enter)이 주소 질의로 옮겨 줄 때 서버에 나간다.
+
+  조건 항목이 **고정 목록과 받아 온 목록으로 갈린다** — 상태·출처 종류는 코드에 박힌 값이고,
+  용도와 수단은 설치된 인증 제공자가 무엇을 지원하느냐에 따라 달라져 데이터소스에서 온다.
+  그래서 수단 줄은 채널을 하나도 안 쓰는 구성에서는 통째로 감춰진다.
+  자주 안 쓰는 셋(출처 종류·출처 구분·출처 식별자)은 접힌 영역에 두었다. -->
+<partial description="Identity Logs Filter Section">
+  <div data-ref="filter_section" class="admin-card filter-grid">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'auto'}}">
+          <options>
+            <option value="auto">$t:admin.identity.logs.search_type.auto</option>
+            <option value="user_id">$t:admin.identity.logs.search_type.user_id</option>
+            <option value="target_hash">$t:admin.identity.logs.search_type.target_hash</option>
+            <option value="ip_address">$t:admin.identity.logs.search_type.ip_address</option>
+            <option value="policy_key">$t:admin.identity.logs.search_type.policy_key</option>
+          </options>
+          <on type="change">
+            <!-- 검색어를 어느 칸으로 볼지 정한다. 기본값 「자동」은 값 모양을 보고 서버가 고르게 맡기는 쪽이다. -->
+            <set-state target="local" filter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <input name="search" type="text" placeholder="$t:admin.identity.logs.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <!-- 검색어는 담아 두기만 한다. 대상이 되는 값(대상 해시 등)은 원문이 아니라 저장된 형태 그대로 넣어야 맞는다. -->
+              <set-state target="local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <action-ref name="searchIdentityLogs"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="status_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.status_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.statuses || _local.filter.statuses.length === 0}}">
+              <on type="change">
+                <!-- 상태 「전체」는 고른 것이 없는 상태 그 자체다 — 비우면 옆 칸들의 체크도 함께 풀린다. -->
+                <set-state target="local" filter.statuses="{{[]}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.identity.logs.filter.status_all</span>
+          </label>
+          <label data-each="st in {{['requested','sent','verified','failed','expired','cancelled','policy_violation_logged']}}" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.statuses || []).includes(st)}}">
+              <on type="change">
+                <!-- 상태 목록은 여기 박아 둔 일곱 개이고 라벨만 상태 이름으로 언어팩에서 찾아 붙인다.
+                  앞의 여섯은 인증 한 건이 지나는 단계(요청·발송·성공·실패·만료·취소)이고,
+                  마지막 「정책 위반 기록」만 성격이 다르다 — 어기면 막는 대신 남기기만 하도록 둔
+                  정책이 걸렸을 때 **요청은 통과시키고** 남긴 줄이라, 인증을 시도한 기록이 아니다.
+                  (수단 칸이 늘 「policy」로 찍히는 것도 그 때문이다.) -->
+                <set-state target="local" filter.statuses="{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== st), st] : (_local.filter.statuses || []).filter(s => s !== st)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{$t('admin.identity.logs.status.' + st)}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="purpose_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.purpose_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.purposes || _local.filter.purposes.length === 0}}">
+              <on type="change">
+                <!-- 용도 「전체」도 같은 꼴 — 비우는 것이 곧 조건 없음이다. -->
+                <set-state target="local" filter.purposes="{{[]}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.identity.logs.filter.purpose_all</span>
+          </label>
+          <label data-each="pp in {{identityPurposes?.data ?? []}}" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.purposes || []).includes(pp.id)}}">
+              <on type="change">
+                <!-- 용도 목록은 코어와 확장이 등록한 것을 받아 온 것이라 설치 구성마다 다르다 — 여기에 안 보이는 용도는 아직 등록되지 않은 것이다. -->
+                <set-state target="local" filter.purposes="{{$event.target.checked ? [...(_local.filter.purposes || []).filter(p => p !== pp.id), pp.id] : (_local.filter.purposes || []).filter(p => p !== pp.id)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{pp.label ?? pp.id}}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-ref="date_range_filter" class="filter-row">
+      <span class="filter-label w-32">$t:admin.identity.logs.filter.date_range_label</span>
+      <div class="flex-center flex-wrap gap-2">
+        <input type="date" aria-label="$t:common.range_start|label={{$t('admin.identity.logs.filter.date_range_label')}}" name="dateFrom" class="input w-40" value="{{_local.filter.dateFrom || ''}}">
+          <on type="change">
+            <!-- 시작일. 활동 로그 쪽과 달리 날짜만 받으므로 하루 단위로만 좁혀지고, 기간 버튼도 없다. -->
+            <set-state target="local" filter.dateFrom="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span class="text-gray-400 dark:text-gray-500">~</span>
+        <input type="date" aria-label="$t:common.range_end|label={{$t('admin.identity.logs.filter.date_range_label')}}" name="dateTo" class="input w-40" value="{{_local.filter.dateTo || ''}}">
+          <on type="change">
+            <!-- 종료일. 두 칸 다 비워 두면 기간 조건 없이 전체를 본다. -->
+            <set-state target="local" filter.dateTo="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+    </div>
+    <div data-ref="channel_filter" data-if="{{(identityProviders?.data ?? []).some(p => Array.isArray(p.channels) &amp;&amp; p.channels.length > 0)}}" class="filter-row">
+      <span class="filter-label w-32">$t:admin.identity.logs.filter.channel_label</span>
+      <div class="flex-center flex-wrap gap-2">
+        <label data-each="ch in {{Array.from(new Set((identityProviders?.data ?? []).flatMap(p => Array.isArray(p.channels) ? p.channels : [])))}}" class="inline-clickable">
+          <input type="checkbox" class="checkbox" checked="{{(_local.filter.channels || []).includes(ch)}}">
+            <on type="change">
+              <!-- 수단 목록은 설치된 제공자들이 내건 채널을 한데 모아 중복을 걷어낸 것이다 — 그래서 제공자가 늘면 칸도 늘고, 하나도 없으면 이 줄 자체가 안 보인다. -->
+              <set-state target="local" filter.channels="{{$event.target.checked ? [...(_local.filter.channels || []).filter(c => c !== ch), ch] : (_local.filter.channels || []).filter(c => c !== ch)}}"/>
+            </on>
+          </input>
+          <span class="text-label">{{((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[ch] ?? ch}}</span>
+        </label>
+      </div>
+    </div>
+    <div data-ref="advanced_toggle_row" class="flex justify-end mt-2">
+      <button data-ref="advanced_filters_toggle" type="button" class="text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1">
+        <on type="click">
+          <!-- 접힘 상태도 조건 묶음 안에 함께 둔다 — 초기화가 조건을 비울 때 펼쳐 둔 영역까지 같이 접히게 하려는 것이다. -->
+          <set-state target="local" filter.advancedOpen="{{!_local.filter.advancedOpen}}"/>
+        </on>
+        <icon name="{{_local.filter.advancedOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
+        <span>$t:admin.identity.logs.filter.advanced_search_toggle</span>
+      </button>
+    </div>
+    <div data-ref="advanced_filters" data-if="{{_local.filter.advancedOpen === true}}" class="filter-grid mt-3 pt-3">
+      <div data-ref="origin_type_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.origin_type_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label data-each="ot in {{['route','hook','policy','middleware','api','custom','system']}}" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.originTypes || []).includes(ot)}}">
+              <on type="change">
+                <!-- 인증을 **무엇이 걸었는가** — 라우트·훅·정책·미들웨어처럼 요구가 나온 자리의 종류다. 어느 확장이 걸었는지는 아래 두 칸(구분·식별자)에서 좁힌다. -->
+                <set-state target="local" filter.originTypes="{{$event.target.checked ? [...(_local.filter.originTypes || []).filter(o => o !== ot), ot] : (_local.filter.originTypes || []).filter(o => o !== ot)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{$t('admin.identity.logs.origin_type.' + ot)}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="source_type_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.source_type_label</span>
+        <select name="sourceType" class="input w-48" value="{{_local.filter.sourceType || ''}}">
+          <options>
+            <option value="">$t:admin.identity.logs.filter.source_type_any</option>
+            <option value="core">$t:admin.identity.policies.source.core</option>
+            <option value="module">$t:admin.identity.policies.source.module</option>
+            <option value="plugin">$t:admin.identity.policies.source.plugin</option>
+            <option value="admin">$t:admin.identity.policies.source.admin</option>
+          </options>
+          <on type="change">
+            <!-- 그 정책을 누가 등록했는지로 나눈다 — 코어가 심은 것, 확장이 들고 온 것, 관리자가 화면에서 만든 것. -->
+            <set-state target="local" filter.sourceType="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <div data-ref="source_identifier_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.source_identifier_label</span>
+        <input type="text" name="sourceIdentifier" placeholder="$t:admin.identity.logs.filter.source_identifier_placeholder" class="input w-64" value="{{_local.filter.sourceIdentifier || ''}}">
+          <on type="change">
+            <!-- 위 구분을 좁힌 뒤 확장 식별자까지 직접 적는 칸이다. 고르는 목록이 아니라 자유 입력이라 철자가 정확해야 걸린다. -->
+            <set-state target="local" filter.sourceIdentifier="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+    </div>
+    <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchIdentityLogs"/>
+        </on>
+        $t:admin.identity.logs.filter.search_button
+      </button>
+      <!-- 검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다 -->
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <sequence>
+            <set-state target="local">
+              <field name="filter">
+                <field name="searchType" value="auto"/>
+                <field name="search" value=""/>
+                <field name="statuses" :value="[]"/>
+                <field name="purposes" :value="[]"/>
+                <field name="channels" :value="[]"/>
+                <field name="originTypes" :value="[]"/>
+                <field name="dateFrom" value=""/>
+                <field name="dateTo" value=""/>
+                <field name="sourceType" value=""/>
+                <field name="sourceIdentifier" value=""/>
+                <field name="advancedOpen" :value="false"/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/identity/logs" :mergeQuery="false"/>
+          </sequence>
+        </on>
+        $t:admin.identity.logs.filter.reset_button
+      </button>
+    </div>
+  </div>
+</partial>

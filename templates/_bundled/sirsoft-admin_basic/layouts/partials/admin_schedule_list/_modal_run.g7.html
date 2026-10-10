@@ -1,0 +1,64 @@
+<!-- 예약을 기다리지 않고 **지금 한 번 돌려 보는** 창. 결과가 오기 전에는 「실행」 버튼만 있고,
+  결과가 오면 그 버튼이 사라지고 성공/실패·걸린 시간·출력이 창 안에 실린다 — 창을 닫지 않고
+  결과를 읽게 하려는 구성이라, 다시 돌리려면 닫았다 열어야 한다.
+  닫기는 결과를 비우고 나간다. 실행한 사실은 이력에 남으므로 이력 창에서 다시 볼 수 있다. -->
+<partial description="스케줄 즉시 실행 확인 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_run_modal">
+  <modal data-type="composite" data-ref="schedule_run_modal" title="$t:admin.schedules.modals.run_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.schedules.modals.run_confirm</p>
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2">
+      <div class="flex-center gap-2">
+        <span class="text-label-subtle">$t:admin.schedules.form.name:</span>
+        <span class="text-primary font-medium">{{_global.selectedSchedule?.name}}</span>
+      </div>
+      <div class="flex-center gap-2">
+        <span class="text-label-subtle">$t:admin.schedules.form.command:</span>
+        <code class="text-xs bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300">{{_global.selectedSchedule?.command}}</code>
+      </div>
+    </div>
+    <div data-if="{{_global.runResult}}" class="mt-4 p-3 rounded-lg {{_global.runResult?.status === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'}}">
+      <div class="flex-center gap-2 mb-2">
+        <icon data-if="{{_global.runResult?.status === 'success'}}" name="check-circle" class="text-xl text-green-600 dark:text-green-400"/>
+        <icon data-if="{{_global.runResult?.status !== 'success'}}" name="circle-xmark" class="text-xl text-red-600 dark:text-red-400"/>
+        <span class="font-medium {{_global.runResult?.status === 'success' ? 'text-success-soft' : 'text-danger-soft'}}">{{_global.runResult?.status === 'success' ? '$t:admin.schedules.result.success' : '$t:admin.schedules.result.failed'}}</span>
+      </div>
+      <div data-if="{{_global.runResult?.duration}}" class="text-label">$t:admin.schedules.modals.run_duration|duration={{_global.runResult?.duration_formatted}}</div>
+      <div data-if="{{_global.runResult?.output}}" class="mt-2">
+        <span class="text-tertiary">$t:admin.schedules.modals.output:</span>
+        <pre class="mt-1 text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-32 text-gray-700 dark:text-gray-300">{{_global.runResult?.output}}</pre>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" disabled="{{_global.isRunning}}">
+        <on type="click">
+          <!-- 닫으면서 결과를 비운다 — 남겨 두면 다음에 다른 작업으로 이 창을 열었을 때 지난 실행 결과가 그 작업의 것처럼 보인다. -->
+          <sequence>
+            <set-state target="global" :runResult="null"/>
+            <close-modal target="schedule_run_modal"/>
+          </sequence>
+        </on>
+        $t:common.close
+      </button>
+      <button data-if="{{!_global.runResult}}" class="flex-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRunning}}">
+        <on type="click">
+          <!-- 성공해도 창을 닫지 않는다 — 결과를 담아 두면 위 영역이 펼쳐지고 이 버튼은 조건에서 빠져 사라진다. 목록은 다시 받아 마지막 실행 시각을 갱신한다. -->
+          <sequence>
+            <set-state target="global" :isRunning="true"/>
+            <api-call :auth_required="true" target="/api/admin/schedules/{{_global.selectedSchedule?.id}}/run" method="POST">
+              <success>
+                <set-state target="global" :isRunning="false" runResult="{{response.data}}"/>
+                <refetch-data-source dataSourceId="schedules"/>
+              </success>
+              <fail>
+                <set-state target="global" :isRunning="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.run_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isRunning}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{!_global.isRunning}}" name="play" class="text-base"/>
+        <span>{{_global.isRunning ? '$t:admin.schedules.modals.running' : '$t:admin.schedules.actions.run'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,16 @@
+# e2e:allow 화면 변경 없음 — 실패 이력은 기존 현금영수증 이력·재발급 화면에 그대로 나타난다.
+feature: 현금영수증 발급·취소 실패는 FAILED 이력으로 남는다 (B1 · B2 · B3) — #747 C9
+
+description: |
+  - B1·B2 프로바이더 예외를 실패 결과(PROVIDER_EXCEPTION)로 받아 FAILED 이력을 남긴다 — 이력이 있어야 재발급 버튼이 선다.
+  - B3 실제 발급은 결제 통화 환산을 엄격히 한다 — 환산할 수 없으면 기준 통화로 발급하지 않고 CURRENCY_CONVERSION_FAILED.
+
+axes:
+  item: [b1_issue_exception, b2_cancel_exception, b3_conversion_failure]
+
+effects:
+  - provider_exception_leaves_a_failed_receipt_record
+  - unconvertible_amount_is_not_issued_in_base_currency
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptFailureRecordTest.php

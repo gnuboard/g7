@@ -152,11 +152,19 @@ class TestPathCollector
         }
 
         if ($vitest['files'] > 0) {
-            $commands[] = [
-                'label' => 'Vitest (확장 디렉토리에서)',
-                'command' => "cd {$rel} && powershell -Command \"npm run test:run -- <대상>\"",
-                'shell' => 'PowerShell',
-            ];
+            // 자기 `test:run` 스크립트가 없는 확장(학습용 샘플 모듈 등)은 루트 vitest.config.ts 의
+            // include 로 돈다. 확장 디렉토리에서 부르면 스크립트가 없어 실행조차 되지 않는다.
+            $commands[] = $this->hasNpmScript($record, 'test:run')
+                ? [
+                    'label' => 'Vitest (확장 디렉토리에서)',
+                    'command' => "cd {$rel} && powershell -Command \"npm run test:run -- <대상>\"",
+                    'shell' => 'PowerShell',
+                ]
+                : [
+                    'label' => 'Vitest (저장소 루트에서)',
+                    'command' => "powershell -Command \"npm run test:run -- {$rel}/<대상>\"",
+                    'shell' => 'PowerShell',
+                ];
         }
 
         if ($playwright['count'] > 0) {
@@ -172,6 +180,25 @@ class TestPathCollector
         }
 
         return $commands;
+    }
+
+    /**
+     * 확장 package.json 에 그 npm 스크립트가 있는지 확인합니다.
+     *
+     * @param  array<string, mixed>  $record  확장 레코드
+     * @param  string  $script  스크립트 이름
+     * @return bool 스크립트가 있으면 true
+     */
+    private function hasNpmScript(array $record, string $script): bool
+    {
+        $path = $record['path'].DIRECTORY_SEPARATOR.'package.json';
+        if (! is_file($path)) {
+            return false;
+        }
+
+        $package = json_decode((string) file_get_contents($path), true);
+
+        return is_array($package) && isset($package['scripts'][$script]);
     }
 
     /**

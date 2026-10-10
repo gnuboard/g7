@@ -47,7 +47,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
@@ -55,7 +55,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -70,7 +71,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 처리. 결제 요청 시점에 주문의 `total_tax_amount`/`total_vat_amount`/`total_tax_free_amount`
 가 모두 0이 아니면 과세 필드를 폼에 포함합니다(§4 "과세 처리").
 
-**결제 취소(환불)**: 관리자가 주문 취소(`cancel_pg=true`) → 코어가
+**결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`(우선순위 10)가 먼저
 나이스페이먼츠 취소 API 호출(전액취소 `isPartial=0`/부분취소 `isPartial=1`) →
 `CancelActivityLogListener`(우선순위 20)가 결과를 활동 로그에 별도 기록. 가상계좌 입금
@@ -80,6 +81,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 **에스크로 배송 등록**: 관리자 주문 상세에서 운송장번호·택배사를 입력 →
 `AdminEscrowController::registerDelivery()` → 나이스페이먼츠 배송 등록 API 호출.
 `EscrowDeliveryRegisterRequest`가 입력을 검증합니다.
+
+**외부로 나가는 주소**: 나이스페이먼츠로 넘기는 결과 수신 주소(`ReturnURL`)를 포함한 client-config 의 `callback_url`·`sign_data_url`·`close_report_url`, 결제 후 리다이렉트, 관리자 입금통보 URL 안내는 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 종전 플러그인 자체 `Support/UrlHelper` 는 코어 `SiteUrl` 로 합쳐져 삭제됐다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -88,9 +91,9 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 구독 훅 | 15개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 12개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 4개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -110,7 +113,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-pay_nicepayments` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 승인/취소 흐름을 고칠 때 `before_*`/`after_*` 훅 순서와 우선순위(`PaymentRefundListener` < `CancelActivityLogListener`)를 유지 — 로그가 실제 처리보다 먼저 실행되면 안 된다
@@ -131,6 +134,12 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 라이브 가맹점 키를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 결제 요청을 위조할 수 있다 |
 | 콜백이 넘겨준 `NextAppURL`/`NetCancelURL` 의 도메인을 원문 host 로 대조 (`str_ends_with` 등) | `OutboundUrlValidator::normalizeHost()` 로 정규화한 뒤 대조 (사본 금지 — 코어가 SSoT) | UTS#46 정규화에서 전각 문자가 ASCII 구분자로 바뀐다. `evil.example／.nicepay.co.kr`(U+FF0F)은 접미사 검사를 통과하지만 실제 연결 host 는 `evil.example` 이 되어, 인증 토큰과 MID 가 실린 POST 가 외부로 나간다 |
 | 그 URL 에 userinfo(`user@host`)가 있어도 통과 | userinfo 존재만으로 거부 | `@` 앞부분이 신뢰 도메인처럼 보이게 위장할 수 있다 |
+| 승인 콜백의 실패 분기(승인 거절·금액 불일치·통화 오류·예외)에서 `failPayment()` 호출 | 망취소만 하고 주문은 그대로 둔다. 정당한 실패는 주문 소유자를 확인하는 close-report 가 기록 | 콜백 서명(`AuthToken+MID+Amt`)은 주문번호를 묶지 않는다 — 자기 결제창의 인증값에 남의 `Moid` 를 붙이고 `NextAppURL` 만 바꿔도 예외 분기로 남의 결제대기 주문이 취소됐다 (KVE-2026-2434) |
+| 승인 성공 응답을 콜백 `Moid` 주문에 그대로 반영 | 승인 응답의 `Moid`·`Amt` 가 콜백과 같을 때만 반영, 다르면 망취소 | 다른 주문의 인증값으로 받은 승인이 엉뚱한 주문에 붙는다 |
+| sign-data 의 재결제 복구(취소→결제대기)를 주문자 연락처 대조로 허용 | 복구는 주문 소유자(`requestOwnsOrder`)만 — 서명 발급(상태 불변)만 연락처 대조 유지 | 연락처만 알면 남의 취소 주문이 결제대기로 되살아났다 (KVE-2026-2434) |
+| 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
+| 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
+| 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -138,10 +147,10 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 23개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
-| Vitest | 8개 | `vitest.config.ts` |
+| PHPUnit | 36개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
+| Vitest | 26개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 36개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -172,3 +181,37 @@ cd plugins/_bundled/sirsoft-pay_nicepayments && powershell -Command "npm run tes
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 확장 조각의 CSS 클래스 규약
+
+resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
+클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+
+두 가지를 지킨다.
+
+1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
+   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
+   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
+   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
+   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
+   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
+
+2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
+   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
+   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
+   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
+
+이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
+열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
+떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
+정적 검사가 대조한다.
+
+### 환경설정 화면의 안내 글자색은 플러그인 CSS 가 제공한다
+
+`resources/layouts/admin/plugin_settings` 의 경고·성공·위험·안내 글자색은 관리자 템플릿의 의미 클래스(`text-warning-soft` 등)를
+쓰지 않고 이 플러그인의 `resources/css/main.css` 가 정의한 접두 클래스(`pay-nicepayments-tone-*`, 다크 모드 짝 포함)를 쓴다.
+템플릿이 그 클래스의 이름이나 색을 바꾸면 이 화면의 색이 따라 바뀌기 때문이다(7.1.0 때 형제 플러그인의 라이브 모드
+경고 본문이 초록으로 바뀌었다). 이 화면에만 있는 임의값 배치(`grid-cols-[…]`·`min-w-[…]` 등)는 템플릿 CSS 에 만들어지지 않으므로
+같은 파일에 접두 클래스로 둔다. 다른 결제 플러그인도 같은 이름 체계를 쓰지만 서로의 클래스를 참조하지 않는다.
+CSS 를 고친 뒤에는 `php artisan plugin:build sirsoft-pay_nicepayments --production` → `plugin:update` 로 `dist/css/plugin.css` 를 반영한다.
+가드: `resources/js/__tests__/layouts/pluginSettingsToneClasses.test.ts`.

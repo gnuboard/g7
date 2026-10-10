@@ -132,17 +132,28 @@ class DashboardPermissionTest extends ModuleTestCase
         $activeBoard = Board::factory()->create(['is_active' => true]);
         $inactiveBoard = Board::factory()->create(['is_active' => false]);
 
-        $this->createPendingReport($activeBoard);
-        $this->createPendingReport($inactiveBoard);
+        $activeReport = $this->createPendingReport($activeBoard);
+        $inactiveReport = $this->createPendingReport($inactiveBoard);
 
         $response = $this->actingAs($this->adminWith)
             ->getJson(self::BASE.'/pending-reports');
 
         $response->assertStatus(200);
 
-        // 비활성 게시판 신고는 제외되어 총 1건, 목록도 1건이어야 한다.
-        $this->assertSame(1, $response->json('data.total'), '미처리 신고 총계는 활성 게시판 신고만 세야 한다.');
-        $this->assertCount(1, $response->json('data.items'), '미처리 신고 목록은 활성 게시판 신고만 담아야 한다.');
+        // 이 테스트가 만든 두 건만 본다 — 전역 건수로 단언하면 같은 프로세스의 앞선 테스트가
+        // 남긴 미처리 신고에 따라 결과가 흔들린다(순서 의존).
+        $ids = array_column($response->json('data.items') ?? [], 'id');
+
+        $this->assertContains(
+            $activeReport->id,
+            $ids,
+            '활성 게시판의 미처리 신고가 목록에서 빠졌다.'
+        );
+        $this->assertNotContains(
+            $inactiveReport->id,
+            $ids,
+            '비활성 게시판의 미처리 신고가 목록에 포함됐다.'
+        );
     }
 
     /**

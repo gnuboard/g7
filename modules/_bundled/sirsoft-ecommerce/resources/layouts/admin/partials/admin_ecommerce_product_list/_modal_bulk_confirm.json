@@ -1,296 +1,297 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Index - Bulk Action Confirm Modal"
-  },
-  "id": "modal_bulk_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.title",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-4 max-h-96 overflow-y-auto"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.bulkConfirmData?.summary?.hasBulkChanges}}",
-          "props": {
-            "className": "p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H4",
-              "props": {
-                "className": "font-semibold text-info-soft mb-2"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section"
-            },
-            {
-              "type": "basic",
-              "name": "Ul",
-              "props": {
-                "className": "space-y-1 text-info-soft"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Li",
-                  "if": "{{_global.bulkSalesStatus}}",
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.sales_status|value={{_global.bulkSalesStatus === 'on_sale' ? '$t:sirsoft-ecommerce.enums.sales_status.on_sale' : (_global.bulkSalesStatus === 'suspended' ? '$t:sirsoft-ecommerce.enums.sales_status.suspended' : (_global.bulkSalesStatus === 'coming_soon' ? '$t:sirsoft-ecommerce.enums.sales_status.coming_soon' : '$t:sirsoft-ecommerce.enums.sales_status.sold_out'))}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Li",
-                  "if": "{{_global.bulkDisplayStatus}}",
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.display_status|value={{_global.bulkDisplayStatus === 'visible' ? '$t:sirsoft-ecommerce.enums.display_status.visible' : '$t:sirsoft-ecommerce.enums.display_status.hidden'}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Li",
-                  "if": "{{_global.bulkPriceCondition}}",
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.price_change"
-                },
-                {
-                  "type": "basic",
-                  "name": "Li",
-                  "if": "{{_global.bulkStockCondition}}",
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.stock_change"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.bulkConfirmData?.products?.length > 0}}",
-          "children": [
-            {
-              "type": "basic",
-              "name": "H4",
-              "props": {
-                "className": "font-semibold text-body mb-2"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.products_section|count={{_global.bulkConfirmData.products.length}}"
-            },
-            {
-              "type": "basic",
-              "name": "Ul",
-              "props": {
-                "className": "space-y-1 text-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Li",
-                  "iteration": {
-                    "source": "_global.bulkConfirmData.products",
-                    "item_var": "product"
-                  },
-                  "props": {
-                    "className": "flex justify-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "{{product.name}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-500"
-                      },
-                      "text": "{{product.changes}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.bulkConfirmData?.options?.length > 0}}",
-          "props": {
-            "data-testid": "bulk-confirm-options-section"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H4",
-              "props": {
-                "className": "font-semibold text-body mb-2 mt-3"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_section|count={{_global.bulkConfirmData.summary.optionCount}}"
-            },
-            {
-              "type": "basic",
-              "name": "Ul",
-              "props": {
-                "className": "space-y-1 text-label max-h-40 overflow-y-auto"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Li",
-                  "iteration": {
-                    "source": "_global.bulkConfirmData.options",
-                    "item_var": "option"
-                  },
-                  "props": {
-                    "className": "flex justify-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{option.aggregate !== true}}",
-                      "text": "{{option.productName}} > {{option.optionName}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{option.aggregate === true}}",
-                      "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_aggregate|product={{option.productName}}|count={{option.optionCount}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-500"
-                      },
-                      "text": "{{option.changes}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0)}}",
-          "props": {
-            "className": "p-4 text-center"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-yellow-600 dark:text-yellow-400"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.no_changes"
-            }
-          ]
-        }
-      ]
+    "comment": "상품 목록 — 일괄변경 확인 창. 주문 쪽 확인 창과 달리 **상품과 옵션 두 층**을 따로 보여 준다.\n  판매상태·전시상태는 상품에 걸리지만 가격·재고는 옵션마다 걸리므로, 상품 3건을 골라도 실제로\n  바뀌는 줄은 옵션 수만큼 늘어난다 — 그 차이를 미리 보지 못하면 운영자가 규모를 오해한다.\n  바꿀 값과 대상 목록은 목록 화면이 `_global` 에 담아 둔 것을 읽는다(창은 부모 `_local` 을 못 본다).\n  실패 목록(`bulkUpdateErrors`)도 이 창 안에 남는다 — 일부만 실패했을 때 무엇이 남았는지\n  창을 닫지 않고 읽을 수 있어야 하기 때문이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Index - Bulk Action Confirm Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.bulkUpdateErrors?.length > 0}}",
-      "props": {
-        "className": "p-3 mt-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H4",
-          "props": {
-            "className": "font-semibold text-red-700 dark:text-red-300 mb-2"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.error_section"
-        },
-        {
-          "type": "basic",
-          "name": "Ul",
-          "props": {
-            "className": "space-y-1 text-sm text-red-700 dark:text-red-300 list-disc list-inside"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Li",
-              "iteration": {
-                "source": "_global.bulkUpdateErrors",
-                "item_var": "error_message"
-              },
-              "text": "{{error_message}}"
-            }
-          ]
-        }
-      ]
+    "id": "modal_bulk_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.title",
+        "size": "md"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-2 mt-6"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-outline",
-            "disabled": "{{_global.isProcessing}}"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4 max-h-96 overflow-y-auto"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.bulkConfirmData?.summary?.hasBulkChanges}}",
+                    "props": {
+                        "className": "p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "font-semibold text-info-soft mb-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "space-y-1 text-info-soft"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "if": "{{_global.bulkSalesStatus}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.sales_status|value={{_global.bulkSalesStatus === 'on_sale' ? '$t:sirsoft-ecommerce.enums.sales_status.on_sale' : (_global.bulkSalesStatus === 'suspended' ? '$t:sirsoft-ecommerce.enums.sales_status.suspended' : (_global.bulkSalesStatus === 'coming_soon' ? '$t:sirsoft-ecommerce.enums.sales_status.coming_soon' : '$t:sirsoft-ecommerce.enums.sales_status.sold_out'))}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "if": "{{_global.bulkDisplayStatus}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.display_status|value={{_global.bulkDisplayStatus === 'visible' ? '$t:sirsoft-ecommerce.enums.display_status.visible' : '$t:sirsoft-ecommerce.enums.display_status.hidden'}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "if": "{{_global.bulkPriceCondition}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.price_change"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "if": "{{_global.bulkStockCondition}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.stock_change"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.bulkConfirmData?.products?.length > 0}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "font-semibold text-body mb-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.products_section|count={{_global.bulkConfirmData.products.length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "space-y-1 text-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "_global.bulkConfirmData.products",
+                                        "item_var": "product"
+                                    },
+                                    "props": {
+                                        "className": "flex justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{product.name}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-500"
+                                            },
+                                            "text": "{{product.changes}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.bulkConfirmData?.options?.length > 0}}",
+                    "props": {
+                        "data-testid": "bulk-confirm-options-section"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "font-semibold text-body mb-2 mt-3"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_section|count={{_global.bulkConfirmData.summary.optionCount}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "space-y-1 text-label max-h-40 overflow-y-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "_global.bulkConfirmData.options",
+                                        "item_var": "option"
+                                    },
+                                    "props": {
+                                        "className": "flex justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{option.aggregate !== true}}",
+                                            "text": "{{option.productName}} > {{option.optionName}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{option.aggregate === true}}",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_aggregate|product={{option.productName}}|count={{option.optionCount}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-500"
+                                            },
+                                            "text": "{{option.changes}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0)}}",
+                    "props": {
+                        "className": "p-4 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-yellow-600 dark:text-yellow-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.no_changes"
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-primary",
-            "data-testid": "bulk-confirm-submit",
-            "disabled": "{{_global.isProcessing || ((!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0))}}"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isProcessing}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm mr-1"
-              }
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.bulkUpdateErrors?.length > 0}}",
+            "props": {
+                "className": "p-3 mt-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isProcessing ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.common.confirm'}}"
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sirsoft-ecommerce.bulkUpdate"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H4",
+                    "props": {
+                        "className": "font-semibold text-red-700 dark:text-red-300 mb-2"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.error_section"
+                },
+                {
+                    "type": "basic",
+                    "name": "Ul",
+                    "props": {
+                        "className": "space-y-1 text-sm text-red-700 dark:text-red-300 list-disc list-inside"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Li",
+                            "iteration": {
+                                "source": "_global.bulkUpdateErrors",
+                                "item_var": "error_message"
+                            },
+                            "text": "{{error_message}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-2 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-outline",
+                        "disabled": "{{_global.isProcessing}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sirsoft-ecommerce.bulkUpdate"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary",
+                        "data-testid": "bulk-confirm-submit",
+                        "disabled": "{{_global.isProcessing || ((!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0))}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isProcessing}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm mr-1"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isProcessing ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.common.confirm'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

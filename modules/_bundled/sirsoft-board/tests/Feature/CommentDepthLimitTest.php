@@ -9,6 +9,7 @@ use App\Models\User;
 use Modules\Sirsoft\Board\Exceptions\CommentDepthExceededException;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 대댓글 깊이 제한 테스트
@@ -17,20 +18,30 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 저장되는 depth 가 항상 부모 depth + 1 (하드코딩 상한 없음)
  * - 게시판 설정 max_comment_depth 를 넘는 답글은 422
  * - max 를 낮게(3) / 높게(10) 설정한 두 경우 모두 설정값을 따른다
- *
- * @group board
- * @group comment
- * @group depth
  */
+#[Group('board')]
+#[Group('comment')]
+#[Group('depth')]
 class CommentDepthLimitTest extends BoardTestCase
 {
     private User $memberUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-depth-limit';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -42,6 +53,11 @@ class CommentDepthLimitTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,6 +79,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_equals_parent_depth_plus_one, depth_follows_board_setting_not_literal
+     *
+     * @return void 반환값 없음
      */
     public function test_depth_increments_up_to_configured_max(): void
     {
@@ -93,6 +111,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_beyond_board_max_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_reply_beyond_configured_max_is_rejected(): void
     {
@@ -116,6 +136,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_beyond_board_max_rejected_422, depth_follows_board_setting_not_literal
+     *
+     * @return void 반환값 없음
      */
     public function test_reply_beyond_lowered_max_is_rejected(): void
     {
@@ -139,6 +161,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_equals_parent_depth_plus_one, depth_follows_board_setting_not_literal
+     *
+     * @return void 반환값 없음
      */
     public function test_reply_within_lowered_max_is_allowed(): void
     {
@@ -170,6 +194,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_beyond_board_max_rejected_422, depth_follows_board_setting_not_literal
+     *
+     * @return void 반환값 없음
      */
     public function test_reply_is_rejected_when_max_depth_is_zero(): void
     {
@@ -193,6 +219,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_follows_board_setting_not_literal
+     *
+     * @return void 반환값 없음
      */
     public function test_top_level_comment_is_allowed_when_max_depth_is_zero(): void
     {
@@ -226,6 +254,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_beyond_board_max_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_service_direct_call_rejects_reply_beyond_max_depth(): void
     {
@@ -255,6 +285,8 @@ class CommentDepthLimitTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects depth_follows_board_setting_not_literal
+     *
+     * @return void 반환값 없음
      */
     public function test_service_direct_call_allows_reply_within_max_depth(): void
     {

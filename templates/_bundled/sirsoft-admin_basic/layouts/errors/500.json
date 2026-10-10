@@ -1,78 +1,79 @@
 {
-  "version": "1.0.0",
-  "layout_name": "errors/500",
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:errors.500.title",
-    "is_error_layout": true,
-    "error_code": 500
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "error_container",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
-        },
-        "children": [
-          {
-            "id": "error_icon",
-            "type": "basic",
-            "name": "Icon",
-            "props": {
-              "name": "server-crash",
-              "className": "w-24 h-24 text-orange-400 dark:text-orange-500 mb-6"
+    "comment": "서버 예외로 요청이 끝나지 못했을 때의 에러 화면.\n  원인 문구를 화면에 싣지 않는다 — 예외 상세는 서버 로그에만 남기고 여기서는 일반 안내만 준다.",
+    "version": "1.0.0",
+    "layout_name": "errors/500",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:errors.500.title",
+        "is_error_layout": true,
+        "error_code": 500
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "error_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
+                },
+                "children": [
+                    {
+                        "id": "error_icon",
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "server",
+                            "className": "text-8xl text-orange-400 dark:text-orange-500 mb-6"
+                        }
+                    },
+                    {
+                        "id": "error_code",
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                            "className": "text-primary text-6xl font-bold mb-4"
+                        },
+                        "text": "500"
+                    },
+                    {
+                        "id": "error_title",
+                        "type": "basic",
+                        "name": "H2",
+                        "props": {
+                            "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                        },
+                        "text": "$t:errors.500.title"
+                    },
+                    {
+                        "id": "error_message",
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400 mb-8 max-w-md"
+                        },
+                        "text": "$t:errors.500.message"
+                    },
+                    {
+                        "id": "back_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin"
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                        },
+                        "text": "$t:errors.back_home"
+                    }
+                ]
             }
-          },
-          {
-            "id": "error_code",
-            "type": "basic",
-            "name": "H1",
-            "props": {
-              "className": "text-primary text-6xl font-bold mb-4"
-            },
-            "text": "500"
-          },
-          {
-            "id": "error_title",
-            "type": "basic",
-            "name": "H2",
-            "props": {
-              "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            },
-            "text": "$t:errors.500.title"
-          },
-          {
-            "id": "error_message",
-            "type": "basic",
-            "name": "P",
-            "props": {
-              "className": "text-gray-500 dark:text-gray-400 mb-8 max-w-md"
-            },
-            "text": "$t:errors.500.message"
-          },
-          {
-            "id": "back_button",
-            "type": "basic",
-            "name": "Button",
-            "props": {
-              "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-            },
-            "text": "$t:errors.back_home",
-            "actions": [
-              {
-                "type": "click",
-                "handler": "navigate",
-                "params": {
-                  "path": "/admin"
-                }
-              }
-            ]
-          }
         ]
-      }
-    ]
-  }
+    }
 }

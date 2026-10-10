@@ -1,0 +1,295 @@
+<!-- 배송정책 폼의 부과 정책 구역 — 배송비를 어떻게 매길지 정한다.
+  **이 조각은 나라 하나를 편집한다.** 위 국가 탭이 고른 나라(`_local.activeCountryTab`)의 설정만
+  보여 주고, 값은 정책 전체의 `country_settings` 배열 중 그 번째 칸으로 들어간다. 그래서 모든
+  액션이 그 번호를 함께 넘긴다.
+  부과 방식을 고르면 아래가 통째로 갈린다 — 기본 배송비 · 무료 기준 · 단위값 · 구간표 · 외부 API
+  설정이 각자 조건으로 나타난다. 그 조건들(`_local.show*`)은 화면이 계산하지 않고 방식 변경
+  핸들러가 세워 준다.
+  **입력을 화면 상태에 직접 쓰지 않고 전부 핸들러에 맡긴다** — 값이 배열 안 배열(나라 → 구간)로
+  들어가고, 오류 표시도 `country_settings.0.base_fee` 같은 경로 키로 돌아오기 때문이다.
+  숫자 칸은 대기시간(300ms)을 두어 타이핑마다 배열을 다시 만들지 않는다.
+  읽기 전용(`_computed.isReadOnly`)이면 모든 칸이 잠긴다. -->
+<partial description="배송정책 폼 - 부과정책 설정 (국가별 탭 내 부과정책/배송비/구간/API 설정)">
+  <div data-ref="charge_settings_section" data-if="{{_computed.activeCountrySetting}}" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_charge</h2>
+    <div data-ref="charge_settings_fields" class="row-stack">
+      <div data-ref="field_charge_policy">
+        <div>
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.charge_policy</span>
+            <span class="text-required">*</span>
+          </label>
+          <select class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_computed.activeCountrySetting?.charge_policy ?? 'fixed'}}" options="{{_computed.chargePolicyOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 부과 방식 선택 — 값을 담는 데서 그치지 않고 **아래 어떤 칸이 보일지**(`_local.show*`)를 함께 세운다. 그래서 화면에는 그 조건을 계산하는 자리가 없다. -->
+              <action handler="sirsoft-ecommerce.onChargePolicyChange" value="{{$event.target.value}}" index="{{_local.activeCountryTab ?? 0}}"/>
+            </on>
+          </select>
+          <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy']}}" class="form-error-xs">{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ?? [])[0] ?? ''}}</span>
+        </div>
+      </div>
+      <div data-ref="field_base_fee" data-if="{{_local.showBaseFee}}">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.base_fee</label>
+          <div class="relative">
+            <input type="number" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ? 'input input-error pr-12' : 'input pr-12'}}" value="{{_computed.activeCountrySetting?.base_fee ?? 0}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 기본 배송비 — 빈 칸이나 숫자가 아닌 입력은 **0** 으로 굳힌다(`|| 0`). 배송비가 없는 상태를 `null` 이 아니라 0 으로 적는다는 뜻이다. -->
+                <action handler="sirsoft-ecommerce.updateCountryField" :debounce="300" field="base_fee" value="{{parseFloat($event.target.value) || 0}}"/>
+              </on>
+            </input>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-label-subtle">{{_computed.defaultCurrencyCode}}</span>
+          </div>
+          <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee']}}" class="form-error-xs">{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ?? [])[0] ?? ''}}</span>
+        </div>
+      </div>
+      <div data-ref="field_free_threshold" data-if="{{_local.showFreeThreshold}}">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold</label>
+          <div class="relative">
+            <input type="number" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ? 'input input-error pr-12' : 'input pr-12'}}" value="{{_computed.activeCountrySetting?.free_threshold ?? ''}}" :min="0" :step="1000" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold_placeholder" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 무료배송 기준액 — 위 기본 배송비와 달리 빈 칸을 **`null`** 로 둔다. 0 으로 두면 '0원 이상 무료', 즉 언제나 무료가 되어 버린다. -->
+                <action handler="sirsoft-ecommerce.updateCountryField" :debounce="300" field="free_threshold" value="{{parseFloat($event.target.value) || null}}"/>
+              </on>
+            </input>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-label-subtle">{{_computed.defaultCurrencyCode}}</span>
+          </div>
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold_hint</span>
+          <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold']}}" class="form-error-xs">{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ?? [])[0] ?? ''}}</span>
+        </div>
+      </div>
+      <div data-ref="field_unit_value" data-if="{{_local.showUnitValue}}">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_value</label>
+          <!-- 단위값(수량·무게 단위마다 얼마) — 이 값만 전용 핸들러를 쓴다. 부과 방식에 따라 저장 자리가 갈리기 때문이고, 그래서 여기서는 글자 그대로 넘긴다. -->
+          <div class="flex items-center gap-2">
+            <input type="number" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ? 'input input-error' : 'input'}}" value="{{_computed.activeCountrySetting?.ranges?.unit_value ?? ''}}" :min="0.01" :step="0.01" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 구간 단위값. 입력할 때마다 구간 표 전체를 다시 계산해야 해서 전용 핸들러가 맡고, 타이핑 도중 매 글자마다 재계산하지 않도록 짧게 묶어 처리한다 -->
+                <action handler="sirsoft-ecommerce.updateUnitValue" :debounce="300" value="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span data-if="{{!!_computed.perUnitLabel}}" class="text-tertiary whitespace-nowrap">{{_computed.perUnitLabel ?? ''}}</span>
+          </div>
+          <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value']}}" class="form-error-xs">{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ?? [])[0] ?? ''}}</span>
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_hint</span>
+        </div>
+      </div>
+      <div data-ref="field_ranges" data-if="{{_local.showRanges}}">
+        <div class="flex-between">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.range_tiers</label>
+          <button type="button" class="btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <!-- 구간 한 줄 추가 — 새 줄의 시작값을 앞 구간에 이어 붙이는 계산이 필요해 핸들러가 맡는다. -->
+              <action handler="sirsoft-ecommerce.addRangeTier" index="{{_local.activeCountryTab ?? 0}}"/>
+            </on>
+            <icon name="plus" class="text-xs mr-1"/>
+            <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.range_add</span>
+          </button>
+        </div>
+        <div data-ref="range_tiers_table" data-if="{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length > 0}}" class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_min') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}</th>
+                <th>{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_max') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}</th>
+                <th>$t:sirsoft-ecommerce.admin.shipping_policy.form.range_fee</th>
+                <th class="w-16"/>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-ref="range_tier_row_{{tierIdx}}" data-each="tier, tierIdx in {{_computed.activeCountrySetting?.ranges?.tiers ?? []}}">
+                <td>
+                  <!-- 구간 시작값 — 나라 번호와 줄 번호를 **둘 다** 넘긴다(배열 안 배열이다). 빈 칸은 0 으로 굳힌다. -->
+                  <input type="number" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error bg-gray-100 dark:bg-gray-700' : 'input bg-gray-100 dark:bg-gray-700'}}" value="{{tier.min ?? ''}}" :readOnly="true" :tabIndex="-1" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min_auto" disabled="{{_computed.isReadOnly}}"/>
+                  <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ?? ''}}</span>
+                </td>
+                <td>
+                  <input type="number" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ? 'input input-error' : 'input'}}" value="{{tier.max ?? ''}}" :min="0" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.range_unlimited" disabled="{{_computed.isReadOnly}}">
+                    <on type="change">
+                      <!-- 구간 끝값 — 시작값과 달리 빈 칸을 **`null`** 로 둔다. 마지막 구간의 '이상' (상한 없음)을 그렇게 적기 때문이고, 0 으로 굳히면 그 구간이 아무것도 담지 못한다. -->
+                      <action handler="sirsoft-ecommerce.updateRangeTierField" :debounce="300" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}" field="max" value="{{$event.target.value}}"/>
+                    </on>
+                  </input>
+                  <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ?? ''}}</span>
+                </td>
+                <td>
+                  <input type="number" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}" value="{{tier.fee ?? ''}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
+                    <on type="change">
+                      <!-- 그 구간의 배송비 — 빈 칸은 0(무료)으로 굳힌다. -->
+                      <action handler="sirsoft-ecommerce.updateRangeTierField" :debounce="300" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}" field="fee" value="{{$event.target.value}}"/>
+                    </on>
+                  </input>
+                  <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ?? ''}}</span>
+                </td>
+                <td>
+                  <button data-if="{{!_computed.isReadOnly}}" type="button" class="btn-icon text-error" aria-label="$t:common.delete">
+                    <on type="click">
+                      <!-- 구간 줄 삭제 — 지운 뒤 남은 줄들의 번호가 밀리므로 화면이 아니라 핸들러가 배열을 다시 만든다. -->
+                      <action handler="sirsoft-ecommerce.removeRangeTier" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}"/>
+                    </on>
+                    <icon name="trash" class="text-sm"/>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-if="{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}" class="text-center text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+          <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges</span>
+          <span data-if="{{!!_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max}}" class="form-error-xs block">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max ?? ''}}</span>
+        </div>
+      </div>
+      <div data-ref="field_api_settings" data-if="{{_local.showApiSettings}}" class="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+        <h3 class="text-body font-semibold mb-2">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_settings</h3>
+        <div data-ref="field_api_endpoint">
+          <div>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_endpoint</label>
+            <input type="url" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ? 'input input-error font-mono' : 'input font-mono'}}" value="{{_computed.activeCountrySetting?.api_endpoint ?? ''}}" placeholder="https://api.example.com/shipping/calculate" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 외부 배송비 API 주소 — 부과 방식을 'API' 로 골랐을 때만 나타나는 묶음의 첫 칸이다. 빈 칸은 `null` 로 둔다(빈 문자열이면 서버가 주소로 읽으려 든다). -->
+                <action handler="sirsoft-ecommerce.updateCountryField" :debounce="300" field="api_endpoint" value="{{$event.target.value || null}}"/>
+              </on>
+            </input>
+            <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint']}}" class="form-error-xs">{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ?? [])[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="field_api_http_method" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_http_method</label>
+            <select class="input w-full" value="{{_computed.activeCountrySetting?.api_config?.http_method ?? 'POST'}}" options="{{_computed.apiHttpMethodOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 요청 메서드 — 주소와 달리 `api_config` 안쪽 값이라 전용 핸들러를 쓴다. 선택칸이라 대기시간이 없다. -->
+                <action handler="sirsoft-ecommerce.updateApiConfigField" field="http_method" value="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_type</label>
+            <select class="input w-full" value="{{_computed.activeCountrySetting?.api_config?.auth_type ?? 'none'}}" options="{{_computed.apiAuthTypeOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 인증 방식 — 이 값이 아래 두 칸의 등장을 정한다: 헤더 이름은 '커스텀 헤더' 일 때만, 토큰은 '없음' 이 아닐 때만 나온다. -->
+                <action handler="sirsoft-ecommerce.updateApiConfigField" field="auth_type" value="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div data-ref="field_api_auth_header_name" data-if="{{_computed.activeCountrySetting?.api_config?.auth_type === 'custom_header'}}">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_header_name</label>
+          <input type="text" class="input font-mono" value="{{_computed.activeCountrySetting?.api_config?.auth_header_name ?? ''}}" placeholder="X-Api-Key" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 커스텀 헤더 이름 — 인증 방식이 '커스텀 헤더' 일 때만 보인다. 방식을 바꿔 이 칸이 사라져도 값은 남으므로, 되돌아오면 이전 입력이 그대로 있다. -->
+              <action handler="sirsoft-ecommerce.updateApiConfigField" :debounce="300" field="auth_header_name" value="{{$event.target.value || null}}"/>
+            </on>
+          </input>
+        </div>
+        <div data-ref="field_api_auth_token" data-if="{{_computed.activeCountrySetting?.api_config?.auth_type &amp;&amp; _computed.activeCountrySetting?.api_config?.auth_type !== 'none'}}">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_token</label>
+          <input type="password" class="input font-mono" value="{{_computed.activeCountrySetting?.api_config?.auth_token ?? ''}}" placeholder="{{_computed.activeCountrySetting?.api_config?.has_auth_token ? '••••••••' : ''}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 인증 토큰 — 인증을 쓰는 모든 방식에서 보인다. 정책 설정에 저장되는 값이라 이 화면을 볼 수 있는 관리자에게는 그대로 노출된다. -->
+              <action handler="sirsoft-ecommerce.updateApiConfigField" :debounce="300" field="auth_token" value="{{$event.target.value || null}}"/>
+            </on>
+          </input>
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_token_hint</span>
+        </div>
+        <div data-ref="field_api_request_fields">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields</label>
+          <!-- 후보 5종 체크박스 (자유 텍스트 대체 — silent drop 차단) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label data-each="fieldOption, fieldOptionIdx in {{_computed.apiRequestFieldOptions ?? []}}" class="flex-center gap-2 cursor-pointer text-sm">
+              <input type="checkbox" class="checkbox" checked="{{(_computed.activeCountrySetting?.api_request_fields ?? []).includes(fieldOption.value)}}" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <!-- 요청에 실을 항목 체크 — 체크 여부를 읽지 않고 **뒤집기**만 넘긴다(핸들러가 현재 목록에 넣고 빼는 것으로 처리한다). -->
+                  <action handler="sirsoft-ecommerce.toggleApiRequestField" field="{{fieldOption.value}}"/>
+                </on>
+              </input>
+              <span>{{fieldOption.label}}</span>
+            </label>
+          </div>
+          <!-- 체크된 후보별 외부 키 매핑 입력 (우리 키 → 외부 API 키 이름) -->
+          <div data-if="{{(_computed.activeCountrySetting?.api_request_fields ?? []).length > 0}}" class="space-y-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_field_map_hint</span>
+            <div data-each="mapOption, mapOptionIdx in {{(_computed.apiRequestFieldOptions ?? []).filter(o => (_computed.activeCountrySetting?.api_request_fields ?? []).includes(o.value))}}" class="grid grid-cols-2 gap-2 items-center">
+              <span class="text-sm text-secondary">{{mapOption.label}}</span>
+              <input type="text" class="input text-sm font-mono" value="{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}" placeholder="{{mapOption.value}}" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <!-- 항목별 이름 바꾸기 — 우리 쪽 이름을 상대 API 가 기대하는 이름으로 옮기는 표다. 상대 API 를 우리 규약에 맞추라고 요구할 수 없어 이 표가 필요하다. -->
+                  <action handler="sirsoft-ecommerce.updateApiFieldMap" :debounce="300" field="{{mapOption.value}}" value="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields_hint</span>
+          <!-- 오류 키가 항목 색인까지 붙어(`...api_request_fields.2`) 고정 키 조회로는 잡히지 않는다. 이 자리가 비어 있으면 후보 밖 값이 남은 정책은 저장이 422 로 막힌 채 화면에 아무 안내도 뜨지 않는다(S17 B4). -->
+          <span data-ref="field_api_request_fields_error" data-if="{{Object.keys(_local.errors ?? {}).filter(k => k.indexOf('country_settings.' + (_local.activeCountryTab ?? 0) + '.api_request_fields') === 0).length > 0}}" class="form-error-xs">{{Object.keys(_local.errors ?? {}).filter(k => k.indexOf('country_settings.' + (_local.activeCountryTab ?? 0) + '.api_request_fields') === 0).map(k => ((_local.errors ?? {})[k] ?? [])[0]).filter(m => !!m)[0] ?? ''}}</span>
+        </div>
+        <div data-ref="field_api_response_type">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_type</label>
+          <select class="input w-full" value="{{_computed.activeCountrySetting?.api_config?.response_type ?? 'json'}}" options="{{_computed.apiResponseTypeOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 응답 형식 — JSON 일 때만 아래 두 칸(응답 경로·배송비 항목명)이 나온다. 다른 형식은 그 자리를 짚을 방법이 없다. -->
+              <action handler="sirsoft-ecommerce.updateApiConfigField" field="response_type" value="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+        <div data-ref="field_api_response_path" data-if="{{(_computed.activeCountrySetting?.api_config?.response_type ?? 'json') === 'json'}}">
+          <div>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_path</label>
+            <input type="text" class="input font-mono" value="{{_computed.activeCountrySetting?.api_config?.response_path ?? ''}}" placeholder="data.shipping.fee" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 응답에서 결과가 담긴 자리 — 상대가 `{data: {...}}` 처럼 한 겹 감쌌을 때 그 경로를 적는다. 비우면 응답 최상위를 본다. -->
+                <action handler="sirsoft-ecommerce.updateApiConfigField" :debounce="300" field="response_path" value="{{$event.target.value || null}}"/>
+              </on>
+            </input>
+            <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_path_hint</span>
+          </div>
+        </div>
+        <div data-ref="field_api_response_fee_field" data-if="{{(_computed.activeCountrySetting?.api_config?.response_type ?? 'json') === 'json'}}">
+          <div>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field</label>
+            <input type="text" class="input font-mono" value="{{_computed.activeCountrySetting?.api_response_fee_field ?? ''}}" placeholder="shipping_fee" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 응답에서 배송비를 담은 항목 이름. 위 응답 경로와 달리 이 값만 `api_config` 가 아니라 **나라 설정 바로 아래**에 저장된다(핸들러가 갈린다). -->
+                <action handler="sirsoft-ecommerce.updateCountryField" :debounce="300" field="api_response_fee_field" value="{{$event.target.value || null}}"/>
+              </on>
+            </input>
+            <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field_hint</span>
+          </div>
+        </div>
+        <div data-ref="field_api_test_call" class="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+          <!-- 연결 시험은 서버가 수정 권한(shipping-policies.update)으로 받는다 — 등록 모드에서도 그 권한이 없으면 잠근다. -->
+          <button data-ref="api_test_call_button" type="button" class="btn btn-secondary btn-sm" disabled="{{_computed.isReadOnly || _computed.lacksUpdate || !_computed.activeCountrySetting?.api_endpoint || _global.apiTestLoading}}">
+            <on type="click">
+              <!-- 연결 시험 — 지금 화면의 설정 그대로 한 번 불러 본다. 인자를 받지 않는 것은 핸들러가 활성 나라 설정을 직접 읽기 때문이고, 저장 전에도 눌러 볼 수 있다. -->
+              <action handler="sirsoft-ecommerce.testShippingApi"/>
+            </on>
+            <span>{{_global.apiTestLoading ? '$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_loading' : '$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_button'}}</span>
+          </button>
+          <!-- 테스트 호출 결과 미리보기 (성공/실패 무관하게 요청·응답 전체 노출) -->
+          <div data-if="{{!!_global.apiTestResult}}" class="text-xs space-y-2 p-3 rounded-md bg-gray-100 dark:bg-gray-900 font-mono overflow-auto">
+            <!-- 결과 요약 라인 — 추출 성공 / HTTP 응답 도달 / 호출 실패 -->
+            <div data-if="{{_global.apiTestResult?.extracted_fee !== null &amp;&amp; _global.apiTestResult?.extracted_fee !== undefined}}" class="text-green-600 dark:text-green-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}</div>
+            <div data-if="{{(_global.apiTestResult?.extracted_fee === null || _global.apiTestResult?.extracted_fee === undefined) &amp;&amp; !!_global.apiTestResult?.response}}" class="text-amber-600 dark:text-amber-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_no_fee</div>
+            <div data-if="{{!_global.apiTestResult?.response}}" class="text-red-600 dark:text-red-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_failed</div>
+            <!-- 요청 라인 — 메서드 + 엔드포인트 (항상) -->
+            <div class="text-secondary break-all">{{_global.apiTestResult?.request?.method ?? ''}} {{_global.apiTestResult?.request?.endpoint ?? ''}}</div>
+            <!-- 요청 본문 (전송 데이터) -->
+            <div data-if="{{!!_global.apiTestResult?.request?.body}}">
+              <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_request_body</span>
+              <pre class="whitespace-pre-wrap break-all text-secondary mt-1">{{_global.apiTestResult?.request?.body ?? ''}}</pre>
+            </div>
+            <!-- 응답 (상태 + 본문) -->
+            <div data-if="{{!!_global.apiTestResult?.response}}">
+              <span class="text-tertiary">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_response|status={{_global.apiTestResult?.response?.status ?? '-'}}</span>
+              <pre class="whitespace-pre-wrap break-all text-secondary mt-1">{{_global.apiTestResult?.response?.body ?? ''}}</pre>
+            </div>
+            <!-- 호출 자체 실패 시 에러 메시지 -->
+            <div data-if="{{!!_global.apiTestResult?.error}}" class="text-red-600 dark:text-red-400 break-all">{{_global.apiTestResult?.error ?? ''}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

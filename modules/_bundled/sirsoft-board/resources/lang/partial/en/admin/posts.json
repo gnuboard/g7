@@ -26,7 +26,9 @@
     "report": "Report",
     "reported": "Reported",
     "view_count": "Views {{count}}",
+    "reaction_total": "Reactions {{count}}",
     "attachments": "Attachments ({{count}})",
+    "download_failed": "Failed to download the attachment.",
     "prev": "Previous",
     "next": "Next",
     "comments_title": "Comments ({{count}})",
@@ -47,8 +49,9 @@
     "password_placeholder": "Enter password",
     "password_incorrect": "Incorrect password.",
     "comment_added": "Comment has been posted.",
-    "show_replies": "Show {{count}} reply posts",
-    "hide_replies": "Hide reply posts",
+    "show_replies": "Show {{count}} comment replies",
+    "show_replies_one": "Show {{count}} comment reply",
+    "hide_replies": "Hide comment replies",
     "reply_blocked_blinded_post": "Cannot write a reply post to a blinded post.",
     "reply_blocked_deleted_post": "Cannot write a reply post to a deleted post.",
     "user_info": "User Info",
@@ -59,6 +62,7 @@
     "reply_secret_content": "This is a private post",
     "reply_view_detail": "View Details",
     "load_more_comments": "Load {{count}} more comments",
+    "load_more_comments_one": "Load {{count}} more comment",
     "status_blinded": "Blinded",
     "status_deleted": "Deleted",
     "status_published": "Published",
@@ -75,6 +79,7 @@
     "blinded_comment_notice": "This comment has been blinded",
     "blinded_comment_description": "This comment has been hidden according to our policy",
     "deleted_comment_notice": "This comment has been deleted",
+    "secret_comment_notice": "This is a secret comment",
     "blind_reason_label": "Reason:",
     "blinded_at": "Blinded at: {{date}}",
     "view_original_content": "View Original Content",
@@ -174,6 +179,8 @@
     "no_content_preview": "Preview will appear when you enter content",
     "attachments": "Attachments",
     "attachments_desc": "Max {{maxFiles}} files, {{maxSize}}MB each",
+    "attachments_no_permission": "You do not have permission to upload attachments, so you cannot add or remove files.",
+    "attachments_desc_one": "Max {{maxFiles}} file, {{maxSize}}MB",
     "attached_files": "Attached Files",
     "confirm_remove_attachment_title": "Delete Attachment",
     "confirm_remove_attachment_message": "The file will be deleted immediately. This action cannot be undone regardless of saving the post.",
@@ -199,12 +206,15 @@
     "category": "Category",
     "author": "Author",
     "view_count": "Views",
+    "reaction_total": "Reactions",
     "created_at": "Created At"
   },
   "search_fields": {
     "all": "All",
     "title_content": "Title+Content",
-    "author": "Author (Name, Email)"
+    "author": "Author (Name, Email)",
+    "title": "Title",
+    "content": "Content"
   },
   "filters": {
     "category_label": "Category",
@@ -284,5 +294,31 @@
     "30": "30 per page",
     "50": "50 per page",
     "100": "100 per page"
+  },
+  "bulk": {
+    "selected_count": "{{count}} selected",
+    "delete": "Delete",
+    "blind": "Blind",
+    "restore": "Restore",
+    "modal": {
+      "delete_title": "Delete the selected posts?",
+      "delete_confirm": "Delete {{count}} selected posts?",
+      "delete_confirm_one": "Delete {{count}} selected post?",
+      "replies_notice": "Posts with replies may be skipped depending on the reply deletion policy.",
+      "blind_title": "Blind the selected posts?",
+      "blind_confirm": "Blind {{count}} selected posts?",
+      "blind_confirm_one": "Blind {{count}} selected post?",
+      "restore_title": "Restore the selected posts?",
+      "restore_confirm": "Restore {{count}} selected posts?",
+      "restore_confirm_one": "Restore {{count}} selected post?",
+      "reason_label": "Reason (optional)",
+      "reason_placeholder": "Enter a reason",
+      "processing": "Processing..."
+    },
+    "skipped": {
+      "title": "Skipped posts",
+      "description": "The following {{count}} posts were not processed.",
+      "description_one": "The following {{count}} post was not processed."
+    }
   }
 }

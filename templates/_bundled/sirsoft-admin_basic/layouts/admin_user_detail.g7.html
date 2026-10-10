@@ -1,0 +1,362 @@
+<!-- 회원 상세 — 읽기 전용 화면이다. 수정은 별도 폼(`admin_user_form`)이 맡으므로 여기에는 저장 배선이
+  없고, 탭 구성도 폼과 다르다(동의 이력 탭이 여기에만 있다).
+  오류를 두 겹으로 다룬다 — 회원 조회의 403·404 는 화면을 통째로 에러로 갈아끼우고, 그 밖의 실패는 본문 위쪽
+  경고 상자로만 알린다(탭 뼈대는 남겨 둔다). -->
+<layout name="admin_user_detail" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.users.detail.page_title" description="$t:admin.users.detail.page_description"/>
+  <!-- 볼 회원 한 건. 폼과 달리 `initLocal` 이 없다 — 응답을 그대로 읽어 표시하므로 옮겨 담을 이유가 없다.
+       403·404 화면 전환은 이 조회에만 건다 — 레이아웃 단위로 걸면 화면 틀의 알림·메뉴 조회 403 에도 반응해, 회원 읽기
+       권한만 있는 관리자가 볼 수 있는 상세가 통째로 403 화면이 됐다(#736 S2). -->
+  <data-source id="user" label_key="$t:editor.data_source.user" type="api" endpoint="/api/admin/users/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="activeTab" value="basic_info"/>
+  </init-local>
+  <permissions>
+    <permission>core.users.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>user</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="user_detail_content" class="admin-page-content">
+      <div data-ref="page_header" class="page-header-fullbleed">
+        <div>
+          <h1 class="page-title">$t:admin.users.detail.page_title</h1>
+          <p class="page-description">$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}</p>
+        </div>
+        <div class="flex-center gap-2">
+          <button data-ref="header_back_button" class="flex-center gap-2 btn btn-secondary">
+            <on type="click">
+              <navigate-back/>
+            </on>
+            <icon name="arrow-left" class="text-base"/>
+            <span>$t:common.back</span>
+          </button>
+          <button data-ref="header_edit_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 이 회원 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 목록까지 되짚어 나가도 자리가 남는다 -->
+              <navigate path="/admin/users/{{route?.id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="pencil" class="text-base"/>
+            <span>$t:admin.users.detail.edit</span>
+          </button>
+          <button data-ref="header_unlock_button" data-if="{{user?.data?.is_locked === true}}" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 btn btn-warning">
+            <on type="click">
+              <!-- 계정 잠금 해제. 로그인 실패가 쌓여 잠긴 계정을 운영자가 푸는 자리이며, 성공하면 회원 정보를 다시 받아 잠금 표시를 내린다 -->
+              <api-call :auth_required="true" target="/api/admin/users/{{route?.id}}/unlock" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="user"/>
+                  <toast type="success" message="$t:admin.users.detail.unlock_success"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon name="unlock" class="text-base"/>
+            <span>$t:admin.users.detail.unlock</span>
+          </button>
+        </div>
+      </div>
+      <tab-navigation-scroll data-type="composite" data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
+        <prop name="tabs">
+          <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
+          <item id="contact_info" label="$t:admin.users.detail.tabs.contact_info"/>
+          <item id="location_info" label="$t:admin.users.detail.tabs.location_info"/>
+          <item id="profile_memo" label="$t:admin.users.detail.tabs.profile_memo"/>
+          <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info"/>
+          <item id="consent_info" label="$t:admin.users.detail.tabs.consent_info"/>
+          <item id="notifications_info" label="$t:admin.users.detail.tabs.notifications_info"/>
+        </prop>
+        <on type="change">
+          <!-- 탭 전환 — 내용은 이미 받아 둔 한 응답에서 갈라 보이므로 탭마다 다시 부르지 않는다. -->
+          <set-state target="local" activeTab="{{$event.value}}"/>
+        </on>
+      </tab-navigation-scroll>
+      <div data-ref="user_api_error" data-if="{{_dataSourceErrors?.user}}" class="alert-danger">
+        <div class="flex-center gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0"/>
+          <div>
+            <h3 class="text-error-strong">$t:admin.users.detail.error_loading_user</h3>
+            <p class="text-error-soft mt-1">{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_basic_info" id="basic_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="user" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.form.sections.basic_info</h3>
+        </div>
+        <div>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_uuid">
+                <label class="text-label-subtle block font-medium mb-1">UUID</label>
+                <div class="text-primary text-sm font-mono">{{user?.data?.uuid ?? '-'}}</div>
+              </div>
+              <div data-ref="field_name">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.name</label>
+                <div class="text-primary text-sm">{{user?.data?.name ?? '-'}}</div>
+              </div>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_nickname">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.nickname</label>
+                <div class="text-primary text-sm">{{user?.data?.nickname ?? '-'}}</div>
+              </div>
+              <div data-ref="field_roles">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.role</label>
+                <div class="flex flex-wrap gap-1">
+                  <span data-each="role in user?.data?.roles ?? []" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{role.name}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_status">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.status</label>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[user?.data?.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{user?.data?.status_label ?? '-'}}</span>
+              </div>
+              <div data-ref="field_email_verified">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.email_verification</label>
+                <div class="flex-center gap-1">
+                  <icon data-if="{{user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-500"/>
+                  <span class="text-primary text-sm">{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_contact_info" id="contact_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="envelope" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.form.sections.contact_info</h3>
+        </div>
+        <div>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_email">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.email</label>
+                <div class="text-primary text-sm">{{user?.data?.email ?? '-'}}</div>
+              </div>
+              <div data-ref="field_homepage">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.homepage</label>
+                <div class="text-primary text-sm">{{user?.data?.homepage ?? '-'}}</div>
+              </div>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_mobile">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.mobile</label>
+                <div class="text-primary text-sm">{{user?.data?.mobile ?? '-'}}</div>
+              </div>
+              <div data-ref="field_phone">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.phone</label>
+                <div class="text-primary text-sm">{{user?.data?.phone ?? '-'}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_location_info" id="location_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="map-pin" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.form.sections.location_info</h3>
+        </div>
+        <div class="row-stack">
+          <div>
+            <div>
+              <div class="grid-2col-responsive">
+                <div data-ref="field_country">
+                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.country</label>
+                  <div class="text-primary text-sm">{{user?.data?.country_name ?? user?.data?.country ?? '-'}}</div>
+                </div>
+                <div data-ref="field_language">
+                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.language</label>
+                  <span data-if="{{user?.data?.language}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">{{user?.data?.language_label ?? user?.data?.language ?? '-'}}</span>
+                  <span data-if="{{!user?.data?.language}}" class="text-primary text-sm">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_timezone">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.timezone</label>
+            <div class="text-primary text-sm">{{user?.data?.timezone ?? '-'}}</div>
+          </div>
+          <div data-ref="field_address">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.address</label>
+            <div class="text-primary text-sm">{{user?.data?.zipcode || user?.data?.address || user?.data?.address_detail ? ((user?.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user?.data?.address ?? '') + (user?.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}</div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_profile_memo" id="profile_memo" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="user-circle" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.form.sections.profile_memo</h3>
+        </div>
+        <div class="row-stack">
+          <div>
+            <div>
+              <div class="grid-2col-responsive">
+                <div data-ref="field_signature">
+                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.signature</label>
+                  <div class="text-primary text-sm">{{user?.data?.signature ?? '-'}}</div>
+                </div>
+                <div data-ref="field_bio">
+                  <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.bio</label>
+                  <div class="text-primary text-sm whitespace-pre-line">{{user?.data?.bio ?? '-'}}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_admin_memo">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.admin_memo</label>
+            <div class="text-primary text-sm whitespace-pre-line">{{user?.data?.admin_memo ?? '-'}}</div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_activity_info" id="activity_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="clock" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.form.sections.activity_info</h3>
+        </div>
+        <div>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_created_at">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.created_at</label>
+                <div class="text-primary text-sm">{{user?.data?.created_at ?? '-'}}</div>
+              </div>
+              <div data-ref="field_last_login_at">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.last_login_at</label>
+                <div class="text-primary text-sm">{{user?.data?.last_login_at ?? '-'}}</div>
+              </div>
+              <div data-ref="field_lock_status">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.lock_status</label>
+                <div data-if="{{user?.data?.locked_permanently === true}}" class="text-error-soft text-sm">$t:admin.users.detail.locked_permanently_value</div>
+                <div data-if="{{user?.data?.locked_permanently !== true &amp;&amp; user?.data?.is_locked === true}}" class="text-error-soft text-sm">$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}</div>
+                <div data-if="{{user?.data?.is_locked !== true}}" class="text-primary text-sm">$t:admin.users.detail.not_locked_value</div>
+              </div>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_ip_address">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.ip_address</label>
+                <div class="text-primary text-sm">{{user?.data?.ip_address ?? '-'}}</div>
+              </div>
+              <div data-ref="field_withdrawn_at">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.withdrawn_at</label>
+                <div class="text-primary text-sm">{{user?.data?.withdrawn_at ?? '-'}}</div>
+              </div>
+            </div>
+            <div data-ref="field_blocked_at">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.blocked_at</label>
+              <div class="text-primary text-sm">{{user?.data?.blocked_at ?? '-'}}</div>
+            </div>
+            <!-- 휴면 전환 시각 — 해제되면 서버가 NULL 로 되돌리므로 값이 있으면 "지금 휴면" 이라는 뜻이다. 자동 탈퇴는 이 시각 + 설정 기간으로 판정하므로 운영자가 남은 기간을 셀 수 있어야 한다. -->
+            <div data-ref="field_dormant_at">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.dormant_at</label>
+              <div class="text-primary text-sm">{{user?.data?.dormant_at ?? '-'}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 비밀번호(#736) — 마지막 변경·만료 예정(또는 만료됨/적용 안 됨)·다음 로그인 때 변경 필요·연기 종료·개별 설정.
+           값은 상세 응답에만 실리는 `password_status`(목록에는 없다 — 회원마다 역할 판정을 하면 목록이 무거워진다).
+           날짜는 서버가 보는 사람의 시간대로 이미 맞춰 보낸다. 탭에는 따로 두지 않고 활동 정보 바로 뒤에 둔다. -->
+      <div data-ref="section_password_info" id="password_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="key" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.detail.password.title</h3>
+        </div>
+        <div class="grid-2col-responsive">
+          <div data-ref="field_password_changed_at">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.changed_at</label>
+            <div class="text-primary text-sm">{{user?.data?.password_status?.changed_at ?? '-'}}</div>
+          </div>
+          <div data-ref="field_password_expires_at">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.expires_at</label>
+            <div data-if="{{!user?.data?.password_status?.applies}}" class="text-primary text-sm">$t:admin.users.detail.password.not_applies</div>
+            <div data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}" class="text-error-soft text-sm">$t:admin.users.detail.password.expired|date={{user?.data?.password_status?.expires_at ?? ''}}</div>
+            <div data-if="{{user?.data?.password_status?.applies &amp;&amp; !user?.data?.password_status?.expired}}" class="text-primary text-sm">$t:admin.users.detail.password.expires_value|date={{user?.data?.password_status?.expires_at ?? '-'}}|days={{user?.data?.password_status?.days_left ?? 0}}</div>
+          </div>
+          <div data-ref="field_password_change_required">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.change_required</label>
+            <div class="text-primary text-sm">{{user?.data?.password_status?.change_required ? '$t:admin.users.detail.password.yes' : '$t:admin.users.detail.password.no'}}</div>
+          </div>
+          <div data-ref="field_password_postponed_until" data-if="{{user?.data?.password_status?.postponed_until}}">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.postponed_until</label>
+            <div class="text-primary text-sm">{{user?.data?.password_status?.postponed_until ?? '-'}}</div>
+          </div>
+          <div data-ref="field_password_expiry_policy">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.policy</label>
+            <div class="text-primary text-sm">{{$t('admin.users.form.password_policy.expiry_' + (user?.data?.password_status?.policy ?? 'inherit'))}}</div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_consent_info" id="consent_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="file-contract" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.detail.consent_history</h3>
+        </div>
+        <div>
+          <div class="grid-2col-responsive">
+            <div data-ref="field_terms_consent">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.consent_type.terms</label>
+              <span class="text-primary text-sm">{{user?.data?.terms_consent?.agreed_at ?? '-'}}</span>
+            </div>
+            <div data-ref="field_privacy_consent">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.consent_type.privacy</label>
+              <span class="text-primary text-sm">{{user?.data?.privacy_consent?.agreed_at ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 회원 알림함 요약 — 수신함 자체는 화면이 아니라 전용 목록에 있고, 여기서는 "몇 건이 남아
+           있고 몇 건을 안 읽었나" 만 보여 준 뒤 그 회원으로 좁힌 목록으로 넘긴다. 상세 응답이 이미
+           들고 오는 값이라 탭을 눌러도 다시 부르지 않는다. -->
+      <div data-ref="section_notifications_info" id="notifications_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="inbox" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.detail.tabs.notifications_info</h3>
+        </div>
+        <div>
+          <div class="grid-2col-responsive">
+            <div data-ref="field_notifications_total">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.notifications.total</label>
+              <span class="text-primary text-sm">{{user?.data?.notifications_summary?.total ?? 0}}</span>
+            </div>
+            <div data-ref="field_notifications_unread">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.notifications.unread</label>
+              <span class="text-primary text-sm">{{user?.data?.notifications_summary?.unread ?? 0}}</span>
+            </div>
+          </div>
+          <!-- 회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.
+               회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다. -->
+          <div data-ref="notifications_inbox_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.member-notifications.read'))}}" class="mt-4">
+            <button type="button" class="btn btn-secondary">
+              <on type="click">
+                <!-- 회원 한정으로 알림함을 연다 — 그쪽 화면이 배너로 "이 회원만 보는 중" 임을 알린다. -->
+                <navigate path="/admin/member-notifications">
+                  <query user_uuid="{{user?.data?.uuid}}"/>
+                </navigate>
+              </on>
+              <span>$t:admin.users.detail.notifications.view_inbox</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- 확장(모듈/플러그인)이 inject_props로 탭을 추가하고 append_child로 섹션 콘텐츠를 주입하는 영역 -->
+      <div data-ref="extension_tab_content" class="tab-content mt-6"/>
+    </div>
+  </slot>
+</layout>

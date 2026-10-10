@@ -1,0 +1,126 @@
+feature: 비회원 클레임 화면 — 주문상세 섹션 · 상세 · 작성/수정 (#599 S14)
+
+description: |
+  회원 화면은 S11~S13 이 놓았고, 이 세션은 **같은 화면을 비회원에게 여는** 셸 2종과 guest 라우트,
+  그리고 비회원 주문상세의 '이 주문의 클레임' 섹션을 놓는다. 새로 그리는 것은 없다 — partial 은
+  전부 회원 것을 무수정으로 쓰고 셸이 계약값과 데이터소스 주소만 바꾼다. 조용히 깨지는 지점은
+  다섯이다.
+
+  ① **비회원 클레임 API 는 전부 주문 스코프인데 화면 주소는 아니다.** 상세·수정 라우트
+     (`{shopBase}/guest/claims/{번호}` · `.../edit`)에는 주문번호가 없다(§5-3, 서버측 주소 SSoT
+     `ClaimUrl::GUEST_DETAIL` 도 같은 모양이다). 조회 토큰이 주문 하나에 묶여 있으므로 그 짝인
+     주문번호가 곧 스코프이며, 토큰과 같은 자리에서 `_global.guestOrderNumber` 로 세워진다.
+     한쪽만 남으면 — 주문번호는 있고 토큰이 없으면 — 셸은 주소를 만들고 요청은 404 가 된다.
+
+  ② **레이아웃 `initLocal` 은 표현식을 해석하지 않는다.** 값을 그대로 복사하므로(JSON deep clone)
+     주문번호가 들어가는 주소를 거기 두면 `{{_global.guestOrderNumber}}` 라는 **문자열 자체**가
+     주소에 실린다. 그래서 비회원 셸은 그 값을 `init_actions` 의 `setState` 로 세운다. 반대로
+     `init_actions` 에서 `_local` 을 **읽는** 것은 언제나 빈 값이다(2026-09-01 회원 화면 실측
+     결함 ⓑ) — `_global` 은 부모 레이아웃이 이미 세웠으므로 그 제약을 받지 않는다.
+
+  ③ **공유 partial 이 회원 전용 주소를 리터럴로 들고 있었다.** `templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_list.g7.html` 의 서브탭·상세·수정·
+     페이지 이동과 `templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_apply_summary.g7.html` 의 접수·저장 뒤 목적지가 `/mypage/claims…` 였다. 비회원이
+     그 주소를 타면 로그인 화면이 열리고, 카드는 정상으로 그려지므로 **누르기 전에는 드러나지
+     않는다**. 주소도 셸 계약값이 된다(claimListPath · claimDetailPathBase · claimEmptyCtaPath).
+
+  ④ **비회원에게는 주문을 가로지르는 신청내역 화면이 없다** (§5-1-3). 그래서 주문상세의 '이 주문의
+     클레임' 섹션이 곧 비회원의 목록이고, 그 목록도 유형 서브탭 하나를 페이지 단위로 읽는다.
+     네 유형을 한 응답에 전량 싣던 종전 형태는 "한 주문의 건수가 그 주문의 상품 수에 묶인다" 는
+     전제에 기댔는데, 철회는 행을 남기므로(수량 잠금만 풀린다) 신청↔철회를 반복하면 계속 쌓인다.
+
+  ⑤ **비회원 클레임 13라우트에 요청 빈도 제한이 없었다.** 형제 라우트(`guest/orders/verify`)만
+     `throttle:20,1` 을 갖고 전역 API 리미터는 없다. 조회 토큰을 손에 넣은 쪽이 신청·미리보기·첨부
+     업로드를 무제한으로 반복할 수 있으면 파일 쓰기(`claim-images.store`)가 디스크를 채운다 —
+     응답은 정상 2xx 라 어느 로그에도 남지 않는다.
+
+  비회원 추가결제의 **복귀 화면은 신청서 상세가 아니라 주문 조회 폼**이다. 결제창에서 돌아온
+  브라우저에 조회 토큰이 남아 있다고 보장할 수 없어서다(`ClaimPaymentRedirect` 가 그렇게 정한다 —
+  알림 링크도 같은 이유로 이미 그 화면을 가리킨다). 그래서 결과 안내 배너도 그 화면에 선다.
+
+# axis 의미:
+#   screen  — 비회원이 여는 네 화면. `order_section` 은 회원의 신청내역 목록에 해당하고
+#             (§5-1-3 — 비회원에게는 횡단 목록이 없다) 나머지 셋은 회원 화면과 1:1 이다.
+#   entry   — 그 화면에 어떻게 닿았는가. 토큰 없이 직접 주소를 친 진입과 만료된 토큰으로 돌아온
+#             진입이 같은 처분(토큰 폐기 → 조회 폼)을 받아야 한다.
+#   claim_type — 유형마다 서버가 다른 테이블을 읽는다. 섹션 서브탭이 곧 그 축이고, 작성 진입은
+#             세 유형(교환·반품·취소/환불)만 열린다.
+axes:
+  screen: [order_section, detail, apply, edit]
+  entry: [with_token, without_token, expired_token]
+  claim_type: [exchange, return, refund, cancel]
+
+exclusions:
+  - { screen: apply, claim_type: cancel, reason: "취소는 신청 유형이 아니라 취소·환불 신청(refund)의 서버측 분기 결과다 — 작성 라우트의 :type 은 exchange|return|refund 셋뿐이다" }
+  - { screen: edit, claim_type: cancel, reason: "취소 이력은 신청서가 아니라 처리 결과다 — 수정 경로 자체가 없다(서버가 notEditable 로 거절한다)" }
+  - { screen: [detail, apply, edit], entry: [without_token, expired_token], claim_type: [return, refund, cancel], reason: "토큰이 없거나 만료된 진입의 처분은 유형과 무관하다 — 서버가 신청서를 읽기 전에 404 로 끝나므로 유형 하나(exchange)로 대표한다" }
+  - { screen: order_section, entry: [without_token, expired_token], claim_type: [return, refund, cancel], reason: "같은 근거 — 토큰 처분은 목록 유형과 무관하다" }
+
+effects:
+  - guest_claim_detail_shows_follow_up_refunds   # #747 보완 5
+  - guest_claim_detail_loads_order_after_claim_response
+  - guest_claim_routes_allow_guest_and_use_claim_number
+  - guest_claim_cards_keep_shared_values
+  - guest_claim_empty_list_returns_to_guest_shop
+  - guest_claim_tab_uses_shell_path
+  # ① 주문 스코프 — 토큰의 짝인 주문번호가 주소를 만든다
+  - guest_order_number_is_published_alongside_the_token
+  - guest_order_number_is_cleared_with_the_token
+  - guest_claim_shells_declare_the_order_scoped_bases
+  - guest_claim_datasources_carry_the_lookup_token
+  # ② init_actions 규율 — initLocal 은 표현식을 해석하지 않는다
+  - guest_claim_edit_entry_reads_global_not_local
+  - guest_claim_detail_order_is_fetched_by_the_chain_only
+  # ③ 공유 partial 의 주소 중립성
+  - shared_claim_partials_hold_no_member_only_path
+  - shared_claim_partials_never_read_the_current_user
+  - guest_claim_shells_reuse_the_member_partials
+  - guest_order_claim_section_links_to_the_guest_routes
+  # ④ 이 주문의 클레임 — 비회원의 목록
+  - guest_order_claim_list_is_paginated_by_type
+  - guest_order_claim_list_rejects_a_type_outside_the_vocabulary
+  # 유형 미지정 → 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 서버가 고른다 (회원 섹션과 같은 규칙)
+  - guest_order_claim_list_default_type_is_first_with_requests
+  - guest_order_detail_sends_no_type_when_address_has_none
+  - guest_order_claim_section_reuses_the_member_list_partial
+  - guest_order_detail_offers_the_three_claim_entries
+  # 송장은 상품 행마다(#599) — 카드 배송조회 칸은 서버 요약(`tracking_summary`)의 첫 운송장 + 「외 N개」, 판매자 접수 라벨
+  - guest_order_claim_section_shows_the_row_waybill_summary
+  # ⑤ 요청 빈도 제한
+  - guest_claim_routes_carry_a_request_rate_limit
+  - guest_claim_image_upload_is_bounded_more_tightly
+  - guest_cannot_delete_an_attached_image_through_the_pending_route  # C3 — 토큰 경로도 붙은 증빙을 못 지운다
+  # 서버가 거절하는 수단은 화면에도 서지 않는다
+  - guest_claim_options_hide_the_payment_method_the_server_refuses
+  # 토큰 처분 — 없거나 만료된 진입
+  - guest_claim_routes_are_token_protected
+  - guest_claim_screens_clear_the_token_and_return_to_lookup
+  # 결제 복귀 — 결과를 받는 화면에 안내가 있다
+  - guest_claim_payment_result_banner_stands_on_the_lookup_form
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimLinkedClaimsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/GuestClaimRouteThrottleTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/GuestOrderTokenMiddlewareRegistrationTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/guestClaimShellContract.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/guestOrderClaimSection.test.tsx
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/storageHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/guest-claim.spec.ts
+
+notes: |
+  **§9-1 의 매니페스트 수가 11 → 12 가 된다.** §7 S15 DoD 가 그 숫자를 인용하므로 함께 정정한다.
+
+  **E2E 는 S15 소유다.** §9-3 이 spec 배정을 갖고 있고 이 매니페스트는 그 축의 출처가 된다.
+  이 세션은 계약 테스트·렌더 테스트·Feature 테스트로 축을 덮고 브라우저 실측(§8-1 S14 —
+  T1·T3·T6)으로 관통을 확인한다.
+
+  **회원 축은 이 매니페스트가 다시 덮지 않는다.** 목록 카드의 금액 열 분기, 상세 섹션 구성,
+  수정 모드의 잠금 규칙은 `user-claim-list-detail-edit.yaml` 소유이며 비회원은 **같은 partial** 을
+  쓰므로 그 축이 그대로 성립한다. 이 매니페스트가 새로 세우는 것은 "그 partial 이 비회원에서도
+  같은 것을 그리고, 누르면 비회원 주소로 간다" 는 축뿐이다.
+
+  **응답 형태가 바뀐 엔드포인트가 하나 있다.** `GET guest/orders/{주문번호}/claims` 가 네 유형
+  그룹(`claims.{유형}[]` + `counts`)에서 회원 목록과 같은 페이지 봉투(`data[]` + `pagination`)로
+  바뀌었다. 프로덕션 소비처는 이 세션이 만드는 섹션이 처음이라 깨질 화면은 없고, 기존 Feature
+  단언 3건을 새 계약으로 고쳤다(API 문서 `modules/_bundled/sirsoft-ecommerce/docs/api/guest.md` 동반 갱신).

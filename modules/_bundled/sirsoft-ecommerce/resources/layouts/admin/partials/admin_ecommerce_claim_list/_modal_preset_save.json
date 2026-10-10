@@ -1,0 +1,189 @@
+{
+    "comment": "클레임 목록 — 지금 걸린 검색 조건을 새 프리셋으로 저장하는 창. 조건 묶음은 필터 영역의 [프리셋 저장] 버튼이 창을 열기 전에 `_global.savingPresetConditions` 로 옮겨 두고, 유형은 그 묶음에 없어 지금 보는 서브탭으로 채우므로 프리셋을 적용하면 저장할 때의 탭으로 돌아간다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Claim List - Preset Save Modal"
+    },
+    "id": "modal_claim_preset_save",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.claim.modal.preset_save.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "comment": "프리셋 이름 입력칸. 이름은 이 창에서만 쓰는 값이라 로컬 상태에 두고, 저장에 성공하면 비워 다음에 창을 열 때 앞 이름이 남지 않게 한다.",
+            "type": "basic",
+            "name": "Input",
+            "actions": [
+                {
+                    "type": "input",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "presetName": "{{$event.target.value}}"
+                    }
+                }
+            ],
+            "props": {
+                "type": "text",
+                "placeholder": "$t:sirsoft-ecommerce.admin.claim.modal.preset_save.placeholder",
+                "className": "input",
+                "value": "{{_local.presetName}}"
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSaving}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "comment": "새 프리셋 저장. 대상 화면을 claims 로 박아 보내야 이 화면 프리셋 줄에만 서고(빠지면 서버가 상품 화면으로 저장한다), 조건은 필드마다 풀어 보내 선택 프리셋 id 같은 화면 상태가 조건에 섞이지 않게 한다.",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isSaving": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/presets",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "target_screen": "claims",
+                                            "name": "{{_local.presetName}}",
+                                            "conditions": {
+                                                "claimType": "{{_global.savingPresetConditions.claimType || (query.type || 'exchange')}}",
+                                                "searchField": "{{_global.savingPresetConditions.searchField || 'claim_number'}}",
+                                                "searchKeyword": "{{_global.savingPresetConditions.searchKeyword || ''}}",
+                                                "startDate": "{{_global.savingPresetConditions.startDate || ''}}",
+                                                "endDate": "{{_global.savingPresetConditions.endDate || ''}}",
+                                                "dateQuick": "{{_global.savingPresetConditions.dateQuick || ''}}",
+                                                "claimStatus": "{{_global.savingPresetConditions.claimStatus || []}}",
+                                                "faultTypes": "{{_global.savingPresetConditions.faultTypes || []}}",
+                                                "chargeMethods": "{{_global.savingPresetConditions.chargeMethods || []}}",
+                                                "reasonCode": "{{_global.savingPresetConditions.reasonCode || ''}}",
+                                                "requesterType": "{{_global.savingPresetConditions.requesterType || ''}}",
+                                                "requestSource": "{{_global.savingPresetConditions.requestSource || ''}}",
+                                                "collectionOverdue": "{{_global.savingPresetConditions.collectionOverdue || ''}}",
+                                                "pendingRefund": "{{_global.savingPresetConditions.pendingRefund || ''}}",
+                                                "minAmount": "{{_global.savingPresetConditions.minAmount || ''}}",
+                                                "maxAmount": "{{_global.savingPresetConditions.maxAmount || ''}}",
+                                                "currencyCode": "{{_global.savingPresetConditions.currencyCode || ''}}",
+                                                "chargePaymentMethods": "{{_global.savingPresetConditions.chargePaymentMethods || []}}"
+                                            }
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "presetName": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "presets"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.messages.presets.created"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{!_local.presetName || _local.presetName.trim() === '' || _global.isSaving}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isSaving}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isSaving ? '$t:common.saving' : '$t:sirsoft-ecommerce.admin.claim.modal.preset_save.save'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

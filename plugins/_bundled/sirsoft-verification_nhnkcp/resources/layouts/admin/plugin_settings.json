@@ -1,9 +1,7 @@
 {
+    "comment": "NHN KCP 본인인증 연동 설정 화면",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-verification_nhnkcp.settings.title",
@@ -19,8 +17,15 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "저장된 플러그인 설정을 폼 초기값으로 싣는다. 저장 응답에서 사이트코드·암호화 키가 정규화되어 돌아오므로 저장 후에도 다시 받는다"
         }
+    ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -46,6 +51,34 @@
                         }
                     },
                     {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:sirsoft-verification_nhnkcp.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
                         "id": "info_panel",
                         "type": "basic",
                         "name": "Div",
@@ -56,7 +89,9 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex gap-3" },
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -69,10 +104,20 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "space-y-1 text-info-soft" },
+                                        "props": {
+                                            "className": "space-y-1 text-info-soft"
+                                        },
                                         "children": [
-                                            { "type": "basic", "name": "P", "text": "$t:sirsoft-verification_nhnkcp.settings.info.activation" },
-                                            { "type": "basic", "name": "P", "text": "$t:sirsoft-verification_nhnkcp.settings.info.logs" }
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "text": "$t:sirsoft-verification_nhnkcp.settings.info.activation"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "text": "$t:sirsoft-verification_nhnkcp.settings.info.logs"
+                                            }
                                         ]
                                     }
                                 ]
@@ -91,7 +136,9 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex gap-3" },
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -108,23 +155,29 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-error-soft" },
+                                                "props": {
+                                                    "className": "text-error-strong"
+                                                },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": { "className": "mt-2 list-disc list-inside space-y-1" },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Li",
-                                                        "props": { "className": "text-error-soft" },
+                                                        "props": {
+                                                            "className": "text-error-soft"
+                                                        },
                                                         "text": "{{message}}"
                                                     }
                                                 ]
@@ -146,12 +199,16 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6" },
+                                "props": {
+                                    "className": "p-6"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "flex-between" },
+                                        "props": {
+                                            "className": "flex-between"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -160,13 +217,17 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.test_mode"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.test_mode_hint"
                                                     }
                                                 ]
@@ -175,7 +236,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "is_test_mode"
+                                                    "name": "is_test_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -196,7 +258,9 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex gap-3" },
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -213,13 +277,17 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-sm font-semibold text-warning-soft" },
+                                                "props": {
+                                                    "className": "text-sm font-semibold text-warning-soft"
+                                                },
                                                 "text": "$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "mt-1 text-warning-soft" },
+                                                "props": {
+                                                    "className": "mt-1 text-warning-soft"
+                                                },
                                                 "text": "$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body"
                                             }
                                         ]
@@ -239,12 +307,16 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "panel-header-row" },
+                                "props": {
+                                    "className": "panel-header-row"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
-                                        "props": { "className": "text-error-strong" },
+                                        "props": {
+                                            "className": "section-heading-md"
+                                        },
                                         "text": "$t:sirsoft-verification_nhnkcp.settings.section_live_keys"
                                     }
                                 ]
@@ -252,29 +324,39 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6 space-y-6" },
+                                "props": {
+                                    "className": "p-6 space-y-6"
+                                },
                                 "children": [
                                     {
                                         "id": "field_live_site_cd",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.live_site_cd"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.live_site_cd_hint"
                                                     }
                                                 ]
@@ -282,13 +364,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "{{_local.errors?.live_site_cd ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-transparent'}}"
+                                                            "className": "{{_local.errors?.live_site_cd ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 verification-nhnkcp-focus-group'}}"
                                                         },
                                                         "children": [
                                                             {
@@ -307,7 +391,8 @@
                                                                     "name": "live_site_cd",
                                                                     "autoComplete": "one-time-code",
                                                                     "placeholder": "A1B2C",
-                                                                    "className": "flex-1 font-mono outline-none border-0"
+                                                                    "className": "flex-1 font-mono outline-none border-0",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -317,7 +402,9 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "if": "{{_local.errors?.live_site_cd}}",
-                                                        "props": { "className": "mt-1 text-sm text-red-600 dark:text-red-400" },
+                                                        "props": {
+                                                            "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                                        },
                                                         "text": "{{_local.errors?.live_site_cd?.[0] ?? ''}}"
                                                     }
                                                 ]
@@ -328,23 +415,31 @@
                                         "id": "field_live_enc_key",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.live_enc_key"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.live_enc_key_hint"
                                                     }
                                                 ]
@@ -352,7 +447,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -362,7 +459,8 @@
                                                             "name": "live_enc_key",
                                                             "autoComplete": "new-password",
                                                             "placeholder": "••••••••••••••••",
-                                                            "className": "{{_local.errors?.live_enc_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}"
+                                                            "className": "{{_local.errors?.live_enc_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
                                                     {
@@ -370,7 +468,9 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "if": "{{_local.errors?.live_enc_key}}",
-                                                        "props": { "className": "mt-1 text-sm text-red-600 dark:text-red-400" },
+                                                        "props": {
+                                                            "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                                        },
                                                         "text": "{{_local.errors?.live_enc_key?.[0] ?? ''}}"
                                                     }
                                                 ]
@@ -381,23 +481,31 @@
                                         "id": "field_web_siteid",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.web_siteid"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.web_siteid_hint"
                                                     }
                                                 ]
@@ -405,7 +513,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -415,7 +525,8 @@
                                                             "name": "web_siteid",
                                                             "autoComplete": "off",
                                                             "placeholder": "",
-                                                            "className": "font-mono"
+                                                            "className": "font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
                                                     {
@@ -423,7 +534,9 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "if": "{{_local.errors?.web_siteid}}",
-                                                        "props": { "className": "mt-1 text-sm text-red-600 dark:text-red-400" },
+                                                        "props": {
+                                                            "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                                        },
                                                         "text": "{{_local.errors?.web_siteid?.[0] ?? ''}}"
                                                     }
                                                 ]
@@ -446,12 +559,16 @@
                                 "id": "section_duplicate_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "panel-header-row" },
+                                "props": {
+                                    "className": "panel-header-row"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
-                                        "props": { "className": "text-error-strong" },
+                                        "props": {
+                                            "className": "section-heading-md"
+                                        },
                                         "text": "$t:sirsoft-verification_nhnkcp.settings.section.duplicate_field"
                                     }
                                 ]
@@ -460,28 +577,38 @@
                                 "id": "section_duplicate_body",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6 space-y-6" },
+                                "props": {
+                                    "className": "p-6 space-y-6"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-12 gap-4 items-start" },
+                                        "props": {
+                                            "className": "grid grid-cols-1 lg:grid-cols-12 gap-4 items-start"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-8" },
+                                                "props": {
+                                                    "className": "lg:col-span-8"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.hint"
                                                     }
                                                 ]
@@ -489,30 +616,38 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-4 space-y-3" },
+                                                "props": {
+                                                    "className": "lg:col-span-4 space-y-3"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": { "className": "flex-center justify-end gap-6" },
+                                                        "props": {
+                                                            "className": "flex-center justify-end gap-6"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Label",
-                                                                "props": { "className": "inline-clickable text-body" },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "중복 판정 기준을 DI 로 둔다 — DI 는 같은 사이트 안에서만 같은 사람을 가리키므로, 다른 서비스와 회원을 대조할 일이 없으면 이쪽이 안전하다. 라디오 자체가 아니라 라벨 클릭으로 값을 바꾸는 것은 입력에 pointer-events 를 꺼 두었기 때문이다",
                                                                         "type": "click",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
+                                                                            "hasChanges": true,
                                                                             "form": {
                                                                                 "duplicate_field": "di"
-                                                                            },
-                                                                            "hasChanges": true
+                                                                            }
                                                                         }
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "className": "inline-clickable text-body"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
@@ -522,29 +657,38 @@
                                                                             "name": "duplicate_field",
                                                                             "value": "di",
                                                                             "checked": "{{(_local.form?.duplicate_field ?? 'di') === 'di'}}",
-                                                                            "className": "radio pointer-events-none"
+                                                                            "className": "radio pointer-events-none",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     },
-                                                                    { "type": "basic", "name": "Span", "text": "$t:sirsoft-verification_nhnkcp.settings.duplicate_field.di" }
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-verification_nhnkcp.settings.duplicate_field.di"
+                                                                    }
                                                                 ]
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Label",
-                                                                "props": { "className": "inline-clickable text-body" },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "CI 로 두면 사이트를 넘어 같은 사람을 알아볼 수 있지만, 그만큼 식별 범위가 넓어 화면 아래 경고가 함께 뜬다",
                                                                         "type": "click",
                                                                         "handler": "setState",
+                                                                        "if": "{{!_computed.isPluginReadOnly}}",
                                                                         "params": {
                                                                             "target": "local",
+                                                                            "hasChanges": true,
                                                                             "form": {
                                                                                 "duplicate_field": "ci"
-                                                                            },
-                                                                            "hasChanges": true
+                                                                            }
                                                                         }
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "className": "inline-clickable text-body"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
@@ -554,10 +698,15 @@
                                                                             "name": "duplicate_field",
                                                                             "value": "ci",
                                                                             "checked": "{{_local.form?.duplicate_field === 'ci'}}",
-                                                                            "className": "radio pointer-events-none"
+                                                                            "className": "radio pointer-events-none",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                                         }
                                                                     },
-                                                                    { "type": "basic", "name": "Span", "text": "$t:sirsoft-verification_nhnkcp.settings.duplicate_field.ci" }
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-verification_nhnkcp.settings.duplicate_field.ci"
+                                                                    }
                                                                 ]
                                                             }
                                                         ]
@@ -565,7 +714,9 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "text-xs text-amber-600 dark:text-amber-400 text-right" },
+                                                        "props": {
+                                                            "className": "text-xs text-amber-600 dark:text-amber-400 text-right"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.duplicate_field.warning"
                                                     }
                                                 ]
@@ -576,29 +727,39 @@
                                         "id": "field_duplicate_block_enabled",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-6 border-t border-gray-200 dark:border-gray-700" },
+                                        "props": {
+                                            "className": "grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-6 border-t border-gray-200 dark:border-gray-700"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-8" },
+                                                "props": {
+                                                    "className": "lg:col-span-8"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.hint"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "text-hint mt-1 italic" },
+                                                        "props": {
+                                                            "className": "text-hint mt-1 italic"
+                                                        },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.note"
                                                     }
                                                 ]
@@ -606,13 +767,16 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "flex-center lg:col-span-4 justify-end" },
+                                                "props": {
+                                                    "className": "flex-center lg:col-span-4 justify-end"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
-                                                            "name": "duplicate_block_enabled"
+                                                            "name": "duplicate_block_enabled",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -627,49 +791,57 @@
                         "id": "footer_buttons",
                         "type": "basic",
                         "name": "Div",
-                        "props": { "className": "sticky-footer-buttons" },
+                        "props": {
+                            "className": "sticky-footer-buttons"
+                        },
                         "children": [
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
-                                        "params": { "path": "/admin/plugins" }
+                                        "params": {
+                                            "path": "/admin/plugins"
+                                        }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
-                                    { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
                                 ]
                             },
                             {
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "저장. 성공 응답을 폼에 되돌리는 것이 핵심이다 — 서버가 사이트코드 프리픽스를 떼고 암호화 키를 마스크해 돌려주는데, 뒤이은 refetch 만으로는 운영자가 직접 친 입력칸이 갱신되지 않아 화면에만 옛 입력이 남는다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
                                             {
                                                 "handler": "setState",
-                                                "params": { "target": "local", "isSaving": true, "errors": null }
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -678,19 +850,31 @@
                                                     {
                                                         "comment": "서버가 저장 과정에서 값을 정규화하므로(사이트코드 SM 프리픽스 분리, 암호화 키 마스킹) 응답을 폼에 되돌려 화면과 저장 상태를 일치시킨다. 뒤따르는 refetchDataSource 만으로는 부족하다 — 실측 결과 refetch 는 발생하고 initLocal 도 적용되어 _local.form 은 정규화된 값을 갖지만, 사용자가 직접 입력한 입력칸은 그 값을 다시 받아 쓰지 않아 화면에만 입력값이 남는다. 이 setState 로 폼을 응답으로 명시 재바인딩해야 입력칸이 갱신된다.",
                                                         "handler": "setState",
-                                                        "params": { "target": "local", "form": "{{response.data}}" }
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form": "{{response.data}}"
+                                                        }
                                                     },
                                                     {
                                                         "handler": "setState",
-                                                        "params": { "target": "local", "isSaving": false, "hasChanges": false }
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false
+                                                        }
                                                     },
                                                     {
                                                         "handler": "toast",
-                                                        "params": { "type": "success", "message": "$t:admin.plugins.settings.save_success" }
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.plugins.settings.save_success"
+                                                        }
                                                     },
                                                     {
                                                         "handler": "refetchDataSource",
-                                                        "params": { "dataSourceId": "settings" }
+                                                        "params": {
+                                                            "dataSourceId": "settings"
+                                                        }
                                                     }
                                                 ],
                                                 "onError": [
@@ -704,16 +888,34 @@
                                                     },
                                                     {
                                                         "handler": "toast",
-                                                        "params": { "type": "error", "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}" }
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                        }
                                                     }
                                                 ]
                                             }
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
                                 "children": [
-                                    { "type": "basic", "name": "Span", "if": "{{!_local.isSaving}}", "text": "$t:common.save" },
-                                    { "type": "basic", "name": "Span", "if": "{{_local.isSaving}}", "text": "$t:common.saving" }
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
                                 ]
                             }
                         ]

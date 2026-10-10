@@ -1,0 +1,395 @@
+<!-- 입금 내역 (운영자) — 무통장·가상계좌로 들어온 입금을 주문과 맞춰 보는 화면이다. 입금자명과
+  주문자명이 다른 일이 잦아 자동매칭이 실패하며, 그 남은 건을 여기서 수동으로 이어 붙인다.
+  아직 데이터소스가 없어 표와 집계가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다. -->
+<layout name="admin_ecommerce_deposit_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.deposit.title" description="$t:sirsoft-ecommerce.admin.deposit.description"/>
+  <init-local>
+    <field name="searchField" value="order_number"/>
+    <field name="searchKeyword" value=""/>
+    <field name="matchingType" value=""/>
+    <field name="paymentMethod" value=""/>
+    <field name="startDate" value=""/>
+    <field name="endDate" value=""/>
+    <field name="sortBy" value="deposit_date_desc"/>
+    <field name="perPage" :value="10"/>
+    <field name="selectedItems" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.mileage.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="deposit_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-start justify-between mb-6">
+        <div>
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.deposit.title</h1>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.deposit.description</p>
+        </div>
+        <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="btn btn-icon">
+          <icon name="arrows-rotate" class="text-xl"/>
+        </button>
+      </div>
+      <div data-ref="filter_card" class="admin-card mb-6">
+        <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-6">
+          <select name="searchField" class="w-32" value="{{_local.searchField}}">
+            <options>
+              <option value="order_number">$t:sirsoft-ecommerce.admin.deposit.search.field.order_number</option>
+              <option value="depositor_name">$t:sirsoft-ecommerce.admin.deposit.search.field.depositor_name</option>
+              <option value="member_name">$t:sirsoft-ecommerce.admin.deposit.search.field.member_name</option>
+              <option value="member_id">$t:sirsoft-ecommerce.admin.deposit.search.field.member_id</option>
+            </options>
+            <on type="change">
+              <!-- 검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄지므로 여기서 태우지 않는다 -->
+              <set-state target="_local" searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <div class="flex-1 min-w-64 relative">
+            <input type="text" placeholder="$t:sirsoft-ecommerce.admin.deposit.search.placeholder" class="input pr-10" value="{{_local.searchKeyword}}">
+              <on type="change">
+                <!-- 입력을 마칠 때(change) 담는다 — 글자마다 담으면 아래 표가 매 타건 다시 그려진다 -->
+                <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+          </div>
+          <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="btn btn-icon">
+            <icon name="arrows-rotate" class="text-base"/>
+          </button>
+          <!-- 검색 초기화 — 아래 매칭·결제수단·기간 필터까지 함께 되돌린다(입력칸만 비우면 걸린 필터가 남아 결과가 안 늘어난다) -->
+          <button type="button" class="btn btn-outline">
+            <on type="click">
+              <set-state target="_local" searchField="order_number" searchKeyword="" matchingType="" paymentMethod="" startDate="" endDate=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.search.reset
+          </button>
+        </div>
+        <div data-ref="matching_type_filter" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label w-20">$t:sirsoft-ecommerce.admin.deposit.filter.matching_type</span>
+          <!-- 매칭 여부를 가리지 않고 모두 -->
+          <button type="button" class="{{_local.matchingType === '' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <on type="click">
+              <set-state target="_local" matchingType=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.filter.all
+          </button>
+          <!-- 미매칭 — 돈은 들어왔는데 붙일 주문을 못 찾은 건. 운영자가 실제로 손봐야 하는 자리다 -->
+          <button type="button" class="{{_local.matchingType === 'unmatched' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <on type="click">
+              <set-state target="_local" matchingType="unmatched"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.filter.unmatched
+          </button>
+          <!-- 자동매칭 — 입금자명·금액이 주문과 그대로 맞아떨어져 시스템이 붙인 건 -->
+          <button type="button" class="{{_local.matchingType === 'auto' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <on type="click">
+              <set-state target="_local" matchingType="auto"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.filter.auto_matched
+          </button>
+          <!-- 수동매칭 — 운영자가 이 화면에서 직접 이어 붙인 건 -->
+          <button type="button" class="{{_local.matchingType === 'manual' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <on type="click">
+              <set-state target="_local" matchingType="manual"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.filter.manual_matched
+          </button>
+        </div>
+        <div data-ref="payment_method_filter" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label w-20">$t:sirsoft-ecommerce.admin.deposit.filter.payment_method</span>
+          <!-- 결제수단을 가리지 않고 모두 -->
+          <button type="button" class="{{_local.paymentMethod === '' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <on type="click">
+              <set-state target="_local" paymentMethod=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.filter.all
+          </button>
+          <!-- 무통장입금 — 계좌가 여럿에게 공유되므로 입금자명으로 주인을 찾아야 한다(미매칭이 여기서 주로 생긴다) -->
+          <button type="button" class="{{_local.paymentMethod === 'bank_transfer' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <on type="click">
+              <set-state target="_local" paymentMethod="bank_transfer"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.filter.bank_transfer
+          </button>
+          <!-- 가상계좌 — 주문마다 계좌가 따로라 대개 자동으로 붙는다 -->
+          <button type="button" class="{{_local.paymentMethod === 'virtual_account' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <on type="click">
+              <set-state target="_local" paymentMethod="virtual_account"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.deposit.filter.virtual_account
+          </button>
+        </div>
+        <div data-ref="date_filter" class="flex-center flex-wrap gap-3">
+          <span class="text-label w-20">$t:sirsoft-ecommerce.admin.deposit.filter.deposit_date</span>
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base icon-muted"/>
+            <input type="date" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.start_date" class="input w-36" value="{{_local.startDate}}">
+              <on type="change">
+                <!-- 기간 시작일. 옆의 1일·1주일 같은 빠른 선택 버튼도 결국 이 값을 채우는 자리다 -->
+                <set-state target="_local" startDate="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base icon-muted"/>
+            <input type="date" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.end_date" class="input w-36" value="{{_local.endDate}}">
+              <on type="change">
+                <!-- 기간 종료일 — 시작일과 짝을 이루며, 비워 두면 그 끝을 열어 둔 것으로 다룬다 -->
+                <set-state target="_local" endDate="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+          <button type="button" class="btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">$t:sirsoft-ecommerce.admin.deposit.filter.1_day</button>
+          <button type="button" class="btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">$t:sirsoft-ecommerce.admin.deposit.filter.1_week</button>
+          <button type="button" class="btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">$t:sirsoft-ecommerce.admin.deposit.filter.1_month</button>
+          <button type="button" class="btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">$t:sirsoft-ecommerce.admin.deposit.filter.3_months</button>
+          <button type="button" class="btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">$t:sirsoft-ecommerce.admin.deposit.filter.all</button>
+        </div>
+      </div>
+      <div data-ref="batch_action_bar" class="flex-center gap-4 mb-4 px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <span class="text-sm text-secondary">0개 선택됨</span>
+        <button type="button" class="btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+          <on type="click">
+            <open-modal target="modal_bulk_match"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.deposit.batch.batch_match
+        </button>
+      </div>
+      <div data-ref="table_header" class="flex-between mb-4">
+        <span class="text-sm text-secondary">총 11개</span>
+        <div class="flex-center gap-3">
+          <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
+            <options>
+              <option value="deposit_date_desc">$t:sirsoft-ecommerce.admin.deposit.table.sort.deposit_date_desc</option>
+              <option value="deposit_date_asc">$t:sirsoft-ecommerce.admin.deposit.table.sort.deposit_date_asc</option>
+              <option value="amount_desc">$t:sirsoft-ecommerce.admin.deposit.table.sort.amount_desc</option>
+              <option value="amount_asc">$t:sirsoft-ecommerce.admin.deposit.table.sort.amount_asc</option>
+            </options>
+            <on type="change">
+              <!-- 정렬 기준 — 입금일시 역순이 기본이다(방금 들어온 돈부터 처리하는 것이 이 화면의 일이다) -->
+              <set-state target="_local" sortBy="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <select name="perPage" class="w-32" value="{{_local.perPage}}">
+            <options>
+              <option value="10">10개씩 보기</option>
+              <option value="20">20개씩 보기</option>
+              <option value="50">50개씩 보기</option>
+              <option value="100">100개씩 보기</option>
+            </options>
+            <on type="change">
+              <!-- 한 쪽에 담을 건수 -->
+              <set-state target="_local" perPage="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="data_table_wrapper" class="overflow-x-auto">
+        <responsive on="portable">
+          <div data-ref="mobile_select_all" class="flex-center gap-2 mb-4">
+            <input type="checkbox" class="rounded"/>
+            <span class="text-sm text-primary">전체선택 (10/10)</span>
+          </div>
+          <div data-ref="mobile_card_list">
+            <div data-ref="mobile_card_1" class="admin-card">
+              <div class="flex items-start gap-3 mb-3">
+                <input type="checkbox" class="rounded mt-1"/>
+                <div class="flex-1">
+                  <div class="flex-between mb-1">
+                    <span class="text-primary font-medium">이영희</span>
+                    <span class="badge-status badge-status-ready">$t:sirsoft-ecommerce.admin.deposit.status.virtual_account</span>
+                  </div>
+                  <div class="text-lg font-semibold text-primary">159,000원</div>
+                </div>
+              </div>
+              <div class="space-y-2 text-sm mb-4">
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.deposit_time</span>
+                  <span class="text-primary">2024-01-27 14:32:15</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.bank_account</span>
+                  <span class="text-primary">우리은행 1002-467-890123</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.member</span>
+                  <span class="text-primary">이영희</span>
+                </div>
+              </div>
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+                <div class="text-xs text-label-subtle mb-1">$t:sirsoft-ecommerce.admin.deposit.mobile.order_number</div>
+                <div class="flex-between">
+                  <span class="text-primary font-medium">ORD20240127-002</span>
+                  <button type="button" class="btn btn-sm btn-outline">
+                    <on type="click">
+                      <open-modal target="modal_process_history"/>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.deposit.actions.view_history
+                  </button>
+                </div>
+                <div class="mt-2">
+                  <span class="badge-status badge-status-progress">$t:sirsoft-ecommerce.admin.deposit.status.manual</span>
+                </div>
+              </div>
+            </div>
+            <div data-ref="mobile_card_2" class="admin-card">
+              <div class="flex items-start gap-3 mb-3">
+                <input type="checkbox" class="rounded mt-1"/>
+                <div class="flex-1">
+                  <div class="flex-between mb-1">
+                    <span class="text-primary font-medium">박민수</span>
+                    <span class="badge-status badge-status-processing">$t:sirsoft-ecommerce.admin.deposit.status.bank_transfer</span>
+                  </div>
+                  <div class="text-lg font-semibold text-primary">49,000원</div>
+                </div>
+              </div>
+              <div class="space-y-2 text-sm mb-4">
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.deposit_time</span>
+                  <span class="text-primary">2024-01-27 11:25:45</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.bank_account</span>
+                  <span class="text-primary">카카오뱅크 789-012-3456</span>
+                </div>
+              </div>
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+                <div class="flex-center gap-2">
+                  <button type="button" class="btn btn-sm flex-1 text-pink-500 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30">
+                    <on type="click">
+                      <open-modal target="modal_manual_match"/>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.deposit.actions.match
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline">
+                    <on type="click">
+                      <open-modal target="modal_process_history"/>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.deposit.actions.view_history
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </responsive>
+        <table data-ref="data_table" class="w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th class="text-table-header px-4 py-3 text-left w-10">
+                <input type="checkbox" class="rounded"/>
+              </th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.no</th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.payment_method</th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.bank_account</th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.depositor_name</th>
+              <th class="text-table-header px-4 py-3 text-right">$t:sirsoft-ecommerce.admin.deposit.table.columns.amount</th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.deposit_time</th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.order_number</th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.member_info</th>
+              <th class="text-table-header px-4 py-3 text-center">$t:sirsoft-ecommerce.admin.deposit.table.columns.matching_type</th>
+              <th class="text-table-header px-4 py-3 text-center">$t:sirsoft-ecommerce.admin.deposit.table.columns.receive_status</th>
+              <th class="text-table-header px-4 py-3 text-center">$t:sirsoft-ecommerce.admin.deposit.table.columns.actions</th>
+            </tr>
+          </thead>
+          <tbody class="divider-list bg-white dark:bg-gray-900">
+            <tr class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+              <td class="px-4 py-4">
+                <input type="checkbox" class="rounded"/>
+              </td>
+              <td class="px-4 py-4 text-primary">2</td>
+              <td class="px-4 py-4">
+                <span class="badge-status badge-status-ready">$t:sirsoft-ecommerce.admin.deposit.status.virtual_account</span>
+              </td>
+              <td class="px-4 py-4 text-primary">우리은행 1002-467-890123</td>
+              <td class="px-4 py-4 text-primary">이영희</td>
+              <td class="px-4 py-4 text-right text-primary font-medium">159,000원</td>
+              <td class="px-4 py-4">
+                <div class="text-primary">2024-01-27</div>
+                <div class="text-secondary text-xs">14:32:15</div>
+              </td>
+              <td class="px-4 py-4 text-primary">ORD20240127-002</td>
+              <td class="px-4 py-4">
+                <div class="text-primary">이영희</div>
+                <div class="text-secondary text-xs">user001</div>
+              </td>
+              <td class="empty-state-cell">
+                <span class="badge-status badge-status-progress">$t:sirsoft-ecommerce.admin.deposit.status.manual</span>
+              </td>
+              <td class="empty-state-cell">
+                <span class="badge-status badge-status-success">$t:sirsoft-ecommerce.admin.deposit.status.normal</span>
+              </td>
+              <td class="empty-state-cell">
+                <button type="button" class="btn btn-sm btn-outline">
+                  <on type="click">
+                    <open-modal target="modal_process_history"/>
+                  </on>
+                  $t:sirsoft-ecommerce.admin.deposit.actions.view_history
+                </button>
+              </td>
+            </tr>
+            <tr class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+              <td class="px-4 py-4">
+                <input type="checkbox" class="rounded"/>
+              </td>
+              <td class="px-4 py-4 text-primary">3</td>
+              <td class="px-4 py-4">
+                <span class="badge-status badge-status-processing">$t:sirsoft-ecommerce.admin.deposit.status.bank_transfer</span>
+              </td>
+              <td class="px-4 py-4 text-primary">카카오뱅크 789-012-3456</td>
+              <td class="px-4 py-4 text-primary">박민수</td>
+              <td class="px-4 py-4 text-right text-primary font-medium">49,000원</td>
+              <td class="px-4 py-4">
+                <div class="text-primary">2024-01-27</div>
+                <div class="text-secondary text-xs">11:25:45</div>
+              </td>
+              <td class="px-4 py-4">
+                <button type="button" class="btn btn-sm text-pink-500 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30">
+                  <on type="click">
+                    <open-modal target="modal_manual_match"/>
+                  </on>
+                  $t:sirsoft-ecommerce.admin.deposit.actions.match
+                </button>
+              </td>
+              <td class="px-4 py-4 text-secondary">-</td>
+              <td class="empty-state-cell text-secondary">-</td>
+              <td class="empty-state-cell">
+                <span class="badge-status badge-status-success">$t:sirsoft-ecommerce.admin.deposit.status.normal</span>
+              </td>
+              <td class="empty-state-cell">
+                <button type="button" class="btn btn-sm btn-outline">
+                  <on type="click">
+                    <open-modal target="modal_process_history"/>
+                  </on>
+                  $t:sirsoft-ecommerce.admin.deposit.actions.view_history
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div data-ref="pagination" class="flex justify-center mt-6">
+        <div class="pagination">
+          <button aria-label="$t:common.first_page" type="button" class="pagination-btn" :disabled="true">
+            <icon name="angles-left" class="text-base"/>
+          </button>
+          <button aria-label="$t:common.prev_page" type="button" class="pagination-btn" :disabled="true">
+            <icon name="chevron-left" class="text-base"/>
+          </button>
+          <button type="button" class="pagination-btn active">1</button>
+          <button type="button" class="pagination-btn">2</button>
+          <button aria-label="$t:common.next_page" type="button" class="pagination-btn">
+            <icon name="chevron-right" class="text-base"/>
+          </button>
+          <button aria-label="$t:common.last_page" type="button" class="pagination-btn">
+            <icon name="angles-right" class="text-base"/>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 수동매칭 — 미매칭 입금 한 건에 붙일 주문을 찾아 고른다 -->
+  <modal src="partials/admin_ecommerce_deposit_index/_modal_manual_match.g7.html"/>
+  <!-- 처리이력 — 이 입금이 언제 어떻게 매칭됐고 누가 손댔는지 -->
+  <modal src="partials/admin_ecommerce_deposit_index/_modal_process_history.g7.html"/>
+  <!-- 일괄매칭 — 선택한 여러 건을 한꺼번에 다시 자동매칭시킨다 -->
+  <modal src="partials/admin_ecommerce_deposit_index/_modal_bulk_match.g7.html"/>
+</layout>

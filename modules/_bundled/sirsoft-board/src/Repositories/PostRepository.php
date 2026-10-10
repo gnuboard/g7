@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Enums\PermissionType;
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Search\KeywordSearch;
 use App\Support\Query\BoundedCount;
@@ -25,6 +27,8 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Models\PostScrap;
+use Modules\Sirsoft\Board\Models\Reaction;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
@@ -37,6 +41,7 @@ use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 class PostRepository implements PostRepositoryInterface
 {
     use ChecksBoardPermission;
+    use FiltersByDateRange;
     use FormatsBoardDate;
     use PaginatesWithDeferredJoin;
 
@@ -65,6 +70,9 @@ class PostRepository implements PostRepositoryInterface
             'title', 'author_name', 'content_mode', 'content_thumbnail_url',
             'is_notice', 'is_secret', 'status', 'depth',
             'view_count', 'comments_count', 'replies_count', 'attachments_count',
+            // 목록의 반응 수는 이 캐시 컬럼의 합이다 — 빼면 목록에서만 항상 0 이 된다
+            // (2026-09-16 실측: 상세는 {1:1} 인데 목록은 reaction_total 0).
+            'reaction_counts',
             'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
             DB::raw('SUBSTRING(content, 1, 200) as content_preview_raw'),
         ];
@@ -89,6 +97,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건
+     * @return void
      */
     private function applyFilters($query, array $filters): void
     {
@@ -99,21 +108,18 @@ class PostRepository implements PostRepositoryInterface
             $rawKeyword = (string) $filters['search'];
             $likeKeyword = $this->escapeLikeKeyword($rawKeyword);
             $searchField = $filters['search_field'] ?? 'all';
+            // 회원 이메일로 작성자를 찾는 것은 관리자 목록만 — 공개 목록은 응답에서 이메일을 빼므로(작성자 이메일
+            // 비노출) 검색으로 이메일을 맞혀 보는 길도 닫는다(2026-10-07 실측: `m2@exa` 로 그 회원의 글이 걸렸다).
+            $searchAuthorEmail = ! empty($filters['search_author_email']);
 
-            $query->where(function ($q) use ($rawKeyword, $likeKeyword, $searchField) {
-                // 제목+내용 검색: FULLTEXT 활용 (all, title_content)
-                // 코어 헬퍼를 거쳐야 BOOLEAN MODE 연산자(+ - * " 등) 입력이 500 이 되지 않는다.
-                if ($searchField === 'all' || $searchField === 'title_content') {
-                    KeywordSearch::apply($q, ['title', 'content'], $rawKeyword, 'or');
-                }
+            $replyRootIds = $filters['reply_match_root_ids'] ?? [];
 
-                // 작성자 검색
-                if ($searchField === 'all' || $searchField === 'author' || $searchField === 'author_name') {
-                    $q->orWhere('author_name', 'like', "%{$likeKeyword}%")
-                        ->orWhereHas('user', function ($uq) use ($likeKeyword) {
-                            $uq->where('name', 'like', "%{$likeKeyword}%")
-                                ->orWhere('email', 'like', "%{$likeKeyword}%");
-                        });
+            $query->where(function ($q) use ($rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail, $replyRootIds) {
+                $this->applyKeywordCondition($q, $rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail);
+
+                // 관리자 목록 — 답글이 걸린 원글도 결과로 센다(목록은 원글 아래 답글 줄을 이어 그린다)
+                if ($replyRootIds !== []) {
+                    $q->orWhereIn('id', $replyRootIds);
                 }
             });
         }
@@ -155,16 +161,124 @@ class PostRepository implements PostRepositoryInterface
             $query->where('user_id', $filters['user_id']);
         }
 
-        // 작성일 필터 (시작일~종료일, 시작일~, ~종료일 모두 가능)
-        if (! empty($filters['created_at_from']) && $filters['created_at_from'] !== '') {
-            // 시작일 00:00:00부터 검색
-            $query->where('created_at', '>=', $filters['created_at_from'].' 00:00:00');
+        // 작성일 필터 (시작일~종료일, 시작일~, ~종료일 모두 가능). 목록은 작성일을 보는 사람의
+        // 시간대로 그리므로 그 시간대의 하루로 자른다(UTC 하루면 한국 시간 새벽 글이 전날로 빠진다).
+        $this->applyViewerDateRangeFilter(
+            $query,
+            'created_at',
+            $filters['created_at_from'] ?? null,
+            $filters['created_at_to'] ?? null
+        );
+    }
+
+    /**
+     * 검색어 조건을 쿼리에 붙입니다 (원글 목록 검색과 답글 매칭이 함께 쓴다).
+     *
+     * @param  Builder  $q  where 묶음 쿼리
+     * @param  string  $rawKeyword  원 검색어 (FULLTEXT 용)
+     * @param  string  $likeKeyword  LIKE 이스케이프한 검색어
+     * @param  string  $searchField  검색 대상 (all|title_content|title|content|author|author_name)
+     * @param  bool  $searchAuthorEmail  작성자 검색이 회원 이메일까지 찾는지 (관리자 목록만)
+     * @return void 반환값 없음
+     */
+    private function applyKeywordCondition($q, string $rawKeyword, string $likeKeyword, string $searchField, bool $searchAuthorEmail): void
+    {
+        // 제목+내용 검색: FULLTEXT 활용 (all, title_content)
+        // 코어 헬퍼를 거쳐야 BOOLEAN MODE 연산자(+ - * " 등) 입력이 500 이 되지 않는다.
+        if ($searchField === 'all' || $searchField === 'title_content') {
+            KeywordSearch::apply($q, ['title', 'content'], $rawKeyword, 'or');
         }
 
-        if (! empty($filters['created_at_to']) && $filters['created_at_to'] !== '') {
-            // 종료일 23:59:59까지 검색
-            $query->where('created_at', '<=', $filters['created_at_to'].' 23:59:59');
+        // 단일 컬럼 검색 (title / content)
+        // board_posts 에는 (title, content) 복합 FULLTEXT 만 있어 단일 컬럼 MATCH 가
+        // 불가능하다 — KeywordSearch 를 단일 컬럼으로 부르면 인덱스를 타지 못하므로 LIKE 를 쓴다.
+        if ($searchField === 'title') {
+            $q->orWhere('title', 'like', "%{$likeKeyword}%");
         }
+
+        if ($searchField === 'content') {
+            $q->orWhere('content', 'like', "%{$likeKeyword}%");
+        }
+
+        // 작성자 검색
+        if ($searchField === 'all' || $searchField === 'author' || $searchField === 'author_name') {
+            $q->orWhere('author_name', 'like', "%{$likeKeyword}%")
+                ->orWhereHas('user', function ($uq) use ($likeKeyword, $searchAuthorEmail) {
+                    $uq->where('name', 'like', "%{$likeKeyword}%");
+                    if ($searchAuthorEmail) {
+                        $uq->orWhere('email', 'like', "%{$likeKeyword}%");
+                    }
+                });
+        }
+    }
+
+    /**
+     * 검색어에 걸린 답글이 달린 맨 위 원글 ID 를 구합니다 (관리자 목록 답글 검색).
+     *
+     * 관리자 목록은 원글 한 줄 아래 그 답글 줄을 이어 그리고 페이지·총 건수를 원글 단위로 센다. 그래서 답글이
+     * 걸리면 답글 자체가 아니라 그 답글이 달린 맨 위 원글을 결과로 세고, 원글 아래 답글 줄은 종전처럼 함께 보인다
+     * (7.1.0 실측 O-K3-13). 목록 쿼리와 총 건수 쿼리가 같은 ID 를 써야 페이지와 건수가 맞는다.
+     * 답글 매칭에는 권한 범위를 걸지 않는다 — 결과가 되는 원글이 범위 검사를 받고, 범위 안 원글의 답글 줄은
+     * 검색과 무관하게 이미 모두 보인다.
+     *
+     * @param  int|null  $boardId  게시판 ID
+     * @param  array  $filters  필터 (search, search_field, search_author_email)
+     * @param  bool  $withTrashed  삭제된 게시글 포함 여부 (목록과 같게)
+     * @return array<int, int> 맨 위 원글 ID
+     */
+    private function resolveReplyMatchRootIds(?int $boardId, array $filters, bool $withTrashed): array
+    {
+        $rawKeyword = (string) $filters['search'];
+        $likeKeyword = $this->escapeLikeKeyword($rawKeyword);
+        $searchField = $filters['search_field'] ?? 'all';
+        $searchAuthorEmail = ! empty($filters['search_author_email']);
+
+        $replyQuery = Post::query()
+            ->where('board_id', $boardId)
+            ->whereNotNull('parent_id')
+            ->where(function ($q) use ($rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail) {
+                $this->applyKeywordCondition($q, $rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail);
+            });
+
+        if ($withTrashed) {
+            $replyQuery->withTrashed();
+        }
+
+        // 걸린 답글 수에 상한을 둔다 — 흔한 낱말이 답글 전량에 걸려도 한 번에 메모리로 올리지 않는다
+        $cap = PaginationLimits::resultCap('board.posts');
+        if ($cap !== null) {
+            $replyQuery->limit($cap);
+        }
+
+        $current = $replyQuery->pluck('parent_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        // 부모를 따라 맨 위 원글까지 올라간다(깊이마다 한 번). 오염된 데이터(순환)에서도 끝나도록 본 ID 는 다시 보지 않는다.
+        $roots = [];
+        $seen = [];
+        while ($current !== []) {
+            $rows = Post::withTrashed()
+                ->where('board_id', $boardId)
+                ->whereIn('id', $current)
+                ->get(['id', 'parent_id']);
+
+            $next = [];
+            foreach ($rows as $row) {
+                $id = (int) $row->id;
+                if (isset($seen[$id])) {
+                    continue;
+                }
+                $seen[$id] = true;
+                if ($row->parent_id === null) {
+                    $roots[$id] = $id;
+                } else {
+                    $next[] = (int) $row->parent_id;
+                }
+            }
+
+            $current = array_values(array_filter(array_unique($next), fn ($id) => ! isset($seen[$id])));
+        }
+
+        return array_values($roots);
     }
 
     /**
@@ -317,8 +431,12 @@ class PostRepository implements PostRepositoryInterface
             $boardId = Board::where('slug', $slug)->value('id');
         }
 
+        // 조회수는 읽는 사람의 행동이지 글을 고친 것이 아니다 — Eloquent 빌더의 increment 는
+        // updated_at 을 함께 올려, 글을 열기만 해도 수정 시각(사이트맵 lastmod 포함)이 바뀌었다.
+        // 쿼리 빌더(toBase)로 올려 수정 시각을 건드리지 않는다.
         Post::where('board_id', $boardId)
             ->where('id', $id)
+            ->toBase()
             ->increment('view_count');
 
         // 증가된 값만 필요하다. find() 는 게시판을 또 찾고 user 관계까지 적재하므로
@@ -516,7 +634,24 @@ class PostRepository implements PostRepositoryInterface
             $query = Post::query()
                 ->whereIn('parent_id', $parentIds)
                 ->when($board, fn ($q) => $q->where('board_id', $board->id))
-                ->with('user');
+                // 답글 카드도 첨부 목록을 그린다 — 관계가 없으면 PostResource 가 attachments 를 null 로
+                // 내려 「첨부파일 (n)」을 펼쳐도 빈 칸이 된다(ReplyAttachmentSerializationTest).
+                // 부모 글의 첨부 적재와 같은 규칙: 같은 게시판, 관리 권한자는 cascade 삭제분까지.
+                ->with([
+                    'user',
+                    'attachments' => function ($query) use ($board, $withTrashed) {
+                        if ($board) {
+                            $query->where('board_id', $board->id);
+                        }
+                        if ($withTrashed) {
+                            $query->withTrashed()
+                                ->where(function ($q) {
+                                    $q->whereNull('deleted_at')
+                                        ->orWhere('trigger_type', TriggerType::Cascade->value);
+                                });
+                        }
+                    },
+                ]);
 
             if ($withTrashed) {
                 $query->withTrashed();
@@ -538,6 +673,13 @@ class PostRepository implements PostRepositoryInterface
         foreach ($allReplies as $reply) {
             $children = $grouped->get($reply->id, collect());
             $reply->setRelation('replies', $children);
+
+            // 답변 글에도 같은 게시판을 붙인다 — 관계가 없으면 Post::isNew() 가 게시판의 「신규 게시글 표시 기간」
+            // 대신 기본 24시간으로 판정해, 표시 기간 0 게시판에서도 답변 글에만 New 가 붙었다(원글은 붙지 않음).
+            // 이미 조회한 단일 Board 를 공유 주입하므로 쿼리는 늘지 않는다.
+            if ($board) {
+                $reply->setRelation('board', $board);
+            }
         }
 
         // 직접 자식만 반환 (PostResource에서 재귀적으로 replies를 직렬화)
@@ -573,6 +715,11 @@ class PostRepository implements PostRepositoryInterface
 
         if ($withTrashed) {
             $query->withTrashed();
+        }
+
+        // 관리자 목록은 답글에 걸린 검색어도 그 원글로 센다 — 목록(buildSortedPostList)과 같은 ID 를 쓴다
+        if (! empty($filters['search_replies']) && ! empty($filters['search'])) {
+            $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($board?->id, $filters, $withTrashed);
         }
 
         // 필터 적용
@@ -753,6 +900,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  array  $filters  필터 조건 (검색, 상태, 분류 등)
      * @param  int|null  $perPage  페이지당 원글 수 (null이면 전체 조회)
      * @param  int  $currentPage  현재 페이지 번호
+     * @param  Board|null  $board  게시판 모델 (재조회 회피용 공유 인스턴스)
      * @return Collection|LengthAwarePaginator 정렬된 게시글 컬렉션 또는 페이지네이터
      */
     private function buildSortedPostList(
@@ -832,7 +980,12 @@ class PostRepository implements PostRepositoryInterface
             $parentQuery->whereNull('deleted_at');
         }
 
-        // 필터 적용 (원글만 검색, 답글은 3단계에서 별도 필터링)
+        // 관리자 목록은 답글에 걸린 검색어도 그 원글로 찾는다 — 총 건수(countNormalPosts)와 같은 ID 를 쓴다
+        if (! empty($filters['search_replies']) && ! empty($filters['search'])) {
+            $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($boardId, $filters, $withTrashed);
+        }
+
+        // 필터 적용 (원글 단위 — 답글은 3단계에서 원글 아래에 붙인다)
         $this->applyFilters($parentQuery, $filters);
 
         // 정렬 (order_by 파라미터 사용, 기본값: id)
@@ -997,7 +1150,9 @@ class PostRepository implements PostRepositoryInterface
     /**
      * 사용자의 게시판 활동 통계를 조회합니다.
      *
-     * 작성한 게시글 수, 작성한 댓글 수, 총 조회수를 반환합니다.
+     * 작성한 게시글 수, 내 글들에 달린 댓글 합, 총 조회수를 반환합니다. 「작성한 댓글」 수는 이 값이 아니라
+     * 댓글 저장소의 countUserComments() 로 서비스(PostService::getUserActivityStats)가 덮어쓴다 —
+     * 이 합은 받은 댓글 수라 「내가 쓴 댓글」 목록 건수와 다르다.
      *
      * @param  int  $userId  사용자 ID
      * @return array{total_posts: int, total_comments: int, total_views: int} 활동 통계
@@ -1037,19 +1192,26 @@ class PostRepository implements PostRepositoryInterface
      * 기존 getUserActivityStats()와 다른 점:
      * - status='published' 조건 적용
      * - comments_count = 실제 작성한 댓글 수 (댓글 단 게시글 수가 아님)
+     * - 비활성 게시판과 $excludeBoardIds(보는 사람이 읽을 수 없는 게시판)의 글·댓글은 세지 않음
      *
      * @param  int  $userId  사용자 ID
+     * @param  array<int>  $excludeBoardIds  세지 않을 게시판 ID 목록
      * @return array{posts_count: int, comments_count: int} 공개 게시글/댓글 통계
      */
-    public function getUserPublicStats(int $userId): array
+    public function getUserPublicStats(int $userId, array $excludeBoardIds = []): array
     {
-        // 단일 테이블 단일 쿼리
+        // 목록(getUserAuthoredActivities)과 같은 게시판 기준 — 비활성 게시판과 보는 사람이 읽을 수 없는
+        // 게시판의 글·댓글은 세지 않는다(2026-10-07 실측: 비로그인 통계에 회원전용 게시판 글이 섞였다).
+        $excludeIds = array_values(array_unique(array_merge(array_map('intval', $excludeBoardIds), $this->getInactiveBoardIds())));
+
         $postsCount = Post::where('user_id', $userId)
             ->where('status', PostStatus::Published->value)
+            ->when($excludeIds !== [], fn ($q) => $q->whereNotIn('board_id', $excludeIds))
             ->count();
 
         $commentsCount = Comment::where('user_id', $userId)
             ->where('status', PostStatus::Published->value)
+            ->when($excludeIds !== [], fn ($q) => $q->whereNotIn('board_id', $excludeIds))
             ->count();
 
         return [
@@ -1064,7 +1226,7 @@ class PostRepository implements PostRepositoryInterface
      * 사용자가 작성한 게시글, 댓글을 단 게시글을 통합하여 반환합니다.
      *
      * @param  int  $userId  사용자 ID
-     * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, viewer_id, exclude_board_slugs)
+     * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, viewer_id, exclude_board_slugs, exclude_board_ids)
      * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator 게시글 활동 목록
      */
@@ -1072,6 +1234,9 @@ class PostRepository implements PostRepositoryInterface
     {
         $boardSlugFilter = $filters['board_slug'] ?? null;
         $search = $filters['search'] ?? null;
+        // 검색 대상 (title_content 기본 / title / content). 모르는 값은 기본값으로 떨어뜨린다 —
+        // 허용값 게이트는 컨트롤러가 담당하고, 저장소는 닫힌 분기만 유지한다.
+        $searchField = $filters['search_field'] ?? 'title_content';
         $activityType = $filters['activity_type'] ?? 'authored';
         $sort = $filters['sort'] ?? 'latest'; // latest, oldest, views
         // 열람자 관점. 이 값이 대상 사용자와 다르면(비로그인 포함) **타인 관점**이므로
@@ -1098,6 +1263,10 @@ class PostRepository implements PostRepositoryInterface
             $excludeBoardIds = Board::whereIn('slug', $excludeBoardSlugs)->pluck('id')->all();
         }
 
+        // 열람자가 읽을 수 없는 게시판(서비스가 posts.read 로 판정해 넘김) — 행째 뺀다.
+        // 결과 페이지를 거르면 total 과 행 수가 어긋나므로 쿼리 단계 whereNotIn 에 합류시킨다.
+        $excludeBoardIds = array_merge($excludeBoardIds, array_map('intval', $filters['exclude_board_ids'] ?? []));
+
         // DB 레벨 정렬 컬럼 결정
         $orderColumn = match ($sort) {
             'views' => 'board_posts.view_count',
@@ -1116,7 +1285,7 @@ class PostRepository implements PostRepositoryInterface
         }
 
         // authored (기본값, 공개 프로필 포함)
-        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isOwnView, $orderColumn, $orderDirection, $perPage, $cachedTotal);
+        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isOwnView, $orderColumn, $orderDirection, $perPage, $cachedTotal, $searchField);
     }
 
     /**
@@ -1129,6 +1298,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $orderColumn  정렬 컬럼
      * @param  string  $orderDirection  정렬 방향
      * @param  int  $perPage  페이지당 항목 수
+     * @param  int|null  $cachedTotal  캐시된 총 건수
+     * @param  string  $searchField  검색 대상 (title_content|title|content)
+     * @param  array<int, int>  $excludeBoardIds  제외할 게시판 ID 목록
+     * @return LengthAwarePaginator 게시글 활동 목록
      */
     private function getUserAuthoredActivities(
         int $userId,
@@ -1139,7 +1312,8 @@ class PostRepository implements PostRepositoryInterface
         string $orderColumn,
         string $orderDirection,
         int $perPage,
-        ?int $cachedTotal = null
+        ?int $cachedTotal = null,
+        string $searchField = 'title_content'
     ): LengthAwarePaginator {
         // JOIN 대신 whereNotIn으로 비활성 게시판 제외 — idx_board_posts_user_created 인덱스 활용
         $inactiveBoardIds = $this->getInactiveBoardIds();
@@ -1159,9 +1333,15 @@ class PostRepository implements PostRepositoryInterface
 
         if ($search) {
             $keyword = $this->escapeLikeKeyword($search);
-            $query->where(function ($q) use ($keyword) {
-                $q->where('board_posts.title', 'like', "%{$keyword}%")
-                    ->orWhere('board_posts.content', 'like', "%{$keyword}%");
+            $columns = match ($searchField) {
+                'title' => ['board_posts.title'],
+                'content' => ['board_posts.content'],
+                default => ['board_posts.title', 'board_posts.content'],
+            };
+            $query->where(function ($q) use ($columns, $keyword) {
+                foreach ($columns as $column) {
+                    $q->orWhere($column, 'like', "%{$keyword}%");
+                }
             });
         }
 
@@ -1230,6 +1410,9 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $orderColumn  정렬 컬럼
      * @param  string  $orderDirection  정렬 방향
      * @param  int  $perPage  페이지당 항목 수
+     * @param  int|null  $cachedTotal  캐시된 총 건수 (null 이면 COUNT 수행)
+     * @param  int|null  $viewerId  열람자 ID (대상 본인이 아니면 비밀글 본문 마스킹)
+     * @return LengthAwarePaginator 댓글 단 게시글 목록
      */
     private function getUserCommentedActivities(
         int $userId,
@@ -1246,9 +1429,12 @@ class PostRepository implements PostRepositoryInterface
         $postsTable = (new Post)->getTable();
         $commentsTable = (new Comment)->getTable();
 
-        // 비활성 게시판 제외 — JOIN 없이 인덱스 활용
+        // 비활성 게시판 + 댓글 기능을 끈 게시판 제외 — JOIN 없이 인덱스 활용.
+        // use_comment 를 끈 게시판의 기존 댓글은 더 이상 열람·수정 경로가 없으므로
+        // "내가 댓글 단 글" 집계에도 남기지 않는다 (마이페이지 내 댓글과 같은 기준).
         $inactiveBoardIds = $this->getInactiveBoardIds();
-        $allExcludeIds = array_unique(array_merge($excludeBoardIds, $inactiveBoardIds));
+        $commentDisabledBoardIds = $this->getCommentDisabledBoardIds();
+        $allExcludeIds = array_unique(array_merge($excludeBoardIds, $inactiveBoardIds, $commentDisabledBoardIds));
 
         /**
          * 내가 이 글에 단 댓글 조건 (검색어까지 반영 — 활동 판정 · 건수 집계 공통).
@@ -1534,6 +1720,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $keyword  검색 키워드
+     * @return void
      */
     private function applyKeywordSearch(Builder $query, string $keyword): void
     {
@@ -1641,6 +1828,84 @@ class PostRepository implements PostRepositoryInterface
     public function forceDeleteByBoardId(int $boardId): int
     {
         return Post::where('board_id', $boardId)->forceDelete();
+    }
+
+    /**
+     * 지정한 게시글과 그 답변 글(자손 전체)을 하위 데이터와 함께 영구 삭제합니다 (소프트 삭제된 글 포함).
+     *
+     * 게시판 전체 답변을 비우던 정리(SB-1)는 운영자가 실제 문의에 단 답변까지 지웠다. 이제는
+     * 넘겨받은 원글에서 parent_id 로 이어진 자손만 모은다. 댓글·첨부 행·반응(글·댓글)·스크랩도 함께
+     * 지워 고아 행을 남기지 않는다. 첨부 파일 본문은 저장소가 다루지 않는다 — 호출하는 쪽이 먼저
+     * AttachmentService::purgeByPostIds 로 파일과 행을 정리한다(남은 행은 여기서 지운다).
+     *
+     * @param  int  $boardId  게시판 ID (다른 게시판의 같은 ID 는 지우지 않는다)
+     * @param  array<int, int>  $ids  삭제할 원글 ID 목록
+     * @return int 삭제된 게시글 수 (답변 포함)
+     */
+    public function forceDeleteWithRepliesByIds(int $boardId, array $ids): int
+    {
+        $allIds = $this->collectWithRepliesIds($boardId, $ids);
+
+        if ($allIds === []) {
+            return 0;
+        }
+
+        return (int) DB::transaction(function () use ($boardId, $allIds) {
+            $commentIds = Comment::withTrashed()
+                ->where('board_id', $boardId)
+                ->whereIn('post_id', $allIds)
+                ->pluck('id')
+                ->all();
+
+            Reaction::query()->where('target_type', 'post')->whereIn('target_id', $allIds)->delete();
+            if ($commentIds !== []) {
+                Reaction::query()->where('target_type', 'comment')->whereIn('target_id', $commentIds)->delete();
+            }
+            PostScrap::query()->whereIn('post_id', $allIds)->delete();
+            Attachment::withTrashed()->where('board_id', $boardId)->whereIn('post_id', $allIds)->forceDelete();
+            Comment::withTrashed()->where('board_id', $boardId)->whereIn('post_id', $allIds)->forceDelete();
+
+            return Post::withTrashed()->where('board_id', $boardId)->whereIn('id', $allIds)->forceDelete();
+        });
+    }
+
+    /**
+     * 지정한 게시글(그 게시판 안의 것만)과 자손 답글 전체의 ID 를 모읍니다 (소프트 삭제된 글 포함).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  array<int, int>  $ids  원글 ID 목록
+     * @return array<int, int> 원글 + 자손 답글 ID
+     */
+    public function collectWithRepliesIds(int $boardId, array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn (int $id) => $id > 0)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $postIds = Post::withTrashed()
+            ->where('board_id', $boardId)
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        // 자손 답글 수집 (레벨 순회 + 방문 가드)
+        $allIds = $postIds;
+        $frontier = $postIds;
+        while ($frontier !== []) {
+            $children = Post::withTrashed()
+                ->where('board_id', $boardId)
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $frontier = array_values(array_diff($children, $allIds));
+            $allIds = array_merge($allIds, $frontier);
+        }
+
+        return $allIds;
     }
 
     /**
@@ -1910,6 +2175,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $boardId  게시판 ID
      * @param  int  $size  청크 크기
      * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
+     * @return void
      */
     public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void
     {
@@ -1936,6 +2202,20 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * 댓글 기능을 끈 게시판 ID 목록을 조회합니다.
+     *
+     * 비활성 게시판과 별개의 축이다 — 게시판은 살아 있지만 댓글만 꺼진 상태가 있고,
+     * 그런 게시판의 기존 댓글은 열람·수정 경로가 닫혀 있어 집계 화면에만 남는다.
+     *
+     * @return array<int> 댓글 비활성 게시판 ID 배열
+     */
+    private function getCommentDisabledBoardIds(): array
+    {
+        // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글 수와 무관)
+        return Board::where('use_comment', false)->pluck('id')->all();
+    }
+
+    /**
      * 게시글의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
      *
      * @param  int  $postId  게시글 ID
@@ -1947,6 +2227,28 @@ class PostRepository implements PostRepositoryInterface
         Post::where('id', $postId)->update(['comments_count' => $count]);
 
         return $count;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function incrementScrapCount(int $postId): int
+    {
+        // 스크랩은 읽는 사람의 행동이라 글의 수정 시각을 올리지 않는다(toBase — incrementViewCount 와 같은 이유)
+        Post::where('id', $postId)->toBase()->increment('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function decrementScrapCount(int $postId): int
+    {
+        // 음수 방지 — 정합성이 깨진 상태(0)에서 해제해도 0 미만으로 내려가지 않게 한다.
+        Post::where('id', $postId)->where('scrap_count', '>', 0)->toBase()->decrement('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
     }
 
     /**
@@ -1980,13 +2282,18 @@ class PostRepository implements PostRepositoryInterface
     /**
      * 특정 날짜에 작성된 전체 게시판의 게시글 수를 조회합니다 (대시보드 집계용).
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다 — 집계 표(board_stats)는 모든 운영자가 함께 보는
+     * 하루 1행이라 보는 사람마다 경계를 달리할 수 없고, UTC 자정으로 자르면 한국 시간 새벽 0~9시 글이 전날로
+     * 묶인다(7.1.0 O-CF3).
+     *
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 게시글 수
      */
     public function countCreatedOnDate(string $date): int
     {
-        $start = CarbonImmutable::parse($date)->startOfDay();
-        $end = $start->addDay();
+        $siteDay = CarbonImmutable::parse($date, TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay();
+        $start = $siteDay->utc();
+        $end = $siteDay->addDay()->utc();
 
         return Post::query()
             ->whereNull('deleted_at')

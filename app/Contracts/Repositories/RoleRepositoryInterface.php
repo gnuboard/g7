@@ -40,12 +40,40 @@ interface RoleRepositoryInterface
     public function findByIdentifier(string $identifier): ?Role;
 
     /**
+     * 식별자 목록에 해당하는 역할들을 조회합니다 (없는 식별자는 건너뜁니다).
+     *
+     * @param  array<int, string>  $identifiers  역할 식별자 목록
+     * @return Collection<int, Role> 역할 컬렉션
+     */
+    public function getByIdentifiers(array $identifiers): Collection;
+
+    /**
+     * 역할 ID 목록을 식별자로 바꿉니다 (없는 ID 는 건너뜁니다).
+     *
+     * @param  array<int, int>  $ids  역할 ID 목록
+     * @return array<int, string> 역할 ID => 식별자
+     */
+    public function getIdentifiersByIds(array $ids): array;
+
+    /**
      * 식별자로 역할에 소속된 사용자들을 조회합니다.
      *
      * @param  string  $identifier  역할 식별자
      * @return Collection 역할 소속 사용자 컬렉션
      */
     public function getUsersByIdentifier(string $identifier): Collection;
+
+    /**
+     * 여러 역할 식별자에 속한 사용자를 한 번에 조회합니다. (중복 제거)
+     *
+     * 알림 수신자 규칙 하나가 역할을 **여러 개** 가리킬 수 있게 되면서 필요해졌습니다.
+     * 단수 메서드를 반복 호출하면 역할 수만큼 쿼리가 늘고, 두 역할에 함께 속한 사용자가
+     * 두 번 담겨 같은 사람에게 알림이 두 통 갑니다.
+     *
+     * @param  array<int, string>  $identifiers  역할 식별자 목록
+     * @return Collection 해당 역할들의 사용자 (중복 제거)
+     */
+    public function getUsersByIdentifiers(array $identifiers): Collection;
 
     /**
      * 새로운 역할을 생성합니다.
@@ -108,6 +136,7 @@ interface RoleRepositoryInterface
      * @param  Role  $role  역할 모델
      * @param  int  $permissionId  권한 ID
      * @param  array  $pivotData  피벗 테이블에 저장할 추가 데이터
+     * @return void 반환값 없음
      */
     public function attachPermission(Role $role, int $permissionId, array $pivotData = []): void;
 

@@ -83,9 +83,12 @@ describe('SortableThumbnailItem 의 공개 자산 URL 처리', () => {
     );
 
     await waitFor(() => expect(apiGet).toHaveBeenCalledTimes(1));
+    // 동일 출처 첨부는 비밀글 열람 토큰 헤더를 함께 싣는다(직접 전송로는 자격증명을 스스로 싣는다).
+    // 이 테스트 환경에는 토큰이 없으므로 빈 headers 가 실린다.
     expect(apiGet).toHaveBeenCalledWith(
       '/api/modules/sirsoft-ecommerce/product-image/abc',
-      { responseType: 'blob' }
+      // 비밀글 첨부 열람 토큰은 같은 요청에 실린다(secretContentHeaders) — 토큰이 없으면 빈 객체다.
+      { responseType: 'blob', headers: {} }
     );
   });
 

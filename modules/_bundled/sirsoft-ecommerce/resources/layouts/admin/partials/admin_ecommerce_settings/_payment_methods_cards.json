@@ -1,412 +1,434 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "결제수단 설정 - Mobile 카드 뷰"
-  },
-  "id": "payment_methods_cards_sortable",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-  },
-  "sortable": {
-    "source": "{{_local.form?.order_settings?.payment_methods ?? []}}",
-    "itemKey": "id",
-    "strategy": "verticalList",
-    "handle": "[data-drag-handle]",
-    "itemVar": "$method",
-    "indexVar": "$methodIndex"
-  },
-  "actions": [
-    {
-      "event": "onSortEnd",
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "form.order_settings.payment_methods": "{{$sortedItems.map((m, i) => ({...m, sort_order: i + 1}))}}",
-        "hasChanges": true
-      }
-    }
-  ],
-  "itemTemplate": {
+    "comment": "쇼핑몰 설정 — 결제수단 목록, 좁은 화면용 카드. 넓은 화면용 표(`_payment_methods_list`)와\n  **같은 배열을 같은 방식으로 편집한다**(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).\n  \n  결제수단은 폼 상태 안의 배열이고 저장은 설정 화면의 저장 버튼이 한꺼번에 한다 —\n  이 조각에는 서버 호출이 없다. 순서는 끌어 옮겨 정하며, 그 순서가 쇼핑몰 결제창의 노출 순서다.\n  항목 루트의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다 — 브랜드 배지·안내를 붙일 항목을 이름 글자가 아니라 이 표식으로만 찾는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "결제수단 설정 - Mobile 카드 뷰"
+    },
+    "id": "payment_methods_cards_sortable",
     "type": "basic",
     "name": "Div",
-    "props": {
-      "className": "excel-card"
+    "sortable": {
+        "source": "{{_local.form?.order_settings?.payment_methods ?? []}}",
+        "itemVar": "$method",
+        "itemKey": "id",
+        "indexVar": "$methodIndex",
+        "strategy": "verticalList",
+        "handle": "[data-drag-handle]"
     },
-    "classMap": {
-      "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
-      "variants": {
-        "normal": "",
-        "orphaned": "bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700"
-      }
-    },
-    "children": [
-      {
+    "itemTemplate": {
         "type": "basic",
         "name": "Div",
+        "classMap": {
+            "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
+            "variants": {
+                "normal": "",
+                "orphaned": "bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700"
+            }
+        },
         "props": {
-          "className": "excel-card-header"
+            "data-payment-method": "{{$method.id}}",
+            "className": "excel-card"
         },
         "children": [
-          {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "flex-center gap-3 flex-1 min-w-0"
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "excel-card-header"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-center gap-3 flex-1 min-w-0"
+                        },
+                        "children": [
+                            {
+                                "comment": "드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다).",
+                                "id": "payment_method_drag_handle_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
+                                "props": {
+                                    "data-drag-handle": true,
+                                    "className": "cursor-grab text-gray-400 dark:text-gray-500"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "grip-vertical"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다(#639)",
+                                "type": "composite",
+                                "name": "BrandMark",
+                                "if": "{{$method._cached_brand_mark}}",
+                                "props": {
+                                    "brandMark": "{{$method._cached_brand_mark}}",
+                                    "size": 20
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{!$method._cached_brand_mark}}",
+                                "props": {
+                                    "name": "{{$method._cached_icon ?? 'circle-question'}}",
+                                    "className": "text-secondary text-lg"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "font-medium text-gray-900 dark:text-gray-100 truncate"
+                                },
+                                "text": "{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{$method._orphaned}}",
+                                "props": {
+                                    "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{$method._orphaned_pg}}",
+                                "props": {
+                                    "data-testid": "orphaned-pg-badge-{{$method.id}}",
+                                    "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "comment": "고객이 고를 수 없는 수단(customer_selectable === false)은 목록 표와 같이 잠근다 — 켜도 주문 생성이 422 로 거절된다.",
+                                "type": "composite",
+                                "name": "Toggle",
+                                "if": "{{!$method._orphaned}}",
+                                "actions": [
+                                    {
+                                        "comment": "사용 여부. 끄면 쇼핑몰 결제창에서 사라지고 설정은 남는다 — 이미 그 수단으로 결제된 주문에는 영향이 없다.",
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}",
+                                            "hasChanges": true
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "value": "{{$method.is_active}}",
+                                    "disabled": "{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{$method._orphaned}}",
+                                "actions": [
+                                    {
+                                        "comment": "결제수단 삭제. 사용 여부를 끄는 것과 달리 설정 자체가 사라진다.",
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).filter((_, i) => i !== $methodIndex)}}",
+                                            "hasChanges": true
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.remove_orphaned"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "trash"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
-            "children": [
-              {
+            {
                 "type": "basic",
                 "name": "Div",
                 "if": "{{!$method._orphaned}}",
                 "props": {
-                  "data-drag-handle": true,
-                  "className": "cursor-grab text-gray-400 dark:text-gray-500"
+                    "className": "excel-card-body"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "grip-vertical"
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "row-stack"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "form-group"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider"
+                                    },
+                                    {
+                                        "comment": "PG 고정 수단(간편결제 등) — 플러그인이 자기 PG 로 고정 선언했으므로 관리자가 바꿀 수 없다. PG 이름을 읽기전용으로 표시.",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{$method.pg_locked}}",
+                                        "props": {
+                                            "data-testid": "{{'pg-locked-badge-' + $method.id}}",
+                                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length > 0}}",
+                                        "actions": [
+                                            {
+                                                "comment": "연동 플러그인(PG). 어느 결제사로 보낼지를 정한다 — 설치·활성화된 플러그인만 선택지에 뜬다.",
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, pg_provider: $event.target.value || null} : m)}}",
+                                                    "hasChanges": true
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "{{'pg-select-' + $method.id}}",
+                                            "value": "{{$method.pg_provider ?? ''}}",
+                                            "className": "w-full",
+                                            "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
+                                            "disabled": "{{_computed.isReadOnly}}"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length === 0}}",
+                                        "props": {
+                                            "data-testid": "{{'pg-not-installed-' + $method.id}}",
+                                            "className": "text-hint italic"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!$method.pg_locked && !$method.needs_pg}}",
+                                        "props": {
+                                            "data-testid": "{{'pg-not-required-' + $method.id}}",
+                                            "className": "text-hint"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "form-group"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "결제 방식. 같은 PG 라도 카드·계좌이체처럼 방식이 갈린다.",
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, stock_deduction_timing: $event.target.value} : m)}}",
+                                                    "hasChanges": true
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "value": "{{$method.stock_deduction_timing ?? 'payment_complete'}}",
+                                            "className": "w-full",
+                                            "disabled": "{{_computed.isReadOnly}}",
+                                            "options": [
+                                                {
+                                                    "value": "order_placed",
+                                                    "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed"
+                                                },
+                                                {
+                                                    "value": "payment_complete",
+                                                    "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete"
+                                                },
+                                                {
+                                                    "value": "none",
+                                                    "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_none"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "form-group"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "노출 대상. 회원·비회원 중 누구에게 보일지다.",
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, mileage_deduction_timing: $event.target.value} : m)}}",
+                                                    "hasChanges": true
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
+                                            "className": "w-full",
+                                            "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}",
+                                            "options": [
+                                                {
+                                                    "value": "order_placed",
+                                                    "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed"
+                                                },
+                                                {
+                                                    "value": "payment_complete",
+                                                    "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!(_local.form?.mileage?.enabled)}}",
+                                        "props": {
+                                            "className": "form-hint text-amber-600 dark:text-amber-400"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing_disabled_hint"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "form-group"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "actions": [
+                                            {
+                                                "comment": "표시 이름. 비워 두면 기본 이름이 쓰인다.",
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, min_order_amount: Number($event.target.value) || 0} : m)}}",
+                                                    "hasChanges": true
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "number",
+                                            "value": "{{$method.min_order_amount ?? 0}}",
+                                            "min": 0,
+                                            "className": "input",
+                                            "disabled": "{{_computed.isReadOnly}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  }
                 ]
-              },
-              {
-                "type": "basic",
-                "name": "Icon",
-                "props": {
-                  "name": "{{$method._cached_icon ?? 'circle-question'}}",
-                  "className": "text-secondary text-lg"
-                }
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "props": {
-                  "className": "font-medium text-gray-900 dark:text-gray-100 truncate"
-                },
-                "text": "{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{$method._orphaned}}",
-                "props": {
-                  "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                },
-                "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{$method._orphaned_pg}}",
-                "props": {
-                  "data-testid": "orphaned-pg-badge-{{$method.id}}",
-                  "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                },
-                "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge"
-              }
-            ]
-          },
-          {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "flex-center gap-2"
-            },
-            "children": [
-              {
-                "type": "composite",
-                "name": "Toggle",
-                "if": "{{!$method._orphaned}}",
-                "props": {
-                  "value": "{{$method.is_active}}",
-                  "disabled": "{{_computed.isReadOnly || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
-                },
-                "actions": [
-                  {
-                    "type": "change",
-                    "handler": "setState",
-                    "params": {
-                      "target": "local",
-                      "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}",
-                      "hasChanges": true
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Button",
-                "if": "{{$method._orphaned}}",
-                "props": {
-                  "type": "button",
-                  "className": "btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
-                  "disabled": "{{_computed.isReadOnly}}"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                      "target": "local",
-                      "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).filter((_, i) => i !== $methodIndex)}}",
-                      "hasChanges": true
-                    }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "trash"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      },
-      {
-        "type": "basic",
-        "name": "Div",
-        "if": "{{!$method._orphaned}}",
-        "props": {
-          "className": "excel-card-body"
-        },
-        "children": [
-          {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "row-stack"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "form-group"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Label",
-                    "props": {
-                      "className": "form-label"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider"
-                  },
-                  {
-                    "comment": "PG 고정 수단(간편결제 등) — 플러그인이 자기 PG 로 고정 선언했으므로 관리자가 바꿀 수 없다. PG 이름을 읽기전용으로 표시.",
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{$method.pg_locked}}",
-                    "props": {
-                      "data-testid": "{{'pg-locked-badge-' + $method.id}}",
-                      "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                    },
-                    "text": "{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Select",
-                    "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length > 0}}",
-                    "props": {
-                      "data-testid": "{{'pg-select-' + $method.id}}",
-                      "value": "{{$method.pg_provider ?? ''}}",
-                      "className": "w-full",
-                      "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
-                      "disabled": "{{_computed.isReadOnly}}"
-                    },
-                    "actions": [
-                      {
-                        "type": "change",
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, pg_provider: $event.target.value || null} : m)}}",
-                          "hasChanges": true
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length === 0}}",
-                    "props": {
-                      "data-testid": "{{'pg-not-installed-' + $method.id}}",
-                      "className": "text-hint italic"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{!$method.pg_locked && !$method.needs_pg}}",
-                    "props": {
-                      "data-testid": "{{'pg-not-required-' + $method.id}}",
-                      "className": "text-hint"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "form-group"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Label",
-                    "props": {
-                      "className": "form-label"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Select",
-                    "props": {
-                      "value": "{{$method.stock_deduction_timing ?? 'payment_complete'}}",
-                      "className": "w-full",
-                      "options": [
-                        {
-                          "value": "order_placed",
-                          "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed"
-                        },
-                        {
-                          "value": "payment_complete",
-                          "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete"
-                        },
-                        {
-                          "value": "none",
-                          "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_none"
-                        }
-                      ],
-                      "disabled": "{{_computed.isReadOnly}}"
-                    },
-                    "actions": [
-                      {
-                        "type": "change",
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, stock_deduction_timing: $event.target.value} : m)}}",
-                          "hasChanges": true
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "form-group"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Label",
-                    "props": {
-                      "className": "form-label"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Select",
-                    "props": {
-                      "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
-                      "className": "w-full",
-                      "options": [
-                        {
-                          "value": "order_placed",
-                          "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed"
-                        },
-                        {
-                          "value": "payment_complete",
-                          "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete"
-                        }
-                      ],
-                      "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}"
-                    },
-                    "actions": [
-                      {
-                        "type": "change",
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, mileage_deduction_timing: $event.target.value} : m)}}",
-                          "hasChanges": true
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{!(_local.form?.mileage?.enabled)}}",
-                    "props": {
-                      "className": "form-hint text-amber-600 dark:text-amber-400"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing_disabled_hint"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "form-group"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Label",
-                    "props": {
-                      "className": "form-label"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Input",
-                    "props": {
-                      "type": "number",
-                      "value": "{{$method.min_order_amount ?? 0}}",
-                      "min": 0,
-                      "className": "input",
-                      "disabled": "{{_computed.isReadOnly}}"
-                    },
-                    "actions": [
-                      {
-                        "type": "change",
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, min_order_amount: Number($event.target.value) || 0} : m)}}",
-                          "hasChanges": true
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
+    },
+    "actions": [
+        {
+            "comment": "순서 바꾸기. 끌어 놓은 결과를 배열 순서로 반영하고, 그 순서가 쇼핑몰 결제창의 노출 순서가 된다.",
+            "event": "onSortEnd",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "form.order_settings.payment_methods": "{{$sortedItems.map((m, i) => ({...m, sort_order: i + 1}))}}",
+                "hasChanges": true
+            }
+        }
     ]
-  }
 }

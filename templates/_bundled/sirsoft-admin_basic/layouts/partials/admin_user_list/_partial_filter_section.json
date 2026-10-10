@@ -1,0 +1,2794 @@
+{
+    "comment": "회원 목록 — 검색 필터 영역. 쿠폰·상품·주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),\n  다만 항목이 회원 도메인이고 **프리셋이 없다**(#705 D6).\n\n  ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를\n     정한다 — 보이고 숨겨도 행이 다시 만들어지지 않으므로 입력값이 유지된다.\n  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage)에 남긴다. 저장은 본체의 필터 표시 선택기가\n     자기 `id`(`admin_user_filters`)와 로그인 사용자로 만든 키에 스스로 한다 — 편집모드 체크박스는\n     상태만 바꾼다. 되읽기는 코어 템플릿 핸들러 `loadVisibleFilters` 가 같은 키로 한다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다(`searchUsers`).\n  ⓓ 모듈·플러그인이 더하는 필터 행은 상세 영역 아래 확장점(`admin_user_list_filters`)에 모인다.\n     그 행은 기본/상세 이동 대상이 아니다 — 코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다.\n     값은 각 확장이 자기 네임스페이스로 등록한 핸들러로 `_local.userFilterExtraQuery` 배열에 모으고,\n     이 영역의 검색이 그 배열을 `ext_filters[]` 로 보낸다 — 확장 조각은 이 템플릿의 핸들러에 기대지 않는다.\n\n  날짜 축이 **넷**이다 — 가입일(`created*`), 최근 로그인(`lastLogin*`), 휴면 전환일(`dormant*`),\n  상태 변경일(`statusChanged*`, 탈퇴/차단 중 고른 쪽). 빠른 기간 버튼은 가입일·최근 로그인에만 있다.\n  날짜 칸은 `<input type=\"date\">` 라 빠른 기간 핸들러를 `format=\"date\"` 로 부른다.",
+    "meta": {
+        "is_partial": true,
+        "description": "User List - Filter Section with Slot System"
+    },
+    "id": "filter_card",
+    "type": "basic",
+    "name": "Div",
+    "dataKey": "filter",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "id": "slot_registration_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "hidden filter-grid",
+                "aria-hidden": "true"
+            },
+            "children": [
+                {
+                    "id": "status_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 1,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "계정 상태 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 브라우저에 남긴다 — 여기서는 상태만 바꾸고 저장은 필터 표시 선택기가 한다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('status') ? (_local.visibleFilters || []).filter(f => f !== 'status') : [...(_local.visibleFilters || []), 'status']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('status')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.status"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "계정 상태 — 전체. 여럿을 고르는 값이라 「전체」는 값이 아니라 **빈 목록**이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.status": []
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "statusAll",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.status || []).length === 0}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:common.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "(_computed.userStatusOptions ?? [])",
+                                        "item_var": "st"
+                                    },
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "상태 하나 켜고 끄기. 여섯 상태는 본체 computed `userStatusOptions` 가 서버 Enum(UserStatus) 과 같은 순서로 준다 — 슬롯으로 옮겨 그려지는 행에는 `_defines` 가 실리지 않으므로 computed 로 받는다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.status": "{{(_local.filter.status || []).includes(st.code) ? (_local.filter.status || []).filter(v => v !== st.code) : [...(_local.filter.status || []), st.code]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "status",
+                                                "value": "{{st.code}}",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.status || []).includes(st.code)}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{st.name}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "role_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('role') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 2,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "권한 그룹 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('role') ? (_local.visibleFilters || []).filter(f => f !== 'role') : [...(_local.visibleFilters || []), 'role']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('role')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.role"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.role"
+                        },
+                        {
+                            "comment": "역할은 설치마다 수십 개가 될 수 있어 체크박스를 늘어놓으면 행이 화면 몇 개 높이로 자란다 — 회원 폼의\n             역할 선택과 같은 「검색 + 태그」 한 칸으로 고른다. 비워 두면 전체다(「전체」 칸이 따로 없다).\n             값은 id 문자열이다 — URL(`role_ids[]`)에서 되읽으면 문자열로 오므로 선택지 value 도 문자열로 맞춘다.\n             폭은 이 칸이 맡는다 — TagInput 의 class 는 안쪽 입력 상자에만 붙어, 바깥이 내용 폭으로 줄어든다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-full"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "flex-1 min-w-0 max-w-2xl"
+                            },
+                            "children": [
+                                {
+                                    "comment": "역할 목록은 목록 데이터보다 늦게 온다(냉간 수 초). 그 전에 URL 에서 되읽은 값만으로 태그를 그리면 이름\n               대신 id 가 보이므로, 목록이 오기 전에는 고른 개수만큼 「…」 태그로 두고 입력을 잠근다.",
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.role": "{{($event.target.value ?? []).map(String)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "role",
+                                        "value": "{{_local.filter.role || []}}",
+                                        "options": "{{(roles?.data?.data ? roles.data.data.map(r => ({value: String(r.id), label: r.name})) : (_local.filter.role || []).map(v => ({value: v, label: '…'}))) ?? []}}",
+                                        "disabled": "{{!roles?.data?.data}}",
+                                        "placeholder": "$t:admin.users.filter.role_placeholder",
+                                        "noOptionsMessage": "$t:admin.users.filter.role_no_options",
+                                        "className": "w-full",
+                                        "defaultVariant": "blue"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "created_date_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 3,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "가입일 필터 노출 스위치. 빠른 기간 버튼이 붙어 자리를 많이 먹는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('createdAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.created_at"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.created_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "calendar",
+                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "가입일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.createdStartDate": "{{$event.target.value}}",
+                                                        "filter.createdDateQuick": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_start|label={{$t('admin.users.filter.created_at')}}",
+                                                "name": "createdStartDate",
+                                                "value": "{{_local.filter.createdStartDate || ''}}",
+                                                "className": "input w-36"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "가입일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.createdEndDate": "{{$event.target.value}}",
+                                                        "filter.createdDateQuick": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_end|label={{$t('admin.users.filter.created_at')}}",
+                                                "name": "createdEndDate",
+                                                "value": "{{_local.filter.createdEndDate || ''}}",
+                                                "className": "input w-36"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "가입일 빠른 기간 여섯. 핸들러가 시작·종료일을 날짜 형식으로 계산해 돌려주고 $prev 로 받아 담는다 — 날짜 칸은 시각이 붙은 값을 받지 못한다. 오늘.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "today",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                                                "filter.createdEndDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.today"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "week",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                                                "filter.createdEndDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.week"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "1개월.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "month",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                                                "filter.createdEndDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.month"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "3개월.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "3months",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                                                "filter.createdEndDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.3months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "6개월.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "6months",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                                                "filter.createdEndDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.6months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "1년.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "1year",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                                                "filter.createdEndDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.1year"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "last_login_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('lastLoginAt') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 4,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "최근 로그인 필터 노출 스위치. 휴면 전 안내 대상을 찾을 때 기본으로 올려 두는 일이 많다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('lastLoginAt') ? (_local.visibleFilters || []).filter(f => f !== 'lastLoginAt') : [...(_local.visibleFilters || []), 'lastLoginAt']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('lastLoginAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.last_login"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.last_login"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "calendar",
+                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "최근 로그인 시작. 「로그인 이력 없음」 을 켜면 이 칸은 잠긴다 — 둘은 동시에 참일 수 없다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.lastLoginStartDate": "{{$event.target.value}}",
+                                                        "filter.lastLoginDateQuick": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_start|label={{$t('admin.users.filter.last_login')}}",
+                                                "name": "lastLoginStartDate",
+                                                "value": "{{_local.filter.lastLoginStartDate || ''}}",
+                                                "disabled": "{{!!_local.filter.neverLoggedIn}}",
+                                                "className": "input w-36"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "최근 로그인 종료.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.lastLoginEndDate": "{{$event.target.value}}",
+                                                        "filter.lastLoginDateQuick": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_end|label={{$t('admin.users.filter.last_login')}}",
+                                                "name": "lastLoginEndDate",
+                                                "value": "{{_local.filter.lastLoginEndDate || ''}}",
+                                                "disabled": "{{!!_local.filter.neverLoggedIn}}",
+                                                "className": "input w-36"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "최근 로그인 빠른 기간 여섯 — 가입일과 같은 방식이다. 누르면 「로그인 이력 없음」 을 끈다. 오늘.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "today",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.lastLoginDateQuick": "{{$prev.preset}}",
+                                                                "filter.lastLoginStartDate": "{{$prev.startDate}}",
+                                                                "filter.lastLoginEndDate": "{{$prev.endDate}}",
+                                                                "filter.neverLoggedIn": false
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.lastLoginDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.today"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "1주일.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "week",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.lastLoginDateQuick": "{{$prev.preset}}",
+                                                                "filter.lastLoginStartDate": "{{$prev.startDate}}",
+                                                                "filter.lastLoginEndDate": "{{$prev.endDate}}",
+                                                                "filter.neverLoggedIn": false
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.lastLoginDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.week"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "1개월.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "month",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.lastLoginDateQuick": "{{$prev.preset}}",
+                                                                "filter.lastLoginStartDate": "{{$prev.startDate}}",
+                                                                "filter.lastLoginEndDate": "{{$prev.endDate}}",
+                                                                "filter.neverLoggedIn": false
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.lastLoginDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.month"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "3개월.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "3months",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.lastLoginDateQuick": "{{$prev.preset}}",
+                                                                "filter.lastLoginStartDate": "{{$prev.startDate}}",
+                                                                "filter.lastLoginEndDate": "{{$prev.endDate}}",
+                                                                "filter.neverLoggedIn": false
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.lastLoginDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.3months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "6개월.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "6months",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.lastLoginDateQuick": "{{$prev.preset}}",
+                                                                "filter.lastLoginStartDate": "{{$prev.startDate}}",
+                                                                "filter.lastLoginEndDate": "{{$prev.endDate}}",
+                                                                "filter.neverLoggedIn": false
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.lastLoginDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.6months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "1년.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "1year",
+                                                                "format": "date"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.lastLoginDateQuick": "{{$prev.preset}}",
+                                                                "filter.lastLoginStartDate": "{{$prev.startDate}}",
+                                                                "filter.lastLoginEndDate": "{{$prev.endDate}}",
+                                                                "filter.neverLoggedIn": false
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.lastLoginDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.users.filter.date_quick.1year"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "로그인 이력 없음. 켜면 기간을 비운다 — 서버도 이 조건이 참이면 기간을 무시하지만, 칸에 값이 남아 있으면 운영자가 둘 다 걸렸다고 읽는다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.neverLoggedIn": "{{!_local.filter.neverLoggedIn}}",
+                                                        "filter.lastLoginStartDate": "",
+                                                        "filter.lastLoginEndDate": "",
+                                                        "filter.lastLoginDateQuick": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "neverLoggedIn",
+                                                "className": "checkbox",
+                                                "checked": "{{!!_local.filter.neverLoggedIn}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.never_logged_in"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "admin_scope_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('adminScope') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 5,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "관리자 여부 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('adminScope') ? (_local.visibleFilters || []).filter(f => f !== 'adminScope') : [...(_local.visibleFilters || []), 'adminScope']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('adminScope')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.admin_scope"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.admin_scope"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "관리자 여부 — 전체. 하나만 고르는 값이라 「전체」도 값(`all`)이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.adminScope": "all"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "adminScope",
+                                                "value": "all",
+                                                "checked": "{{(_local.filter.adminScope || 'all') === 'all'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:common.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "관리자만. 슈퍼관리자이거나 관리자 권한이 든 역할을 가진 회원이다(역할 이름이 아니라 권한으로 판정).",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.adminScope": "admin"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "adminScope",
+                                                "value": "admin",
+                                                "checked": "{{_local.filter.adminScope === 'admin'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.admin_scope_options.admin"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "일반회원만.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.adminScope": "member"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "adminScope",
+                                                "value": "member",
+                                                "checked": "{{_local.filter.adminScope === 'member'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.admin_scope_options.member"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "lock_state_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('lockState') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 6,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "계정 잠금 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('lockState') ? (_local.visibleFilters || []).filter(f => f !== 'lockState') : [...(_local.visibleFilters || []), 'lockState']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('lockState')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.lock_state"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.lock_state"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "계정 잠금 — 전체.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.lockState": "all"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "lockState",
+                                                "value": "all",
+                                                "checked": "{{(_local.filter.lockState || 'all') === 'all'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:common.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "잠김. 영구 잠금이거나 해제 시각이 아직 오지 않은 계정이다 — 해제 시각이 지난 잠금은 정상으로 본다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.lockState": "locked"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "lockState",
+                                                "value": "locked",
+                                                "checked": "{{_local.filter.lockState === 'locked'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.lock_state_options.locked"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "정상.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.lockState": "unlocked"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "lockState",
+                                                "value": "unlocked",
+                                                "checked": "{{_local.filter.lockState === 'unlocked'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.lock_state_options.unlocked"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "dormant_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('dormantAt') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 7,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "휴면 전환일 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('dormantAt') ? (_local.visibleFilters || []).filter(f => f !== 'dormantAt') : [...(_local.visibleFilters || []), 'dormantAt']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('dormantAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.dormant_at"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.dormant_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "calendar",
+                                        "className": "text-base text-gray-400 dark:text-gray-500"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "휴면 전환일 시작. 휴면이 풀린 회원은 전환일이 지워지므로 지금 휴면인 회원만 걸린다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.dormantStartDate": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "date",
+                                        "aria-label": "$t:common.range_start|label={{$t('admin.users.filter.dormant_at')}}",
+                                        "name": "dormantStartDate",
+                                        "value": "{{_local.filter.dormantStartDate || ''}}",
+                                        "className": "input w-36"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "~"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "휴면 전환일 종료.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.dormantEndDate": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "date",
+                                        "aria-label": "$t:common.range_end|label={{$t('admin.users.filter.dormant_at')}}",
+                                        "name": "dormantEndDate",
+                                        "value": "{{_local.filter.dormantEndDate || ''}}",
+                                        "className": "input w-36"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "status_changed_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('statusChangedAt') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 8,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "상태 변경일 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('statusChangedAt') ? (_local.visibleFilters || []).filter(f => f !== 'statusChangedAt') : [...(_local.visibleFilters || []), 'statusChangedAt']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('statusChangedAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status_changed"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.status_changed"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "어떤 변경의 날짜인지 — 탈퇴일/차단일. 아래 기간이 **무엇의 기간인지**를 이 값이 정한다. 종류만 고르고 기간을 비우면 그 일이 있었던 회원 전부다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.statusChangedType": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "statusChangedType",
+                                        "aria-label": "$t:admin.users.filter.status_changed",
+                                        "className": "w-28",
+                                        "value": "{{_local.filter.statusChangedType || ''}}",
+                                        "options": [
+                                            {
+                                                "value": "",
+                                                "label": "$t:common.all"
+                                            },
+                                            {
+                                                "value": "withdrawn",
+                                                "label": "$t:admin.users.filter.status_changed_options.withdrawn"
+                                            },
+                                            {
+                                                "value": "blocked",
+                                                "label": "$t:admin.users.filter.status_changed_options.blocked"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "calendar",
+                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "상태 변경일 시작. 종류를 고르기 전에는 잠겨 있다 — 무엇의 날짜인지 모르면 서버가 무시한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.statusChangedStart": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_start|label={{$t('admin.users.filter.status_changed')}}",
+                                                "name": "statusChangedStart",
+                                                "value": "{{_local.filter.statusChangedStart || ''}}",
+                                                "disabled": "{{!_local.filter.statusChangedType}}",
+                                                "className": "input w-36"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "상태 변경일 종료.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.statusChangedEnd": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "date",
+                                                "aria-label": "$t:common.range_end|label={{$t('admin.users.filter.status_changed')}}",
+                                                "name": "statusChangedEnd",
+                                                "value": "{{_local.filter.statusChangedEnd || ''}}",
+                                                "disabled": "{{!_local.filter.statusChangedType}}",
+                                                "className": "input w-36"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "language_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('language') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 9,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "언어 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('language') ? (_local.visibleFilters || []).filter(f => f !== 'language') : [...(_local.visibleFilters || []), 'language']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('language')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.language"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.language"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "회원이 고른 표시 언어. 선택지는 사이트가 지원하는 언어 목록이라 설치마다 다르다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.language": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "language",
+                                        "className": "w-40",
+                                        "value": "{{_local.filter.language || ''}}",
+                                        "options": "{{[{ value: '', label: '$t:common.all' }, ...(($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l })))]}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "country_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 10,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "국가 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('country')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.country"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.country"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "SearchableDropdown",
+                                    "actions": [
+                                        {
+                                            "comment": "국가 선택. 선택지는 회원 등록·수정 폼과 같은 국가 목록(본체 `countryList`)이다 — 목록이 갈리면 폼에서 넣은 나라를 필터로 못 찾는다.",
+                                            "type": "change",
+                                            "event": "onChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.country": "{{$args[0]}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "options": "{{_computed.countryOptions ?? []}}",
+                                        "value": "{{_local.filter.country || ''}}",
+                                        "triggerLabel": "$t:admin.users.filter.country_select",
+                                        "searchPlaceholder": "$t:admin.users.filter.country_search",
+                                        "noResultsText": "$t:common.no_results",
+                                        "className": "w-64"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{!!_local.filter.country}}",
+                                    "actions": [
+                                        {
+                                            "comment": "고른 국가 지우기.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.country": ""
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:common.clear_selection",
+                                        "title": "$t:common.clear_selection",
+                                        "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "xmark",
+                                                "className": "text-base"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "email_verified_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('emailVerified') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 11,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "이메일 인증 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('emailVerified') ? (_local.visibleFilters || []).filter(f => f !== 'emailVerified') : [...(_local.visibleFilters || []), 'emailVerified']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('emailVerified')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.email_verified"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.email_verified"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "이메일 인증 — 전체.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.emailVerified": "all"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "emailVerified",
+                                                "value": "all",
+                                                "checked": "{{(_local.filter.emailVerified || 'all') === 'all'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:common.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "인증 완료 — 인증 시각이 있는 회원.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.emailVerified": "verified"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "emailVerified",
+                                                "value": "verified",
+                                                "checked": "{{_local.filter.emailVerified === 'verified'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.verified_options.verified"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "미완료.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.emailVerified": "unverified"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "emailVerified",
+                                                "value": "unverified",
+                                                "checked": "{{_local.filter.emailVerified === 'unverified'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.verified_options.unverified"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "identity_verified_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('identityVerified') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 12,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "본인인증 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('identityVerified') ? (_local.visibleFilters || []).filter(f => f !== 'identityVerified') : [...(_local.visibleFilters || []), 'identityVerified']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('identityVerified')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.identity_verified"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.users.filter.identity_verified"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "본인인증 — 전체.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.identityVerified": "all"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "identityVerified",
+                                                "value": "all",
+                                                "checked": "{{(_local.filter.identityVerified || 'all') === 'all'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:common.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "본인인증 완료 — 최종 성공 시각이 있는 회원.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.identityVerified": "verified"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "identityVerified",
+                                                "value": "verified",
+                                                "checked": "{{_local.filter.identityVerified === 'verified'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.verified_options.verified"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "미완료.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.identityVerified": "unverified"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "identityVerified",
+                                                "value": "unverified",
+                                                "checked": "{{_local.filter.identityVerified === 'unverified'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.filter.verified_options.unverified"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "row-stack mb-4"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex-center flex-wrap gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "id": "search_row_line1",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex-center flex-wrap gap-2 flex-1"
+                    },
+                    "children": [
+                        {
+                            "id": "search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-24"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "검색어를 어느 칸에서 찾을지. 회원번호/고유ID 는 LIKE 가 아니라 정확 일치다(숫자면 번호, UUID 면 고유ID).",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "filter.searchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "searchField",
+                                "className": "w-32",
+                                "value": "{{_local.filter.searchField || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:admin.users.search_fields.all"
+                                    },
+                                    {
+                                        "value": "name",
+                                        "label": "$t:admin.users.search_fields.name"
+                                    },
+                                    {
+                                        "value": "nickname",
+                                        "label": "$t:admin.users.search_fields.nickname"
+                                    },
+                                    {
+                                        "value": "email",
+                                        "label": "$t:admin.users.search_fields.email"
+                                    },
+                                    {
+                                        "value": "contact",
+                                        "label": "$t:admin.users.search_fields.contact"
+                                    },
+                                    {
+                                        "value": "identifier",
+                                        "label": "$t:admin.users.search_fields.identifier"
+                                    },
+                                    {
+                                        "value": "admin_memo",
+                                        "label": "$t:admin.users.search_fields.admin_memo"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "search_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "input flex-1"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "타이핑은 담기만 한다 — 실제 조회는 Enter 나 검색 버튼이다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "filter.searchKeyword": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "type": "keypress",
+                                    "key": "Enter",
+                                    "actionRef": "searchUsers"
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "searchKeyword",
+                                "className": "input flex-1 min-w-[200px]",
+                                "placeholder": "$t:admin.users.search_placeholder",
+                                "value": "{{_local.filter.searchKeyword || ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "search_row_line2",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-2 w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex-center gap-2 ml-auto"
+                    },
+                    "children": [
+                        {
+                            "comment": "보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다",
+                            "id": "column_selector",
+                            "type": "composite",
+                            "name": "ColumnSelector",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-full",
+                                        "triggerClassName": "w-full justify-center",
+                                        "labelClassName": "inline"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "보이는 열 선택. 전역에 두는 이유는 화면을 떠났다 돌아와도 유지하기 위해서다 — 선택기는 `id`(admin_user_list_columns)와 로그인 사용자로 키를 만들어 브라우저에도 남긴다.",
+                                    "type": "change",
+                                    "event": "onColumnVisibilityChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "visibleColumns_admin_users": "{{$args[0]}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "id": "admin_user_list_columns",
+                                "visibleColumns": "{{_global.visibleColumns_admin_users}}",
+                                "triggerLabel": "$t:common.column_selector",
+                                "menuTitle": "$t:common.column_selector_title",
+                                "menuDescription": "$t:common.column_selector_description",
+                                "position": "right",
+                                "columns": [
+                                    {
+                                        "field": "name",
+                                        "header": "$t:admin.users.columns.name",
+                                        "required": true
+                                    },
+                                    {
+                                        "field": "role",
+                                        "header": "$t:admin.users.columns.role",
+                                        "required": true
+                                    },
+                                    {
+                                        "field": "email",
+                                        "header": "$t:admin.users.columns.email",
+                                        "required": true
+                                    },
+                                    {
+                                        "field": "nickname",
+                                        "header": "$t:admin.users.columns.nickname"
+                                    },
+                                    {
+                                        "field": "country",
+                                        "header": "$t:admin.users.columns.country"
+                                    },
+                                    {
+                                        "field": "language",
+                                        "header": "$t:admin.users.columns.language"
+                                    },
+                                    {
+                                        "field": "status",
+                                        "header": "$t:admin.users.columns.status"
+                                    },
+                                    {
+                                        "field": "email_verified_at",
+                                        "header": "$t:admin.users.columns.email_verified_at"
+                                    },
+                                    {
+                                        "field": "identity_verified_at",
+                                        "header": "$t:admin.users.columns.identity_verified_at"
+                                    },
+                                    {
+                                        "field": "created_at",
+                                        "header": "$t:admin.users.columns.created_at"
+                                    },
+                                    {
+                                        "field": "last_login_at",
+                                        "header": "$t:admin.users.columns.last_login_at"
+                                    }
+                                ],
+                                "defaultColumns": [
+                                    "name",
+                                    "role",
+                                    "email"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "detail_search_toggle",
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "flex-center btn btn-outline justify-center gap-2 w-full"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "상세 필터 펼침/접힘. 편집모드를 켜면 아래 검색편집 버튼이 이 값을 강제로 참으로 만든다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "showDetailFilter": "{{!_local.showDetailFilter}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.users.filter.detail_search"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}",
+                                        "className": "text-base"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "basic_filters_section",
+            "type": "composite",
+            "name": "SlotContainer",
+            "props": {
+                "slotId": "basic_filters",
+                "className": "filter-grid"
+            }
+        },
+        {
+            "id": "detail_filter_title",
+            "type": "basic",
+            "name": "Span",
+            "if": "{{_local.showDetailFilter}}",
+            "props": {
+                "className": "block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-body font-medium"
+            },
+            "text": "$t:admin.users.filter.detail_title"
+        },
+        {
+            "id": "detail_filters_section",
+            "type": "composite",
+            "name": "SlotContainer",
+            "if": "{{_local.showDetailFilter}}",
+            "props": {
+                "slotId": "detail_filters",
+                "className": "filter-grid mt-2"
+            }
+        },
+        {
+            "id": "user_list_filter_extension_slot",
+            "type": "extension_point",
+            "name": "admin_user_list_filters",
+            "if": "{{_local.showDetailFilter}}",
+            "props": {
+                "className": "filter-grid mt-4"
+            }
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+            },
+            "children": [
+                {
+                    "id": "filter_actions_row1",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "contents"
+                    },
+                    "children": [
+                        {
+                            "id": "edit_search_button_wrapper",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "hidden"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "id": "edit_search_button_pc",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "검색편집을 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 다시 꺼내려면 그것이 보여야 하기 때문이고, 끌 때는 펼침 상태를 그대로 둔다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "isEditMode": "{{!_local.isEditMode}}",
+                                                        "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{_local.isEditMode ? 'btn btn-primary flex-center gap-2' : 'btn btn-outline flex-center gap-2'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "sliders",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.users.action.edit_search"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "contents"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "flex-center justify-center gap-2 flex-1"
+                            },
+                            "children": [
+                                {
+                                    "id": "search_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "btn btn-primary flex-1"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "actionRef": "searchUsers"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-primary"
+                                    },
+                                    "text": "$t:admin.users.search"
+                                },
+                                {
+                                    "comment": "필터 초기화(넓은 화면). 입력값과 확장 필터 값을 함께 비운다 — 확장 값이 남으면 초기화한 뒤에도 보이지 않는 조건이 목록을 거른다",
+                                    "id": "reset_button_pc",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "hidden"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "userFilterExtraQuery": [],
+                                                        "filter": {
+                                                            "searchField": "all",
+                                                            "searchKeyword": "",
+                                                            "status": [],
+                                                            "role": [],
+                                                            "adminScope": "all",
+                                                            "lockState": "all",
+                                                            "createdStartDate": "",
+                                                            "createdEndDate": "",
+                                                            "createdDateQuick": "",
+                                                            "lastLoginStartDate": "",
+                                                            "lastLoginEndDate": "",
+                                                            "lastLoginDateQuick": "",
+                                                            "neverLoggedIn": false,
+                                                            "dormantStartDate": "",
+                                                            "dormantEndDate": "",
+                                                            "statusChangedType": "",
+                                                            "statusChangedStart": "",
+                                                            "statusChangedEnd": "",
+                                                            "language": "",
+                                                            "country": "",
+                                                            "emailVerified": "all",
+                                                            "identityVerified": "all"
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/users",
+                                                        "mergeQuery": false,
+                                                        "replace": true
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline"
+                                    },
+                                    "text": "$t:admin.users.action.reset"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "hidden"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "flex-1"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "filter_actions_row2_mobile",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "hidden"
+                    },
+                    "children": [
+                        {
+                            "id": "edit_search_button_mobile",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "좁은 화면용 짝 검색편집 버튼. 넓은 화면 버튼과 같이 상세 필터를 강제로 펼친다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "isEditMode": "{{!_local.isEditMode}}",
+                                                "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{_local.isEditMode ? 'btn btn-primary flex items-center justify-center gap-2 flex-1' : 'btn btn-outline flex items-center justify-center gap-2 flex-1'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "sliders",
+                                        "className": "text-base"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.users.action.edit_search"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "필터 초기화(좁은 화면). 넓은 화면 버튼과 같은 일을 하며, 두 벌을 두는 것은 반응형에서 버튼 배치가 달라지기 때문이다",
+                            "id": "reset_button_mobile",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "userFilterExtraQuery": [],
+                                                "filter": {
+                                                    "searchField": "all",
+                                                    "searchKeyword": "",
+                                                    "status": [],
+                                                    "role": [],
+                                                    "adminScope": "all",
+                                                    "lockState": "all",
+                                                    "createdStartDate": "",
+                                                    "createdEndDate": "",
+                                                    "createdDateQuick": "",
+                                                    "lastLoginStartDate": "",
+                                                    "lastLoginEndDate": "",
+                                                    "lastLoginDateQuick": "",
+                                                    "neverLoggedIn": false,
+                                                    "dormantStartDate": "",
+                                                    "dormantEndDate": "",
+                                                    "statusChangedType": "",
+                                                    "statusChangedStart": "",
+                                                    "statusChangedEnd": "",
+                                                    "language": "",
+                                                    "country": "",
+                                                    "emailVerified": "all",
+                                                    "identityVerified": "all"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/users",
+                                                "mergeQuery": false,
+                                                "replace": true
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline flex-1"
+                            },
+                            "text": "$t:admin.users.action.reset"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

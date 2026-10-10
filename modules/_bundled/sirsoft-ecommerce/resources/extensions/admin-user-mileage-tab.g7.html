@@ -1,0 +1,59 @@
+<!-- 회원 상세 화면에 마일리지 탭을 하나 더 얹는 조각. 주입이 **두 군데**로 갈리는 것이 이 파일의
+  요점이다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에 항목을 덧붙이고(`append`), 그 탭이
+  펼칠 본문은 별도 앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은 `id`
+  (`ext_mileage`) 하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
+  마일리지 기능을 끈 상태(`enabled=false`)에도 탭은 남고 안내문만 대신 나온다 — 잔액이 이미
+  쌓인 회원이 있을 수 있어 숫자를 감추지 않는다.
+  이 화면에서 금액을 고칠 수는 없다. 조정은 마일리지 내역 화면 몫이고 여기서는 그 화면으로
+  회원 이메일을 검색조건에 실어 보내기만 한다. -->
+<extension target-layout="admin_user_detail" priority="320">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_mileage" label="$t:sirsoft-ecommerce.admin.user_mileage.tab_label" iconName="coins" if="{{!!user?.data?.ecommerce_mileage}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_mileage_content" data-if="{{!!user?.data?.ecommerce_mileage}}" id="ext_mileage" class="scroll-mt-32">
+      <div data-ref="section_mileage_summary" class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="coins" class="text-xl text-gray-600 dark:text-gray-400"/>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_mileage.title</h3>
+          </div>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <!-- 비활성화 안내 (mileage.enabled=false) -->
+        <div data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">
+          <icon name="circle-info" class="text-base flex-shrink-0"/>
+          <span>$t:sirsoft-ecommerce.admin.user_mileage.disabled_notice</span>
+        </div>
+        <div data-if="{{user?.data?.ecommerce_mileage?.enabled}}" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_mileage.available</span>
+            <span class="block text-lg font-semibold text-gray-900 dark:text-white">{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P</span>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_mileage.pending</span>
+            <span class="block text-lg font-semibold text-gray-500 dark:text-gray-400">{{(user?.data?.ecommerce_mileage?.pending ?? 0).toLocaleString()}} P</span>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_mileage.total_earned</span>
+            <span class="block text-lg font-semibold text-gray-900 dark:text-white">{{(user?.data?.ecommerce_mileage?.total_earned ?? 0).toLocaleString()}} P</span>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_mileage.expiring_soon</span>
+            <span class="block text-lg font-semibold text-amber-600 dark:text-amber-400">{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}} P</span>
+          </div>
+        </div>
+        <a data-ref="view_member_mileage_history" data-if="{{user?.data?.ecommerce_mileage?.enabled}}" href="{{'/admin/ecommerce/mileage-transactions?search_field=email&amp;search_keyword=' + encodeURIComponent(user?.data?.email ?? '')}}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <icon name="list" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.user_mileage.view_history</span>
+        </a>
+      </div>
+    </div>
+  </inject>
+</extension>

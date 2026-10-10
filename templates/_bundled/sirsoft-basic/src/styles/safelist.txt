@@ -365,6 +365,7 @@ dark:text-slate-50 dark:text-slate-100 dark:text-slate-200 dark:text-slate-300 d
 dark:text-blue-50 dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-500 dark:text-blue-600 dark:text-blue-700 dark:text-blue-800 dark:text-blue-900
 dark:text-red-50 dark:text-red-100 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-red-700 dark:text-red-800 dark:text-red-900
 dark:text-green-50 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-500 dark:text-green-600 dark:text-green-700 dark:text-green-800 dark:text-green-900
+dark:text-rose-50 dark:text-rose-100 dark:text-rose-200 dark:text-rose-300 dark:text-rose-400 dark:text-rose-500 dark:text-rose-600 dark:text-rose-700 dark:text-rose-800 dark:text-rose-900
 dark:text-yellow-50 dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:text-yellow-600 dark:text-yellow-700 dark:text-yellow-800 dark:text-yellow-900
 dark:text-purple-50 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-purple-500 dark:text-purple-600 dark:text-purple-700 dark:text-purple-800 dark:text-purple-900
 dark:text-pink-50 dark:text-pink-100 dark:text-pink-200 dark:text-pink-300 dark:text-pink-400 dark:text-pink-500 dark:text-pink-600 dark:text-pink-700 dark:text-pink-800 dark:text-pink-900
@@ -537,7 +538,7 @@ sm:text-xs sm:text-sm sm:text-base sm:text-lg sm:text-xl sm:text-2xl sm:text-3xl
 sm:p-0 sm:p-1 sm:p-2 sm:p-3 sm:p-4 sm:p-5 sm:p-6 sm:p-8
 sm:px-0 sm:px-1 sm:px-2 sm:px-3 sm:px-4 sm:px-5 sm:px-6 sm:px-8
 sm:py-0 sm:py-1 sm:py-2 sm:py-3 sm:py-4 sm:py-5 sm:py-6 sm:py-8
-sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:mx-auto sm:my-auto
+sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:mx-auto sm:my-auto sm:ml-auto
 sm:gap-0 sm:gap-1 sm:gap-2 sm:gap-3 sm:gap-4 sm:gap-5 sm:gap-6 sm:gap-8
 sm:space-x-0 sm:space-x-1 sm:space-x-2 sm:space-x-3 sm:space-x-4 sm:space-y-0 sm:space-y-1 sm:space-y-2 sm:space-y-3 sm:space-y-4
 sm:justify-start sm:justify-end sm:justify-center sm:justify-between sm:items-start sm:items-end sm:items-center
@@ -646,3 +647,32 @@ dark:bg-white dark:bg-gray-50 dark:bg-gray-100 dark:bg-gray-800 dark:bg-gray-900
 /* (라이트+다크) — editor-spec classToken/scale 도출 */
 bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap font-bold font-normal font-semibold italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start leading-normal leading-relaxed leading-tight opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl text-2xl text-3xl text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs tracking-normal tracking-tight tracking-wide underline whitespace-normal whitespace-nowrap whitespace-pre-wrap
 dark:bg-blue-600 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-800 dark:bg-gray-900 dark:bg-red-600 dark:bg-white dark:block dark:border dark:border-0 dark:border-blue-600 dark:border-dashed dark:border-dotted dark:border-gray-300 dark:border-gray-500 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-red-600 dark:border-solid dark:border-white dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:font-bold dark:font-normal dark:font-semibold dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:leading-normal dark:leading-relaxed dark:leading-tight dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-3xl dark:text-base dark:text-blue-600 dark:text-center dark:text-gray-500 dark:text-gray-700 dark:text-gray-900 dark:text-green-600 dark:text-justify dark:text-left dark:text-lg dark:text-red-600 dark:text-right dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:tracking-normal dark:tracking-tight dark:tracking-wide dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap
+
+/*
+ * 모듈·플러그인 **확장 조각**이 쓰는 클래스.
+ *
+ * 이 템플릿은 `layouts/**` 도 `@source` 로 앵커하지 않고 이 파일이 전부를 감당하는데,
+ * 확장 조각(`{modules,plugins}/_bundled/*/resources/extensions/**`)은 **그 어느 쪽에도
+ * 들어 있지 않았다.** 그래서 확장이 쓰는 클래스는 「이 템플릿이 마침 딴 데서도 쓰는 것」
+ * 일 때만 우연히 살아났고, 아니면 규칙이 통째로 없어 조용히 무스타일이 됐다
+ * (2026-09-21 검수 지적 — 마이페이지 내 정보 수정의 확장 카드들).
+ *
+ * 아래 목록은 그때 실측으로 뽑은 누락분이다. 새로 빠지는 것은 정적 검사가 잡는다
+ * (확장 조각의 클래스가 대상 템플릿 CSS 에 실제로 만들어졌는지 대조한다) — 그 검사가
+ * 알려 주면 여기 더한다.
+ */
+/* 알림 템플릿 폼·행 푸터(bizppurio) */
+dark:bg-amber-500 dark:bg-amber-700 dark:bg-amber-800 dark:bg-amber-900 dark:bg-amber-900/20
+dark:border-amber-600 dark:border-amber-700 dark:border-amber-800
+dark:text-amber-100 dark:text-amber-200 dark:text-amber-300
+dark:hover:bg-amber-600 hover:bg-amber-50 hover:bg-amber-700
+/* 쿠키 배너·개인정보 동의(gdpr) */
+dark:bg-teal-500 dark:bg-teal-900/40 dark:bg-teal-950 dark:border-teal-400
+dark:text-teal-300 dark:text-teal-400 dark:hover:bg-teal-600
+hover:bg-teal-700 hover:border-teal-400
+dark:divide-slate-700 dark:focus:ring-slate-500 focus:ring-slate-400
+dark:hover:text-slate-300 dark:hover:text-slate-800
+/* 본인인증 카드·현금영수증(verification_*, pay_*) */
+hover:-translate-y-0.5 md:h-20 md:w-20 md:rounded-2xl min-h-12 sm:flex-shrink-0
+/* NHN KCP 모의입금 도구(user_order_show 조각) 다크 모드 */
+dark:border-orange-700 dark:bg-orange-900/40 dark:hover:bg-orange-900/50

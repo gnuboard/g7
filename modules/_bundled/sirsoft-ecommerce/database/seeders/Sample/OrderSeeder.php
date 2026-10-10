@@ -12,34 +12,90 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\Concerns\PurgesSampleOrders;
+use Modules\Sirsoft\Ecommerce\Enums\CancelOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
+use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\SequenceService;
+use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
 /**
  * 주문 더미 데이터 시더
+ *
+ * 실제 주문 흐름이 남기는 문서를 상태별로 빠짐없이 만든다 — 모든 주문에 결제 행·배송 행이 있고,
+ * 주문→결제→발송→배송완료→구매확정 시각이 한 줄로 이어지며, 취소 주문에는 취소신청서(+결제 후
+ * 취소면 환불신청서)가 붙는다. 카드·가상계좌 샘플은 켜진 결제 플러그인의 id 로 기록하되
+ * `payment_meta.is_test_mode=true` 와 `SAMPLE-` 거래번호로 실거래와 구분하고, 켜진 결제 플러그인이
+ * 없으면 무통장입금만 만든다.
  */
 class OrderSeeder extends Seeder
 {
     use HasSeederCounts;
+    use PurgesSampleOrders;
+
+    /**
+     * 샘플 PG 거래번호 접두 — 실거래와 구분하는 표식
+     */
+    public const SAMPLE_TRANSACTION_PREFIX = 'SAMPLE-';
+
+    /**
+     * 취소 주문 중 결제 후 취소 비율 (%) — 나머지는 입금 전 취소
+     */
+    private const PAID_BEFORE_CANCEL_PERCENTAGE = 70;
+
+    /**
+     * 샘플 카드·가상계좌에 기록할 PG id (켜진 결제 플러그인이 없으면 null)
+     */
+    private ?string $samplePgProvider = null;
+
+    /**
+     * 적립 절사 기준 (설정의 기본 통화 규칙)
+     *
+     * @var array{unit: string, method: string}|null
+     */
+    private ?array $earnRounding = null;
+
+    /**
+     * 기본 적립률 (%)
+     */
+    private float $earnRate = 1.0;
+
+    /**
+     * 취소·환불 처리자로 쓸 관리자 ID
+     */
+    private ?int $adminId = null;
 
     /**
      * 주문 생성 중 소진된 쿠폰 기록 [['user_id' => int, 'coupon_id' => int], ...]
@@ -98,12 +154,15 @@ class OrderSeeder extends Seeder
 
     /**
      * 시더 실행
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
         $this->command->info('주문 더미 데이터 생성을 시작합니다.');
 
         $this->deleteExistingOrders();
+        $this->resolveSampleContext();
         $this->createOrders();
         $this->replenishAvailableCoupons();
 
@@ -113,35 +172,71 @@ class OrderSeeder extends Seeder
 
     /**
      * 기존 주문 삭제
+     *
+     * @return void 반환값 없음
      */
     private function deleteExistingOrders(): void
     {
-        $deletedCount = Order::withTrashed()->count();
+        $result = $this->purgeSampleOrderGraph();
 
-        if ($deletedCount > 0) {
-            // 쿠폰 발급 상태 복원 (주문 삭제 전에 실행 — order_id FK가 ON DELETE SET NULL이므로)
-            // used 상태인 모든 쿠폰을 available로 복원 (고아 상태 포함)
-            $resetCount = CouponIssue::where('status', CouponIssueRecordStatus::USED)
-                ->update([
-                    'status' => CouponIssueRecordStatus::AVAILABLE,
-                    'used_at' => null,
-                    'order_id' => null,
-                    'discount_amount' => null,
-                ]);
-
-            // 관련 데이터 삭제 (역순으로)
-            OrderShipping::query()->delete();
-            OrderPayment::query()->delete();
-            OrderAddress::query()->delete();
-            OrderOption::query()->delete();
-            Order::withTrashed()->forceDelete();
-
-            $this->command->warn("기존 주문 관련 데이터 {$deletedCount}건을 삭제했습니다. (쿠폰 {$resetCount}건 복원)");
+        if ($result['orders'] > 0) {
+            $this->command->warn("기존 주문 {$result['orders']}건과 하위 문서(결제·배송·취소·환불·클레임·첨부)를 삭제했습니다. (쿠폰 {$result['coupons_restored']}건 복원)");
         }
     }
 
     /**
+     * 샘플 PG id·적립 규칙·처리 관리자를 한 번 해석합니다.
+     *
+     * PG id 는 결제 플러그인이 등록한 목록 안에서만 고른다(설정의 카드 PG → 기본 PG → 등록 첫 항목).
+     * 목록 밖의 이름(`inicis`·`nicepay` 같은 가짜 id)을 쓰면 결제 상세·환불 화면이 그 PG 를 찾지 못한다.
+     *
+     * @return void 반환값 없음
+     */
+    private function resolveSampleContext(): void
+    {
+        $settings = app(EcommerceSettingsService::class);
+
+        $registered = array_values(array_filter(array_map(
+            fn ($provider) => is_array($provider) ? ($provider['id'] ?? null) : null,
+            $settings->getRegisteredPgProviders(),
+        )));
+
+        if ($registered !== []) {
+            $configured = $settings->getPaymentMethodConfig('card')['pg_provider']
+                ?? $settings->getSetting('order_settings.default_pg_provider');
+            $this->samplePgProvider = in_array($configured, $registered, true) ? $configured : $registered[0];
+            $this->command->line("  - 샘플 카드·가상계좌 PG: {$this->samplePgProvider} (테스트 표식 is_test_mode, 거래번호 ".self::SAMPLE_TRANSACTION_PREFIX.' 접두)');
+        } else {
+            $this->samplePgProvider = null;
+            $this->command->warn('  - 켜진 결제 플러그인이 없어 무통장입금 주문만 만듭니다.');
+        }
+
+        $rules = (array) $settings->getSetting('mileage.currency_rules', []);
+        $base = $this->getCurrencyConversionService()->getDefaultCurrency();
+        $rule = collect($rules)->first(fn ($r) => is_array($r) && ($r['currency_code'] ?? null) === $base) ?? ($rules[0] ?? null);
+        $this->earnRounding = MileageRounding::normalize(is_array($rule) ? $rule : null);
+        $this->earnRate = max(0.0, (float) $settings->getSetting('mileage.default_earn_rate', 1));
+
+        $this->adminId = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->orderBy('id')->value('id');
+    }
+
+    /**
+     * 결제 금액에서 적립 예정액을 계산합니다 (설정 적립률·절사 기준, OrderCalculationService 와 같은 식).
+     *
+     * 마일리지가 꺼져 있어도 시연용으로 계산한다 — 화면에는 마일리지를 켜야 보인다.
+     *
+     * @param  float  $earnableAmount  적립 대상 금액
+     * @return int 적립 예정액
+     */
+    private function earnPointsFor(float $earnableAmount): int
+    {
+        return MileageRounding::apply(max(0.0, $earnableAmount) * $this->earnRate / 100, $this->earnRounding);
+    }
+
+    /**
      * 주문 생성
+     *
+     * @return void 반환값 없음
      */
     private function createOrders(): void
     {
@@ -287,12 +382,18 @@ class OrderSeeder extends Seeder
         // 주문 날짜 (상태에 따라 다르게 설정)
         $orderedAt = $this->getOrderedAtByStatus($status);
 
+        // 결제수단과 「결제 후 취소」 여부를 먼저 정해야 시각 사슬을 만들 수 있다.
+        $paidBeforeCancel = $status === OrderStatusEnum::CANCELLED
+            && rand(1, 100) <= self::PAID_BEFORE_CANCEL_PERCENTAGE;
+        $paymentMethod = $this->pickPaymentMethod($status, $paidBeforeCancel);
+        $timeline = $this->buildTimeline($status, $orderedAt, $paymentMethod, $paidBeforeCancel);
+
         // 주문 기본 정보 생성
-        $order = $this->createOrderByStatus($user, $status, $orderedAt);
+        $order = $this->createOrderByStatus($user, $status, $timeline);
 
         // 주문 옵션 생성 (1~3개 랜덤)
         $optionCount = rand(1, 3);
-        $orderOptions = $this->createOrderOptions($order, $productOptions, $optionCount, $status);
+        $orderOptions = $this->createOrderOptions($order, $productOptions, $optionCount, $status, $timeline);
 
         // 쿠폰 적용 (쿠폰 발급 목록이 있는 경우)
         $pendingShippingCoupons = [];
@@ -303,23 +404,23 @@ class OrderSeeder extends Seeder
         // 배송지 주소 생성
         $this->createOrderAddress($order);
 
-        // 배송 정보 생성 (결제 완료 이상 상태)
-        $hasShipping = ! $status->isBeforeShipping() || $status === OrderStatusEnum::PREPARING;
-        if ($hasShipping) {
-            $this->createOrderShippings($order, $orderOptions, $status);
-        }
+        // 배송 행은 주문 생성 시점에 만들어지는 것이 실제 흐름이다 — 결제 전·취소 주문도 배송 대기 행을 갖는다.
+        $this->createOrderShippings($order, $orderOptions, $status, $timeline);
 
         // 배송비 쿠폰 적용 (배송 레코드 생성 후)
-        if (! empty($pendingShippingCoupons) && $hasShipping) {
+        if (! empty($pendingShippingCoupons)) {
             $this->applyShippingCouponsToShippings($order, $pendingShippingCoupons);
         }
 
         // 주문 금액 재계산 (배송 생성 + 배송비 쿠폰 적용 후)
-        $this->recalculateOrderAmount($order, $orderOptions);
+        $this->recalculateOrderAmount($order, $orderOptions, $timeline);
 
-        // 결제 정보 생성 (결제 대기 이상 상태)
-        if (! $status->isBeforePayment()) {
-            $this->createOrderPayment($order, $status);
+        // 결제 행은 결제 전 주문에도 있다 (주문 생성 시 READY / 입금 대기로 만들어짐)
+        $payment = $this->createOrderPayment($order, $status, $paymentMethod, $timeline);
+
+        // 취소 주문은 취소신청서(+결제 후 취소면 환불신청서)를 남긴다
+        if ($status === OrderStatusEnum::CANCELLED) {
+            $this->createCancellationDocuments($order, $payment, $timeline, $user);
         }
 
         // 적립(PURCHASE_EARN) 발행은 OrderSeeder 가 아니라 MileageSeeder 의 책임이다.
@@ -345,16 +446,96 @@ class OrderSeeder extends Seeder
     }
 
     /**
+     * 주문 상태에 맞는 결제수단을 고릅니다.
+     *
+     * 켜진 결제 플러그인이 없으면 무통장입금만 쓴다. 입금 전 취소 주문은 입금을 기다리는 수단
+     * (가상계좌·무통장)이어야 말이 된다 — 카드는 결제창에서 승인되거나 아예 주문이 남지 않는다.
+     *
+     * @param  OrderStatusEnum  $status  주문 상태
+     * @param  bool  $paidBeforeCancel  결제 후 취소 여부 (취소 주문만 의미)
+     * @return string 결제수단 (card|vbank|dbank)
+     */
+    private function pickPaymentMethod(OrderStatusEnum $status, bool $paidBeforeCancel): string
+    {
+        if ($this->samplePgProvider === null) {
+            return 'dbank';
+        }
+
+        if ($status === OrderStatusEnum::CANCELLED && ! $paidBeforeCancel) {
+            return rand(1, 100) <= 50 ? 'vbank' : 'dbank';
+        }
+
+        return $this->getRandomPaymentMethod();
+    }
+
+    /**
+     * 주문 → 결제 → 발송 → 배송완료 → 구매확정(또는 취소) 시각 사슬을 만듭니다.
+     *
+     * 각 시각은 앞 시각 이후이고 현재 시각을 넘지 않는다. 상태에 이르지 않은 단계는 null 이다.
+     *
+     * @param  OrderStatusEnum  $status  주문 상태
+     * @param  Carbon  $orderedAt  주문 시각
+     * @param  string  $paymentMethod  결제수단
+     * @param  bool  $paidBeforeCancel  결제 후 취소 여부
+     * @return array{ordered: Carbon, paid: ?Carbon, shipped: ?Carbon, delivered: ?Carbon, confirmed: ?Carbon, cancelled: ?Carbon}
+     */
+    private function buildTimeline(OrderStatusEnum $status, Carbon $orderedAt, string $paymentMethod, bool $paidBeforeCancel): array
+    {
+        $now = now();
+        $after = function (Carbon $from, int $minMinutes, int $maxMinutes) use ($now): Carbon {
+            $at = $from->copy()->addMinutes(rand($minMinutes, $maxMinutes));
+
+            return $at->greaterThan($now) ? $now->copy() : $at;
+        };
+
+        $timeline = [
+            'ordered' => $orderedAt->copy(),
+            'paid' => null,
+            'shipped' => null,
+            'delivered' => null,
+            'confirmed' => null,
+            'cancelled' => null,
+        ];
+
+        $isPaid = $status->isPastPayment() || ($status === OrderStatusEnum::CANCELLED && $paidBeforeCancel);
+        if ($isPaid) {
+            // 카드는 주문 직후 승인, 입금형 수단은 몇 시간 뒤 입금
+            $timeline['paid'] = $paymentMethod === 'card'
+                ? $after($orderedAt, 1, 10)
+                : $after($orderedAt, 30, 20 * 60);
+        }
+
+        if ($status->isShipped()) {
+            $timeline['shipped'] = $after($timeline['paid'], 12 * 60, 36 * 60);
+        }
+
+        if ($status->isCompleted()) {
+            $timeline['delivered'] = $after($timeline['shipped'], 12 * 60, 48 * 60);
+        }
+
+        if ($status === OrderStatusEnum::CONFIRMED) {
+            $timeline['confirmed'] = $after($timeline['delivered'], 24 * 60, 5 * 24 * 60);
+        }
+
+        if ($status === OrderStatusEnum::CANCELLED) {
+            $timeline['cancelled'] = $after($timeline['paid'] ?? $orderedAt, 30, 48 * 60);
+        }
+
+        return $timeline;
+    }
+
+    /**
      * 상태에 따라 주문 생성
      *
      * @param  User|null  $user  사용자 (null이면 비회원 주문)
-     * @param  Carbon  $orderedAt
+     * @param  array  $timeline  시각 사슬 (buildTimeline)
      */
     private function createOrderByStatus(
         ?User $user,
         OrderStatusEnum $status,
-        $orderedAt,
+        array $timeline,
     ): Order {
+        $orderedAt = $timeline['ordered'];
         $factory = $user
             ? OrderFactory::new()->forUser($user)
             : OrderFactory::new()->forGuest();
@@ -381,15 +562,28 @@ class OrderSeeder extends Seeder
             'order_number' => $orderNumber,
             'order_status' => $status,
             'ordered_at' => $orderedAt,
-            'currency_snapshot' => $this->buildCurrencySnapshot(),
+            // 팩토리 상태가 now() 기준으로 찍는 시각을 시각 사슬로 덮는다 (주문보다 결제가 먼저인 행 방지)
+            'paid_at' => $timeline['paid'],
+            'confirmed_at' => $timeline['confirmed'],
+            'cancelled_at' => $timeline['cancelled'],
+            'payment_due_at' => $orderedAt->copy()->addDays($this->autoCancelDays()),
+            'currency_snapshot' => $this->buildCurrencySnapshot($orderedAt),
+            'created_at' => $orderedAt,
+            'updated_at' => $timeline['cancelled'] ?? $timeline['confirmed'] ?? $timeline['delivered']
+                ?? $timeline['shipped'] ?? $timeline['paid'] ?? $orderedAt,
         ];
 
-        // 취소 주문은 취소일시(native cancelled_at) 기록 — 주문일 이후 시점 (MP02)
-        if ($status === OrderStatusEnum::CANCELLED) {
-            $attributes['cancelled_at'] = (clone $orderedAt)->addHours(rand(1, 48));
-        }
-
         return $factory->create($attributes);
+    }
+
+    /**
+     * 미입금 자동취소 기한(일)을 설정에서 읽습니다 (입금기한 단일 출처).
+     *
+     * @return int 기한 일수
+     */
+    private function autoCancelDays(): int
+    {
+        return max(1, (int) app(EcommerceSettingsService::class)->getSetting('order_settings.auto_cancel_days', 3));
     }
 
     /**
@@ -401,8 +595,17 @@ class OrderSeeder extends Seeder
         Order $order,
         $productOptions,
         int $count,
-        OrderStatusEnum $orderStatus
+        OrderStatusEnum $orderStatus,
+        array $timeline,
     ): Collection {
+        // 취소 주문은 남은 적립 예정액이 없다 (전체취소 재계산 결과와 같음)
+        $earnable = $orderStatus !== OrderStatusEnum::CANCELLED;
+        $optionTimes = [
+            'delivered_at' => $timeline['delivered'],
+            'confirmed_at' => $timeline['confirmed'],
+            'created_at' => $timeline['ordered'],
+            'updated_at' => $timeline['ordered'],
+        ];
         $orderOptions = collect();
 
         // 실제 상품 옵션이 있으면 사용
@@ -434,7 +637,8 @@ class OrderSeeder extends Seeder
                 $productNameJson = is_array($product->name) ? $product->name : ['ko' => $product->getLocalizedName(), 'en' => $product->getLocalizedName()];
                 $finalAmount = $subtotalPrice - $discountAmount;
 
-                $orderOption = OrderOption::create([
+                // created_at 은 fillable 이 아니라 create() 가 버린다 — 시각 사슬을 지키려고 가드를 풀고 만든다.
+                $orderOption = OrderOption::unguarded(fn () => OrderOption::create($optionTimes + [
                     'order_id' => $order->id,
                     'product_id' => $productOption->product_id,
                     'product_option_id' => $productOption->id,
@@ -447,10 +651,11 @@ class OrderSeeder extends Seeder
                     'option_name' => $optionNameI18n,
                     'option_value' => $optionValueI18n,
                     'quantity' => $quantity,
-                    'unit_weight' => $product->weight ?? 0.5,
-                    'unit_volume' => 0.01,
-                    'subtotal_weight' => ($product->weight ?? 0.5) * $quantity,
-                    'subtotal_volume' => 0.01 * $quantity,
+                    // 무게(g)·부피(cm³)는 상품 옵션 값 (OrderProcessingService 와 같은 출처)
+                    'unit_weight' => (float) ($productOption->weight ?? 500),
+                    'unit_volume' => (float) ($productOption->volume ?? 1000),
+                    'subtotal_weight' => (float) ($productOption->weight ?? 500) * $quantity,
+                    'subtotal_volume' => (float) ($productOption->volume ?? 1000) * $quantity,
                     'unit_price' => $unitPrice,
                     'additional_options_total' => $additionalOptionsTotal,
                     'subtotal_price' => $subtotalPrice,
@@ -464,7 +669,7 @@ class OrderSeeder extends Seeder
                     'subtotal_paid_amount' => $finalAmount,
                     'subtotal_tax_amount' => round($finalAmount / 11, 2),
                     'subtotal_tax_free_amount' => 0,
-                    'subtotal_earned_points_amount' => round($finalAmount * 0.01, 2),
+                    'subtotal_earned_points_amount' => $earnable ? $this->earnPointsFor($finalAmount) : 0,
                     'product_snapshot' => $product->toSnapshotArray(),
                     'option_snapshot' => $productOption->toSnapshotArray(),
                     'additional_options_snapshot' => $additionalOptionsSnapshot,
@@ -482,7 +687,7 @@ class OrderSeeder extends Seeder
                     'mc_subtotal_tax_amount' => $this->buildMultiCurrencyAmount(round($finalAmount / 11, 2)),
                     'mc_subtotal_tax_free_amount' => $this->buildMultiCurrencyAmount(0),
                     'mc_final_amount' => $this->buildMultiCurrencyAmount($finalAmount),
-                ]);
+                ]));
 
                 $orderOptions->push($orderOption);
             }
@@ -493,12 +698,16 @@ class OrderSeeder extends Seeder
 
                 $orderOption = OrderOptionFactory::new()
                     ->forOrder($order)
-                    ->create([
+                    ->create($optionTimes + [
                         'option_status' => $optionStatus,
                         'is_stock_deducted' => $this->isStockDeductedForStatus($optionStatus),
                         'product_id' => null,
                         'product_option_id' => null,
                     ]);
+
+                $orderOption->update([
+                    'subtotal_earned_points_amount' => $earnable ? $this->earnPointsFor((float) $orderOption->subtotal_paid_amount) : 0,
+                ]);
 
                 $orderOptions->push($orderOption);
             }
@@ -540,9 +749,15 @@ class OrderSeeder extends Seeder
     /**
      * 주문 금액 재계산
      *
-     * @param  Collection  $orderOptions
+     * 받은 돈(total_paid_amount)은 실제로 결제가 일어난 주문에만 둔다 — 입금 전 취소 주문은 0 이다.
+     * 결제 후 취소 주문은 받은 돈을 그대로 두고 같은 금액을 환불액·취소액으로 쌓는다(장부 잔액 0).
+     *
+     * @param  Order  $order  금액을 다시 계산할 주문
+     * @param  Collection  $orderOptions  주문 옵션 목록 (호출 맥락 표시용 — 금액은 DB 에서 다시 읽는다)
+     * @param  array  $timeline  시각 사슬 (buildTimeline)
+     * @return void 반환값 없음
      */
-    private function recalculateOrderAmount(Order $order, $orderOptions): void
+    private function recalculateOrderAmount(Order $order, $orderOptions, array $timeline): void
     {
         // 옵션 모델을 DB에서 다시 조회 (쿠폰 적용 후 업데이트된 값 반영)
         $freshOptions = OrderOption::where('order_id', $order->id)->get();
@@ -575,7 +790,8 @@ class OrderSeeder extends Seeder
             'total_shipping_amount' => $shippingAmount,
             'total_amount' => $totalAmount,
             'total_tax_amount' => $taxAmount,
-            'total_earned_points_amount' => round($totalAmount * 0.01, 2),
+            // 주문 적립 예정액 = 옵션 적립 예정액의 합 (OrderCalculationService 와 같은 구성)
+            'total_earned_points_amount' => (float) $freshOptions->sum('subtotal_earned_points_amount'),
             'item_count' => $freshOptions->count(),
             'total_weight' => $freshOptions->sum('subtotal_weight'),
             'total_volume' => $freshOptions->sum('subtotal_volume'),
@@ -598,18 +814,23 @@ class OrderSeeder extends Seeder
             'mc_total_paid_amount' => $this->buildMultiCurrencyAmount(0),
         ];
 
-        // 결제 완료 상태면 결제 금액도 업데이트
-        if (! $order->order_status->isBeforePayment()) {
+        $isPaid = $timeline['paid'] !== null;
+
+        if ($isPaid) {
             $updateData['total_paid_amount'] = $totalAmount;
             $updateData['mc_total_paid_amount'] = $this->buildMultiCurrencyAmount($totalAmount);
             $updateData['total_due_amount'] = 0;
         } else {
+            $updateData['total_paid_amount'] = 0;
             $updateData['total_due_amount'] = $totalAmount;
         }
 
-        // 취소 상태면 취소 금액 업데이트
+        // 취소 주문: 취소액 누적, 결제 후 취소면 환불액도 같은 금액, 전체취소는 받을 돈 0 (S1-D17)
         if ($order->order_status === OrderStatusEnum::CANCELLED) {
             $updateData['total_cancelled_amount'] = $totalAmount;
+            $updateData['total_refunded_amount'] = $isPaid ? $totalAmount : 0;
+            $updateData['total_due_amount'] = 0;
+            $updateData['cancellation_count'] = 1;
         }
 
         $order->update($updateData);
@@ -617,6 +838,8 @@ class OrderSeeder extends Seeder
 
     /**
      * 주문 주소 생성
+     *
+     * @return void 반환값 없음
      */
     private function createOrderAddress(Order $order): void
     {
@@ -628,35 +851,311 @@ class OrderSeeder extends Seeder
 
     /**
      * 주문 결제 정보 생성
+     *
+     * 결제 상태는 주문 상태와 시각 사슬에서 정한다:
+     *  - 주문대기: READY (결제창 진입 전)
+     *  - 결제대기: 카드 READY / 가상계좌·무통장 WAITING_DEPOSIT (입금기한은 미래)
+     *  - 결제 이후: PAID
+     *  - 취소: CANCELLED (결제 후 취소면 받은 금액 전액 취소, 입금 전 취소면 0)
+     * 무통장은 `manual`, 카드·가상계좌는 샘플 PG id 이며 PG 행은 `SAMPLE-` 거래번호와
+     * `payment_meta.is_test_mode=true` 로 실거래와 구분한다.
+     *
+     * @param  Order  $order  주문 (금액 재계산 완료)
+     * @param  OrderStatusEnum  $status  주문 상태
+     * @param  string  $paymentMethod  결제수단 (card|vbank|dbank)
+     * @param  array  $timeline  시각 사슬
+     * @return OrderPayment 생성된 결제 행
      */
-    private function createOrderPayment(Order $order, OrderStatusEnum $status): void
+    private function createOrderPayment(Order $order, OrderStatusEnum $status, string $paymentMethod, array $timeline): OrderPayment
     {
+        $order->refresh();
+        $order->loadMissing('shippingAddress');
+
+        $orderedAt = $timeline['ordered'];
+        $paidAt = $timeline['paid'];
+        $cancelledAt = $timeline['cancelled'];
+        $total = (float) $order->total_amount;
+        $isPg = $paymentMethod !== 'dbank';
+
+        $paymentStatus = match (true) {
+            $status === OrderStatusEnum::CANCELLED => PaymentStatusEnum::CANCELLED,
+            $paidAt !== null => PaymentStatusEnum::PAID,
+            $status === OrderStatusEnum::PENDING_PAYMENT && $paymentMethod !== 'card' => PaymentStatusEnum::WAITING_DEPOSIT,
+            default => PaymentStatusEnum::READY,
+        };
+
         $factory = OrderPaymentFactory::new()->forOrder($order);
-
-        // 결제 방법 랜덤 선택 (카드 60%, 무통장입금 25%, 가상계좌 15%)
-        $paymentMethod = $this->getRandomPaymentMethod();
-
         $factory = match ($paymentMethod) {
-            'card' => $factory->card(),
             'dbank' => $factory->directBank(),
             'vbank' => $factory->virtualAccount(),
             default => $factory->card(),
         };
 
-        // 상태에 따른 결제 상태
-        if ($status === OrderStatusEnum::CANCELLED) {
-            $factory = $factory->cancelled();
-        } elseif (in_array($paymentMethod, ['vbank', 'dbank']) && $status === OrderStatusEnum::PENDING_PAYMENT) {
-            $factory = $factory->pending();
-        } else {
-            $factory = $factory->completed();
+        $paidLocal = $paidAt !== null ? $total : 0.0;
+        $address = $order->shippingAddress;
+
+        $attributes = [
+            'payment_status' => $paymentStatus,
+            'pg_provider' => $isPg ? $this->samplePgProvider : 'manual',
+            'embedded_pg_provider' => null,
+            // 승인·발급이 일어난 PG 행에만 거래번호가 있다 (결제창 진입 전 카드는 없음)
+            'transaction_id' => $isPg && ($paidAt !== null || $paymentMethod === 'vbank')
+                ? self::SAMPLE_TRANSACTION_PREFIX.strtoupper(bin2hex(random_bytes(8)))
+                : null,
+            'merchant_order_id' => $order->order_number.'_'.$orderedAt->timestamp,
+            'paid_amount_local' => $paidLocal,
+            'paid_amount_base' => $total,
+            'vat_amount' => $order->total_tax_amount,
+            'currency' => $order->currency,
+            'currency_snapshot' => $order->currency_snapshot,
+            'mc_paid_amount' => $this->buildMultiCurrencyAmount($paidLocal),
+            'mc_cancelled_amount' => $this->buildMultiCurrencyAmount($status === OrderStatusEnum::CANCELLED ? $paidLocal : 0),
+            'buyer_name' => $address?->orderer_name,
+            'buyer_email' => $address?->orderer_email,
+            'buyer_phone' => $address?->orderer_phone,
+            'receipt_url' => null,
+            'payment_meta' => $isPg ? ['is_test_mode' => true] : null,
+            'payment_started_at' => $orderedAt,
+            'paid_at' => $paidAt,
+            'cancelled_at' => $cancelledAt,
+            'cancelled_amount' => $status === OrderStatusEnum::CANCELLED ? $paidLocal : 0,
+            'cancelled_vat_amount' => $status === OrderStatusEnum::CANCELLED && $paidAt !== null ? $order->total_tax_amount : 0,
+            'cancel_reason' => $status === OrderStatusEnum::CANCELLED ? '주문 취소' : null,
+            'created_at' => $orderedAt,
+            'updated_at' => $cancelledAt ?? $paidAt ?? $orderedAt,
+        ];
+
+        $dueAt = $orderedAt->copy()->addDays($this->autoCancelDays());
+        if ($paymentStatus === PaymentStatusEnum::WAITING_DEPOSIT && $dueAt->lessThanOrEqualTo(now())) {
+            $dueAt = now()->addDay();
         }
 
-        $factory->create([
-            'paid_amount_local' => $order->total_amount,
-            'paid_amount_base' => $order->total_amount,
-            'vat_amount' => $order->total_tax_amount,
-        ]);
+        if ($paymentMethod === 'card') {
+            $attributes['card_approval_number'] = $paidAt !== null ? (string) rand(10000000, 99999999) : null;
+            if ($paidAt === null) {
+                $attributes['card_name'] = null;
+                $attributes['card_number_masked'] = null;
+            }
+        } elseif ($paymentMethod === 'vbank') {
+            [$bankCode, $bankName] = $this->randomBank();
+            $attributes += [
+                'vbank_code' => $bankCode,
+                'vbank_name' => $bankName,
+                'vbank_holder' => $address?->orderer_name,
+                'vbank_issued_at' => $orderedAt->copy()->addMinute(),
+                'vbank_due_at' => $dueAt,
+            ];
+        } else {
+            [$bankCode, $bankName, $account, $holder] = $this->shopBankAccount();
+            $attributes += [
+                'dbank_code' => $bankCode,
+                'dbank_name' => $bankName,
+                'dbank_account' => $account,
+                'dbank_holder' => $holder,
+                'depositor_name' => $address?->orderer_name,
+                'deposit_due_at' => $dueAt,
+            ];
+        }
+
+        return $factory->create($attributes);
+    }
+
+    /**
+     * 취소 주문의 취소신청서와(결제 후 취소면) 환불신청서를 남깁니다.
+     *
+     * 실제 전체취소가 남기는 문서 모양을 따른다(OrderCancellationService·OrderRefundRequestService):
+     * 취소신청서 COMPLETED FULL + 옵션별 취소 행, 결제 후 취소면 환불신청서 COMPLETED + 옵션별 환불 행,
+     * 환불이 취소를 가리키는 링크(`order_cancel_id`). 번호는 SequenceService 로 채번한다. 상태 전이 서비스를
+     * 부르지 않는 이유는 알림 발송·PG 환불 호출을 일으키지 않기 위해서다.
+     *
+     * 구매자가 낸 취소는 출처 DIRECT·고객 사유, 운영자 취소는 ADMIN·`admin_cancel`, 입금 전 취소의
+     * 운영자 쪽은 입금기한 만료 자동취소(`auto_cancel_expired`)로 둔다.
+     *
+     * @param  Order  $order  취소 주문
+     * @param  OrderPayment  $payment  결제 행
+     * @param  array  $timeline  시각 사슬
+     * @param  User|null  $user  주문 회원 (비회원이면 null)
+     * @return void 반환값 없음
+     */
+    private function createCancellationDocuments(Order $order, OrderPayment $payment, array $timeline, ?User $user): void
+    {
+        $order->load(['options', 'shippings', 'shippingAddress']);
+
+        $cancelledAt = $timeline['cancelled'];
+        $paid = $timeline['paid'] !== null;
+        $byBuyer = $user !== null && rand(1, 100) <= 60;
+
+        $reasonCode = match (true) {
+            $byBuyer => ['changed_mind', 'order_mistake', 'reorder_other'][array_rand(['changed_mind', 'order_mistake', 'reorder_other'])],
+            $paid => 'admin_cancel',
+            default => 'auto_cancel_expired',
+        };
+        $requestedBy = $byBuyer ? $user->id : $this->adminId;
+        $reason = ClaimReason::query()->where('type', 'refund')->where('code', $reasonCode)->first();
+
+        $sequence = app(SequenceService::class);
+        $address = $order->shippingAddress;
+
+        $cancel = OrderCancel::unguarded(fn () => OrderCancel::create([
+            'order_id' => $order->id,
+            'cancel_number' => $sequence->generateCode(SequenceType::CANCEL),
+            'cancel_type' => CancelTypeEnum::FULL,
+            'cancel_status' => CancelStatusEnum::COMPLETED,
+            'cancel_reason_type' => $reasonCode,
+            'cancel_reason' => null,
+            'items_snapshot' => $order->options->map(fn (OrderOption $opt) => [
+                'option_id' => $opt->id,
+                'product_name' => $opt->product_name,
+                'option_name' => $opt->option_name,
+                'option_value' => $opt->option_value,
+                'quantity' => (int) $opt->quantity,
+                'unit_price' => (float) $opt->unit_price,
+            ])->values()->all(),
+            'shipping_snapshot' => [
+                'country_code' => strtoupper((string) ($address?->recipient_country_code ?: 'KR')),
+                'zipcode' => $address?->zipcode ?: ($address?->intl_postal_code ?: null),
+                'policies' => [],
+            ],
+            'cancelled_by' => $requestedBy,
+            'cancelled_at' => $cancelledAt,
+            'created_at' => $cancelledAt,
+            'updated_at' => $cancelledAt,
+        ]));
+
+        foreach ($order->options as $option) {
+            OrderCancelOption::unguarded(fn () => OrderCancelOption::create([
+                'order_cancel_id' => $cancel->id,
+                'order_id' => $order->id,
+                'order_option_id' => $option->id,
+                'option_status' => CancelOptionStatusEnum::COMPLETED,
+                'cancel_quantity' => (int) $option->quantity,
+                'original_quantity' => (int) $option->quantity,
+                'unit_price' => (float) $option->unit_price,
+                'subtotal_amount' => (float) $option->unit_price * (int) $option->quantity,
+                'completed_at' => $cancelledAt,
+                'processed_by' => $this->adminId,
+                'created_at' => $cancelledAt,
+                'updated_at' => $cancelledAt,
+            ]));
+
+            $option->update([
+                'cancelled_quantity' => (int) $option->quantity,
+                'cancel_reason' => $reasonCode,
+            ]);
+        }
+
+        if (! $paid) {
+            return;
+        }
+
+        $refundAmount = (float) $order->total_paid_amount;
+        $refundMethod = $payment->payment_method === 'dbank' ? RefundMethodEnum::BANK : RefundMethodEnum::PG;
+        [$refundBankCode, $refundBankName] = $refundMethod === RefundMethodEnum::BANK ? $this->randomBank() : [null, null];
+        $approvedAt = $cancelledAt->copy();
+        $refundedAt = $refundMethod === RefundMethodEnum::BANK ? $cancelledAt->copy()->addHours(rand(1, 24))->min(now()) : $cancelledAt->copy();
+        $shippingByOption = $order->shippings->groupBy('order_option_id')->map(fn ($rows) => (float) $rows->sum('total_shipping_amount'));
+
+        $refund = OrderRefund::unguarded(fn () => OrderRefund::create([
+            'order_id' => $order->id,
+            'order_cancel_id' => $cancel->id,
+            'refund_source_type' => $byBuyer ? RefundSourceTypeEnum::DIRECT : RefundSourceTypeEnum::ADMIN,
+            'refund_source_id' => null,
+            'refund_number' => $sequence->generateCode(SequenceType::REFUND),
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'refund_method' => $refundMethod,
+            'refund_method_overridden' => false,
+            'reason_code' => $reasonCode,
+            'reason_detail' => null,
+            'fault_type' => $reason?->fault_type,
+            'requested_by' => $requestedBy,
+            'refund_amount' => $refundAmount,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => (float) $order->total_shipping_amount,
+            'refund_priority' => RefundPriorityEnum::PG_FIRST,
+            'mc_refund_amount' => $this->buildMultiCurrencyAmount($refundAmount),
+            'mc_refund_points_amount' => $this->buildMultiCurrencyAmount(0),
+            'mc_refund_shipping_amount' => $this->buildMultiCurrencyAmount((float) $order->total_shipping_amount),
+            'refund_bank_code' => $refundBankCode,
+            'refund_bank_account' => $refundBankCode !== null ? sprintf('%03d-%04d-%06d', rand(100, 999), rand(0, 9999), rand(0, 999999)) : null,
+            'refund_bank_holder' => $refundBankCode !== null ? $address?->orderer_name : null,
+            'pg_transaction_id' => $refundMethod === RefundMethodEnum::PG ? $payment->transaction_id : null,
+            'approved_at' => $approvedAt,
+            'refunded_at' => $refundedAt,
+            'processed_by' => $this->adminId,
+            'created_at' => $cancelledAt,
+            'updated_at' => $refundedAt,
+        ]));
+
+        foreach ($order->options as $option) {
+            $shippingShare = (float) ($shippingByOption[$option->id] ?? 0);
+
+            OrderRefundOption::unguarded(fn () => OrderRefundOption::create([
+                'order_refund_id' => $refund->id,
+                'order_id' => $order->id,
+                'order_option_id' => $option->id,
+                'option_status' => RefundStatusEnum::COMPLETED,
+                'quantity' => (int) $option->quantity,
+                'unit_price' => (float) $option->unit_price,
+                'subtotal_amount' => (float) $option->subtotal_price,
+                'discount_amount' => (float) $option->subtotal_discount_amount,
+                'shipping_amount' => $shippingShare,
+                'refund_amount' => (float) $option->subtotal_paid_amount + $shippingShare,
+                'completed_at' => $refundedAt,
+                'processed_by' => $this->adminId,
+                'created_at' => $cancelledAt,
+                'updated_at' => $refundedAt,
+            ]));
+        }
+
+        if ($refundMethod === RefundMethodEnum::BANK) {
+            $payment->update([
+                'refund_bank_code' => $refundBankCode,
+                'refund_bank_name' => $refundBankName,
+                'refund_bank_account' => $refund->refund_bank_account,
+                'refund_bank_holder' => $refund->refund_bank_holder,
+            ]);
+        }
+    }
+
+    /**
+     * 은행 목록(코드-이름 쌍)에서 하나를 고릅니다.
+     *
+     * @return array{0: string, 1: string} [은행 코드, 은행 이름]
+     */
+    private function randomBank(): array
+    {
+        $banks = (array) config('sirsoft-ecommerce.payment.banks', []);
+        if ($banks === []) {
+            return ['088', '신한은행'];
+        }
+
+        $bank = $banks[array_rand($banks)];
+
+        return [(string) $bank['code'], (string) $bank['name']];
+    }
+
+    /**
+     * 무통장입금 받을 계좌를 상점 설정에서 고릅니다. 켜진 계좌가 없으면 샘플 계좌를 씁니다.
+     *
+     * 은행 코드와 이름은 항상 같은 쌍이다 — 코드는 신한(088)인데 이름은 국민은행인 행을 만들지 않는다.
+     *
+     * @return array{0: string, 1: string, 2: string, 3: string} [은행 코드, 은행 이름, 계좌번호, 예금주]
+     */
+    private function shopBankAccount(): array
+    {
+        $accounts = (array) app(EcommerceSettingsService::class)->getSetting('order_settings.bank_accounts', []);
+        $active = collect($accounts)->first(fn ($a) => is_array($a) && ! empty($a['is_active']) && ! empty($a['account_number']));
+
+        if ($active) {
+            $code = (string) $active['bank_code'];
+            $name = collect((array) config('sirsoft-ecommerce.payment.banks', []))->firstWhere('code', $code)['name'] ?? $code;
+
+            return [$code, $name, (string) $active['account_number'], (string) ($active['account_holder'] ?? '')];
+        }
+
+        [$code, $name] = $this->randomBank();
+
+        return [$code, $name, sprintf('%03d-%03d-%06d', rand(100, 999), rand(100, 999), rand(0, 999999)), '샘플상점'];
     }
 
     /**
@@ -780,9 +1279,10 @@ class OrderSeeder extends Seeder
      * OrderProcessingService::buildCurrencySnapshot과 동일한 형식으로
      * 주문 생성 시점의 통화 정보를 반환합니다.
      *
+     * @param  Carbon|null  $at  스냅샷 시각 (주문 시각, 생략하면 지금)
      * @return array 통화 스냅샷
      */
-    private function buildCurrencySnapshot(): array
+    private function buildCurrencySnapshot(?Carbon $at = null): array
     {
         $service = $this->getCurrencyConversionService();
         $baseCurrency = $service->getDefaultCurrency();
@@ -800,7 +1300,7 @@ class OrderSeeder extends Seeder
             'order_currency' => $baseCurrency,
             'exchange_rate' => 1.0,
             'exchange_rates' => $exchangeRates,
-            'snapshot_at' => now()->toIso8601String(),
+            'snapshot_at' => ($at ?? now())->toIso8601String(),
         ];
     }
 
@@ -855,11 +1355,18 @@ class OrderSeeder extends Seeder
     /**
      * 주문 배송 정보 생성
      *
-     * @param  Collection  $orderOptions
+     * 주문 옵션마다 배송 행을 만든다. 배송 상태·택배사·송장·발송/배송완료/구매확정 시각은 주문 상태와
+     * 시각 사슬을 따른다(송장이 있으면 택배사도 있다).
+     *
+     * @param  Order  $order  주문
+     * @param  Collection  $orderOptions  주문 옵션 목록
+     * @param  OrderStatusEnum  $status  주문 상태
+     * @param  array  $timeline  시각 사슬 (buildTimeline)
+     * @return void 반환값 없음
      */
-    private function createOrderShippings(Order $order, $orderOptions, OrderStatusEnum $status): void
+    private function createOrderShippings(Order $order, $orderOptions, OrderStatusEnum $status, array $timeline): void
     {
-        $shippingPolicies = ShippingPolicy::with('countrySettings')->get();
+        $shippingPolicies = $this->shippingPolicies ??= ShippingPolicy::with('countrySettings')->get();
         // 해외 배송(API) 정책 제외 — 시더에서 외부 API 호출 불가
         $domesticPolicies = $shippingPolicies->filter(function ($policy) {
             return $policy->countrySettings->contains(fn ($cs) => $cs->country_code === 'KR' && $cs->is_active);
@@ -873,13 +1380,17 @@ class OrderSeeder extends Seeder
                 ->forOrder($order)
                 ->forOrderOption($orderOption);
 
-            // 상태에 따른 배송 상태
-            $factory = match ($status) {
-                OrderStatusEnum::PREPARING, OrderStatusEnum::SHIPPING_HOLD => $factory->preparing(),
-                OrderStatusEnum::SHIPPING_READY, OrderStatusEnum::SHIPPING => $factory->inTransit(),
-                OrderStatusEnum::DELIVERED, OrderStatusEnum::CONFIRMED => $factory->delivered(),
-                default => $factory->preparing(),
+            // 상태에 따른 배송 상태 — 송장은 배송정보 필수 상태(배송준비중·배송중) 이후에만 있고,
+            // 송장이 있으면 택배사도 반드시 있다(택배사 없는 송장은 배송조회 링크를 만들 수 없다).
+            $shippingStatus = match ($status) {
+                OrderStatusEnum::PREPARING => ShippingStatusEnum::PREPARING,
+                OrderStatusEnum::SHIPPING_READY => ShippingStatusEnum::READY,
+                OrderStatusEnum::SHIPPING => ShippingStatusEnum::IN_TRANSIT,
+                OrderStatusEnum::DELIVERED, OrderStatusEnum::CONFIRMED => ShippingStatusEnum::DELIVERED,
+                default => ShippingStatusEnum::PENDING,
             };
+            $hasTracking = $status->requiresShippingInfo() || $status->isShipped();
+            $carrierId = $hasTracking ? $this->domesticCarrierId() : null;
 
             // 배송정책 기반 배송비 계산
             $policy = $domesticPolicies->isNotEmpty() ? $domesticPolicies->random() : null;
@@ -893,6 +1404,15 @@ class OrderSeeder extends Seeder
                 : 0;
 
             $extraAttributes = [
+                'shipping_status' => $shippingStatus,
+                'carrier_id' => $carrierId,
+                'tracking_number' => $carrierId !== null ? (string) rand(100000000000, 999999999999) : null,
+                'shipped_at' => $timeline['shipped'],
+                'estimated_arrival_at' => $timeline['shipped']?->copy()->addDays(2),
+                'delivered_at' => $timeline['delivered'],
+                'confirmed_at' => $timeline['confirmed'],
+                'created_at' => $timeline['ordered'],
+                'updated_at' => $timeline['confirmed'] ?? $timeline['delivered'] ?? $timeline['shipped'] ?? $timeline['ordered'],
                 'base_shipping_amount' => $shippingAmount,
                 'total_shipping_amount' => $shippingAmount,
                 // 필수 보완: 다중 통화
@@ -910,13 +1430,34 @@ class OrderSeeder extends Seeder
                 $extraAttributes['delivery_policy_snapshot'] = $this->buildDeliveryPolicySnapshot($policy, $shippingAmount);
             }
 
-            // 논리적 보완: 구매확정 상태 → confirmed_at 설정
-            if ($status === OrderStatusEnum::CONFIRMED) {
-                $extraAttributes['confirmed_at'] = now()->subDays(rand(1, 3));
-            }
-
             $factory->create($extraAttributes);
         }
+    }
+
+    /**
+     * 배송정책 목록 캐시 (주문마다 다시 읽지 않음)
+     */
+    private ?Collection $shippingPolicies = null;
+
+    /**
+     * 국내 택배사 id 캐시 (cj 우선)
+     */
+    private int|false|null $domesticCarrierId = null;
+
+    /**
+     * 송장에 붙일 활성 국내 택배사를 고릅니다 (CJ대한통운 우선, 없으면 첫 활성 국내 택배사).
+     *
+     * @return int|null 택배사 id (활성 국내 택배사가 없으면 null)
+     */
+    private function domesticCarrierId(): ?int
+    {
+        if ($this->domesticCarrierId === null) {
+            $carriers = ShippingCarrier::query()->where('is_active', true)->where('type', 'domestic')->orderBy('sort_order')->get();
+            $carrier = $carriers->firstWhere('code', 'cj') ?? $carriers->first();
+            $this->domesticCarrierId = $carrier ? (int) $carrier->id : false;
+        }
+
+        return $this->domesticCarrierId === false ? null : $this->domesticCarrierId;
     }
 
     /**
@@ -1174,11 +1715,11 @@ class OrderSeeder extends Seeder
             'discount_type' => $coupon->discount_type->value,
             'discount_value' => (float) $coupon->discount_value,
             'total_discount' => $discountAmount,
-            'total_discount_formatted' => number_format($discountAmount).'원',
+            'total_discount_formatted' => ecommerce_format_price($discountAmount),
             'applied_items' => $orderOptions->map(fn ($opt) => [
                 'product_option_id' => $opt->product_option_id,
                 'discount_amount' => (int) $opt->product_coupon_discount_amount + (int) $opt->order_coupon_discount_amount,
-                'discount_amount_formatted' => number_format((int) $opt->product_coupon_discount_amount + (int) $opt->order_coupon_discount_amount).'원',
+                'discount_amount_formatted' => ecommerce_format_price((int) $opt->product_coupon_discount_amount + (int) $opt->order_coupon_discount_amount),
             ])->toArray(),
             'is_exclusive' => ! $coupon->is_combinable,
             'min_order_amount' => (int) $coupon->min_order_amount,
@@ -1307,6 +1848,7 @@ class OrderSeeder extends Seeder
      * @param  Coupon  $coupon  쿠폰 모델
      * @param  int  $totalDiscount  총 할인금액
      * @param  float  $orderSubtotal  주문 소계
+     * @return void 반환값 없음
      */
     private function distributeDiscountToOptions($orderOptions, Coupon $coupon, int $totalDiscount, float $orderSubtotal): void
     {
@@ -1340,7 +1882,7 @@ class OrderSeeder extends Seeder
                 'subtotal_discount_amount' => $newSubtotalDiscount,
                 'subtotal_paid_amount' => $newFinalAmount,
                 'subtotal_tax_amount' => round($newFinalAmount / 11, 2),
-                'subtotal_earned_points_amount' => round($newFinalAmount * 0.01, 2),
+                'subtotal_earned_points_amount' => $this->earnPointsFor((float) $newFinalAmount),
                 // 다중 통화
                 'mc_'.($isProductCoupon ? 'product_coupon' : 'order_coupon').'_discount_amount' => $this->buildMultiCurrencyAmount($newFieldValue),
                 'mc_coupon_discount_amount' => $this->buildMultiCurrencyAmount($newCouponTotal),
@@ -1477,6 +2019,7 @@ class OrderSeeder extends Seeder
      *
      * @param  Order  $order  주문
      * @param  array  $shippingCoupons  배송비 쿠폰 목록 [{issue, coupon, discount}]
+     * @return void 반환값 없음
      */
     private function applyShippingCouponsToShippings(Order $order, array $shippingCoupons): void
     {
@@ -1560,6 +2103,8 @@ class OrderSeeder extends Seeder
      *
      * 주문 생성 과정에서 기록된 소진 내역(usedCouponRecords)을 기반으로,
      * 해당 사용자-쿠폰 조합에 available 이슈를 1건씩 재발급합니다.
+     *
+     * @return void 반환값 없음
      */
     private function replenishAvailableCoupons(): void
     {
@@ -1575,7 +2120,19 @@ class OrderSeeder extends Seeder
         $replenished = 0;
         $perCoupon = [];
 
+        $coupons = Coupon::whereIn('id', $unique->pluck('coupon_id')->unique())->get()->keyBy('id');
+
         foreach ($unique as $record) {
+            // 1인 발급 한도와 총 발급 수량을 지킨다 — 한도를 넘는 보충은 실제로는 받을 수 없는 쿠폰이다
+            $coupon = $coupons->get($record['coupon_id']);
+            $userIssued = CouponIssue::where('coupon_id', $record['coupon_id'])->where('user_id', $record['user_id'])->count();
+            $issuedTotal = (int) ($coupon?->issued_count ?? 0) + ($perCoupon[$record['coupon_id']] ?? 0);
+            if ($coupon === null
+                || ($coupon->per_user_limit && $userIssued >= (int) $coupon->per_user_limit)
+                || ($coupon->total_quantity !== null && $issuedTotal >= (int) $coupon->total_quantity)) {
+                continue;
+            }
+
             CouponIssue::create([
                 'coupon_id' => $record['coupon_id'],
                 'user_id' => $record['user_id'],

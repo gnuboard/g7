@@ -28,8 +28,8 @@ class MarketingConsentListener implements HookListenerInterface
     /**
      * MarketingConsentListener 생성자
      *
-     * @param MarketingConsentService $service 마케팅 동의 서비스
-     * @param PluginSettingsService $pluginSettings 플러그인 설정 서비스
+     * @param  MarketingConsentService  $service  마케팅 동의 서비스
+     * @param  PluginSettingsService  $pluginSettings  플러그인 설정 서비스
      */
     public function __construct(
         private MarketingConsentService $service,
@@ -86,8 +86,9 @@ class MarketingConsentListener implements HookListenerInterface
             ],
 
             // Action 훅: 회원가입 후 마케팅 동의 저장
-            // (코어에서 정의된 훅명 그대로 사용 — 타이밍 접미사 없는 것이 코어 규칙)
-            'core.auth.register' => [
+            // 코어는 가입 완료를 after_register 로 발화한다 — 옛 이름(core.auth.register)으로 구독해
+            // 한 번도 실행되지 않던 것을 바로잡았다(#138 후속).
+            'core.auth.after_register' => [
                 'method' => 'afterRegister',
                 'priority' => 10,
             ],
@@ -120,7 +121,7 @@ class MarketingConsentListener implements HookListenerInterface
      * getSubscribedHooks()에서 개별 메서드를 지정하므로,
      * 이 메서드는 호출되지 않지만 인터페이스 준수를 위해 구현
      *
-     * @param mixed ...$args 훅 인자
+     * @param  mixed  ...$args  훅 인자
      * @return void
      */
     public function handle(...$args): void
@@ -133,7 +134,7 @@ class MarketingConsentListener implements HookListenerInterface
      *
      * 등록된 채널(동적) + 법적 필수 항목 + 마스터 키를 모두 추가합니다.
      *
-     * @param array $rules 기존 validation rules
+     * @param  array  $rules  기존 validation rules
      * @return array 마케팅 동의 필드가 추가된 rules
      */
     public function addRegisterValidationRules(array $rules): array
@@ -150,7 +151,7 @@ class MarketingConsentListener implements HookListenerInterface
      *
      * 등록된 채널(동적) + 법적 필수 항목 + 마스터 키를 모두 추가합니다.
      *
-     * @param array $rules 기존 validation rules
+     * @param  array  $rules  기존 validation rules
      * @return array 마케팅 동의 필드가 추가된 rules
      */
     public function addValidationRules(array $rules): array
@@ -168,8 +169,8 @@ class MarketingConsentListener implements HookListenerInterface
      * filter_update_data는 Filter 훅이므로 DB 저장 등 부작용 금지.
      * 실제 저장은 core.user.after_update 액션 훅(afterUpdate)에서 처리합니다.
      *
-     * @param array $data 요청 데이터
-     * @param User $user 수정 대상 사용자
+     * @param  array  $data  요청 데이터
+     * @param  User  $user  수정 대상 사용자
      * @return array 마케팅 필드가 제거된 데이터
      */
     public function filterUpdateData(array $data, User $user): array
@@ -180,8 +181,8 @@ class MarketingConsentListener implements HookListenerInterface
     /**
      * 생성 후 액션: $originalData에서 마케팅 동의 필드 추출하여 저장
      *
-     * @param User $user 생성된 사용자
-     * @param array $originalData 원본 요청 데이터
+     * @param  User  $user  생성된 사용자
+     * @param  array  $originalData  원본 요청 데이터
      * @return void
      */
     public function afterCreate(User $user, array $originalData): void
@@ -198,8 +199,8 @@ class MarketingConsentListener implements HookListenerInterface
      *
      * filter_update_data에서 분리된 부작용(DB 저장)을 처리합니다.
      *
-     * @param User $user 수정된 사용자
-     * @param array $originalData 원본 요청 데이터
+     * @param  User  $user  수정된 사용자
+     * @param  array  $originalData  원본 요청 데이터
      * @return void
      */
     public function afterUpdate(User $user, array $originalData): void
@@ -216,24 +217,24 @@ class MarketingConsentListener implements HookListenerInterface
     }
 
     /**
-     * 회원가입 후 액션: request()에서 마케팅 동의 필드 추출하여 저장
+     * 회원가입 후 액션: 가입 데이터에서 마케팅 동의 필드를 추출하여 저장
      *
-     * AuthService.register()에는 filter_create_data 훅이 없으므로,
-     * core.auth.register 액션 훅에서 request()로 직접 추출합니다.
+     * 코어는 검증된 가입 데이터를 after_register 의 `registration_data` 로 넘긴다. 이 액션은 큐 워커에서
+     * 돌 수 있고 워커의 request() 는 비어 있으므로 요청이 아니라 훅 인자만 읽는다.
      *
-     * @param User $user 가입된 사용자
-     * @param array $context 회원가입 컨텍스트 정보
+     * @param  User  $user  가입된 사용자
+     * @param  array  $context  회원가입 컨텍스트 정보 (`registration_data` = 검증된 가입 데이터)
      * @return void
      */
     public function afterRegister(User $user, array $context): void
     {
-        $request = request();
+        $registrationData = is_array($context['registration_data'] ?? null) ? $context['registration_data'] : [];
         $marketingData = [];
 
         foreach ($this->getAllConsentKeys() as $key) {
             $registerField = self::REGISTER_FIELD_PREFIX.$key;
-            if ($request->has($registerField)) {
-                $marketingData[$key] = ! empty($request->input($registerField));
+            if (array_key_exists($registerField, $registrationData)) {
+                $marketingData[$key] = ! empty($registrationData[$registerField]);
             }
         }
 
@@ -247,7 +248,7 @@ class MarketingConsentListener implements HookListenerInterface
      *
      * DB CASCADE에 의존하지 않고 명시적으로 삭제합니다.
      *
-     * @param User $user 삭제될 사용자
+     * @param  User  $user  삭제될 사용자
      * @return void
      */
     public function beforeDelete(User $user): void
@@ -261,8 +262,8 @@ class MarketingConsentListener implements HookListenerInterface
      * EAV 구조 — consent_key 기준으로 Collection을 키 인덱스하여 O(1) 조회합니다.
      * 활성화된 키 목록과 *_enabled 값을 포함하여 프론트엔드 조건부 렌더링에 사용합니다.
      *
-     * @param array $data API 응답 데이터
-     * @param User $user 조회 대상 사용자
+     * @param  array  $data  API 응답 데이터
+     * @param  User  $user  조회 대상 사용자
      * @return array 마케팅 동의 데이터가 병합된 API 응답
      */
     public function filterResourceData(array $data, User $user): array
@@ -285,36 +286,36 @@ class MarketingConsentListener implements HookListenerInterface
 
         // 프론트엔드 조건부 렌더링용 플래그 — 마케팅 전체 동의
         $marketingSlug = $this->pluginSettings->get(self::PLUGIN_ID, 'marketing_consent_terms_slug', '');
-        $data['marketing_consent_enabled']        = (bool) $this->pluginSettings->get(self::PLUGIN_ID, 'marketing_consent_enabled', true);
-        $data['marketing_consent_terms_slug']     = $marketingSlug ?: null;
+        $data['marketing_consent_enabled'] = (bool) $this->pluginSettings->get(self::PLUGIN_ID, 'marketing_consent_enabled', true);
+        $data['marketing_consent_terms_slug'] = $marketingSlug ?: null;
         $data['marketing_consent_terms_slug_set'] = ! empty($marketingSlug);
 
         // 프론트엔드 조건부 렌더링용 플래그 — 법적 동의 항목
         $thirdPartySlug = $this->pluginSettings->get(self::PLUGIN_ID, 'third_party_consent_terms_slug', '');
-        $data['third_party_consent_enabled']        = (bool) $this->pluginSettings->get(self::PLUGIN_ID, 'third_party_consent_enabled');
-        $data['third_party_consent_terms_slug']     = $thirdPartySlug ?: null;
+        $data['third_party_consent_enabled'] = (bool) $this->pluginSettings->get(self::PLUGIN_ID, 'third_party_consent_enabled');
+        $data['third_party_consent_terms_slug'] = $thirdPartySlug ?: null;
         $data['third_party_consent_terms_slug_set'] = ! empty($thirdPartySlug);
 
         $infoSlug = $this->pluginSettings->get(self::PLUGIN_ID, 'info_disclosure_terms_slug', '');
-        $data['info_disclosure_enabled']        = (bool) $this->pluginSettings->get(self::PLUGIN_ID, 'info_disclosure_enabled');
-        $data['info_disclosure_terms_slug']     = $infoSlug ?: null;
+        $data['info_disclosure_enabled'] = (bool) $this->pluginSettings->get(self::PLUGIN_ID, 'info_disclosure_enabled');
+        $data['info_disclosure_terms_slug'] = $infoSlug ?: null;
         $data['info_disclosure_terms_slug_set'] = ! empty($infoSlug);
 
         // 프론트엔드 조건부 렌더링용 플래그 — 채널별 (channels JSON 기반 동적 처리)
         $locale = app()->getLocale();
         $channelsMeta = [];
         foreach ($this->service->getAllChannels() as $channel) {
-            $key  = $channel['key'];
+            $key = $channel['key'];
             $slug = $channel['page_slug'] ?? '';
-            $data["{$key}_enabled"]        = (bool) ($channel['enabled'] ?? true);
-            $data["{$key}_terms_slug"]     = $slug ?: null;
+            $data["{$key}_enabled"] = (bool) ($channel['enabled'] ?? true);
+            $data["{$key}_terms_slug"] = $slug ?: null;
             $data["{$key}_terms_slug_set"] = ! empty($slug);
 
             $channelsMeta[] = [
-                'key'            => $key,
-                'label'          => $channel['label'][$locale] ?? $channel['label']['ko'] ?? $key,
-                'enabled'        => (bool) ($channel['enabled'] ?? true),
-                'terms_slug'     => $slug ?: null,
+                'key' => $key,
+                'label' => $this->resolveChannelLabel($channel, $locale),
+                'enabled' => (bool) ($channel['enabled'] ?? true),
+                'terms_slug' => $slug ?: null,
                 'terms_slug_set' => ! empty($slug),
             ];
         }
@@ -354,7 +355,7 @@ class MarketingConsentListener implements HookListenerInterface
     /**
      * 요청 데이터에서 마케팅 동의 필드만 추출합니다.
      *
-     * @param array $data 요청 데이터
+     * @param  array  $data  요청 데이터
      * @return array 마케팅 동의 데이터
      */
     private function extractMarketingData(array $data): array
@@ -370,7 +371,7 @@ class MarketingConsentListener implements HookListenerInterface
     /**
      * 요청 데이터에서 마케팅 동의 필드를 제거합니다.
      *
-     * @param array $data 요청 데이터
+     * @param  array  $data  요청 데이터
      * @return array 마케팅 필드가 제거된 데이터
      */
     private function removeMarketingFields(array $data): array
@@ -385,8 +386,8 @@ class MarketingConsentListener implements HookListenerInterface
      * channels 값이 배열로 전달된 경우 JSON 문자열로 직렬화합니다.
      * 이렇게 해야 getAllChannels()에서 json_decode()로 올바르게 읽을 수 있습니다.
      *
-     * @param array $settings 저장할 설정 데이터
-     * @param string $identifier 플러그인 식별자
+     * @param  array  $settings  저장할 설정 데이터
+     * @param  string  $identifier  플러그인 식별자
      * @return array channels가 JSON 문자열로 변환된 설정 데이터
      */
     public function normalizeChannelsSaveData(array $settings, string $identifier): array
@@ -405,10 +406,31 @@ class MarketingConsentListener implements HookListenerInterface
     /**
      * 현재 요청 경로에서 변경 출처를 판별합니다.
      *
+     * 동의 이력에 남길 "어느 화면에서 바꿨는가" 는 도메인 값이 아니라 전송 계층 사실이고,
+     * 코어의 회원 수정 훅은 그 값을 payload 로 전달하지 않는다. 같은 사유로 면제한
+     * 선례가 이미 있다(`MergeCartOnLoginListener`).
+     *
      * @return string 변경 경로 (admin/profile)
      */
     private function detectSource(): string
     {
+        // audit:allow listener-formrequest-bypass reason: 코어 훅이 전달하지 않는 전송 계층 사실(요청 경로) — 값은 admin/profile 두 가지로 닫혀 있다
         return request()->routeIs('api.admin.*') ? 'admin' : 'profile';
+    }
+
+    /**
+     * 채널 라벨을 현재 로케일로 해석합니다.
+     *
+     * `label_key` 가 SSoT 다 — 저장된 `label` 맵은 언어팩 미설치 환경 보호용 폴백이고,
+     * 그 맵은 저장 시점의 지원 로케일만 담는다. 맵만 읽으면 나중에 추가된 로케일에서
+     * 이 항목만 ko 로 떨어져, 같은 목록의 다른 항목이 번역되는 와중에 한 줄만 한국어로 남는다.
+     *
+     * @param  array<string, mixed>  $channel  채널 정의
+     * @param  string  $locale  현재 로케일
+     * @return string 해석된 라벨
+     */
+    private function resolveChannelLabel(array $channel, string $locale): string
+    {
+        return $this->service->resolveChannelLabel($channel, $locale);
     }
 }

@@ -1,0 +1,16 @@
+feature: 게시판 서버 영어 메시지의 단·복수
+
+description: |
+  게시판이 내는 영어 메시지(일괄 처리 결과·첨부 상한·분류/유형 사용 중·답글 깊이·신고 처리)를 `(s)` 대신 `단수|복수` 로 적고 수로 고른다(1 → 단수, 0·2 이상 → 복수). 규칙이 1 로 고정된 최소 선택 문구는 단수 한 문장. 한국어는 그대로.
+
+axes:
+  surface: [dictionary, fixed_minimum, exception_response]
+
+effects:
+  - english_message_singular_for_one_plural_otherwise
+  - korean_message_unchanged
+  - fixed_minimum_message_is_singular
+  - exception_and_response_message_follow_number
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Lang/BackendPluralMessagesTest.php

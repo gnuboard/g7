@@ -2,8 +2,11 @@
 
 namespace Modules\Sirsoft\Page\Database\Seeders;
 
+use App\Concerns\Seeder\HasTranslatableSeeder;
+use App\Contracts\Seeder\TranslatableSeederInterface;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageVersion;
 
@@ -21,20 +24,67 @@ use Modules\Sirsoft\Page\Models\PageVersion;
  * 5. faq         - 자주 묻는 질문 (발행)
  * 6. contact     - 문의하기 (발행)
  */
-class PageSeeder extends Seeder
+class PageSeeder extends Seeder implements TranslatableSeederInterface
 {
+    use HasTranslatableSeeder;
+
+    /**
+     * 언어팩 시드 필터 키(`seed.sirsoft-page.pages.translations`)의 확장 식별자를 반환합니다.
+     *
+     * @return string 확장 식별자
+     */
+    public function getExtensionIdentifier(): string
+    {
+        return 'sirsoft-page';
+    }
+
+    /**
+     * 언어팩 시드 파일명(seed/pages.json)의 entity 이름을 반환합니다.
+     *
+     * @return string entity 이름
+     */
+    public function getTranslatableEntity(): string
+    {
+        return 'pages';
+    }
+
+    /**
+     * 언어팩 seed 항목을 기본값에 맞춰 붙일 때 쓰는 키를 반환합니다.
+     *
+     * @return string 매칭 키
+     */
+    public function getMatchKey(): string
+    {
+        return 'slug';
+    }
+
+    /**
+     * 언어팩 머지 전 기본 샘플 페이지를 반환합니다.
+     *
+     * @return array<int, array<string, mixed>> 샘플 페이지 목록
+     */
+    public function getDefaults(): array
+    {
+        return $this->getSamplePages(now());
+    }
+
     /**
      * 시더 실행
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
         $this->command->info('페이지 데이터 생성 중...');
 
+        // 이번 실행에서 새로 만든 페이지만 활동 로그 샘플 대상이 되도록 기록을 새로 시작한다
+        PageSampleRunRegistry::reset();
+
         // 최고 관리자 ID 조회
         $superAdminId = User::where('is_super', true)->value('id');
 
-        $now = now();
-        $pages = $this->getSamplePages($now);
+        // 활성 언어팩의 seed/pages.json 다국어 키가 있으면 trait 가 머지한다(없으면 기본값 그대로).
+        $pages = $this->resolveTranslatedDefaults();
 
         foreach ($pages as $pageData) {
             if (Page::where('slug', $pageData['slug'])->exists()) {
@@ -54,6 +104,8 @@ class PageSeeder extends Seeder
                 'created_by' => $superAdminId,
                 'updated_by' => $superAdminId,
             ]);
+
+            PageSampleRunRegistry::addPage((int) $page->id);
 
             // 버전 1 스냅샷 저장
             PageVersion::create([
@@ -76,10 +128,10 @@ class PageSeeder extends Seeder
     /**
      * 샘플 페이지 데이터를 반환합니다.
      *
-     * @param  \Illuminate\Support\Carbon  $now  현재 시각
+     * @param  Carbon  $now  현재 시각
      * @return array<int, array<string, mixed>>
      */
-    private function getSamplePages(\Illuminate\Support\Carbon $now): array
+    private function getSamplePages(Carbon $now): array
     {
         return [
             [

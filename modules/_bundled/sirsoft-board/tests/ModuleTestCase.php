@@ -31,7 +31,9 @@ use Tests\TestCase;
  */
 abstract class ModuleTestCase extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions {
+        beginDatabaseTransaction as protected beginTransactionAfterSchema;
+    }
 
     /**
      * 모듈 루트 경로를 반환합니다.
@@ -65,6 +67,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -77,6 +81,7 @@ abstract class ModuleTestCase extends TestCase
         $this->app->register(BoardServiceProvider::class);
 
         // 모듈 마이그레이션 실행 (boards 테이블 등)
+        // 보통은 beginDatabaseTransaction() 이 트랜잭션 전에 이미 끝냈다 — 트랜잭션을 쓰지 않는 하위 클래스용 안전망
         $this->runModuleMigrationIfNeeded();
 
         // 모듈을 활성화 상태로 등록 (테스트 환경)
@@ -91,6 +96,13 @@ abstract class ModuleTestCase extends TestCase
         // 모듈 인스턴스 등록 + 훅 리스너 자동 등록이 누락된다.
         // 테스트 환경에서 module.php 가 선언한 getHookListeners() 의 리스너들을 수동 등록.
         $this->registerBundledModuleInstance();
+
+        // 설정 미러(`g7_module_settings()` 가 읽는 config)를 이 테스트 시점의 모듈 설정으로 다시 채운다.
+        // 미러는 앱 부팅 때 「활성 모듈」만 싣는데, 같은 프로세스에서 코어 시험이 먼저 스키마를 새로 만들어
+        // 이 모듈의 등록 행이 없던 DB 로 부팅하면 미러가 비어 게시판 기본 권한(basic_defaults)이 빈다.
+        // 그러면 새 게시판 권한에 관리자 역할이 붙지 않아 게시판 생성이 권한 상승 상한 검사(403)에 걸린다
+        // (단독 실행은 통과하는 프로세스 순서 의존 실패 — 쇼핑몰 시험 기반 클래스와 같은 처리).
+        g7_refresh_module_settings_config('sirsoft-board');
 
         // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
@@ -108,6 +120,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * tearDown 에 HookManager 상태 복원.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -118,6 +132,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     *
+     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
@@ -131,6 +147,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 스냅샷 시점으로 HookManager 복원.
+     *
+     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -147,11 +165,30 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
+     * 스키마를 먼저 끝낸 뒤 시험 트랜잭션을 엽니다.
+     *
+     * Laravel 은 `parent::setUp()` 안(트레이트 초기화)에서 이 트랜잭션을 연다. 그 뒤 setUp 에서 프로세스 첫
+     * 시험의 `migrate:fresh` 를 돌리면 MySQL 이 DDL 마다 열린 트랜잭션을 암묵 커밋해, 첫 시험이 만든 행
+     * (기본 역할, 시더가 넣은 행 등)이 롤백되지 않고 테스트 DB 에 남았다. 마이그레이션 경로는 코어
+     * TestCase::setUpTraits() 가 이미 등록한 뒤라 스키마 구성은 종전과 같다.
+     *
+     * @return void 반환값 없음
+     */
+    public function beginDatabaseTransaction()
+    {
+        $this->runModuleMigrationIfNeeded();
+
+        $this->beginTransactionAfterSchema();
+    }
+
+    /**
      * 모듈 마이그레이션 실행 (필요한 경우에만)
      *
      * 코어 테이블이 없으면 먼저 코어 마이그레이션을 실행하고,
      * 그 후 모듈 마이그레이션을 실행합니다.
      * static $migrated 플래그로 프로세스당 한 번만 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function runModuleMigrationIfNeeded(): void
     {
@@ -181,6 +218,8 @@ abstract class ModuleTestCase extends TestCase
      * _bundled 는 메타데이터만 로드 (loadBundledModules) — 인스턴스/훅 미등록.
      * 테스트 환경에서는 _bundled 에서 직접 실행하므로 module.php 의
      * getHookListeners() 가 선언한 리스너들을 수동으로 등록해야 실제 부트 시점과 동일한 훅 흐름이 복원된다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerBundledModuleInstance(): void
     {
@@ -225,6 +264,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈을 활성화 상태로 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAsActive(): void
     {
@@ -245,6 +286,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 오토로드를 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAutoload(): void
     {
@@ -273,6 +316,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 라우트를 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleRoutes(): void
     {
@@ -288,6 +333,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 기본 역할들을 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function createDefaultRoles(): void
     {
@@ -312,7 +359,7 @@ abstract class ModuleTestCase extends TestCase
      * 관리자 역할을 가진 사용자를 생성합니다.
      *
      * @param  array  $permissions  추가 권한 목록
-     * @return User
+     * @return User 요청한 권한을 가진 관리자
      */
     protected function createAdminUser(array $permissions = []): User
     {
@@ -340,7 +387,7 @@ abstract class ModuleTestCase extends TestCase
     /**
      * 일반 사용자를 생성합니다.
      *
-     * @return User
+     * @return User 일반 사용자
      */
     protected function createUser(): User
     {

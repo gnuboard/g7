@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 활동로그 구획(수정 진입에만 선다). 이 상품에 언제 누가 무엇을 바꿨는지 남는다.\n  기록이 많아 쪽 나눔·정렬을 서버에 맡기므로, 화면에서 값을 바꾸면 목록을 다시 받는다.\n  넓은 화면은 표, 좁은 화면은 카드로 같은 내용을 두 벌 세운다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Activity Log Section (Edit Mode Only)"
@@ -13,6 +14,17 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.activityLogExpanded": "{{!_local.ui.activityLogExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -50,16 +62,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.activityLogExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.activityLogExpanded": "{{!_local.ui.activityLogExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -75,15 +77,15 @@
                     "id": "activity_log_filters",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
                                 "className": "row-stack p-4 border-b border-gray-200 dark:border-gray-700"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -97,9 +99,6 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "flex-center gap-4"
-                            },
                             "responsive": {
                                 "portable": {
                                     "props": {
@@ -107,19 +106,22 @@
                                     }
                                 }
                             },
+                            "props": {
+                                "className": "flex-center gap-4"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "flex-center gap-2"
-                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
                                                 "className": "flex-center gap-2 w-full"
                                             }
                                         }
+                                    },
+                                    "props": {
+                                        "className": "flex-center gap-2"
                                     },
                                     "children": [
                                         {
@@ -131,23 +133,8 @@
                                             "text": "$t:sirsoft-ecommerce.admin.product.activity_log.sort_order"
                                         },
                                         {
-                                            "type": "composite",
+                                            "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "name": "activity_log_sort",
-                                                "value": "{{_local.ui.activityLogSort ?? 'desc'}}",
-                                                "options": [
-                                                    {
-                                                        "value": "desc",
-                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest"
-                                                    },
-                                                    {
-                                                        "value": "asc",
-                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest"
-                                                    }
-                                                ],
-                                                "className": "w-32"
-                                            },
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
@@ -157,42 +144,56 @@
                                             },
                                             "actions": [
                                                 {
+                                                    "comment": "정렬은 화면에서 뒤집지 않고 서버에서 다시 받는다 — 지금 쪽에 실린 것만 뒤집으면 앞뒤 쪽의 기록이 뒤섞인다",
                                                     "type": "change",
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "ui.activityLogSort": "{{$event.target.value}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "activity_logs"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "ui.activityLogSort": "{{$event.target.value}}"
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "activity_logs"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "name": "activity_log_sort",
+                                                "value": "{{_local.ui.activityLogSort ?? 'desc'}}",
+                                                "className": "w-32",
+                                                "options": [
+                                                    {
+                                                        "value": "desc",
+                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest"
+                                                    },
+                                                    {
+                                                        "value": "asc",
+                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest"
+                                                    }
+                                                ]
+                                            }
                                         }
                                     ]
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "flex-center gap-2"
-                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
                                                 "className": "flex-center gap-2 w-full"
                                             }
                                         }
+                                    },
+                                    "props": {
+                                        "className": "flex-center gap-2"
                                     },
                                     "children": [
                                         {
@@ -204,11 +205,42 @@
                                             "text": "$t:sirsoft-ecommerce.admin.product.activity_log.per_page"
                                         },
                                         {
-                                            "type": "composite",
+                                            "type": "basic",
                                             "name": "Select",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "flex-1"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "한 쪽에 담을 건수. 쪽 크기가 달라지면 현재 쪽 번호는 뜻을 잃으므로 1쪽으로 되돌린 뒤 다시 받는다",
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "ui.activityLogPerPage": "{{Number($event.target.value)}}",
+                                                                "ui.logsPage": 1
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "activity_logs"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
                                             "props": {
                                                 "name": "activity_log_per_page",
                                                 "value": "{{_local.ui.activityLogPerPage ?? 10}}",
+                                                "className": "w-20",
                                                 "options": [
                                                     {
                                                         "value": 10,
@@ -222,40 +254,8 @@
                                                         "value": 50,
                                                         "label": "50"
                                                     }
-                                                ],
-                                                "className": "w-20"
-                                            },
-                                            "responsive": {
-                                                "portable": {
-                                                    "props": {
-                                                        "className": "flex-1"
-                                                    }
-                                                }
-                                            },
-                                            "actions": [
-                                                {
-                                                    "type": "change",
-                                                    "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "ui.activityLogPerPage": "{{Number($event.target.value)}}",
-                                                                    "ui.logsPage": 1
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "activity_logs"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                }
-                                            ]
+                                                ]
+                                            }
                                         }
                                     ]
                                 }
@@ -267,13 +267,13 @@
                     "id": "activity_log_table_pc",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "overflow-x-auto"
-                    },
                     "responsive": {
                         "portable": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "overflow-x-auto"
                     },
                     "children": [
                         {
@@ -361,6 +361,21 @@
                                                             "type": "composite",
                                                             "name": "ActionMenu",
                                                             "if": "{{!!log.user?.uuid}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "기록을 남긴 사람이 회원일 때만 이름이 메뉴가 된다 — 고르면 회원 상세를 새 창으로 연다(편집 중이던 상품 폼을 잃지 않기 위해서다)",
+                                                                    "event": "onItemClick",
+                                                                    "handler": "switch",
+                                                                    "cases": {
+                                                                        "view_member": {
+                                                                            "handler": "openWindow",
+                                                                            "params": {
+                                                                                "path": "/admin/users/{{log.user.uuid}}"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "position": "left",
                                                                 "items": [
@@ -405,21 +420,6 @@
                                                                             "text": "{{log.actor_name ?? ''}}"
                                                                         }
                                                                     ]
-                                                                }
-                                                            ],
-                                                            "actions": [
-                                                                {
-                                                                    "event": "onItemClick",
-                                                                    "handler": "switch",
-                                                                    "value": "{{$args[0]}}",
-                                                                    "cases": {
-                                                                        "view_member": {
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/admin/users/{{log.user.uuid}}"
-                                                                            }
-                                                                        }
-                                                                    }
                                                                 }
                                                             ]
                                                         },
@@ -539,7 +539,7 @@
                                                                             "props": {
                                                                                 "className": "w-28 text-center text-red-600 dark:text-red-400"
                                                                             },
-                                                                            "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                                            "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                                         },
                                                                         {
                                                                             "type": "basic",
@@ -547,7 +547,7 @@
                                                                             "props": {
                                                                                 "className": "w-28 text-center text-green-600 dark:text-green-400"
                                                                             },
-                                                                            "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                                            "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                                         }
                                                                     ]
                                                                 }
@@ -632,7 +632,7 @@
                                                                                     "props": {
                                                                                         "className": "w-28 text-center text-red-600 dark:text-red-400"
                                                                                     },
-                                                                                    "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                                                    "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
@@ -640,7 +640,7 @@
                                                                                     "props": {
                                                                                         "className": "w-28 text-center text-green-600 dark:text-green-400"
                                                                                     },
-                                                                                    "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                                                    "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                                                 }
                                                                             ]
                                                                         }
@@ -693,13 +693,13 @@
                     "id": "activity_log_cards_mobile",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "divider-list"
-                    },
                     "responsive": {
                         "desktop": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "divider-list"
                     },
                     "children": [
                         {
@@ -733,6 +733,21 @@
                                                     "type": "composite",
                                                     "name": "ActionMenu",
                                                     "if": "{{!!log.user?.uuid}}",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "좁은 화면 카드에서도 같다 — 회원 상세를 새 창으로 연다",
+                                                            "event": "onItemClick",
+                                                            "handler": "switch",
+                                                            "cases": {
+                                                                "view_member": {
+                                                                    "handler": "openWindow",
+                                                                    "params": {
+                                                                        "path": "/admin/users/{{log.user.uuid}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
                                                     "props": {
                                                         "position": "left",
                                                         "items": [
@@ -777,21 +792,6 @@
                                                                     "text": "{{log.actor_name ?? ''}}"
                                                                 }
                                                             ]
-                                                        }
-                                                    ],
-                                                    "actions": [
-                                                        {
-                                                            "event": "onItemClick",
-                                                            "handler": "switch",
-                                                            "value": "{{$args[0]}}",
-                                                            "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{log.user.uuid}}"
-                                                                    }
-                                                                }
-                                                            }
                                                         }
                                                     ]
                                                 },
@@ -917,7 +917,7 @@
                                                     "props": {
                                                         "className": "w-20 text-center text-red-600 dark:text-red-400"
                                                     },
-                                                    "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                    "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -925,7 +925,7 @@
                                                     "props": {
                                                         "className": "w-20 text-center text-green-600 dark:text-green-400"
                                                     },
-                                                    "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                    "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                 }
                                             ]
                                         }
@@ -1007,7 +1007,7 @@
                                                             "props": {
                                                                 "className": "w-20 text-center text-red-600 dark:text-red-400"
                                                             },
-                                                            "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                            "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1015,7 +1015,7 @@
                                                             "props": {
                                                                 "className": "w-20 text-center text-green-600 dark:text-green-400"
                                                             },
-                                                            "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                            "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                         }
                                                     ]
                                                 }
@@ -1056,41 +1056,40 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-center p-4 border-t border-gray-200 dark:border-gray-700"
+                        "className": "flex justify-center p-4"
                     },
                     "children": [
                         {
                             "type": "composite",
                             "name": "Pagination",
+                            "actions": [
+                                {
+                                    "comment": "쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다",
+                                    "event": "onPageChange",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "ui.logsPage": "{{$args[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "activity_logs"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
                                 "currentPage": "{{activity_logs.data?.meta?.current_page ?? 1}}",
                                 "totalPages": "{{activity_logs.data?.meta?.last_page ?? null}}",
                                 "hasMorePages": "{{activity_logs.data?.meta?.has_more_pages ?? false}}",
                                 "showFirstLast": true
-                            },
-                            "actions": [
-                                {
-                                    "event": "onPageChange",
-                                    "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "ui.logsPage": "{{$args[0]}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "activity_logs"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            ]
+                            }
                         }
                     ]
                 }

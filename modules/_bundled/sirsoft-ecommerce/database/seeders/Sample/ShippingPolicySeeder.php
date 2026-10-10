@@ -3,7 +3,10 @@
 namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
 
 use Illuminate\Database\Seeder;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyClaimAddress;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
@@ -14,6 +17,8 @@ class ShippingPolicySeeder extends Seeder
 {
     /**
      * 배송정책 시더를 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -32,8 +37,10 @@ class ShippingPolicySeeder extends Seeder
             foreach ($countrySettings as $cs) {
                 // 통화 라벨을 설정의 기본 통화로 맞춤 (KRW 하드코딩 제거 — base 추종, mc 정합)
                 $cs['currency_code'] = $this->defaultCurrency();
-                $policy->countrySettings()->create($cs);
+                $policy->countrySettings()->create($cs + $this->claimFeeDefaults($cs, (int) $policyData['sort_order']));
             }
+
+            $this->createClaimAddresses($policy);
 
             $this->command->line("  - 배송정책 생성: {$policyData['name']['ko']} ({$policyData['name']['en']})");
         }
@@ -64,16 +71,65 @@ class ShippingPolicySeeder extends Seeder
 
     /**
      * 기존 배송정책 데이터를 삭제합니다.
+     *
+     * @return void 반환값 없음
      */
     private function deleteExistingPolicies(): void
     {
         $deletedCount = ShippingPolicy::count();
 
         if ($deletedCount > 0) {
-            // 국가별 설정 먼저 명시적 삭제 (DB CASCADE에 의존하지 않음)
+            // 국가별 설정·클레임 회수지 먼저 명시적 삭제 (DB CASCADE에 의존하지 않음)
+            ShippingPolicyClaimAddress::query()->delete();
             ShippingPolicyCountrySetting::query()->delete();
             ShippingPolicy::query()->delete();
             $this->command->warn("기존 배송정책 {$deletedCount}건을 삭제했습니다.");
+        }
+    }
+
+    /**
+     * 국가별 설정의 클레임(반품·교환) 배송비 기본값을 돌려줍니다.
+     *
+     * 국내 유료 정책은 반품 3,000 · 교환 6,000(왕복) 고정액이고, 조건부 무료·금액 구간 정책은
+     * 「원 배송정책 재계산」으로 둬 두 방식이 모두 화면에 보이게 한다. 해외 설정은 클레임 배송비를 두지 않는다.
+     *
+     * @param  array  $countrySetting  국가별 설정 데이터
+     * @param  int  $sortOrder  정책 순번 (어느 정책인지 구분)
+     * @return array<string, mixed> 클레임 배송비 필드
+     */
+    private function claimFeeDefaults(array $countrySetting, int $sortOrder): array
+    {
+        if (($countrySetting['country_code'] ?? null) !== 'KR') {
+            return [];
+        }
+
+        return [
+            'claim_fee_mode' => in_array($sortOrder, [3, 4], true)
+                ? ClaimShippingFeeModeEnum::ORIGINAL_POLICY
+                : ClaimShippingFeeModeEnum::FIXED,
+            'return_fixed_fee' => 3000,
+            'exchange_fixed_fee' => 6000,
+        ];
+    }
+
+    /**
+     * 배송정책마다 교환·반품 회수지를 한 건씩 만듭니다 (클레임 신청 화면의 회수지 안내·스냅샷 출처).
+     *
+     * @param  ShippingPolicy  $policy  배송정책
+     * @return void 반환값 없음
+     */
+    private function createClaimAddresses(ShippingPolicy $policy): void
+    {
+        foreach ([ClaimTypeEnum::EXCHANGE, ClaimTypeEnum::RETURN] as $type) {
+            $policy->claimAddresses()->create([
+                'claim_type' => $type,
+                'recipient_name' => '샘플상점 물류센터',
+                'phone' => '02-1234-5678',
+                'zipcode' => '08390',
+                'address1' => '서울특별시 구로구 디지털로 300',
+                'address2' => $type === ClaimTypeEnum::EXCHANGE ? '교환 접수 창구' : '반품 접수 창구',
+                'country_code' => 'KR',
+            ]);
         }
     }
 
@@ -310,10 +366,11 @@ class ShippingPolicySeeder extends Seeder
                             'auth_header_name' => 'Authorization',
                             'response_type' => 'json',
                             'response_path' => 'data.shipping_fee',
+                            // 키는 실제 요청 필드(api_request_fields) 이름이어야 리네임된다
                             'field_map' => [
-                                'order_amount' => 'orderAmount',
-                                'weight' => 'totalWeight',
-                                'zipcode' => 'postalCode',
+                                'group_total' => 'orderAmount',
+                                'total_quantity' => 'itemCount',
+                                'country_code' => 'countryCode',
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -337,10 +394,11 @@ class ShippingPolicySeeder extends Seeder
                             'auth_header_name' => 'Authorization',
                             'response_type' => 'json',
                             'response_path' => 'data.shipping_fee',
+                            // 키는 실제 요청 필드(api_request_fields) 이름이어야 리네임된다
                             'field_map' => [
-                                'order_amount' => 'orderAmount',
-                                'weight' => 'totalWeight',
-                                'zipcode' => 'postalCode',
+                                'group_total' => 'orderAmount',
+                                'total_quantity' => 'itemCount',
+                                'country_code' => 'countryCode',
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -364,10 +422,11 @@ class ShippingPolicySeeder extends Seeder
                             'auth_header_name' => 'Authorization',
                             'response_type' => 'json',
                             'response_path' => 'data.shipping_fee',
+                            // 키는 실제 요청 필드(api_request_fields) 이름이어야 리네임된다
                             'field_map' => [
-                                'order_amount' => 'orderAmount',
-                                'weight' => 'totalWeight',
-                                'zipcode' => 'postalCode',
+                                'group_total' => 'orderAmount',
+                                'total_quantity' => 'itemCount',
+                                'country_code' => 'countryCode',
                             ],
                         ],
                         'extra_fee_enabled' => false,

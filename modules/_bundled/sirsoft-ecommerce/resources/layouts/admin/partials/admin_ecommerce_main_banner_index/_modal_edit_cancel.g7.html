@@ -1,0 +1,25 @@
+<!-- 배너 편집 중 이탈을 막는 확인 창 — 저장하지 않은 입력이 사라진다고 알린다.
+  **아직 시안이다** — 두 버튼 모두 창을 닫기만 하고, "나가기" 쪽이 편집 모드를 되돌리지 않는다.
+  즉 지금은 어느 쪽을 눌러도 편집 화면에 그대로 남는다.
+  다른 화면의 같은 성격 창(브랜드 편집 이탈)은 나가기 쪽이 모드와 선택을 비우므로, 배선할 때
+  그 형태를 참고하면 된다. -->
+<partial description="Main Banner Edit Cancel Confirm Modal">
+  <modal data-type="composite" data-ref="modal_edit_cancel" title="$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.title" size="sm">
+    <footer>
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.cancel
+      </button>
+      <button type="button" class="btn btn-primary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.confirm
+      </button>
+    </footer>
+    <p class="text-body">$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.message</p>
+    <p class="text-body mt-1">$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.sub_message</p>
+  </modal>
+</partial>

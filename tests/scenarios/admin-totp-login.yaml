@@ -1,0 +1,105 @@
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 축은 조건부다 — code 는 challenge 가 발급된
+# 뒤에만, enrolled 는 mail_fallback 판정에만, cross_use 는 actor 와 짝지을 때만 의미가 있다. 명목상 조합을
+# 곱하면 실체 없는 칸이 생기므로 개별 docblock 을 매핑할 대상이 없다. 실제 회귀 가드는 effects 13건이며
+# 전부 test_files 의 테스트에 @effects 로 귀속되어 있다(미검증 0건).
+
+feature: 인증 앱(TOTP) 2단계 인증
+
+description: |
+  로그인 2단계 인증을 **인증 앱이 만든 6자리 코드**로 받는 축이다. 메일 축은
+  `auth-two-factor-login.yaml` 이 소유하며, 이 매니페스트는 그것을 대체하지 않고
+  수단이 하나 늘었을 때 달라지는 지점만 다룬다.
+
+  핵심 동작:
+    - 인증 앱은 **서버가 아무것도 보내지 않는** 수단이다. 그래서 challenge 를 발급
+      즉시 `Sent` 로 기록한다 — `Requested` 로 두면 코어가 "발송 실패" 로 읽어
+      로그인을 차단한다. 여기서 `Sent` 는 "보냈다" 가 아니라 "사용자가 코드를 얻을
+      수 있는 상태가 됐다" 는 뜻이다.
+    - 수단 선택은 사용자별로 갈린다. 인증 앱을 등록한 사용자는 앱으로, 등록하지
+      않은 사용자는 메일로 되돌아간다 — 등록하지 않았다는 이유로 관리자가 로그인
+      하지 못하면 설정을 되돌릴 수단까지 사라진다(콜드스타트 락아웃).
+    - 그 폴백을 **운영자가 명시적으로 끄면** 미등록자의 로그인은 차단된다(401).
+      끈 채로 통과시키면 결과가 정반대 — 2단계 인증이 아예 없는 로그인 — 가 된다.
+      구제는 관리자의 등록 해제 또는 `totp:reset` artisan 이다.
+    - 안내 문구도 수단을 따라간다. 앱 수단에 "인증번호를 보냈습니다" 를 쓰면
+      사용자는 오지 않는 메일을 기다린다.
+    - 리플레이 방지: 한 번 통과한 timestep 이하의 코드는 다시 받지 않는다. 백업
+      코드도 1회용이라 쓰는 즉시 목록에서 빠진다.
+    - 잠긴 계정은 **잠금 전에 받아 둔 challenge 로도** 완료할 수 없다. 관리자 판정이 코드
+      확인 뒤에 있는 구조라 admin 엔드포인트는 잠금 재검사(`assertNotLocked()`)를 독립적으로
+      통과해야 하고, 수단이 앱으로 바뀌어도 그 성질은 유지되어야 한다.
+    - 관리자 판정은 코드 확인 **뒤**에 이뤄지므로(설계 확정 2026-09-07), 사용자 경로
+      challenge 를 관리자 경로로 완료하는 교차 사용에서 비관리자는 403 을 받고
+      그 사이 발급된 토큰이 회수되어야 한다. 프로바이더가 늘어도 불변이다.
+
+axes:
+  provider: [totp, mail_fallback]
+  enrolled: [true, false]
+  mail_fallback: [on, off]
+  code: [valid, invalid, backup, replayed]
+  cross_use: [none, user_challenge_to_admin]
+  actor: [admin, non_admin]
+  locked: [false, true]
+
+exclusions:
+  - { provider: mail_fallback, enrolled: true, reason: "등록을 마친 사용자는 폴백 대상이 아니다" }
+  - { provider: mail_fallback, code: backup, reason: "백업 코드는 인증 앱 자격증명에 딸린 수단이다" }
+  - { provider: mail_fallback, code: replayed, reason: "메일 코드의 재사용 방지는 메일 축이 소유한다" }
+  - { provider: totp, enrolled: false, code: valid, reason: "등록하지 않았으면 앱이 만들 코드가 없다" }
+  - { provider: totp, enrolled: false, code: invalid, reason: "동일" }
+  - { provider: totp, enrolled: false, code: backup, reason: "동일" }
+  - { provider: totp, enrolled: false, code: replayed, reason: "동일" }
+  - { mail_fallback: off, enrolled: true, code: invalid, reason: "폴백 설정은 미등록자 처리에만 관여한다" }
+  - { mail_fallback: off, enrolled: true, code: backup, reason: "동일" }
+  - { mail_fallback: off, enrolled: true, code: replayed, reason: "동일" }
+  - { cross_use: none, actor: non_admin, reason: "교차 사용이 없으면 관리자 경로를 밟지 않아 판정 지점이 없다" }
+  - { cross_use: user_challenge_to_admin, code: invalid, reason: "교차 사용은 코드가 맞은 뒤의 권한 판정을 보는 축이다" }
+  - { cross_use: user_challenge_to_admin, code: replayed, reason: "동일" }
+  - { cross_use: user_challenge_to_admin, provider: mail_fallback, reason: "메일 교차 사용은 메일 축이 이미 덮는다" }
+  - { locked: true, code: invalid, reason: "잠금은 코드가 맞은 뒤의 재검사 지점이라 오답 축과 직교하지 않는다" }
+  - { locked: true, code: backup, reason: "동일 — 잠긴 계정은 수단과 무관하게 거절된다" }
+  - { locked: true, code: replayed, reason: "동일" }
+  - { locked: true, cross_use: user_challenge_to_admin, reason: "교차 사용은 권한 판정 축이고 잠금은 그 이전 단계에서 끊긴다" }
+  - { locked: true, enrolled: false, reason: "미등록자는 앱 challenge 자체가 없어 잠금 재검사 지점에 닿지 않는다" }
+
+effects:
+  - admin_totp_challenge_reports_app_provider
+  - challenge_is_recorded_as_sent
+  - unenrolled_admin_falls_back_to_mail
+  - unenrolled_admin_is_blocked_when_fallback_is_off
+  - non_admin_cross_use_revokes_token
+  - a_used_code_cannot_be_reused_on_a_new_challenge
+  - reused_code_is_rejected
+  - exhausted_challenge_is_failed
+  - secret_is_not_stored_in_plaintext
+  - status_never_returns_the_secret
+  - previous_backup_codes_stop_working
+  - other_users_credentials_are_untouched
+  - member_login_bypasses_two_factor
+  - admin_totp_locked_account_cannot_complete
+  - admin_forced_reset_is_written_to_the_activity_log
+  - admin_forced_reset_log_carries_actor_and_ip
+  - cli_forced_reset_is_written_to_the_activity_log
+  - admin_reset_listener_is_registered_by_the_plugin
+  - admin_reset_hook_with_a_non_user_payload_logs_nothing
+  - backup_codes_are_shown_once_at_enrollment
+  - backup_codes_can_be_taken_in_one_go
+  - admin_reset_tab_is_reachable_from_member_detail
+  - admin_reset_tab_is_absent_from_member_edit
+  - admin_reset_tab_is_hidden_without_the_permission
+  # 관리자 화면 초기화 — 지울 등록이 없었으면 「초기화했다」가 아니라 「없었다」고 알린다(7.1.0 잔여 관측 R-26)
+  - admin_reset_without_credential_says_nothing_to_remove
+  # 확장 관리자 API 의 강제 해제는 「관리자」 유형 로그 — IP 제한의 관리자 영역과 같은 기준(7.1.0 관측 O-B2)
+  - admin_screen_reset_is_logged_as_admin_type
+
+test_files:
+  - tests/Feature/Auth/AdminTotpLoginTest.php
+  - tests/Playwright/specs/auth/admin-totp-login.spec.ts
+  - tests/Playwright/specs/auth/admin-totp-enrollment.spec.ts
+  - tests/Playwright/specs/auth/admin-totp-member-tab.spec.ts
+  - tests/Feature/Auth/TwoFactorScopeTest.php
+  - plugins/_bundled/sirsoft-totp/tests/Unit/TotpTest.php
+  - plugins/_bundled/sirsoft-totp/tests/Feature/TotpProviderTest.php
+  - plugins/_bundled/sirsoft-totp/tests/Feature/TotpEnrollmentTest.php
+  - plugins/_bundled/sirsoft-totp/tests/Feature/TotpCleanupListenerTest.php
+  - plugins/_bundled/sirsoft-totp/tests/Feature/TotpAdminResetActivityLogTest.php

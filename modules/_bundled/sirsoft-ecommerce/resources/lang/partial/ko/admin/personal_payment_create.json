@@ -38,12 +38,10 @@
   "modal": {
     "member_search": {
       "title": "회원 검색",
-      "description": "회원명, ID, 이메일로 검색하여 선택하세요",
       "search_placeholder": "회원명, ID, 이메일로 검색"
     },
     "order_search": {
       "title": "주문 검색 및 연동",
-      "description": "주문번호, 고객명, 상품명으로 검색하여 선택하세요",
       "search_field": "검색 필드",
       "search_field_all": "전체",
       "search_field_order_number": "주문번호",

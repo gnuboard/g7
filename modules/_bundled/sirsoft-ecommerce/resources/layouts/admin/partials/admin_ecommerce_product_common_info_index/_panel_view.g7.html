@@ -1,0 +1,94 @@
+<!-- 공통정보 보기 패널. 목록이 전역에 실어 둔 항목(`_global.selectedItem`)을 읽고 상세를 따로 부르지
+  않는다.
+  이름과 본문이 언어별 값이라 **언어 탭이 있다** — 고른 언어는 이 패널의 지역 상태에만 남고, 편집
+  폼으로 넘어가도 이어지지 않는다.
+  아래 버튼이 넷이다: 복사·기본값 지정·편집·삭제. 복사와 기본값 지정은 각자 확인 창을 열기만 하고
+  실제 처리는 그 창이 한다. 편집만 여기서 값을 폼으로 옮겨 담는다 — 폼이 상세를 다시 부르지 않기
+  때문이다. 삭제는 창이 쓸 이름·id 를 `_global.deleteModal` 에 채워 넘긴다. -->
+<partial description="Common Info View Panel - Read-only Details with Language Tabs">
+  <div data-ref="view_panel" data-if="{{_global.selectedId &amp;&amp; _global.panelMode === 'view'}}">
+    <div data-ref="view_header" class="px-4 panel-header">
+      <h3 class="text-heading">$t:sirsoft-ecommerce.admin.common_info.detail.title</h3>
+    </div>
+    <div data-ref="view_content" class="p-4">
+      <div data-ref="info_name_display" class="mb-4">
+        <div class="text-tertiary mb-1">$t:sirsoft-ecommerce.admin.common_info.detail.name</div>
+        <h2 class="section-heading">{{$localized(_global.selectedItem?.name)}}</h2>
+      </div>
+      <div data-ref="status_badges" class="flex-center gap-2 mb-4">
+        <div class="text-tertiary mr-2">$t:sirsoft-ecommerce.admin.common_info.detail.status</div>
+        <span data-if="{{_global.selectedItem?.is_default}}" class="text-secondary px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700">$t:sirsoft-ecommerce.admin.common_info.detail.default</span>
+        <span data-if="{{_global.selectedItem?.is_active}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded">$t:sirsoft-ecommerce.admin.common_info.detail.active</span>
+        <span data-if="{{!_global.selectedItem?.is_active}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:sirsoft-ecommerce.common.inactive</span>
+      </div>
+      <div data-ref="dates_display" class="grid-2col mb-6 text-sm">
+        <div>
+          <div class="text-tertiary mb-1">$t:sirsoft-ecommerce.admin.common_info.detail.created_at</div>
+          <div class="text-primary">{{_global.selectedItem?.created_at | datetime('YYYY-MM-DD HH:mm:ss')}}</div>
+        </div>
+        <div>
+          <div class="text-tertiary mb-1">$t:sirsoft-ecommerce.admin.common_info.detail.updated_at</div>
+          <div class="text-primary">{{_global.selectedItem?.updated_at | datetime('YYYY-MM-DD HH:mm:ss')}}</div>
+        </div>
+      </div>
+      <div data-ref="content_section" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div class="flex-center gap-2 mb-3">
+          <icon name="globe" class="text-base text-gray-500 dark:text-gray-400"/>
+          <span class="text-heading">$t:sirsoft-ecommerce.admin.common_info.detail.content</span>
+        </div>
+        <tab-navigation data-type="composite" data-ref="language_tabs" tabs="{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" activeTabId="{{_local.viewLocale ?? $locale}}" variant="underline" class="mb-4">
+          <on event="onTabChange">
+            <!-- 보기 언어 탭 — 이 패널 안에서만 쓰는 값이다. 편집으로 넘어가면 폼이 자기 언어 탭을 따로 갖는다. -->
+            <set-state target="local" viewLocale="{{$args[0]}}"/>
+          </on>
+        </tab-navigation>
+        <extension-point name="html_content" data-ref="content_display" content="{{_global.selectedItem?.content?.[_local.viewLocale ?? $locale] ?? ''}}" isHtml="{{(_global.selectedItem?.content_mode ?? 'text') === 'html'}}" class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[200px] prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100">
+          <default>
+            <html-content data-type="composite" content="{{_global.selectedItem?.content?.[_local.viewLocale ?? $locale] ?? ''}}" isHtml="{{(_global.selectedItem?.content_mode ?? 'text') === 'html'}}" class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[200px] prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"/>
+          </default>
+        </extension-point>
+      </div>
+    </div>
+    <div data-ref="view_footer" class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex-center gap-3">
+        <button data-ref="common_info_copy_button" disabled="{{_global.selectedItem?.abilities?.can_create !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <open-modal target="copy_confirm_modal"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.common_info.detail.copy
+        </button>
+        <button disabled="{{_global.selectedItem?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <open-modal target="modal_set_default_confirm"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.common_info.button.set_default
+        </button>
+        <button disabled="{{_global.selectedItem?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 편집 진입 — 값을 폼에 먼저 부어 넣고 모드를 바꾼다. 폼은 상세를 다시 부르지 않으므로 이 자리가 편집 초깃값의 유일한 출처다. -->
+            <sequence>
+              <set-state target="local" form="{{_global.selectedItem}}" :isSaving="false" :errors="null" :showPreview="false"/>
+              <set-state target="global" panelMode="edit"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.common_info.button.edit
+        </button>
+        <button class="flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.selectedItem?.abilities?.can_delete !== true}}">
+          <on type="click">
+            <!-- 삭제 확인 창 열기 — 그 창은 조회를 하지 않으므로 보여 줄 이름과 지울 id 를 여기서 채워 넘긴다. -->
+            <sequence>
+              <set-state target="global">
+                <field name="deleteModal">
+                  <field name="itemId" value="{{_global.selectedId}}"/>
+                  <field name="itemName" value="{{$localized(_global.selectedItem?.name)}}"/>
+                </field>
+              </set-state>
+              <open-modal target="delete_confirm_modal"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.common_info.button.delete
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>
